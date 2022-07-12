@@ -74,40 +74,12 @@ CARD_BG = lv.color_hex(CARD_BG_HEX)
 CARD_BORDER_HEX = 0xFEFEFE
 CARD_BORDER = lv.color_hex(CARD_BORDER_HEX)
 
-# Account Colors - source: https://sashamaps.net/docs/resources/20-colors/
+# Account Colors
 ACCOUNT_COLORS = [
-
     {'bg': lv.color_hex(0xBF755F), 'fg': WHITE},
     {'bg': lv.color_hex(0x009DB9), 'fg': WHITE},
-    {'bg': lv.color_hex(0x2B8A7A), 'fg': WHITE},
-    {'bg': lv.color_hex(0xD68B6E), 'fg': WHITE},
-    {'bg': lv.color_hex(0x00D8EB), 'fg': WHITE},
-    {'bg': lv.color_hex(0x16B49A), 'fg': WHITE},
-    {'bg': lv.color_hex(0x8A4F38), 'fg': WHITE},
     {'bg': lv.color_hex(0x007A7A), 'fg': WHITE},
-    {'bg': lv.color_hex(0x004747), 'fg': WHITE},
-
-
-    # {'bg': FD_BLUE, 'fg': WHITE},
-    # {'bg': FD_DARK_BLUE, 'fg': WHITE},
-    # {'bg': LIGHT_COPPER, 'fg': WHITE},
-    # {'bg': FD_PALE_GREY, 'fg': DARK_GREY},
-    # {'bg': lv.color_hex(0XF58231), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X911EB4), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X46F0F0), 'fg': WHITE},
-    # {'bg': lv.color_hex(0XF032E6), 'fg': WHITE},
-    # {'bg': lv.color_hex(0XBCF60C), 'fg': DARK_GREY},
-    # {'bg': lv.color_hex(0XFABEBE), 'fg': WHITE},
-
-    # {'bg': lv.color_hex(0X008080), 'fg': WHITE},
-    # {'bg': lv.color_hex(0XE6BEFF), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X9A6324), 'fg': WHITE},
-    # {'bg': lv.color_hex(0XFFFAC8), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X800000), 'fg': WHITE},
-
-    # {'bg': lv.color_hex(0XAAFFC3), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X800080), 'fg': WHITE},
-    # {'bg': lv.color_hex(0XFFD8B1), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X000075), 'fg': WHITE},
-    # {'bg': lv.color_hex(0X808000), 'fg': WHITE},
+    {'bg': lv.color_hex(0xD68B6E), 'fg': WHITE},
+    {'bg': lv.color_hex(0x00BDCD), 'fg': WHITE},
+    {'bg': lv.color_hex(0x2B8A7A), 'fg': WHITE},
 ]
