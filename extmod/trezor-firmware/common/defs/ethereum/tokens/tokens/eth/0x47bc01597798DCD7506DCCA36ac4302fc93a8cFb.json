@@ -1,0 +1,34 @@
+{
+  "symbol": "CMCT",
+  "name": "Crowd Machine Compute Token",
+  "type": "ERC20",
+  "address": "0x47bc01597798DCD7506DCCA36ac4302fc93a8cFb",
+  "ens_address": "",
+  "decimals": 8,
+  "website": "https://crowdmachine.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/crowd-machine",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/CrowdMachine",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/Crowd_Machine",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "LUN",
+  "address": "0xfa05A73FfE78ef8f1a739473e462c54bae6567D9",
+  "decimals": 18,
+  "name": "Lunyr",
+  "ens_address": "",
+  "website": "https://lunyr.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/lunyr",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/Lunyr",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/LunyrInc",
+    "youtube": ""
+  }
+}

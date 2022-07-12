@@ -1,0 +1,33 @@
+{
+  "symbol": "GRID",
+  "address": "0x12B19D3e2ccc14Da04FAe33e63652ce469b3F2FD",
+  "decimals": 12,
+  "name": "Grid+",
+  "ens_address": "",
+  "website": "http://gridplus.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "gridplus@consensys.net",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://blog.gridplus.io",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/gridplus",
+    "youtube": ""
+  }
+}

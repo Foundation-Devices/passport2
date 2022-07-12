@@ -1,0 +1,34 @@
+{
+  "symbol": "GENE",
+  "name": "Parkgene",
+  "type": "ERC20",
+  "address": "0x6DD4e4Aad29A40eDd6A409b9c1625186C9855b4D",
+  "ens_address": "",
+  "decimals": 8,
+  "website": "https://parkgene.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@parkgene/",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/PARKGENE",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/PARKGENE1",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "symbol": "HVN",
+  "address": "0xC0Eb85285d83217CD7c891702bcbC0FC401E2D9D",
+  "decimals": 8,
+  "name": "Hiveterminal Token",
+  "ens_address": "",
+  "website": "https://www.hiveterminal.com",
+  "logo": {
+    "src": "https://hive-project.net/images/hive-logo.png",
+    "width": 151,
+    "height": 64,
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@hive-project.net"
+  },
+  "social": {
+    "blog": "https://medium.com/hiveterminal",
+    "chat": "",
+    "facebook": "https://www.facebook.com/hiveterminal/",
+    "forum": "",
+    "github": "https://github.com/HiveProjectLTD",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "https://www.linkedin.com/company/hiveterminal/",
+    "reddit": "https://www.reddit.com/r/Hiveterminal_com/",
+    "slack": "",
+    "telegram": "https://t.me/hiveprojectnet",
+    "twitter": "https://twitter.com/hiveterminal",
+    "youtube": "https://www.youtube.com/channel/UCpV4Wwhy5sZbjH9hqAdHlKw"
+  }
+}

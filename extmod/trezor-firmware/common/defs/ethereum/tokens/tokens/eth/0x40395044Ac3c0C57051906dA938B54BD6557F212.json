@@ -1,0 +1,33 @@
+{
+  "symbol": "MGO",
+  "address": "0x40395044Ac3c0C57051906dA938B54BD6557F212",
+  "decimals": 8,
+  "name": "MobileGo",
+  "ens_address": "",
+  "website": "https://mobilego.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@mobilegoofficial",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/Mobilegooff",
+    "youtube": ""
+  }
+}

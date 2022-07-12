@@ -1,0 +1,34 @@
+{
+  "symbol": "DAB",
+  "address": "0xdab0C31BF34C897Fb0Fe90D12EC9401caf5c36Ec",
+  "decimals": 0,
+  "name": "DAB",
+  "ens_address": "dabcoin.eth",
+  "website": "https://dabco.in",
+  "logo": {
+    "src": "https://dabco.in/favicon.ico",
+    "width": "16",
+    "height": "16",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@dabco.in",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "discord": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/DABcoin",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/DABcoin",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/DABcoin",
+    "youtube": ""
+  }
+}

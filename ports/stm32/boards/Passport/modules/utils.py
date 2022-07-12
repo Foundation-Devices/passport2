@@ -1,0 +1,1069 @@
+# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
+# and is covered by GPLv3 license found in COPYING.
+#
+# utils.py
+#
+
+import lvgl as lv
+from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
+from files import CardSlot
+from styles.colors import FD_BLUE
+import ustruct
+import uos
+import trezorcrypto
+import stash
+from ubinascii import hexlify as b2a_hex
+from ubinascii import unhexlify as a2b_hex
+from ubinascii import a2b_base64, b2a_base64
+from uasyncio import get_event_loop, sleep_ms
+import common
+
+ENABLE_LOGGING = True
+
+
+def log(*args, **kwargs):
+    global ENABLE_LOGGING
+    if ENABLE_LOGGING:
+        print(*args, **kwargs)
+
+
+def read_user_firmware_pubkey():
+    from common import system
+    pubkey = bytearray(64)
+
+    result = system.get_user_firmware_pubkey(pubkey)
+
+    return result, pubkey
+
+# We cache this here to avoid slowing down the menus, since the menu items in the Developer Pubkey
+# menu look up this value to decide when to become visible/hidden.
+
+
+def has_dev_pubkey():
+    if common.cached_pubkey is None:
+        result, common.cached_pubkey = read_user_firmware_pubkey()
+        if not result:
+            return False
+    return not is_all_zero(common.cached_pubkey)
+
+
+def clear_cached_pubkey():
+    common.cached_pubkey = None
+
+
+def is_all_zero(buf):
+    for b in buf:
+        if b != 0:
+            return False
+    return True
+
+
+def time_now_ms():
+    import utime
+    return utime.ticks_ms()
+
+
+# Lookup version number from header
+def get_fw_version():
+    # TODO: Implement version number function
+    return '2020-08-30', '0.1.0', '???'
+
+
+def start_task(task):
+    loop = get_event_loop()
+    return loop.create_task(task)
+
+
+async def spinner_task(text, task, args=(), left_micron=None, right_micron=None, min_duration_ms=1000, no_anim=False):
+    from pages import SpinnerPage, StatusPage
+    from uasyncio import sleep_ms
+    from utime import ticks_ms
+    from common import ui
+
+    # Disable left/right navigation and icons
+    prev_top_level = ui.set_is_top_level(False)
+
+    start_time = ticks_ms()
+    if no_anim:
+        spinner = StatusPage(text, left_micron=left_micron, right_micron=right_micron,
+                             icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=FD_BLUE)
+    else:
+        spinner = SpinnerPage(text, left_micron=left_micron, right_micron=right_micron)
+
+    task_result = None
+
+    # User can pass a variable number of arguments, which we return as the result
+    async def on_done(*args):
+        # print('on_done() args="{}"'.format(args))
+        nonlocal task_result
+        task_result = args
+
+        # The last arg is always the error
+        error = args[-1] if len(args) > 0 else None
+
+        # Enforce minimum delay so that the message is at least briefly seed
+        end_time = ticks_ms()
+        if end_time - start_time < min_duration_ms:
+            await sleep_ms(min_duration_ms - (end_time - start_time))
+
+        ui.set_is_top_level(prev_top_level)
+
+        spinner.set_result(error is None)
+
+    start_task(task(on_done, *args))
+
+    # Can handle the user pressing a key here by just showing the spinner again
+    while True:
+        await spinner.show()
+        if task_result is not None:
+            break
+
+    return task_result
+
+
+def call_later_ms(delay_ms, coro):
+    async def delay_fn():
+        await sleep_ms(delay_ms)
+        await coro
+
+    loop = get_event_loop()
+    loop.create_task(delay_fn())
+
+
+def handle_fatal_error(exc):
+    import common
+    from styles.colors import BLACK
+    from pages import LongTextPage
+    from flows import PageFlow
+    import microns
+    from tasks import card_task
+
+    import sys
+    sys.print_exception(exc)
+    # if isinstance(exc, KeyboardInterrupt):
+    #     # preserve GUI state, but want to see where we are
+    #     print("KeyboardInterrupt")
+    #     raise
+    if isinstance(exc, SystemExit):
+        # Ctrl-D and warm reboot cause this, not bugs
+        raise
+    else:
+        print("Exception:")
+        # show stacktrace for debug photos
+        try:
+            import uio
+            tmp = uio.StringIO()
+            sys.print_exception(exc, tmp)
+            msg = tmp.getvalue()
+            del tmp
+            print('===============================================================')
+            print(msg)
+            print('===============================================================')
+
+            # Switch immediately to a new card to show the error
+            fatal_error_card = {
+                'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_ABOUT},
+                'page_micron': microns.PageDot,
+                'bg_color': BLACK,
+                'flow': PageFlow,
+                'args': {'args': {'page_class': LongTextPage, 'text': msg,
+                                  'left_micron': None, 'right_micron': None}}
+            }
+
+            common.ui.set_cards([fatal_error_card])
+            loop = get_event_loop()
+            fatal_card_task = loop.create_task(card_task(fatal_error_card))
+
+        except Exception as exc2:
+            sys.print_exception(exc2)
+
+
+def get_file_list(path=None, include_folders=False, include_parent=False, suffix=None, filter_fn=None):
+    file_list = []
+
+    with CardSlot() as card:
+        if path is None:
+            path = card.get_sd_root()
+
+        # Ensure path is build properly
+        if not path.startswith(card.get_sd_root()):
+            # print('ERROR: The path for get_file_list() must start with "{}"'.format(card.get_sd_root()))
+            return []
+
+        # Make sure this path exists and that it is a folder
+        if not folder_exists(path):
+            # print('ERROR: The path "{}" does not exist'.format(path))
+            return []
+
+        files = uos.ilistdir(path)
+        for filename, file_type, *var in files:
+            # print("filename={} file_type={} var={}  suffix={}".format(filename, file_type, var, suffix))
+            # Don't include folders if requested
+            is_folder = file_type == 0x4000
+            if not include_folders and is_folder:
+                continue
+
+            # Skip files with the wrong suffix
+            if not is_folder and suffix is not None and not filename.lower().endswith(suffix):
+                continue
+
+            # Skip "hidden" files that start with "."
+            if filename[0] == '.':
+                continue
+
+            # Apply file filter, if given (only to files -- folder are included by default)
+            if not is_folder and filter_fn is not None and not filter_fn(filename):
+                continue
+
+            full_path = path + '/' + filename
+
+            file_list.append((filename, full_path, is_folder))
+
+    return file_list
+
+
+class InputMode():
+    UPPER_ALPHA = 0
+    LOWER_ALPHA = 1
+    NUMERIC = 2
+    PUNCTUATION = 3
+
+    @ classmethod
+    def to_str(cls, mode):
+        if mode == InputMode.UPPER_ALPHA:
+            return 'A-Z'
+        elif mode == InputMode.LOWER_ALPHA:
+            return 'a-z'
+        elif mode == InputMode.NUMERIC:
+            return '0-9'
+        elif mode == InputMode.PUNCTUATION:
+            return '&$?'
+        else:
+            return ''
+
+    @ classmethod
+    def cycle_to_next(cls, mode):
+        if mode == InputMode.NUMERIC:
+            return InputMode.LOWER_ALPHA
+        elif mode == InputMode.LOWER_ALPHA:
+            return InputMode.UPPER_ALPHA
+        else:
+            return InputMode.NUMERIC
+
+    @ classmethod
+    def get_icon(cls, mode):
+        if mode == InputMode.UPPER_ALPHA:
+            return lv.ICON_INPUT_MODE_UPPER_ALPHA
+        elif mode == InputMode.LOWER_ALPHA:
+            return lv.ICON_INPUT_MODE_LOWER_ALPHA
+        elif mode == InputMode.NUMERIC:
+            return lv.ICON_INPUT_MODE_NUMERIC
+        elif mode == InputMode.PUNCTUATION:
+            return lv.ICON_INPUT_MODE_PUNCTUATION
+
+
+def B2A(x):
+    return str(b2a_hex(x), 'ascii')
+
+# class imported:
+#     # Context manager that temporarily imports
+#     # a list of modules.
+#     # LATER: doubtful this saves any memory when all the code is frozen.
+#
+#     def __init__(self, *modules):
+#         self.modules = modules
+#
+#     def __enter__(self):
+#         # import everything required
+#         rv = tuple(__import__(n) for n in self.modules)
+#
+#         return rv[0] if len(self.modules) == 1 else rv
+#
+#     def __exit__(self, exc_type, exc_value, traceback):
+#
+#         for n in self.modules:
+#             if n in sys.modules:
+#                 del sys.modules[n]
+#
+#         # recovery that tasty memory.
+#         gc.collect()
+#
+#
+# def pretty_delay(n):
+#     # decode # of seconds into various ranges, need not be precise.
+#     if n < 120:
+#         return '%d seconds' % n
+#     n /= 60
+#     if n < 60:
+#         return '%d minutes' % n
+#     n /= 60
+#     if n < 48:
+#         return '%.1f hours' % n
+#     n /= 24
+#     return 'about %d days' % n
+#
+#
+# def pretty_short_delay(sec):
+#     # precise, shorter on screen display
+#     if sec >= 3600:
+#         return '%2dh %2dm %2ds' % (sec // 3600, (sec//60) % 60, sec % 60)
+#     else:
+#         return '%2dm %2ds' % ((sec//60) % 60, sec % 60)
+#
+#
+# def pop_count(i):
+#     # 32-bit population count for integers
+#     # from <https://stackoverflow.com/questions/9829578>
+#     i = i - ((i >> 1) & 0x55555555)
+#     i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
+#
+#     return (((i + (i >> 4) & 0xF0F0F0F) * 0x1010101) & 0xffffffff) >> 24
+
+
+def get_filesize(fn):
+    # like os.path.getsize()
+    import uos
+    return uos.stat(fn)[6]
+
+
+# def is_dir(fn):
+#     from stat import S_ISDIR
+#     import uos
+#     mode = uos.stat(fn)[0]
+#     # print('is_dir() mode={}'.format(mode))
+#     return S_ISDIR(mode)
+
+
+class HexWriter:
+    # Emulate a file/stream but convert binary to hex as they write
+    def __init__(self, fd):
+        self.fd = fd
+        self.pos = 0
+        self.checksum = trezorcrypto.sha256()
+
+    def __enter__(self):
+        self.fd.__enter__()
+        return self
+
+    def __exit__(self, *a, **k):
+        self.fd.seek(0, 3)          # go to end
+        self.fd.write(b'\r\n')
+        return self.fd.__exit__(*a, **k)
+
+    def tell(self):
+        return self.pos
+
+    def write(self, b):
+        self.checksum.update(b)
+        self.pos += len(b)
+
+        self.fd.write(b2a_hex(b))
+
+    def seek(self, offset, whence=0):
+        assert whence == 0          # limited support
+        self.pos = offset
+        self.fd.seek((2 * offset), 0)
+
+    def read(self, ll):
+        b = self.fd.read(ll * 2)
+        if not b:
+            return b
+        assert len(b) % 2 == 0
+        self.pos += len(b) // 2
+        return a2b_hex(b)
+
+    def readinto(self, buf):
+        b = self.read(len(buf))
+        buf[0:len(b)] = b
+        return len(b)
+
+
+class Base64Writer:
+    # Emulate a file/stream but convert binary to Base64 as they write
+    def __init__(self, fd):
+        self.fd = fd
+        self.runt = b''
+
+    def __enter__(self):
+        self.fd.__enter__()
+        return self
+
+    def __exit__(self, *a, **k):
+        if self.runt:
+            self.fd.write(b2a_base64(self.runt))
+        self.fd.write(b'\r\n')
+        return self.fd.__exit__(*a, **k)
+
+    def write(self, buf):
+        if self.runt:
+            buf = self.runt + buf
+        rl = len(buf) % 3
+        self.runt = buf[-rl:] if rl else b''
+        if rl < len(buf):
+            tmp = b2a_base64(buf[:(-rl if rl else None)])
+            # library puts in newlines!?
+            assert tmp[-1:] == b'\n', tmp
+            assert tmp[-2:-1] != b'=', tmp
+            self.fd.write(tmp[:-1])
+
+
+def swab32(n):
+    # endian swap: 32 bits
+    return ustruct.unpack('>I', ustruct.pack('<I', n))[0]
+
+
+def xfp2str(xfp):
+    # Standardized way to show an xpub's fingerprint... it's a 4-byte string
+    # and not really an integer. Used to show as '0x%08x' but that's wrong endian.
+    return b2a_hex(ustruct.pack('<I', xfp)).decode().upper()
+
+
+def str2xfp(txt):
+    # Inverse of xfp2str
+    return ustruct.unpack('<I', a2b_hex(txt))[0]
+
+
+# def problem_file_line(exc):
+#     # return a string of just the filename.py and line number where
+#     # an exception occured. Best used on AssertionError.
+#     import uio
+#     import sys
+#     import ure
+#
+#     tmp = uio.StringIO()
+#     sys.print_exception(exc, tmp)
+#     lines = tmp.getvalue().split('\n')[-3:]
+#     del tmp
+#
+#     # convert:
+#     #   File "main.py", line 63, in interact
+#     #    into just:
+#     #   main.py:63
+#     #
+#     # on simulator, huge path is included, remove that too
+#
+#     rv = None
+#     for ln in lines:
+#         mat = ure.match(r'.*"(/.*/|)(.*)", line (.*), ', ln)
+#         if mat:
+#             try:
+#                 rv = mat.group(2) + ':' + mat.group(3)
+#             except:
+#                 pass
+#
+#     return rv or str(exc) or 'Exception'
+
+
+def cleanup_deriv_path(bin_path, allow_star=False):
+    # Clean-up path notation as string.
+    # - raise exceptions on junk
+    # - standardize on 'prime' notation (34' not 34p, or 34h)
+    # - assume 'm' prefix, so '34' becomes 'm/34', etc
+    # - do not assume /// is m/0/0/0
+    # - if allow_star, then final position can be * or *' (wildcard)
+    import ure
+    from public_constants import MAX_PATH_DEPTH
+    try:
+        s = str(bin_path, 'ascii').lower()
+    except UnicodeError:
+        raise AssertionError('must be ascii')
+
+    # empty string is valid
+    if s == '':
+        return 'm'
+
+    s = s.replace('p', "'").replace('h', "'")
+    mat = ure.match(r"(m|m/|)[0-9/']*" + ('' if not allow_star else r"(\*'|\*|)"), s)
+    assert mat.group(0) == s, "invalid characters"
+
+    parts = s.split('/')
+
+    # the m/ prefix is optional
+    if parts and parts[0] == 'm':
+        parts = parts[1:]
+
+    if not parts:
+        # rather than: m/
+        return 'm'
+
+    assert len(parts) <= MAX_PATH_DEPTH, "too deep"
+
+    for p in parts:
+        assert p != '' and p != "'", "empty path component"
+        if allow_star and '*' in p:
+            # - star or star' can be last only (checked by regex above)
+            assert p == '*' or p == "*'", "bad wildcard"
+            continue
+        if p[-1] == "'":
+            p = p[0:-1]
+        try:
+            ip = int(p, 10)
+        except Exception:
+            ip = -1
+        assert 0 <= ip < 0x80000000 and p == str(ip), "bad component: " + p
+
+    return 'm/' + '/'.join(parts)
+
+
+def keypath_to_str(bin_path, prefix='m/', skip=1):
+    # take binary path, like from a PSBT and convert into text notation
+    rv = prefix + '/'.join(str(i & 0x7fffffff) + ("'" if i & 0x80000000 else "")
+                           for i in bin_path[skip:])
+    return 'm' if rv == 'm/' else rv
+
+
+def str_to_keypath(xfp, path):
+    # Take a numeric xfp, and string derivation, and make a list of numbers,
+    # like occurs in a PSBT.
+    # - no error checking here
+
+    rv = [xfp]
+    for i in path.split('/'):
+        if i == 'm':
+            continue
+        if not i:
+            continue      # trailing or duplicated slashes
+
+        if i[-1] == "'":
+            here = int(i[:-1]) | 0x80000000
+        else:
+            here = int(i)
+
+        rv.append(here)
+
+    return rv
+
+
+# def match_deriv_path(patterns, path):
+#     # check for exact string match, or wildcard match (star in last position)
+#     # - both args must be cleaned by cleanup_deriv_path() already
+#     # - will accept any path, if 'any' in patterns
+#     if 'any' in patterns:
+#         return True
+#
+#     for pat in patterns:
+#         if pat == path:
+#             return True
+#
+#         if pat.endswith("/*") or pat.endswith("/*'"):
+#             if pat[-1] == "'" and path[-1] != "'":
+#                 continue
+#             if pat[-1] == "*" and path[-1] == "'":
+#                 continue
+#
+#             # same hardness so check up to last component of path
+#             if pat.split('/')[:-1] == path.split('/')[:-1]:
+#                 return True
+#
+#     return False
+
+
+class DecodeStreamer:
+    def __init__(self):
+        self.runt = bytearray()
+
+    def more(self, buf):
+        # Generator:
+        # - accumulate into mod-N groups
+        # - strip whitespace
+        for ch in buf:
+            if chr(ch).isspace():
+                continue
+            self.runt.append(ch)
+            if len(self.runt) == 128 * self.mod:
+                yield self.a2b(self.runt)
+                self.runt = bytearray()
+
+        here = len(self.runt) - (len(self.runt) % self.mod)
+        if here:
+            yield self.a2b(self.runt[0:here])
+            self.runt = self.runt[here:]
+
+
+class HexStreamer(DecodeStreamer):
+    # be a generator that converts hex digits into binary
+    # NOTE: mpy a2b_hex doesn't care about unicode vs bytes
+    mod = 2
+
+    def a2b(self, x):
+        return a2b_hex(x)
+
+
+class Base64Streamer(DecodeStreamer):
+    # be a generator that converts Base64 into binary
+    mod = 4
+
+    def a2b(self, x):
+        return a2b_base64(x)
+
+
+def get_month_str(month):
+    if month == 1:
+        return "January"
+    elif month == 2:
+        return "February"
+    elif month == 3:
+        return "March"
+    elif month == 4:
+        return "April"
+    elif month == 5:
+        return "May"
+    elif month == 6:
+        return "June"
+    elif month == 7:
+        return "July"
+    elif month == 8:
+        return "August"
+    elif month == 9:
+        return "September"
+    elif month == 10:
+        return "October"
+    elif month == 11:
+        return "November"
+    elif month == 12:
+        return "December"
+
+
+def randint(a, b):
+    import struct
+    from common import noise
+
+    buf = bytearray(4)
+    noise.random_bytes(buf, noise.MCU)
+    num = struct.unpack_from(">I", buf)[0]
+
+    result = a + (num % (b - a + 1))
+    return result
+
+
+def bytes_to_hex_str(s):
+    return str(b2a_hex(s).upper(), 'ascii')
+
+
+# # Pass a string pattern like 'foo-{}.txt' and the {} will be replaced by a random 4 bytes hex number
+# def random_filename(card, pattern):
+#     buf = bytearray(4)
+#     common.noise.random_bytes(buf, common.noise.MCU)
+#     fn = pattern.format(b2a_hex(buf).decode('utf-8'))
+#     return '{}/{}'.format(card.get_sd_root(), fn)
+#
+#
+# def to_json(o):
+#     import ujson
+#     s = ujson.dumps(o)
+#     parts = s.split(', ')
+#     lines = ',\n'.join(parts)
+#     return lines
+
+
+def to_str(o):
+    s = '{}'.format(o)
+    parts = s.split(', ')
+    lines = ',\n'.join(parts)
+    return lines
+
+
+def random_hex(num_chars):
+    import urandom
+
+    rand = bytearray((num_chars + 1) // 2)
+    for i in range(len(rand)):
+        rand[i] = urandom.randint(0, 255)
+    s = b2a_hex(rand).decode('utf-8').upper()
+    return s[:num_chars]
+
+
+def recolor(color, text):
+    # Recolor a fragment of text
+    h = '{0:0{1}x}'.format(color, 6)
+    return '#{} {}#'.format(h, text)
+
+# def truncate_string_to_width(name, font, max_pixel_width):
+#     from common import dis
+#     if max_pixel_width <= 0:
+#         # print('WARNING: Invalid max_pixel_width passed to truncate_string_to_width(). Must be > 0.')
+#         return name
+#
+#     while True:
+#         actual_width = dis.width(name, font)
+#         if actual_width < max_pixel_width:
+#             return name
+#         name = name[0:-1]
+#
+# # The multisig import code is implemented as a menu, and we are coming from a state machine.
+# # We want to be able to show the topmost menu that was pushed onto the stack here and wait for it to exit.
+# # This is a hack. Side effect is that the top menu shows briefly after menu exits.
+#
+#
+# async def show_top_menu():
+#     from ux import the_ux
+#     c = the_ux.top_of_stack()
+#     await c.interact()
+#
+# # TODO: For now this just checks the front bytes, but it could ensure the whole thing is valid
+
+
+def is_valid_address(address):
+    import chains
+    chain = chains.current_chain()
+    if chain.ctype == 'BTC':
+        return (len(address) > 3) and (address[0] == '1' or address[0] == '3' or
+                                       (address[0] == 'b' and address[1] == 'c' and address[2] == '1'))
+    else:
+        return (len(address) > 3) and (address[0] == 'm' or address[0] == 'n' or address[0] == '2' or
+                                       (address[0] == 't' and address[1] == 'b' and address[2] == '1'))
+
+
+# Return array of bytewords where each byte in buf maps to a word
+# There are 256 bytewords, so this maps perfectly.
+def get_bytewords_for_buf(buf):
+    from ur2.bytewords import get_word
+    words = []
+    for b in buf:
+        words.append(get_word(b))
+
+    return words
+
+# # We need an async way for the chooser menu to be shown. This does a local call to interact(), which gives
+# # us exactly that. Once the chooser completes, the menu stack returns to the way it was.
+#
+#
+# async def run_chooser(chooser, title, show_checks=True):
+#     from ux import the_ux
+#     from menu import start_chooser
+#     start_chooser(chooser, title=title, show_checks=show_checks)
+#     c = the_ux.top_of_stack()
+#     await c.interact()
+#
+# # Return the elements of a list in a random order in a new list
+#
+#
+# def shuffle(list):
+#     import urandom
+#     new_list = []
+#     list_len = len(list)
+#     while list_len > 0:
+#         i = urandom.randint(0, list_len-1)
+#         element = list.pop(i)
+#         new_list.append(element)
+#         list_len = len(list)
+#
+#     return new_list
+
+
+def ensure_folder_exists(path):
+    import uos
+    try:
+        # print('Creating folder: {}'.format(path))
+        uos.mkdir(path)
+    except Exception as e:
+        # print('Folder already exists: {}'.format(e))
+        return
+
+
+def file_exists(path):
+    import os
+    from stat import S_ISREG
+
+    try:
+        s = os.stat(path)
+        mode = s[0]
+        return S_ISREG(mode)
+    except OSError as e:
+        return False
+
+
+def folder_exists(path):
+    import os
+    from stat import S_ISDIR
+
+    try:
+        s = os.stat(path)
+        mode = s[0]
+        return S_ISDIR(mode)
+    except OSError as e:
+        return False
+
+# # Derive addresses from the specified path until we find the address or have tried max_to_check addresses
+# # If single sig, we need `path`.
+# # If multisig, we need `ms_wallet`, but not `path`
+#
+#
+# def find_address(path, start_address_idx, address, addr_type, ms_wallet, is_change, max_to_check=100, reverse=False):
+#     import stash
+#
+#     try:
+#         with stash.SensitiveValues() as sv:
+#             if ms_wallet:
+#                 # NOTE: Can't easily reverse order here, so this is slightly less efficient
+#                 for (curr_idx, paths, curr_address, script) in ms_wallet.yield_addresses(start_address_idx,
+#                        max_to_check):
+#                     # print('curr_idx={}: paths={} curr_address = {}'.format(curr_idx, paths, curr_address))
+#
+#                     if curr_address == address:
+#                         return (curr_idx, paths)  # NOTE: Paths are the full paths of the addresses of each signer
+#
+#             else:
+#                 r = range(start_address_idx, start_address_idx + max_to_check)
+#                 if reverse:
+#                     r = reversed(r)
+#
+#                 for curr_idx in r:
+#                     addr_path = '{}/{}/{}'.format(path, is_change, curr_idx)  # Zero for non-change address
+#                     # print('addr_path={}'.format(addr_path))
+#                     node = sv.derive_path(addr_path)
+#                     curr_address = sv.chain.address(node, addr_type)
+#                     # print('curr_idx={}: path={} addr_type={} curr_address = {}'.format(curr_idx, addr_path,
+#                             addr_type, curr_address))
+#                     if curr_address == address:
+#                         return (curr_idx, addr_path)
+#         return (-1, None)
+#     except Exception as e:
+#         # Any address handling exceptions result in no address found
+#         return (-1, None)
+
+
+def get_accounts():
+    from common import settings
+    from constants import DEFAULT_ACCOUNT_ENTRY
+    accounts = settings.get('accounts', [DEFAULT_ACCOUNT_ENTRY])
+    accounts.sort(key=lambda a: a.get('acct_num', 0))
+    return accounts
+
+
+def get_account_by_name(name):
+    accounts = get_accounts()
+    for account in accounts:
+        if account.get('name') == name:
+            return account
+
+    return None
+
+
+def get_account_by_number(acct_num):
+    accounts = get_accounts()
+    for account in accounts:
+        if account.get('acct_num') == acct_num:
+            return account
+
+    return None
+
+
+# Only call when there is an active account
+# def set_next_addr(new_addr):
+#     if not common.active_account:
+#         return
+#
+#     common.active_account.next_addr = new_addr
+#
+#     accounts = get_accounts()
+#     for account in accounts:
+#         if account('id') == common.active_account.id:
+#             account['next_addr'] = new_addr
+#             common.settings.set('accounts', accounts)
+#             common.settings.save()
+#             break
+#
+# # Only call when there is an active account
+#
+#
+# def account_exists(name):
+#     accounts = get_accounts()
+#     for account in accounts:
+#         if account.get('name') == name:
+#             return True
+#
+#     return False
+
+
+def make_next_addr_key(acct_num, addr_type, is_change):
+    return '{}/{}{}'.format(acct_num, addr_type, '/1' if is_change else '')
+
+
+def get_next_addr(acct_num, addr_type, is_change):
+    from common import settings
+    next_addrs = settings.get('next_addrs', {})
+    key = make_next_addr_key(acct_num, addr_type, is_change)
+    return next_addrs.get(key, 0)
+
+# Save the next address to use for the specific account and address type
+
+
+def save_next_addr(acct_num, addr_type, addr_idx, is_change, force_update=False):
+    from common import settings
+    next_addrs = settings.get('next_addrs', {})
+    key = make_next_addr_key(acct_num, addr_type, is_change)
+
+    # Only save the found index if it's newer
+    if next_addrs.get(key, -1) < addr_idx or force_update:
+        next_addrs[key] = addr_idx
+        settings.set('next_addrs', next_addrs)
+
+
+def get_prev_address_range(range, max_size):
+    low, high = range
+    size = min(max_size, low)
+    return ((low - size, low), size)
+
+
+def get_next_address_range(range, max_size):
+    low, high = range
+    return ((high, high + max_size), max_size)
+
+
+RECEIVE_ADDR = 0
+CHANGE_ADDR = 1
+
+
+def is_valid_btc_address(address):
+    # Strip prefix if present
+    if address[0:8].lower() == 'bitcoin:':
+        address = address[8:]
+
+    if not is_valid_address(address):
+        return address, False
+    else:
+        return address, True
+
+
+def format_btc_address(address, addr_type):
+    from public_constants import AF_P2WPKH
+
+    if addr_type == AF_P2WPKH:
+        width = 14
+    else:
+        width = 16
+
+    return split_to_lines(address, width)
+
+
+def get_backups_folder_path():
+    return '{}/backups'.format(CardSlot.get_sd_root())
+
+
+def split_to_lines(s, width):
+    return '\n'.join([s[i:i + width] for i in range(0, len(s), width)])
+
+
+def sign_message_digest(digest, subpath):
+    # do the signature itself!
+    with stash.SensitiveValues() as sv:
+        node = sv.derive_path(subpath)
+        pk = node.private_key()
+        sv.register(pk)
+
+        rv = trezorcrypto.secp256k1.sign(pk, digest)
+
+    return rv
+
+
+def has_secrets():
+    from common import pa
+    return not pa.is_secret_blank()
+
+
+def flatten_list(a_list):
+    return [item for sublist in a_list for item in sublist]
+
+
+def get_basename(file_path):
+    return file_path.rsplit('/', 1)[-1]
+
+
+def split_backup_code(backup_code):
+    # Split backup code into groups of 4 digits
+    result = []
+    for row in range(NUM_BACKUP_CODE_SECTIONS):
+        digits = backup_code[row * NUM_DIGITS_PER_BACKUP_CODE_SECTION: (row + 1) * NUM_DIGITS_PER_BACKUP_CODE_SECTION]
+        result.append(digits)
+    return result
+
+
+def get_backup_code_as_password(backup_code):
+    # Convert array of digits to hyphenated string format like: "1111-2222-3333-4444-5555"
+    parts = split_backup_code(backup_code)
+    password_parts = []
+    for part in parts:
+        str_part = ''
+        for digit in part:
+            str_part = str_part + str(digit)
+        password_parts.append(str_part)
+
+    return '-'.join(password_parts)
+
+
+def get_largest_mem_block(label=''):
+    '''Use binary search to make this fast.'''
+    import gc
+
+    upper = 512 * 1024
+    lower = 0
+    size = (upper + lower) // 2
+
+    while True:
+        try:
+            # print('Try to alloc {} bytes'.format(size))
+            buf = bytearray(size)
+
+            # Success!
+            buf = None  # Give it back for the next iteration
+            gc.collect()
+
+            lower = size
+        except Exception:
+            upper = size
+
+        size = (upper + lower) // 2
+        if upper - lower < 2:
+            return lower
+
+
+def mem_info(label=None, map=False):
+    import gc
+
+    largest_block = get_largest_mem_block()
+    free = gc.mem_free()
+    total = free + gc.mem_alloc()
+
+    print('================================================================================')
+    if label is not None:
+        print(label)
+    print('Available:     {:,} of {:,} bytes'.format(free, total))
+    print('Largest Block: {:,} bytes'.format(largest_block))
+    if map:
+        import machine
+        print('\nMachine Info:')
+        machine.info(1)
+    print('================================================================================')
+
+
+def set_list(lst, index, value):
+    try:
+        lst[index] = value
+    except IndexError:
+        for _ in range(index - len(lst) + 1):
+            lst.append(None)
+        lst[index] = value
+
+
+def has_seed():
+    from common import pa
+
+    # pa.is_secret_blank() function returns True before we are logged in, which is not right.
+    if not is_logged_in():
+        return False
+
+    return not pa.is_secret_blank()
+
+
+def is_logged_in():
+    import common
+    return common.pa.is_logged_in
+
+# EOF

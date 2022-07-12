@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# script/setup: Set up application for the first time after cloning, or set it
+#               back to the initial first unused state.
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+script/bootstrap
+
+git clean -fdX . ../crypto ../common ../storage
+git submodule foreach git clean -fdx

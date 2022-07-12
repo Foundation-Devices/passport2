@@ -1,0 +1,39 @@
+{
+  "symbol": "LGO (old)",
+  "address": "0x123aB195DD38B1b40510d467a6a359b201af056f",
+  "decimals": 8,
+  "name": "LGO Exchange",
+  "ens_address": "",
+  "website": "https://lgo.exchange",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/lgogroup",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/LegolasExchange",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/LGOGroup_",
+    "youtube": ""
+  },
+  "deprecation": {
+    "new_address": "0x0a50C93c762fDD6E56D86215C24AaAD43aB629aa",
+    "migration_type": "instructions:https://medium.com/lgogroup/lgo-token-migration-event-eae14afc5c8c",
+    "announcement_url": "https://medium.com/lgogroup/lgo-token-migration-event-eae14afc5c8c",
+    "time": "2019-07-17T06:00:00Z"
+  }
+}

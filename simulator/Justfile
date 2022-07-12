@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Run the simulator.
+sim screen='mono' ext='': (build screen)
+    #!/usr/bin/env bash
+    if [ ! -v VIRTUAL_ENV ]
+    then
+        virtualenv -p python3 ENV
+        source ENV/bin/activate
+    fi
+
+    pip3 install -r requirements.txt
+
+    ./simulator.py {{screen}} {{ext}}
+
+# Build the simulator.
+build screen='mono' ext='':
+    make {{screen}} {{ext}}
+
+images:
+    just ../ports/stm32/images
+
+# Clean the simualtor build files.
+clean:
+    make clean
+
+lint:
+    just ../ports/stm32/lint
+

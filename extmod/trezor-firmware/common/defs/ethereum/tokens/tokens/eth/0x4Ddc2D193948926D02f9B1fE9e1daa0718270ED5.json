@@ -1,0 +1,34 @@
+{
+  "symbol": "cETH",
+  "address": "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5",
+  "decimals": 8,
+  "name": "Compound Ether",
+  "ens_address": "",
+  "website": "https://app.compound.finance",
+  "logo": {
+    "src": "https://compound.finance/images/ctoken_eth.svg",
+    "width": "54px",
+    "height": "54px",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "discord": "https://discord.gg/874ntdw",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/compound-finance/",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/compound",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/compoundfinance",
+    "youtube": ""
+  }
+}

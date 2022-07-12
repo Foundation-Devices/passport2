@@ -1,0 +1,34 @@
+{
+  "symbol": "EURS",
+  "name": "STASIS EURS",
+  "type": "ERC20",
+  "address": "0xdB25f211AB05b1c97D595516F45794528a807ad8",
+  "ens_address": "",
+  "decimals": 2,
+  "website": "https://stasis.net",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "co@stasis.net",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://stasis.net/blog/",
+    "chat": "",
+    "facebook": "https://www.facebook.com/stasisnet",
+    "forum": "https://bitcointalk.org/index.php?topic=4789890",
+    "github": "https://github.com/stasisnet",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "https://t.me/STASIS",
+    "twitter": "https://twitter.com/stasisnet",
+    "youtube": ""
+  }
+}

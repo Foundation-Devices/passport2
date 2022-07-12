@@ -1,0 +1,5 @@
+{
+  "name": "login.gov",
+  "webauthn": ["secure.login.gov"],
+  "use_sign_count": false
+}

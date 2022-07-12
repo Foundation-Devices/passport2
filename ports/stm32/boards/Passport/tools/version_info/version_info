@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+usage()
+{
+    echo "Usage: `basename $0` <version information file name> <release string> [-h]"
+    echo "         -h: help"
+    exit 1
+}
+
+file=$1
+release=$2
+
+[ -z "$file" ] && usage
+[ -z "$release" ] && usage
+
+echo "// SPDX\x2dFileCopyrightText: $(date +"%Y") Foundation Devices, Inc. <hello@foundationdevices.com>\n" > $file
+echo "// SPDX\x2dLicense-Identifier: GPL-3.0-or-later\n" >> $file
+echo "//" >> $file
+echo "" >> $file
+echo "char *build_date = \"$(date +"%b %d, %Y")\";" >> $file
+echo "char *build_version = \"$release\";" >> $file

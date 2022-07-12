@@ -1,0 +1,181 @@
+# pylint: disable=E0602
+
+import os
+
+TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
+
+CCFLAGS_MOD = ''
+CPPPATH_MOD = []
+CPPDEFINES_MOD = []
+SOURCE_MOD = []
+
+# modtrezorcrypto
+CPPPATH_MOD += [
+    'vendor/trezor-crypto',
+]
+SOURCE_MOD += [
+    'vendor/trezor-crypto/chacha_drbg.c',
+    'vendor/trezor-crypto/chacha20poly1305/chacha_merged.c',
+    'vendor/trezor-crypto/memzero.c',
+    'vendor/trezor-crypto/rand.c',
+    'vendor/trezor-crypto/sha2.c',
+]
+
+# modtrezorui
+CPPPATH_MOD += [
+        'vendor/micropython/lib/uzlib',
+]
+CPPDEFINES_MOD += [
+    'TREZOR_FONT_BOLD_ENABLE',
+]
+SOURCE_MOD += [
+    'embed/extmod/modtrezorui/display.c',
+    'embed/extmod/modtrezorui/font_bitmap.c',
+    'embed/extmod/modtrezorui/font_roboto_bold_20.c',
+    'embed/extmod/modtrezorui/qr-code-generator/qrcodegen.c',
+    'vendor/micropython/lib/uzlib/adler32.c',
+    'vendor/micropython/lib/uzlib/crc32.c',
+    'vendor/micropython/lib/uzlib/tinflate.c',
+]
+
+SOURCE_STMHAL = [
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_sd.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_sram.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_fmc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_sdmmc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c',
+]
+
+SOURCE_PRODTEST = [
+    'embed/prodtest/startup.s',
+    'embed/prodtest/header.S',
+    'embed/prodtest/main.c',
+]
+
+SOURCE_TREZORHAL = [
+    'embed/trezorhal/common.c',
+    'embed/trezorhal/dma.c',
+    'embed/trezorhal/flash.c',
+    'embed/trezorhal/mini_printf.c',
+    'embed/trezorhal/random_delays.c',
+    'embed/trezorhal/rng.c',
+    'embed/trezorhal/sbu.c',
+    'embed/trezorhal/sdcard.c',
+    'embed/trezorhal/stm32.c',
+    'embed/trezorhal/systick.c',
+    'embed/trezorhal/touch.c',
+    'embed/trezorhal/usb.c',
+    'embed/trezorhal/usbd_conf.c',
+    'embed/trezorhal/usbd_core.c',
+    'embed/trezorhal/usbd_ctlreq.c',
+    'embed/trezorhal/usbd_ioreq.c',
+    'embed/trezorhal/util.s',
+    'embed/trezorhal/vectortable.s',
+]
+
+env = Environment(ENV=os.environ, CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')))
+
+env.Replace(
+    AS='arm-none-eabi-as',
+    AR='arm-none-eabi-ar',
+    CC='arm-none-eabi-gcc',
+    LINK='arm-none-eabi-gcc',
+    SIZE='arm-none-eabi-size',
+    STRIP='arm-none-eabi-strip',
+    OBJCOPY='arm-none-eabi-objcopy', )
+
+env.Replace(
+    TREZOR_MODEL=TREZOR_MODEL, )
+
+if TREZOR_MODEL == 'T':
+    CPU_ASFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16'
+    CPU_CCFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mtune=cortex-m4 '
+    CPU_MODEL   = 'STM32F427xx'
+elif TREZOR_MODEL == '1':
+    CPU_ASFLAGS = '-mthumb -mcpu=cortex-m3 -mfloat-abi=soft'
+    CPU_CCFLAGS = '-mthumb -mtune=cortex-m3 -mcpu=cortex-m3 -mfloat-abi=soft '
+    CPU_MODEL   = 'STM32F405xx'
+else:
+    raise ValueError('Unknown Trezor model')
+
+env.Replace(
+    COPT=env.get('ENV').get('OPTIMIZE', '-Os'),
+    CCFLAGS='$COPT '
+    '-g3 '
+    '-nostdlib '
+    '-std=gnu99 -Wall -Werror -Wdouble-promotion -Wpointer-arith -Wno-missing-braces -fno-common '
+    '-fsingle-precision-constant -fdata-sections -ffunction-sections '
+    '-ffreestanding '
+    '-fstack-protector-all '
+    + CPU_CCFLAGS + CCFLAGS_MOD,
+    CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
+    LINKFLAGS='-T embed/prodtest/memory.ld -Wl,--gc-sections -Wl,-Map=build/prodtest/prodtest.map -Wl,--warn-common',
+    CPPPATH=[
+        'embed/prodtest',
+        'embed/trezorhal',
+        'embed/extmod/modtrezorui',
+        'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Inc',
+        'vendor/micropython/lib/stm32lib/CMSIS/STM32F4xx/Include',
+        'vendor/micropython/lib/cmsis/inc',
+    ] + CPPPATH_MOD,
+    CPPDEFINES=[
+        ('TREZOR_MODEL', '$TREZOR_MODEL'),
+        CPU_MODEL,
+        'USE_HAL_DRIVER',
+        ('STM32_HAL_H', '"<stm32f4xx.h>"'),
+    ] + CPPDEFINES_MOD,
+    ASFLAGS=CPU_ASFLAGS,
+    ASPPFLAGS='$CFLAGS $CCFLAGS', )
+
+env.Replace(
+    HEADERTOOL='tools/headertool.py',
+)
+
+#
+# Program objects
+#
+
+obj_program = []
+obj_program.extend(env.Object(source=SOURCE_MOD))
+obj_program.extend(env.Object(source=SOURCE_PRODTEST))
+obj_program.extend(env.Object(source=SOURCE_STMHAL))
+obj_program.extend(env.Object(source=SOURCE_TREZORHAL))
+
+VENDORHEADER = 'embed/vendorheader/vendorheader_' + ('unsafe_signed_prod.bin' if ARGUMENTS.get('PRODUCTION', '0') == '0' else 'satoshilabs_signed_prod.bin')
+
+obj_program.extend(
+    env.Command(
+        target='embed/prodtest/vendorheader.o',
+        source=VENDORHEADER,
+        action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
+        ' --rename-section .data=.vendorheader,alloc,load,readonly,contents'
+        ' $SOURCE $TARGET', ))
+
+program_elf = env.Command(
+    target='prodtest.elf',
+    source=obj_program,
+    action=
+    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc',
+)
+
+program_bin = env.Command(
+    target='prodtest.bin',
+    source=program_elf,
+    action=[
+        '$OBJCOPY -O binary -j .vendorheader -j .header -j .flash -j .data $SOURCE $TARGET',
+        '$HEADERTOOL $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+    ], )

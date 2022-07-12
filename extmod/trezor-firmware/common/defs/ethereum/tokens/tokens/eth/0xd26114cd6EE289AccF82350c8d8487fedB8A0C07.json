@@ -1,0 +1,33 @@
+{
+  "symbol": "OMG",
+  "address": "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07",
+  "decimals": 18,
+  "name": "OmiseGO",
+  "ens_address": "",
+  "website": "https://omg.omise.co",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/omisego",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/omise_go",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/omise_go",
+    "youtube": ""
+  }
+}

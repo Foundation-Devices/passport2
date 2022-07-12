@@ -1,0 +1,34 @@
+{
+  "symbol": "cUSDC",
+  "address": "0x39AA39c021dfbaE8faC545936693aC917d5E7563",
+  "decimals": 8,
+  "name": "Compound USDCoin",
+  "ens_address": "",
+  "website": "https://app.compound.finance",
+  "logo": {
+    "src": "https://compound.finance/images/ctoken_usdc.svg",
+    "width": "54px",
+    "height": "54px",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "discord": "https://discord.gg/874ntdw",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/compound-finance/",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/compound",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/compoundfinance",
+    "youtube": ""
+  }
+}

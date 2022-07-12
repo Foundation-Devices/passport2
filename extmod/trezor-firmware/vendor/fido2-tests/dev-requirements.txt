@@ -1,0 +1,3 @@
+black==18.9b0  # 19.3b0 has an issue on Windows
+isort
+pre-commit

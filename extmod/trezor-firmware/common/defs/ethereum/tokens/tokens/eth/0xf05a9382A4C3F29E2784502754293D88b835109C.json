@@ -1,0 +1,33 @@
+{
+  "symbol": "REX",
+  "address": "0xf05a9382A4C3F29E2784502754293D88b835109C",
+  "decimals": 18,
+  "name": "imbrex",
+  "ens_address": "",
+  "website": "https://imbrex.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/rexmls/RexToken",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/REXMLS",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/imbrex_io",
+    "youtube": ""
+  }
+}

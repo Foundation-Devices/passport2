@@ -1,0 +1,33 @@
+{
+  "symbol": "FUN",
+  "address": "0x419D0d8BdD9aF5e606Ae2232ed285Aff190E711b",
+  "decimals": 8,
+  "name": "Funfair",
+  "ens_address": "",
+  "website": "https://funfair.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "info@funfair.io",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://funfair.io/blog/",
+    "chat": "",
+    "facebook": "https://www.facebook.com/groups/148397155706069/",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/FunfairTech/",
+    "slack": "https://funfair.slack.com/",
+    "telegram": "https://t.me/FunFairTech/",
+    "twitter": "https://twitter.com/FunFairTech",
+    "youtube": ""
+  }
+}

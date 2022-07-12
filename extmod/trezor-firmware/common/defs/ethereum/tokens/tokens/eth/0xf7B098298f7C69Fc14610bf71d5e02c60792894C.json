@@ -1,0 +1,33 @@
+{
+  "symbol": "GUP",
+  "address": "0xf7B098298f7C69Fc14610bf71d5e02c60792894C",
+  "decimals": 3,
+  "name": "Matchpool",
+  "ens_address": "",
+  "website": "https://matchpool.co",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "http://community.matchpool.com/",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/Matchpool",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/matchpool",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "symbol": "FID",
+  "name": "Fidelium",
+  "type": "ERC20",
+  "address": "0x52fb36C83ad33C1824912FC81071cA5eEB8AB390",
+  "ens_address": "",
+  "decimals": 18,
+  "website": "http://www.fidelium.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/FideliumToken",
+    "youtube": ""
+  }
+}

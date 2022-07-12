@@ -1,0 +1,34 @@
+{
+  "symbol": "BLX (Iconomi)",
+  "invalid_erc20_symbol": true,
+  "address": "0xE5a7c12972f3bbFe70ed29521C8949b8Af6a0970",
+  "decimals": 18,
+  "name": "Iconomi",
+  "ens_address": "",
+  "website": "https://www.iconomi.net",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": "w"
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

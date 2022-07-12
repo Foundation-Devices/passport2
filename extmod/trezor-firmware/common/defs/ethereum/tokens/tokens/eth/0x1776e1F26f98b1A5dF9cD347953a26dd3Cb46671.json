@@ -1,0 +1,33 @@
+{
+  "symbol": "NMR",
+  "address": "0x1776e1F26f98b1A5dF9cD347953a26dd3Cb46671",
+  "decimals": 18,
+  "name": "Numerai",
+  "ens_address": "",
+  "website": "https://numer.ai",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/numerai",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/numerai",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/numerai",
+    "youtube": ""
+  }
+}

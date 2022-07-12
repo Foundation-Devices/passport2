@@ -1,0 +1,33 @@
+{
+  "symbol": "WTC",
+  "address": "0xb7cB1C96dB6B22b0D3d9536E0108d062BD488F74",
+  "decimals": 18,
+  "name": "Waltonchain",
+  "ens_address": "",
+  "website": "http://www.waltonchain.org",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "services@waltonchain.org",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "https://www.facebook.com/waltonchain",
+    "forum": "",
+    "github": "https://github.com/waltonchain",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/waltonchain",
+    "slack": "https://waltonchain.slack.com/",
+    "telegram": "https://t.me/waltonchain_en",
+    "twitter": "https://twitter.com/Waltonchain",
+    "youtube": ""
+  }
+}

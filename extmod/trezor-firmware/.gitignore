@@ -1,0 +1,13 @@
+.attic/
+.cache/
+.venv/
+.idea/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+__pycache__/
+*.pyc
+/build
+proto.gv*
+.DS_Store
+crypto/tests/libtrezor-crypto.so.dSYM/

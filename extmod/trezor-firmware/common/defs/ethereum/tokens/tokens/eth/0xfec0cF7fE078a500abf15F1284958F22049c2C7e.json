@@ -1,0 +1,33 @@
+{
+  "symbol": "ART",
+  "address": "0xfec0cF7fE078a500abf15F1284958F22049c2C7e",
+  "decimals": 18,
+  "name": "Maecenas",
+  "ens_address": "",
+  "website": "http://www.maecenas.co",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@cofound.it",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/maecenas",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/Maecenas",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/maecenasart",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,39 @@
+#! /usr/bin/python
+# Dump binary pubkey as C text to insert into firmware-keys.h
+
+import os
+import sys
+from binascii import hexlify
+
+
+def main():
+    if len(sys.argv) != 2:
+        print('Usage: pubkey-to-c <filename>')
+        return
+
+    # Read the file
+    filename = sys.argv[1]
+    with open(filename, mode='rb') as file:  # b is important -> binary
+        content = file.read()
+
+        # We don't need the first 24 bytes so get rid of them
+        content = content[24:]
+
+        lines = []
+        line = []
+        print('    { // Key: ' + filename)
+        for b in content:
+            line.append('0x' + hexlify(b))
+            if len(line) == 16:
+                lines.append('        ' + ', '.join(line))
+                line = []
+
+        if len(line) > 0:
+            lines.append('        ' + ', '.join(line))
+
+        print(',\n'.join(lines))
+        print('    },\n')
+
+
+if __name__ == "__main__":
+    main()

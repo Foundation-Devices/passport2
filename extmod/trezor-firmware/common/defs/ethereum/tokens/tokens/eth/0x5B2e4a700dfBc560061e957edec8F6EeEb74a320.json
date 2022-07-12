@@ -1,0 +1,33 @@
+{
+  "symbol": "INS",
+  "address": "0x5B2e4a700dfBc560061e957edec8F6EeEb74a320",
+  "decimals": 10,
+  "name": "Insolar",
+  "ens_address": "instoken.eth",
+  "website": "https://insolar.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "info@ins.world",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/insolar",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/insolar",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/insolario",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "VERI",
+  "address": "0x8f3470A7388c05eE4e7AF3d01D8C722b0FF52374",
+  "decimals": 18,
+  "name": "Veritaseum",
+  "ens_address": "",
+  "website": "https://veritas.veritaseum.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "reggie@veritaseum.com",
+    "url": ""
+  },
+  "social": {
+    "blog": "http://veritas.veritaseum.com/index.php/blog",
+    "chat": "",
+    "facebook": "https://www.facebook.com/reggiemiddletonfintech/",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/Veritaseuminc",
+    "youtube": ""
+  }
+}

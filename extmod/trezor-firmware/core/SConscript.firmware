@@ -1,0 +1,793 @@
+# pylint: disable=E0602
+# fmt: off
+
+import os
+
+BITCOIN_ONLY = ARGUMENTS.get('BITCOIN_ONLY', '0')
+EVERYTHING = BITCOIN_ONLY != '1'
+TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
+NEW_UI = TREZOR_MODEL == '1' or os.environ.get('NEW_UI', '0') == '1'
+
+FEATURE_FLAGS = {
+    "RDI": True,
+    "SECP256K1_ZKP": True,
+    "SYSTEM_VIEW": False,
+}
+
+CCFLAGS_MOD = ''
+CPPPATH_MOD = []
+CPPDEFINES_MOD = []
+SOURCE_MOD = []
+
+PYOPT = ARGUMENTS.get('PYOPT', '1')
+FROZEN = True
+
+# modtrezorconfig
+CPPPATH_MOD += [
+    'embed/extmod/modtrezorconfig',
+    'vendor/trezor-storage',
+]
+SOURCE_MOD += [
+    'embed/extmod/modtrezorconfig/modtrezorconfig.c',
+    'vendor/trezor-storage/norcow.c',
+    'vendor/trezor-storage/storage.c',
+]
+
+# modtrezorcrypto
+CCFLAGS_MOD += '-Wno-sequence-point '
+CPPPATH_MOD += [
+    'vendor/trezor-crypto',
+]
+CPPDEFINES_MOD += [
+    'AES_128',
+    'AES_192',
+    'RAND_PLATFORM_INDEPENDENT',
+    ('USE_BIP32_CACHE', '0'),
+    ('USE_KECCAK', '1'),
+    ('USE_ETHEREUM', '1' if EVERYTHING else '0'),
+    ('USE_MONERO', '1' if EVERYTHING else '0'),
+    ('USE_CARDANO', '1' if EVERYTHING else '0'),
+    ('USE_NEM', '1' if EVERYTHING else '0'),
+    ('USE_EOS', '1' if EVERYTHING else '0'),
+]
+SOURCE_MOD += [
+    'embed/extmod/trezorobj.c',
+    'embed/extmod/modtrezorcrypto/crc.c',
+    'embed/extmod/modtrezorcrypto/modtrezorcrypto.c',
+    'embed/extmod/modtrezorcrypto/rand.c',
+    'vendor/trezor-crypto/address.c',
+    'vendor/trezor-crypto/aes/aes_modes.c',
+    'vendor/trezor-crypto/aes/aescrypt.c',
+    'vendor/trezor-crypto/aes/aeskey.c',
+    'vendor/trezor-crypto/aes/aestab.c',
+    'vendor/trezor-crypto/base32.c',
+    'vendor/trezor-crypto/base58.c',
+    'vendor/trezor-crypto/bignum.c',
+    'vendor/trezor-crypto/bip32.c',
+    'vendor/trezor-crypto/bip39.c',
+    'vendor/trezor-crypto/blake256.c',
+    'vendor/trezor-crypto/blake2b.c',
+    'vendor/trezor-crypto/blake2s.c',
+    'vendor/trezor-crypto/chacha20poly1305/chacha20poly1305.c',
+    'vendor/trezor-crypto/chacha20poly1305/chacha_merged.c',
+    'vendor/trezor-crypto/chacha20poly1305/poly1305-donna.c',
+    'vendor/trezor-crypto/chacha20poly1305/rfc7539.c',
+    'vendor/trezor-crypto/chacha_drbg.c',
+    'vendor/trezor-crypto/curves.c',
+    'vendor/trezor-crypto/ecdsa.c',
+    'vendor/trezor-crypto/ed25519-donna/curve25519-donna-32bit.c',
+    'vendor/trezor-crypto/ed25519-donna/curve25519-donna-helpers.c',
+    'vendor/trezor-crypto/ed25519-donna/curve25519-donna-scalarmult-base.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519-donna-32bit-tables.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519-donna-basepoint-table.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519-donna-impl-base.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519-keccak.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519-sha3.c',
+    'vendor/trezor-crypto/ed25519-donna/ed25519.c',
+    'vendor/trezor-crypto/ed25519-donna/modm-donna-32bit.c',
+    'vendor/trezor-crypto/groestl.c',
+    'vendor/trezor-crypto/hasher.c',
+    'vendor/trezor-crypto/hmac.c',
+    'vendor/trezor-crypto/hmac_drbg.c',
+    'vendor/trezor-crypto/memzero.c',
+    'vendor/trezor-crypto/nem.c',
+    'vendor/trezor-crypto/nist256p1.c',
+    'vendor/trezor-crypto/pbkdf2.c',
+    'vendor/trezor-crypto/rand.c',
+    'vendor/trezor-crypto/rfc6979.c',
+    'vendor/trezor-crypto/ripemd160.c',
+    'vendor/trezor-crypto/secp256k1.c',
+    'vendor/trezor-crypto/sha2.c',
+    'vendor/trezor-crypto/sha3.c',
+    'vendor/trezor-crypto/shamir.c',
+    'vendor/trezor-crypto/slip39.c',
+]
+if EVERYTHING:
+    SOURCE_MOD += [
+        'vendor/trezor-crypto/cardano.c',
+        'vendor/trezor-crypto/monero/base58.c',
+        'vendor/trezor-crypto/monero/serialize.c',
+        'vendor/trezor-crypto/monero/xmr.c',
+    ]
+
+# libsecp256k1-zkp
+if FEATURE_FLAGS["SECP256K1_ZKP"]:
+    CPPPATH_MOD += [
+        'vendor/secp256k1-zkp',
+        'vendor/secp256k1-zkp/src',
+        'vendor/secp256k1-zkp/include',
+    ]
+    CPPDEFINES_MOD += [
+        'USE_SECP256K1_ZKP',
+        'USE_SECP256K1_ZKP_ECDSA',
+        ('SECP256K1_CONTEXT_SIZE', '184'),
+        'USE_ASM_ARM',
+        'USE_NUM_NONE',
+        'USE_FIELD_INV_BUILTIN',
+        'USE_SCALAR_INV_BUILTIN',
+        'USE_EXTERNAL_ASM',
+        'USE_FIELD_10X26',
+        'USE_SCALAR_8X32',
+        'USE_ECMULT_STATIC_PRECOMPUTATION',
+        'USE_EXTERNAL_DEFAULT_CALLBACKS',
+        ('ECMULT_GEN_PREC_BITS', '4'),
+        ('ECMULT_WINDOW_SIZE', '8'),
+        'ENABLE_MODULE_GENERATOR',
+        'ENABLE_MODULE_RECOVERY',
+        'ENABLE_MODULE_SCHNORRSIG',
+        'ENABLE_MODULE_EXTRAKEYS',
+    ]
+    SOURCE_MOD_SECP256K1_ZKP = [
+        'vendor/secp256k1-zkp/src/secp256k1.c',
+        'vendor/secp256k1-zkp/src/asm/field_10x26_arm.s'
+    ]
+    SOURCE_MOD += [
+        'vendor/trezor-crypto/zkp_context.c',
+        'vendor/trezor-crypto/zkp_ecdsa.c',
+        'vendor/trezor-crypto/zkp_bip340.c',
+    ]
+
+# modtrezorio
+SOURCE_MOD += [
+    'embed/extmod/modtrezorio/modtrezorio.c',
+]
+if TREZOR_MODEL == "T":
+    SOURCE_MOD += [
+        'embed/extmod/modtrezorio/ff.c',
+        'embed/extmod/modtrezorio/ffunicode.c',
+    ]
+
+# modtrezorui
+CPPPATH_MOD += [
+        'vendor/micropython/lib/uzlib',
+]
+CPPDEFINES_MOD += [
+    'TREZOR_FONT_BOLD_ENABLE',
+    'TREZOR_FONT_NORMAL_ENABLE',
+    'TREZOR_FONT_MONO_ENABLE',
+]
+SOURCE_MOD += [
+    'embed/extmod/modtrezorui/display.c',
+    'embed/extmod/modtrezorui/font_bitmap.c',
+    'embed/extmod/modtrezorui/font_roboto_bold_20.c',
+    'embed/extmod/modtrezorui/font_roboto_regular_20.c',
+    'embed/extmod/modtrezorui/font_robotomono_regular_20.c',
+    'embed/extmod/modtrezorui/font_pixeloperator_bold_8.c',
+    'embed/extmod/modtrezorui/font_pixeloperator_regular_8.c',
+    'embed/extmod/modtrezorui/font_pixeloperatormono_regular_8.c',
+    'embed/extmod/modtrezorui/modtrezorui.c',
+    'embed/extmod/modtrezorui/qr-code-generator/qrcodegen.c',
+    'vendor/micropython/lib/uzlib/adler32.c',
+    'vendor/micropython/lib/uzlib/crc32.c',
+    'vendor/micropython/lib/uzlib/tinflate.c',
+]
+
+# modtrezorutils
+SOURCE_MOD += [
+    'embed/extmod/modtrezorutils/modtrezorutils.c',
+]
+
+# rust mods
+SOURCE_MOD += [
+    'embed/extmod/rustmods/modtrezorproto.c',
+]
+if NEW_UI:
+    SOURCE_MOD += [
+        'embed/extmod/rustmods/modtrezorui2.c',
+    ]
+
+# modutime
+SOURCE_MOD += [
+    'embed/extmod/modutime.c',
+]
+
+SOURCE_MICROPYTHON = [
+    'vendor/micropython/extmod/modubinascii.c',
+    'vendor/micropython/extmod/moductypes.c',
+    'vendor/micropython/extmod/moduheapq.c',
+    'vendor/micropython/extmod/modutimeq.c',
+    'vendor/micropython/extmod/utime_mphal.c',
+    'vendor/micropython/shared/libc/abort_.c',
+    'vendor/micropython/shared/libc/printf.c',
+    'vendor/micropython/shared/runtime/gchelper_m3.s',
+    'vendor/micropython/shared/runtime/gchelper_native.c',
+    'vendor/micropython/shared/runtime/interrupt_char.c',
+    'vendor/micropython/shared/runtime/pyexec.c',
+    'vendor/micropython/shared/runtime/stdout_helpers.c',
+    'vendor/micropython/shared/timeutils/timeutils.c',
+    'vendor/micropython/ports/stm32/gccollect.c',
+    'vendor/micropython/ports/stm32/pendsv.c',
+    'vendor/micropython/ports/stm32/softtimer.c',
+    'vendor/micropython/py/argcheck.c',
+    'vendor/micropython/py/asmarm.c',
+    'vendor/micropython/py/asmbase.c',
+    'vendor/micropython/py/asmthumb.c',
+    'vendor/micropython/py/asmx64.c',
+    'vendor/micropython/py/asmx86.c',
+    'vendor/micropython/py/asmxtensa.c',
+    'vendor/micropython/py/bc.c',
+    'vendor/micropython/py/binary.c',
+    'vendor/micropython/py/builtinevex.c',
+    'vendor/micropython/py/builtinhelp.c',
+    'vendor/micropython/py/builtinimport.c',
+    'vendor/micropython/py/compile.c',
+    'vendor/micropython/py/emitbc.c',
+    'vendor/micropython/py/emitcommon.c',
+    'vendor/micropython/py/emitglue.c',
+    'vendor/micropython/py/emitinlinethumb.c',
+    'vendor/micropython/py/emitinlinextensa.c',
+    'vendor/micropython/py/formatfloat.c',
+    'vendor/micropython/py/frozenmod.c',
+    'vendor/micropython/py/lexer.c',
+    'vendor/micropython/py/malloc.c',
+    'vendor/micropython/py/map.c',
+    'vendor/micropython/py/modarray.c',
+    'vendor/micropython/py/modbuiltins.c',
+    'vendor/micropython/py/modgc.c',
+    'vendor/micropython/py/modmath.c',
+    'vendor/micropython/py/modmicropython.c',
+    'vendor/micropython/py/modstruct.c',
+    'vendor/micropython/py/modsys.c',
+    'vendor/micropython/py/mpprint.c',
+    'vendor/micropython/py/mpstate.c',
+    'vendor/micropython/py/mpz.c',
+    'vendor/micropython/py/nativeglue.c',
+    'vendor/micropython/py/obj.c',
+    'vendor/micropython/py/objarray.c',
+    'vendor/micropython/py/objattrtuple.c',
+    'vendor/micropython/py/objbool.c',
+    'vendor/micropython/py/objboundmeth.c',
+    'vendor/micropython/py/objcell.c',
+    'vendor/micropython/py/objclosure.c',
+    'vendor/micropython/py/objcomplex.c',
+    'vendor/micropython/py/objdict.c',
+    'vendor/micropython/py/objenumerate.c',
+    'vendor/micropython/py/objexcept.c',
+    'vendor/micropython/py/objfilter.c',
+    'vendor/micropython/py/objfloat.c',
+    'vendor/micropython/py/objfun.c',
+    'vendor/micropython/py/objgenerator.c',
+    'vendor/micropython/py/objgetitemiter.c',
+    'vendor/micropython/py/objint.c',
+    'vendor/micropython/py/objint_longlong.c',
+    'vendor/micropython/py/objint_mpz.c',
+    'vendor/micropython/py/objlist.c',
+    'vendor/micropython/py/objmap.c',
+    'vendor/micropython/py/objmodule.c',
+    'vendor/micropython/py/objnamedtuple.c',
+    'vendor/micropython/py/objnone.c',
+    'vendor/micropython/py/objobject.c',
+    'vendor/micropython/py/objpolyiter.c',
+    'vendor/micropython/py/objproperty.c',
+    'vendor/micropython/py/objrange.c',
+    'vendor/micropython/py/objreversed.c',
+    'vendor/micropython/py/objset.c',
+    'vendor/micropython/py/objsingleton.c',
+    'vendor/micropython/py/objslice.c',
+    'vendor/micropython/py/objstr.c',
+    'vendor/micropython/py/objstringio.c',
+    'vendor/micropython/py/objstrunicode.c',
+    'vendor/micropython/py/objtuple.c',
+    'vendor/micropython/py/objtype.c',
+    'vendor/micropython/py/objzip.c',
+    'vendor/micropython/py/opmethods.c',
+    'vendor/micropython/py/pairheap.c',
+    'vendor/micropython/py/parse.c',
+    'vendor/micropython/py/parsenum.c',
+    'vendor/micropython/py/parsenumbase.c',
+    'vendor/micropython/py/persistentcode.c',
+    'vendor/micropython/py/qstr.c',
+    'vendor/micropython/py/reader.c',
+    'vendor/micropython/py/repl.c',
+    'vendor/micropython/py/runtime.c',
+    'vendor/micropython/py/runtime_utils.c',
+    'vendor/micropython/py/scheduler.c',
+    'vendor/micropython/py/scope.c',
+    'vendor/micropython/py/sequence.c',
+    'vendor/micropython/py/showbc.c',
+    'vendor/micropython/py/smallint.c',
+    'vendor/micropython/py/stackctrl.c',
+    'vendor/micropython/py/stream.c',
+    'vendor/micropython/py/unicode.c',
+    'vendor/micropython/py/vstr.c',
+    'vendor/micropython/py/warning.c',
+]
+
+SOURCE_MICROPYTHON_SPEED = [
+    'vendor/micropython/py/gc.c',
+    'vendor/micropython/py/pystack.c',
+    'vendor/micropython/py/vm.c',
+]
+
+SOURCE_STMHAL = [
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_sd.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_sram.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_fmc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_sdmmc.c',
+    'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c',
+]
+
+SOURCE_FIRMWARE = [
+    'embed/firmware/bl_check.c',
+    'embed/firmware/delay.c',
+    'embed/firmware/header.S',
+    'embed/firmware/main.c',
+    'embed/firmware/mphalport.c',
+    'embed/firmware/nlrthumb.c',
+    'embed/firmware/startup.S',
+]
+
+SOURCE_TREZORHAL = [
+    'embed/trezorhal/common.c',
+    'embed/trezorhal/dma.c',
+    'embed/trezorhal/flash.c',
+    'embed/trezorhal/mini_printf.c',
+    'embed/trezorhal/mpu.c',
+    'embed/trezorhal/random_delays.c',
+    'embed/trezorhal/rng.c',
+    'embed/trezorhal/stm32.c',
+    'embed/trezorhal/systick.c',
+    'embed/trezorhal/usb.c',
+    'embed/trezorhal/usbd_conf.c',
+    'embed/trezorhal/usbd_core.c',
+    'embed/trezorhal/usbd_ctlreq.c',
+    'embed/trezorhal/usbd_ioreq.c',
+    'embed/trezorhal/util.s',
+    'embed/trezorhal/vectortable.s',
+]
+if TREZOR_MODEL == 'T':
+    SOURCE_TREZORHAL += [
+        'embed/trezorhal/sbu.c',
+        'embed/trezorhal/sdcard.c',
+        'embed/trezorhal/touch.c',
+    ]
+elif TREZOR_MODEL == '1':
+    SOURCE_TREZORHAL += [
+        'embed/trezorhal/button.c',
+    ]
+
+CPPDEFINES_MOD += ['USE_SVC_SHUTDOWN']
+
+if FEATURE_FLAGS["RDI"]:
+    CPPDEFINES_MOD += ['RDI']
+
+if FEATURE_FLAGS["SYSTEM_VIEW"]:
+    SOURCE_FIRMWARE += [
+        'embed/segger/SEGGER/SEGGER_SYSVIEW_Config_NoOS.c',
+        'embed/segger/SEGGER/SEGGER_SYSVIEW.c',
+        'embed/segger/SEGGER/SEGGER_RTT.c',
+        'embed/segger/SEGGER/SEGGER_RTT_ASM_ARMv7M.S',
+        'embed/segger/SEGGER/Syscalls/SEGGER_RTT_Syscalls_GCC.c',
+        'embed/firmware/systemview.c',
+    ]
+    CPPPATH_MOD += [
+        'embed/segger/SEGGER/',
+        'embed/segger/Config/',
+    ]
+    CPPDEFINES_MOD += ['SYSTEM_VIEW']
+    CCFLAGS_MOD += '-DSYSTEM_VIEW '
+
+SOURCE_QSTR = SOURCE_MOD + SOURCE_MICROPYTHON + SOURCE_MICROPYTHON_SPEED
+
+env = Environment(ENV=os.environ, CFLAGS='%s -DPRODUCTION=%s -DPYOPT=%s -DBITCOIN_ONLY=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0'), PYOPT, BITCOIN_ONLY))
+
+env.Tool('micropython')
+
+env.Replace(
+    CAT='cat',
+    DD='dd',
+    SED='sed',
+    AS='arm-none-eabi-as',
+    AR='arm-none-eabi-ar',
+    CC='arm-none-eabi-gcc',
+    LINK='arm-none-eabi-gcc',
+    SIZE='arm-none-eabi-size',
+    STRIP='arm-none-eabi-strip',
+    OBJCOPY='arm-none-eabi-objcopy', )
+
+env.Replace(
+    TREZOR_MODEL=TREZOR_MODEL, )
+
+if TREZOR_MODEL == 'T':
+    CPU_ASFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16'
+    CPU_CCFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mtune=cortex-m4 '
+    CPU_MODEL   = 'STM32F427xx'
+    LD_VARIANT  = ''
+    RUST_TARGET = 'thumbv7em-none-eabihf'
+elif TREZOR_MODEL == '1':
+    CPU_ASFLAGS = '-mthumb -mcpu=cortex-m3 -mfloat-abi=soft'
+    CPU_CCFLAGS = '-mthumb -mtune=cortex-m3 -mcpu=cortex-m3 -mfloat-abi=soft '
+    CPU_MODEL   = 'STM32F405xx'
+    LD_VARIANT  = '' if EVERYTHING else '_min'
+    RUST_TARGET = 'thumbv7m-none-eabi'
+else:
+    raise ValueError('Unknown Trezor model')
+
+env.Replace(
+    COPT=env.get('ENV').get('OPTIMIZE', '-Os'),
+    CCFLAGS='$COPT '
+    '-g3 '
+    '-nostdlib '
+    '-std=gnu99 -Wall -Werror -Wdouble-promotion -Wpointer-arith -Wno-missing-braces -fno-common '
+    '-fsingle-precision-constant -fdata-sections -ffunction-sections '
+    '-ffreestanding '
+    '-fstack-protector-all '
+    + CPU_CCFLAGS + CCFLAGS_MOD,
+    CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
+    LINKFLAGS='-T embed/firmware/memory_${TREZOR_MODEL}%s.ld -Wl,--gc-sections -Wl,-Map=build/firmware/firmware.map -Wl,--warn-common' % LD_VARIANT,
+    CPPPATH=[
+        '.',
+        'embed/rust',
+        'embed/firmware',
+        'embed/trezorhal',
+        'embed/extmod/modtrezorui',
+        'vendor/micropython',
+        'vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Inc',
+        'vendor/micropython/lib/stm32lib/CMSIS/STM32F4xx/Include',
+        'vendor/micropython/lib/cmsis/inc',
+    ] + CPPPATH_MOD,
+    CPPDEFINES=[
+        ('TREZOR_MODEL', '$TREZOR_MODEL'),
+        CPU_MODEL,
+        'USE_HAL_DRIVER',
+        ('STM32_HAL_H', '"<stm32f4xx.h>"'),
+    ] + CPPDEFINES_MOD,
+    ASFLAGS=CPU_ASFLAGS,
+    ASPPFLAGS='$CFLAGS $CCFLAGS', )
+
+env.Replace(
+    HEADERTOOL='tools/headertool.py',
+    PYTHON='python',
+    MAKEQSTRDATA='$PYTHON vendor/micropython/py/makeqstrdata.py',
+    MAKEVERSIONHDR='$PYTHON vendor/micropython/py/makeversionhdr.py',
+    MAKEMODULEDEFS='$PYTHON vendor/micropython/py/makemoduledefs.py',
+    MPY_TOOL='$PYTHON vendor/micropython/tools/mpy-tool.py',
+    MPY_CROSS='vendor/micropython/mpy-cross/mpy-cross -O' + PYOPT,
+    PB2PY='$PYTHON ../common/protob/pb2py',
+)
+
+#
+# Qstrings
+#
+
+PROTO_SOURCES_DIR = '../../../common/protob/'
+PROTO_SOURCES = Glob(PROTO_SOURCES_DIR + '*.proto',
+    exclude=[PROTO_SOURCES_DIR + 'messages-bootloader.proto']
+)
+qstr_protobuf = env.Command(
+    target=[
+        'genhdr/qstrdefs.protobuf.h',
+    ],
+    source=PROTO_SOURCES,
+    action='$PB2PY $SOURCES --qstr-out ${TARGET} --bitcoin-only=%s' % BITCOIN_ONLY,
+)
+
+qstr_micropython = 'vendor/micropython/py/qstrdefs.h'
+
+qstr_collected = env.CollectQstr(
+    target='genhdr/qstrdefs.collected.h', source=SOURCE_QSTR)
+
+qstr_preprocessed = env.PreprocessQstr(
+    target='genhdr/qstrdefs.preprocessed.h',
+    source=[qstr_micropython, qstr_protobuf, qstr_collected])
+
+qstr_generated = env.GenerateQstrDefs(
+    target='genhdr/qstrdefs.generated.h', source=qstr_preprocessed)
+
+env.Ignore(qstr_collected, qstr_generated)
+
+#
+# Micropython version and modules
+#
+
+hdr_version = env.Command(
+    target='genhdr/mpversion.h',
+    source='',
+    action='$MAKEVERSIONHDR $TARGET', )
+
+hdr_moduledefs = env.Command(
+    target='genhdr/moduledefs.h',
+    source=SOURCE_QSTR,
+    action='$MAKEMODULEDEFS --vpath="." $SOURCES > $TARGET', )
+
+env.Ignore(hdr_moduledefs, hdr_moduledefs)
+env.Ignore(hdr_moduledefs, qstr_collected)
+env.Ignore(hdr_moduledefs, qstr_preprocessed)
+env.Ignore(hdr_moduledefs, qstr_generated)
+
+#
+# Frozen modules
+#
+
+if FROZEN:
+    SOURCE_PY_DIR = 'src/'
+
+    SOURCE_PY = Glob(SOURCE_PY_DIR + '*.py')
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/crypto/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/res/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/components/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/components/common/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/constants/__init__.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/__init__.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/common.py'))
+    if TREZOR_MODEL == 'T':
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/components/tt/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/constants/tt.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt/__init__.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt/reset.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt/recovery.py'))
+        if EVERYTHING:
+            SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt/altcoin.py'))
+            SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt/webauthn.py'))
+    elif TREZOR_MODEL == '1':
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/components/t1/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/constants/t1.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/t1.py'))
+    else:
+        raise ValueError('Unknown Trezor model')
+
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/wire/*.py'))
+
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'storage/*.py'))
+
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/messages/__init__.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/*.py',
+        exclude=[
+            SOURCE_PY_DIR + 'trezor/enums/Binance*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Cardano*.py',
+            SOURCE_PY_DIR + 'trezor/enums/DebugMonero*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Eos*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Ethereum*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Monero*.py',
+            SOURCE_PY_DIR + 'trezor/enums/NEM*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Ripple*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Stellar*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Tezos*.py',
+        ])
+    )
+
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/common/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/common/*/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/homescreen/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*.py',
+        exclude=[
+            SOURCE_PY_DIR + 'apps/management/sd_protect.py',
+        ] if TREZOR_MODEL != 'T' else [])
+    )
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/misc/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/*/*.py',
+        exclude=[
+            SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/decred.py',
+            SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/bitcoinlike.py',
+            SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/zcash.py',
+        ])
+    )
+
+    if EVERYTHING:
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/binance/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Binance*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/cardano/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/cardano/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Cardano*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/eos/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/eos/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Eos*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/ethereum/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Ethereum*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/monero/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/monero/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/monero/*/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/DebugMonero*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Monero*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/nem/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/nem/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/NEM*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/ripple/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Ripple*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/stellar/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/stellar/*/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Stellar*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/tezos/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Tezos*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/webauthn/*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/decred.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/bitcoinlike.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/zcash.py'))
+
+    source_mpy = env.FrozenModule(source=SOURCE_PY, source_dir=SOURCE_PY_DIR, bitcoin_only=BITCOIN_ONLY)
+
+    source_mpyc = env.FrozenCFile(
+        target='frozen_mpy.c', source=source_mpy, qstr_header=qstr_preprocessed)
+
+    env.Depends(source_mpyc, qstr_generated)
+
+#
+# static secp256-zkp ecmult context
+#
+if FEATURE_FLAGS["SECP256K1_ZKP"]:
+    host_env = Environment(ENV=os.environ)
+    host_env.Replace(
+        CC=os.getenv('CC_FOR_BUILD') or 'gcc',
+        COPT='-O2',
+        CPPPATH='vendor/secp256k1-zkp',
+        CPPDEFINES=[
+            ('ECMULT_GEN_PREC_BITS', '4'),
+        ]
+    )
+    gen_context = host_env.Program(
+        target='vendor/secp256k1-zkp/gen_context',
+        source='vendor/secp256k1-zkp/src/gen_context.c',
+    )
+    secp256k1_zkp_ecmult_static_context = host_env.Command(
+        target='vendor/secp256k1-zkp/src/ecmult_static_context.h',
+        source='vendor/secp256k1-zkp/gen_context',
+        action='cd ${SOURCE.dir}; ./gen_context',
+    )
+
+#
+# Rust library
+#
+
+protobuf_blobs = env.Command(
+    target=[
+        f'rust/proto_enums.data',
+        f'rust/proto_msgs.data',
+        f'rust/proto_names.data',
+        f'rust/proto_wire.data',
+    ],
+    source=PROTO_SOURCES,
+    action='$PB2PY --bitcoin-only=%s --blob-outdir ${TARGET.dir} $SOURCES --qstr-defs build/firmware/genhdr/qstrdefs.generated.h' % BITCOIN_ONLY,
+)
+env.Depends(protobuf_blobs, qstr_generated)
+
+RUST_PROFILE = 'release'
+RUST_LIB = 'trezor_lib'
+RUST_LIBDIR = f'build/firmware/rust/{RUST_TARGET}/{RUST_PROFILE}'
+RUST_LIBPATH = f'{RUST_LIBDIR}/lib{RUST_LIB}.a'
+
+def cargo_build():
+    # Determine the profile build flags.
+    if RUST_PROFILE == 'release':
+        profile = '--release'
+    else:
+        profile = ''
+    if TREZOR_MODEL == "1":
+        features = ["model_t1"]
+    else:
+        features = ["model_tt"]
+    if BITCOIN_ONLY == "1":
+        features.append("bitcoin_only")
+    if NEW_UI:
+        features.append("ui")
+        if PYOPT == "0":
+            features.append("ui_debug")
+
+    return f'cd embed/rust; cargo build {profile} --target={RUST_TARGET} --target-dir=../../build/firmware/rust --no-default-features --features "{" ".join(features)}"'
+
+rust = env.Command(
+    target=RUST_LIBPATH,
+    source='',
+    action=cargo_build(), )
+env.Depends(rust, protobuf_blobs)
+
+env.Append(LINKFLAGS=f' -L{RUST_LIBDIR}')
+env.Append(LINKFLAGS=f' -l{RUST_LIB}')
+
+#
+# Program objects
+#
+
+obj_program = []
+obj_program.extend(env.Object(source=SOURCE_MOD))
+if FEATURE_FLAGS["SECP256K1_ZKP"]:
+    obj_program.extend(env.Object(source=SOURCE_MOD_SECP256K1_ZKP, CCFLAGS='$CCFLAGS -Wno-unused-function'))
+obj_program.extend(env.Object(source=SOURCE_FIRMWARE))
+obj_program.extend(env.Object(source=SOURCE_MICROPYTHON))
+obj_program.extend(env.Object(source=SOURCE_MICROPYTHON_SPEED, COPT='-O3'))
+obj_program.extend(env.Object(source=SOURCE_STMHAL))
+obj_program.extend(env.Object(source=SOURCE_TREZORHAL))
+if FROZEN:
+    obj_program.extend(env.Object(source=source_mpyc))
+
+VENDORHEADER = 'embed/vendorheader/vendorheader_' + ('unsafe_signed_prod.bin' if ARGUMENTS.get('PRODUCTION', '0') == '0' else 'satoshilabs_signed_prod.bin')
+
+obj_program.extend(
+    env.Command(
+        target='embed/firmware/vendorheader.o',
+        source=VENDORHEADER,
+        action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
+        ' --rename-section .data=.vendorheader,alloc,load,readonly,contents'
+        ' $SOURCE $TARGET', ))
+
+obj_program.extend(
+    env.Command(
+        target='embed/firmware/bootloader.o',
+        source='embed/firmware/bootloader.bin',
+        action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
+        ' --rename-section .data=.bootloader'
+        ' $SOURCE $TARGET', ))
+
+env.Depends(obj_program, qstr_generated)
+if FEATURE_FLAGS["SECP256K1_ZKP"]:
+    env.Depends(obj_program, secp256k1_zkp_ecmult_static_context)
+
+program_elf = env.Command(
+    target='firmware.elf',
+    source=obj_program,
+    action=
+    '$LINK -o $TARGET $CCFLAGS $CFLAGS $SOURCES $LINKFLAGS -lc_nano -lm -lgcc',
+)
+
+env.Depends(program_elf, rust)
+
+if TREZOR_MODEL == 'T':
+    action_bin=[
+        '$OBJCOPY -O binary -j .vendorheader -j .header -j .flash -j .data --pad-to 0x08100000 $SOURCE ${TARGET}.p1',
+        '$OBJCOPY -O binary -j .flash2 $SOURCE ${TARGET}.p2',
+        '$CAT ${TARGET}.p1 ${TARGET}.p2 > $TARGET',
+        '$HEADERTOOL -h $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+        '$DD if=$TARGET of=${TARGET}.p1 skip=0 bs=128k count=6',
+    ]
+elif TREZOR_MODEL == '1':
+    action_bin=[
+        '$OBJCOPY -O binary -j .header -j .flash -j .data $SOURCE $TARGET',
+        '../legacy/bootloader/firmware_sign.py -f $TARGET',
+    ]
+else:
+    raise ValueError('Unknown Trezor model')
+
+program_bin = env.Command(
+    target='firmware.bin',
+    source=program_elf,
+    action=action_bin,
+)

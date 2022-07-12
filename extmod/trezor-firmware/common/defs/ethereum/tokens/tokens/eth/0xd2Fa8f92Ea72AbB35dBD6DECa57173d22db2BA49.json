@@ -1,0 +1,34 @@
+{
+  "symbol": "ORI",
+  "name": "Origami",
+  "type": "ERC20",
+  "address": "0xd2Fa8f92Ea72AbB35dBD6DECa57173d22db2BA49",
+  "ens_address": "",
+  "decimals": 18,
+  "website": "https://ori.network",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@origaminetwork",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/origaminetwork",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/origami_network",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,10 @@
+.project
+.pydevproject
+MANIFEST
+/build
+/dist
+*.egg-info
+*.bin
+*.py.cache
+/.tox
+mypy_report

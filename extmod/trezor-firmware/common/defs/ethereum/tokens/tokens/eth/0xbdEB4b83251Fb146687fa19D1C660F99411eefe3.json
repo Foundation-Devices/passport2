@@ -1,0 +1,36 @@
+{
+  "symbol": "SVD",
+  "invalid_erc20_symbol": true,
+  "name": "savedroid",
+  "type": "ERC20",
+  "address": "0xbdEB4b83251Fb146687fa19D1C660F99411eefe3",
+  "ens_address": "",
+  "decimals": 18,
+  "invalid_erc20_decimals": true,
+  "website": "https://ico.savedroid.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@ico_8796",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/savedroid_ico",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/savedroidAG",
+    "youtube": ""
+  }
+}

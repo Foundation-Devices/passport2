@@ -1,0 +1,33 @@
+{
+  "symbol": "EVX",
+  "address": "0xf3Db5Fa2C66B7aF3Eb0C0b782510816cbe4813b8",
+  "decimals": 4,
+  "name": "Everex",
+  "ens_address": "",
+  "website": "https://everex.io ",
+  "logo": {
+    "src": "https://s2.coinmarketcap.com/static/img/coins/64x64/2034.png",
+    "width": "64",
+    "height": "64",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "contact@everex.io",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/everexio",
+    "slack": "https://everex.slack.com",
+    "telegram": "https://t.me/everexio",
+    "twitter": "https://twitter.com/everexio",
+    "youtube": ""
+  }
+}

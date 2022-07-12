@@ -1,0 +1,33 @@
+{
+  "symbol": "RLT",
+  "address": "0xcCeD5B8288086BE8c38E23567e684C3740be4D48",
+  "decimals": 10,
+  "name": "RouletteToken",
+  "ens_address": "",
+  "website": "https://smartplay.tech",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/Smartroulette",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/smartplaytech",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/smartplaytech",
+    "youtube": ""
+  }
+}

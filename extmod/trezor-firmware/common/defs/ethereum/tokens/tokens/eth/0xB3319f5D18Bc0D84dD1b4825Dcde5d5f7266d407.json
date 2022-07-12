@@ -1,0 +1,34 @@
+{
+  "symbol": "cZRX",
+  "address": "0xB3319f5D18Bc0D84dD1b4825Dcde5d5f7266d407",
+  "decimals": 8,
+  "name": "Compound 0x",
+  "ens_address": "",
+  "website": "https://app.compound.finance",
+  "logo": {
+    "src": "https://compound.finance/images/ctoken_zrx.svg",
+    "width": "54px",
+    "height": "54px",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "discord": "https://discord.gg/874ntdw",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/compound-finance/",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/compound",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/compoundfinance",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "ETHBNT",
+  "address": "0xb1CD6e4153B2a390Cf00A6556b0fC1458C4A5533",
+  "decimals": 18,
+  "name": "Bancor ETH/BNT Liquidity Pool",
+  "ens_address": "",
+  "website": "https://www.bancor.network",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://blog.bancor.network/",
+    "chat": "",
+    "facebook": "https://www.facebook.com/bancor",
+    "forum": "",
+    "github": "https://github.com/bancorprotocol",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/Bancor/",
+    "slack": "",
+    "telegram": "https://t.me/bancor",
+    "twitter": "https://twitter.com/bancor",
+    "youtube": ""
+  }
+}

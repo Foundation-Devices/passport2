@@ -1,0 +1,33 @@
+{
+  "symbol": "SNT",
+  "address": "0x744d70FDBE2Ba4CF95131626614a1763DF805B9E",
+  "decimals": 18,
+  "name": "Status Network Token",
+  "ens_address": "",
+  "website": "https://status.im",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "https://www.facebook.com/ethstatus",
+    "forum": "",
+    "github": "https://github.com/status-im",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/statusim/",
+    "slack": "http://slack.status.im/",
+    "telegram": "",
+    "twitter": "https://twitter.com/ethstatus",
+    "youtube": ""
+  }
+}

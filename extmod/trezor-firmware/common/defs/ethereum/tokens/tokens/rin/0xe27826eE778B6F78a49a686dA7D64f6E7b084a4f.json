@@ -1,0 +1,12 @@
+{
+  "symbol": "BHNT",
+  "name": "Berlin Hack&Tell winner token",
+  "address": "0xe27826eE778B6F78a49a686dA7D64f6E7b084a4f",
+  "decimals": 0,
+  "support": { "email": "ligi@ligi.de" },
+  "social" : {
+	"twitter": "https://twitter.com/BerlinHacknTell",
+	"github": "https://github.com/berlin-hack-and-tell"
+  },
+  "website": "http://berlin.hackandtell.org"
+}

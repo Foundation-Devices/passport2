@@ -1,0 +1,33 @@
+{
+  "symbol": "DGD",
+  "address": "0xE0B7927c4aF23765Cb51314A0E0521A9645F0E2A",
+  "decimals": 9,
+  "name": "Digix DAO",
+  "ens_address": "",
+  "website": "https://digix.global/",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@digix.global",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/Digix",
+    "chat": "https://discord.gg/CCDBJJC",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "https://www.linkedin.com/company/digixglobal/",
+    "reddit": "https://www.reddit.com/r/digix",
+    "slack": "",
+    "telegram": "https://t.me/digixofficial",
+    "twitter": "https://twitter.com/@DigixGlobal",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "symbol": "NONE",
+  "name": "None",
+  "address": "0x643B6870beabee941B9260a0A878bcF4A61Fb0f1",
+  "decimals": 0,
+  "support": {
+	"email" : "ligi@ethereum.org"
+  },
+  "website": "",
+  "social": {
+	"github": "https://github.com/walleth/contracts/tree/master/NoneToken"
+  }
+}

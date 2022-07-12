@@ -1,0 +1,33 @@
+{
+  "symbol": "VEN",
+  "address": "0xD850942eF8811f2A866692A623011bDE52a462C1",
+  "decimals": 18,
+  "name": "VeChain",
+  "ens_address": "",
+  "website": "https://www.vechain.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@vechain.com",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "http://u.wechat.com/MH_e7eabTidsPXiG842RsHM",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/vechain",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "https://vechainofficial.slack.com",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

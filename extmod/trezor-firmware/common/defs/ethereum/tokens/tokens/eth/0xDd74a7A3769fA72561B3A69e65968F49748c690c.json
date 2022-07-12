@@ -1,0 +1,33 @@
+{
+  "symbol": "ETCH",
+  "address": "0xDd74a7A3769fA72561B3A69e65968F49748c690c",
+  "decimals": 18,
+  "name": "ETCH",
+  "ens_address": "",
+  "website": "https://etch.work",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

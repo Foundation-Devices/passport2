@@ -1,0 +1,166 @@
+[
+    {
+        "name": "Lisk",
+        "shortcut": "LSK",
+        "slip44": 134,
+        "curve": "ed25519",
+        "decimals": 8,
+        "links": {
+            "Homepage": "https://lisk.io/",
+            "Github": "https://github.com/LiskHQ/lisk"
+        },
+        "wallet": {
+            "Liskish Wallet": "https://github.com/hirishh/liskish-wallet/releases"
+        }
+    },
+    {
+        "name": "Stellar",
+        "slip44": 148,
+        "curve": "ed25519",
+        "shortcut": "XLM",
+        "decimals": 7,
+        "links": {
+            "Homepage": "https://www.stellar.org",
+            "Github": "https://github.com/stellar/stellar-core"
+        },
+        "wallet": {
+            "Account Viewer": "https://accountviewer.stellar.org/",
+            "Exodus": "https://www.exodus.io"
+        }
+    },
+    {
+        "name": "Monero",
+        "shortcut": "XMR",
+        "slip44": 128,
+        "curve": "ed25519",
+        "decimals": 12,
+        "links": {
+            "Homepage": "https://getmonero.org",
+            "Github": "https://github.com/monero-project/monero"
+        },
+        "wallet": {
+            "Monero CLI/GUI": "https://www.getmonero.org/downloads/"
+        }
+    },
+    {
+        "name": "Ripple",
+        "shortcut": "XRP",
+        "slip44": 144,
+        "curve": "secp256k1",
+        "decimals": 6,
+        "links": {
+            "Homepage": "https://ripple.com",
+            "Github": "https://github.com/ripple/rippled"
+        },
+        "wallet": {
+            "Trezor Suite": "https://suite.trezor.io",
+            "Exodus": "https://www.exodus.io"
+        }
+    },
+    {
+        "name": "Ripple Testnet",
+        "shortcut": "tXRP",
+        "slip44": 1,
+        "curve": "secp256k1",
+        "decimals": 6,
+        "links": {
+            "Homepage": "https://ripple.com",
+            "Github": "https://github.com/ripple/rippled"
+        },
+        "wallet": {
+            "Trezor Suite": "https://suite.trezor.io"
+        }
+    },
+    {
+        "name": "Cardano",
+        "shortcut": "ADA",
+        "slip44": 1815,
+        "curve": "ed25519",
+        "decimals": 6,
+        "links": {
+            "Homepage": "https://www.cardano.org",
+            "Github": "https://github.com/input-output-hk/cardano-sl"
+        },
+        "wallet": {
+            "AdaLite": "https://adalite.io/app",
+            "Yoroi": "https://yoroi-wallet.com",
+            "Daedalus": "https://daedaluswallet.io"
+        }
+    },
+    {
+        "name": "Tezos",
+        "shortcut": "XTZ",
+        "slip44": 1729,
+        "curve": "ed25519",
+        "decimals": 6,
+        "links": {
+            "Homepage": "https://tezos.com",
+            "Github": "https://github.com/tezos/tezos"
+        },
+        "wallet": {
+            "SimpleStaking": "https://simplestaking.com"
+        }
+    },
+    {
+        "name": "EOS",
+        "shortcut": "EOS",
+        "slip44": 194,
+        "curve": "secp256k1",
+        "decimals": 4,
+        "links": {
+            "Homepage": "https://eos.io",
+            "Github": "https://github.com/EOSIO/eos"
+        },
+        "wallet": {
+            "Bloks.io": "https://bloks.io/wallet"
+        }
+    },
+    {
+        "name": "Omni",
+        "shortcut": "OMNI",
+        "slip44": 0,
+        "curve": "secp256k1",
+        "decimals": 2,
+        "links": {
+            "Homepage": "https://www.omnilayer.org",
+            "Github": "https://github.com/OmniLayer"
+        },
+        "wallet": {}
+    },
+    {
+        "name": "MaidSafeCoin",
+        "shortcut": "MAID",
+        "slip44": 0,
+        "curve": "secp256k1",
+        "decimals": 8,
+        "links": {
+            "Homepage": "https://maidsafe.net",
+            "Github": "https://github.com/maidsafe"
+        },
+        "wallet": {}
+    },
+    {
+        "name": "Binance Chain",
+        "shortcut": "BNB",
+        "slip44": 714,
+        "curve": "secp256k1",
+        "decimals": 8,
+        "links": {
+            "Homepage": "https://binance.org"
+        },
+        "wallet": {
+            "Binance Wallet": "https://binance.org/unlock"
+        }
+    },
+    {
+        "name": "Tether",
+        "shortcut": "USDT",
+        "slip44": 0,
+        "curve": "secp256k1",
+        "decimals": 2,
+        "links": {
+            "Homepage": "https://tether.to"
+        },
+        "wallet": {}
+    }
+]

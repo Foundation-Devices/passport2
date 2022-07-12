@@ -1,0 +1,33 @@
+{
+  "symbol": "ADX",
+  "address": "0xADE00C28244d5CE17D72E40330B1c318cD12B7c3",
+  "decimals": 18,
+  "name": "AdEx Network",
+  "ens_address": "",
+  "website": "https://www.adex.network",
+  "logo": {
+    "src": "https://raw.githubusercontent.com/AdExNetwork/adex-brand/master/logos/Adex-logo500x500px-07.png",
+    "width": "500px",
+    "height": "500px",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "contactus@adex.network",
+    "url": "https://help.adex.network"
+  },
+  "social": {
+    "blog": "https://www.adex.network/blog",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/AdExNetwork",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/AdEx",
+    "slack": "",
+    "telegram": "https://telegram.me/AdExNetworkOfficial",
+    "twitter": "https://twitter.com/AdEx_Network",
+    "youtube": ""
+  }
+}

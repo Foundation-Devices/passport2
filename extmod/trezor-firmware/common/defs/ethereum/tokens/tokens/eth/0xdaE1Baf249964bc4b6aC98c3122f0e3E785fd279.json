@@ -1,0 +1,34 @@
+{
+  "symbol": "TKA",
+  "name": "Tokia",
+  "type": "ERC20",
+  "address": "0xdaE1Baf249964bc4b6aC98c3122f0e3E785fd279",
+  "ens_address": "",
+  "decimals": 18,
+  "website": "https://www.tokia.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@tokia_io",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/TOKIA",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/tokia_io",
+    "youtube": ""
+  }
+}

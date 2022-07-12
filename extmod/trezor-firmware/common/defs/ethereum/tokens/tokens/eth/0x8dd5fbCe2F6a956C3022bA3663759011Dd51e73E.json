@@ -1,0 +1,41 @@
+{
+  "symbol": "TUSD (OLD)",
+  "invalid_erc20_symbol": true,
+  "name": "TrueUSD",
+  "type": "ERC20",
+  "address": "0x8dd5fbCe2F6a956C3022bA3663759011Dd51e73E",
+  "ens_address": "",
+  "decimals": 18,
+  "website": "",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  },
+  "deprecation": {
+      "new_address": "0x0000000000085d4780B73119b644AE5ecd22b376",
+      "migration_type": "auto",
+      "announcement_url": "https://blog.trusttoken.com/scnote-33ec9f1fdb32",
+      "time": "2019-01-03T00:00:00Z"
+  }
+}

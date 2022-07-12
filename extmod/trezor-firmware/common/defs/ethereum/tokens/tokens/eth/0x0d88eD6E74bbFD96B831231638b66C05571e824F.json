@@ -1,0 +1,34 @@
+{
+  "symbol": "AVT",
+  "invalid_erc20_symbol": true,
+  "address": "0x0d88eD6E74bbFD96B831231638b66C05571e824F",
+  "decimals": 18,
+  "name": "Aventus",
+  "ens_address": "",
+  "website": "https://aventus.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "info@aventus.io",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://blog.aventus.io/",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/Aventus",
+    "slack": "https://slack.aventus.io",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

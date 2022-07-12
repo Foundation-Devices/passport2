@@ -1,0 +1,33 @@
+{
+  "symbol": "RLC",
+  "address": "0x607F4C5BB672230e8672085532f7e901544a7375",
+  "decimals": 9,
+  "name": "IEx.ec",
+  "ens_address": "",
+  "website": "http://iex.ec/",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "contact@iex.ec",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/iex-ec",
+    "chat": "",
+    "facebook": "https://www.facebook.com/iexecteam/",
+    "forum": "https://bitcointalk.org/index.php?topic=1746241.0",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/iexec/",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/iEx_ec",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "BRD",
+  "address": "0x558EC3152e2eb2174905cd19AeA4e34A23DE9aD6",
+  "decimals": 18,
+  "name": "Bread",
+  "ens_address": "",
+  "website": "https://token.breadapp.com/en",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "tokensupport@breadapp.com",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://breadapp.com/blog/",
+    "chat": "",
+    "facebook": "https://www.facebook.com/breadapp/",
+    "forum": "",
+    "github": "https://github.com/breadwallet",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/breadwallet/",
+    "slack": "",
+    "telegram": "https://t.me/joinchat/HclhZ0q7-w8kx5NjYTa7Vw",
+    "twitter": "https://twitter.com/breadapp",
+    "youtube": ""
+  }
+}

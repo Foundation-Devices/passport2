@@ -1,0 +1,34 @@
+{
+  "symbol": "MVL",
+  "name": "Mass Vehicle Ledger Token",
+  "type": "ERC20",
+  "address": "0xA849EaaE994fb86Afa73382e9Bd88c2B6b18Dc71",
+  "ens_address": "",
+  "decimals": 18,
+  "website": "http://mvlchain.io",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://mvlchain.io/blog",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/MVL",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/mvlchain",
+    "youtube": ""
+  }
+}

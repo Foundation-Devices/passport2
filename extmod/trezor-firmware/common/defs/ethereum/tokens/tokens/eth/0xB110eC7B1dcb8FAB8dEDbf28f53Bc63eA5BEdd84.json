@@ -1,0 +1,33 @@
+{
+  "symbol": "XID",
+  "address": "0xB110eC7B1dcb8FAB8dEDbf28f53Bc63eA5BEdd84",
+  "decimals": 8,
+  "name": "Sphere Identity",
+  "ens_address": "",
+  "website": "https://sphereidentity.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/SphreCo",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/sphereIdentity",
+    "youtube": ""
+  }
+}

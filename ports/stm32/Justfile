@@ -1,0 +1,444 @@
+# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+cosign_filepath := "default"
+cosign_keypath := join(env_var('HOME'), "bin/keys/user.pem")
+
+builddir := join(justfile_directory(), "build-Passport")
+contribdir := join(justfile_directory(), "boards/Passport/contrib")
+openocd_cfg := join(contribdir, "openocd.cfg")
+compile_commands := join(builddir, "compile_commands.json")
+
+base_cflags := "-DLV_COLOR_DEPTH=16 -DLV_COLOR_16_SWAP -DLV_TICK_CUSTOM=1"
+color_cflags := "-DSCREEN_MODE_COLOR -DHAS_FUEL_GAUGE "
+mono_cflags := "-DSCREEN_MODE_MONO"
+
+# Number of jobs to use when building
+jobs := if os() == "macos" {
+    `sysctl -n hw.logicalcpu`
+} else if os() == "linux" {
+    `nproc`
+} else {
+    "1"
+}
+
+# Install dependencies.
+deps:
+    pip3 install bear
+
+# Initialize development environment
+init: deps init-openocd
+
+init-openocd:
+    #!/usr/bin/env python3
+    if sys.platform == 'linux':
+        if not os.path.exists('/etc/udev/rules.d/60-openocd.rules'):
+            print('Trying to install `60-openocd.rules` to `/etc/udev/rules.d/`')
+            # Probably on /usr/local/share as the openocd package is not installed (because the rules don't exist).
+            subprocess.call(['pkexec',
+                             'cp',
+                             '/usr/local/share/openocd/contrib/60-openocd.rules',
+                             '/etc/udev/rules.d/60-openocd.rules'])
+            print('Success')
+        else:
+            print('OpenOCD rules already installed')
+
+        user = os.getenv('USER')
+        for group in GROUPS:
+            print('Adding user `{}` to group: {}'.format(user, group))
+            subprocess.call(['pkexec', 'usermod', '-aG', group, user])
+        print('Success')
+
+# Lint only the python code of the project
+lint-py:
+    pycodestyle --exclude trezor-firmware,unused_modules,graphics.py,translations --statistics boards/Passport
+
+# Lint only the C code of the project
+lint-c:
+    @echo "TODO"
+
+# Lint only the code of the project
+lint-code: lint-py lint-c
+
+# Lint the licensing
+lint-license:
+    reuse lint
+
+# Lint all of the project
+lint: lint-code lint-license
+
+# Generate compile_commands.json database.
+compile-commands screen="mono" ext="":
+    @mkdir -p build-Passport
+    @bear --output {{compile_commands}} --append -- just build {{screen}} {{ext}}
+
+#
+# Firmware Commands
+#
+
+# Build the firmware
+build screen="mono" +ext='':
+    @echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
+
+    make -j{{jobs}} \
+        LV_CFLAGS='{{base_cflags}} {{ if screen == "mono" { mono_cflags } else { color_cflags } }}' \
+        BOARD=Passport \
+        SCREEN_MODE={{ uppercase(screen) }} \
+        {{ext}}
+
+# Sign current firmware build with the user.pem key and set specified version
+sign version="1.0.0" screen="mono" ext="": (build screen ext)
+    #!/usr/bin/env bash
+    set -e
+    SCREEN_EXT={{screen}}
+    SCREEN_EXT=`echo ${SCREEN_EXT^^}`
+
+    COSIGN_FILEPATH={{cosign_filepath}}
+    if [ $COSIGN_FILEPATH == "default" ]
+    then
+        COSIGN_FILEPATH="build-Passport/firmware-$SCREEN_EXT.bin"
+    fi
+
+    echo -e "\nAdding user signature...\n"
+    cosign -t {{lowercase(screen)}} -f $COSIGN_FILEPATH -k {{cosign_keypath}} -v {{version}}
+
+    # Remove .bin and append the signed filename string
+    SIGNED_FILE="build-Passport/v{{version}}-passport-key-user.bin"
+
+    # Show the signature data
+    cosign -t {{lowercase(screen)}} -f $SIGNED_FILE -p
+    echo -e "\nSigning Complete!"
+
+# Build, sign and flash the firmware with the specified version
+flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the address depending on the selected screen mode.
+    BL_FW_HDR_BASE=$(make bl_fw_hdr_base SCREEN_MODE={{uppercase(screen)}} V=0)
+    echo "Firmware address for '{{screen}}': $BL_FW_HDR_BASE"
+
+    just run-ocd-command "flash write_image erase build-Passport/v{{version}}-passport-key-user.bin $BL_FW_HDR_BASE"
+
+# Install a recent Foundation-signed build
+flash-foundation screen="mono" version="1.0.0": && (reset)
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the address depending on the selected screen mode.
+    BL_FW_HDR_BASE=$(make bl_fw_hdr_base SCREEN_MODE={{uppercase(screen)}} V=0)
+    echo "Firmware address for '{{screen}}': $BL_FW_HDR_BASE"
+
+    just run-ocd-command "flash write_image erase ../../releases/passport-fw-{{version}}.bin $BL_FW_HDR_BASE"
+
+# Clean the firmware build
+clean:
+    make BOARD=Passport clean
+
+#
+# Misc. Commands
+#
+
+# Launch OCD, run a command and then exit
+@run-ocd-command command:
+    openocd -f {{openocd_cfg}} -c "init; reset halt; {{command}}" -c "exit"
+
+# Launch OCD command, without halting.
+@run-ocd-command-no-halt command:
+    openocd -f {{openocd_cfg}} -c "init; {{command}}" -c "exit"
+
+# Build all Python graphics
+# graphics-py:
+#     just -f boards/Passport/graphics/py/Justfile build
+
+# Build all C graphics (firmware & bootloader)
+graphics-c:
+    just -f boards/Passport/graphics/c/Justfile build
+
+# graphics: graphics-py graphics-c
+
+# Build all images.
+images: (convert-images 'boards/Passport/images') (convert-images 'boards/Passport/bootloader/images')
+
+# LVGL Image Conversion Tool
+convert-images image_path:
+    #!/usr/bin/python3
+    import os
+    from os import listdir
+    image_path = '{{image_path}}'
+    conv_path = '../../../../../../tools/lv_img_conv/lv_img_conv.js'
+
+    f = open(image_path + '/images.h', 'w')
+    # NOTE: We split the string up below so that REUSE doesn't think this is a direct copyright string
+    f.write('// SP' + 'DX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>\n')
+    f.write('// SP' + 'DX-License-Identifier: GPL-3.0-or-later\n')
+    f.write('//\n')
+    f.write('// Autogenerated by ports/stm32/Justfile images command -- DO NOT EDIT MANUALLY!\n')
+    f.write('//\n\n')
+
+    def handle_images(folder):
+        from shutil import copyfile
+        full_folder = image_path + '/{}'.format(folder)
+        image_filenames = [f for f in listdir(full_folder) if f.endswith('.png')]
+        for filename in image_filenames:
+            base = os.path.splitext(filename)[0] # Trim extension
+            parts = base.split('__')
+            if len(parts) != 2:
+                # File name not formatted to our requirements
+                print('WARNING: Unexpected PNG filename: {}'.format(filename))
+                continue
+            name = parts[0]
+            format = parts[1]
+            f.write('extern const lv_img_dsc_t {};\n'.format(name))
+
+            # Only convert the file if the png is newer than the c file
+            source_time = os.path.getmtime(os.path.join(full_folder, filename))
+            dest_filename = '{}.c'.format(name)
+            dest_path = os.path.join(full_folder, dest_filename)
+            dest_time = None
+            if os.path.exists(dest_path):
+                dest_time = os.path.getmtime(dest_path)
+
+            if dest_time is None or source_time > dest_time:
+                print('Converting {}.png to C'.format(base, name))
+                # Converter doesn't have a way to specify python name, so we make a temporary copy instead
+                tmp_filename = '{}.png'.format(name)
+                copyfile(full_folder + '/' + filename, full_folder + '/' + tmp_filename)
+
+                # Convert the file -- parts[1] has the format string needed by the conversion
+                cmd = 'cd {}/{} && lv_img_conv {} -f -c {}'.format(image_path, folder, tmp_filename, format)
+                stream = os.popen(cmd)
+                output = stream.read()
+                print(output)
+
+                # Remove the temporary PNG file
+                os.remove(full_folder + '/' + tmp_filename)
+
+                # Concatenate the copyright info
+                cmd = 'cd {}/{} && cat ../copyright_template.c {}.c >> {}.c.tmp && mv {}.c.tmp {}.c'.format(image_path, folder, name, name, name, name)
+                stream = os.popen(cmd)
+                stream.read()
+            else:
+                pass
+                # print('Skipping conversion of {}.png as {}.c is newer'.format(base, name))
+
+    f.write('#ifdef SCREEN_MODE_COLOR\n')
+    handle_images('color')
+    f.write('#endif\n\n')
+
+    f.write('#ifdef SCREEN_MODE_MONO\n')
+    handle_images('mono')
+    f.write('#endif\n\n')
+
+    f.close()
+
+# Reset the Passport
+reset:
+    just run-ocd-command "reset"
+
+# Get the user and group ID for use below
+user := `id -u`
+group := `id -g`
+
+# Read the "ROM Secrets" from Passport and save them to a file
+save-secrets screen="mono" filename="boards/Passport/bootloader/secrets":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the secrets address depending on the selected screen mode.
+    BL_NVROM_BASE=$(make bl_nvrom_base SCREEN_MODE={{uppercase(screen)}} V=0)
+    echo "Bootloader secrets address for '{{screen}}': $BL_NVROM_BASE"
+
+    just run-ocd-command "dump_image {{filename}} $BL_NVROM_BASE 256"
+
+secrets screen="mono":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the secrets address depending on the selected screen mode.
+    BL_NVROM_BASE=$(make bl_nvrom_base SCREEN_MODE={{uppercase(screen)}} V=0)
+    echo "Bootloader secrets address for '{{screen}}': $BL_NVROM_BASE"
+
+    # The last bit below redirects stderr to stdout, which the backticks capture into the variable `secrets`
+    secrets=`just run-ocd-command "mdb $BL_NVROM_BASE 256" 2>&1`
+    secrets=`echo "$secrets" | tail -n 8`
+    echo -e "Passport ROM Secrets:\n$secrets"
+
+# Calculate all hashes and format it all for GitHub release notes
+hash filepath:
+    #!/usr/bin/env bash
+    set -e
+    filename=`basename {{filepath}}`
+
+    # SHA256
+    sha=`shasum -b -a 256 {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
+    echo -e "\n\`SHA256: $sha\`"
+    echo -e "\`(shasum -b -a 256 $filename)\`\n"
+
+    # MD5
+    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
+    echo "\`MD5: $md5\`"
+    echo -e "\`(md5 $filename or mdsum $filename)\`\n"
+
+    # Build Hash
+    build_hash=`cosign -t color -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
+    echo -e "\`Build Hash: $build_hash\`"
+    echo -e "\`(Developers Only)\`\n"
+
+# Format the project's .py files under boards/Passport/modules
+fmt-py:
+    #!/usr/bin/env bash
+    pushd boards/Passport/modules
+    files_to_fmt=`find . -path ./trezor-firmware -prune -false -o -name '*.py'`
+    autopep8 --max-line-length=120 --in-place $files_to_fmt
+    popd
+
+# Format the project's .c and .h files under boards/Passport/
+fmt-c:
+    #!/usr/bin/env bash
+    pushd boards/Passport
+    files_to_fmt=`find . -path ./trezor-firmware -prune -false -o -name '*.[c|h]'`
+    clang-format-5.0 -i --style=file $files_to_fmt
+    popd
+
+# Format the project's source code under boards/Passport
+fmt: fmt-py fmt-c
+
+
+convert-screenshot from_file to_file:
+    #!/usr/bin/python3
+    from PIL import Image, ImageOps
+    raw_bits = open('{{from_file}}', 'rb').read()
+    WIDTH = 240
+    HEIGHT = 320
+
+    # Convert RGB565 to RGB (8 bits per color)
+    rgb = bytearray(WIDTH*HEIGHT*3)
+    for y in range(0, HEIGHT):
+        for x in range(0, WIDTH):
+            offset = (y*WIDTH*2) + (x*2)
+            b1 = raw_bits[offset]
+            b2 = raw_bits[offset+1]
+            c = b1 << 8 | b2
+            r = (c & 0xF800) >> 11
+            g = (c & 0x07E0) >> 5
+            b = (c & 0x001F)
+
+            # Set into RGB buffer
+            dest_offset = (y*WIDTH*3) + (x*3)
+            rgb[dest_offset] = r << 3
+            rgb[dest_offset + 1] = g << 2
+            rgb[dest_offset + 2] = b << 3
+
+    img = Image.frombytes('RGB', (WIDTH, HEIGHT), bytes(rgb))
+
+    img.save('{{to_file}}')
+
+
+screenshot filename:
+    #!/usr/bin/env bash
+    ADDR_FILE=screenshot-addr.tmp
+    TMP_FILE=screenshot.tmp
+    just run-ocd-command-no-halt "dump_image $ADDR_FILE 0x38006920 4"
+    N=`head -c 4 $ADDR_FILE | od -An --endian=little -t u4`
+    FRAMEBUFFER_ADDR=`printf '%x\n' $N`
+    echo FRAMEBUFFER_ADDR=$FRAMEBUFFER_ADDR
+    just run-ocd-command-no-halt "dump_image $TMP_FILE 0x$FRAMEBUFFER_ADDR 153600"
+    just convert-screenshot $TMP_FILE {{filename}}
+    rm -f $TMP_FILE $ADDR_FILE
+
+
+# Copy out of Ubuntu VM to host OS (replace existing file with the same name if it exists
+cp source:
+    cp -f {{source}} /media/psf/Home/Downloads/
+
+cpr source dest:
+    cp -f {{source}} /media/psf/Home/Downloads/{{dest}}
+
+ditto-pull:
+    ditto-cli pull
+
+ditto:
+    #!/usr/bin/python3
+    import json
+    from datetime import date
+
+    ENVOY_PREFIX = 'envoy_'
+    PASSPORT_PREFIX = 'passport__'
+
+    def generate_tags(tags):
+        year = date.today().year
+
+        with open('boards/Passport/modules/translations/tags.py', 'w') as tags_file:
+            tags_file.write(
+                '# SP' + 'DX-FileCopyrightText: {} Foundation Devices, Inc. <hello@foundationdevices.com>\n'.format(year) +
+                '# SP' + 'DX-License-Identifier: GPL-3.0-or-later\n' +
+                '#\n' +
+                '# tags.py\n' +
+                '#\n' +
+                '# Text tag names used in all translation files.\n' +
+                '#\n' +
+                '# AUTOGENERATED FILE!  DO NOT EDIT MANUALLY!\n' +
+                '#\n' +
+                '\n' +
+                'from Enum import enum\n' +
+                '\n' +
+                'T = enum(\n')
+
+            for tag in tags:
+                tags_file.write("    '{}',\n".format(tag))
+
+            tags_file.write(')\n')
+
+    def generate_translations(tags, dict, language):
+        year = date.today().year
+
+        with open('boards/Passport/modules/translations/{}.py'.format(language.lower()), 'w') as language_file:
+            language_file.write(
+                '# SP' + 'DX-FileCopyrightText: {} Foundation Devices, Inc. <hello@foundationdevices.com>\n'.format(year) +
+                '# SP' + 'DX-License-Identifier: GPL-3.0-or-later\n' +
+                '#\n' +
+                '# {}.py - String translations for {} language code\n'.format(language.lower(), language) +
+                '#\n' +
+                '# AUTOGENERATED FILE!  DO NOT EDIT MANUALLY!\n' +
+                '#\n' +
+                '\n' +
+                'from .tags import T\n' +
+                '\n' +
+                '{}_TRANSLATIONS = {}\n'.format(language, '{'))
+
+            for tag in tags:
+                # Use triple quotes since some strings have line feeds
+                if tag in dict:
+                    value = dict[tag]
+                else:
+                    # Must be one where we stripped the prefix
+                    value = dict[PASSPORT_PREFIX + tag]
+
+                language_file.write("    T.{}: '''{}''',\n".format(tag, value))
+
+            language_file.write('}\n')
+
+    
+    # Read strings from JSON file
+    with open('ditto/Envoy + PP Clean Start.json') as json_file:
+        strings = json.load(json_file)
+
+        tags = list(strings.keys())
+
+        # Filter down to what we want
+        # Discard envoy tags
+        tags = [tag for tag in tags if not tag.startswith(ENVOY_PREFIX)]
+
+        # Strip off passport-specific prefix where present
+        tags = [tag[len(PASSPORT_PREFIX):] if tag.startswith(PASSPORT_PREFIX) else tag for tag in tags]
+
+        # Finally, sort the tags
+        tags.sort()
+
+        # Generate tags file
+        generate_tags(tags)
+
+        # Generate language file - Just English for now
+        generate_translations(tags, strings, 'EN')

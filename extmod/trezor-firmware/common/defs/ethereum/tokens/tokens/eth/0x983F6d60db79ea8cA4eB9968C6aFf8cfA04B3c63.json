@@ -1,0 +1,33 @@
+{
+  "symbol": "SNM",
+  "address": "0x983F6d60db79ea8cA4eB9968C6aFf8cfA04B3c63",
+  "decimals": 18,
+  "name": "SONM",
+  "ens_address": "",
+  "website": "https://sonm.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/sonm-io",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/SONM",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/sonmdevelopment",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "ARN",
+  "address": "0xBA5F11b16B155792Cf3B2E6880E8706859A8AEB6",
+  "decimals": 8,
+  "name": "Aeron",
+  "ens_address": "",
+  "website": "https://aeron.aero",
+  "logo": {
+    "src": "https://aeron.aero/img/ARN-token-logo-256x256.png",
+    "width": "256",
+    "height": "256",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "info@aeron.aero",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@aeronaero",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://reddit.com/r/aeronaero",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/aeron_aero",
+    "youtube": ""
+  }
+}

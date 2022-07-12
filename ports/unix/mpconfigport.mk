@@ -1,0 +1,60 @@
+# Enable/disable modules and 3rd-party libs to be included in interpreter
+
+# Build 32-bit binaries on a 64-bit host
+MICROPY_FORCE_32BIT = 0
+
+# This variable can take the following values:
+#  0 - no readline, just simple stdin input
+#  1 - use MicroPython version of readline
+MICROPY_USE_READLINE = 1
+
+# Uasyncio
+MICROPY_PY_UASYNCIO = 1
+
+# btree module using Berkeley DB 1.xx
+MICROPY_PY_BTREE = 1
+
+# _thread module using pthreads
+MICROPY_PY_THREAD = 1
+
+# Subset of CPython termios module
+MICROPY_PY_TERMIOS = 1
+
+# Subset of CPython socket module
+MICROPY_PY_SOCKET = 1
+
+# ffi module requires libffi (libffi-dev Debian package)
+MICROPY_PY_FFI = 1
+
+# ussl module requires one of the TLS libraries below
+MICROPY_PY_USSL = 0
+# axTLS has minimal size but implements only a subset of modern TLS
+# functionality, so may have problems with some servers.
+MICROPY_SSL_AXTLS = 0
+# mbedTLS is more up to date and complete implementation, but also
+# more bloated.
+MICROPY_SSL_MBEDTLS = 0
+
+# jni module requires JVM/JNI
+MICROPY_PY_JNI = 0
+
+# Avoid using system libraries, use copies bundled with MicroPython
+# as submodules (currently affects only libffi).
+MICROPY_STANDALONE = 0
+
+CFLAGS_MOD += -DBITCOIN_ONLY=1 -DAES_128=1 -DAES_192=1
+
+MICROPY_EXTMOD_DIR = ../../extmod
+CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
+  -I$(MICROPY_EXTMOD_DIR)/foundation \
+  -I$(MICROPY_EXTMOD_DIR)/quirc \
+  -I$(MICROPY_EXTMOD_DIR)/uasyncio \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/aes \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core \
+  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core/embed/unix \
+  -I$(MICROPY_EXTMOD_DIR)/../ports/stm32/boards/Passport/include \
+  -I$(MICROPY_EXTMOD_DIR)/../ports/stm32/boards/Passport/common/micro-ecc
+  # TODO: Move this the ports/stm32/boards/Passport include files?

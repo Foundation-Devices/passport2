@@ -1,0 +1,104 @@
+# Compiled Sources
+###################
+*.o
+*.a
+*.elf
+*.bin
+*.map
+*.hex
+*.dis
+*.exe
+*.d
+
+lextab.py
+yacctab.py
+
+# Packages
+############
+
+# Logs and Databases
+######################
+*.log
+
+# VIM Swap Files
+######################
+*.swp
+*.swo
+*.swn
+*.swi
+*.swj
+*.swk
+*.swl
+*.swm
+
+# VIM Session Files
+######################
+Session.vim
+
+# CTags files
+######################
+tags
+TAGS
+
+# Build directories
+######################
+build/
+build-*/
+
+# Test failure outputs
+######################
+tests/*.exp
+tests/*.out
+tests/results/*
+
+# Python cache files
+######################
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Customized Makefile/project overrides
+######################
+GNUmakefile
+user.props
+ports/javascript/node_modules
+
+# Generated rst files
+######################
+genrst/
+
+# MacOS desktop metadata files
+######################
+.DS_Store
+
+
+
+
+ports/stm32/boards/Passport/tools/add-secrets/x86/release/
+
+ports/stm32/secrets*
+
+ports/stm32/boards/Passport/bootloader/version_info.c
+
+ports/stm32/boards/Passport/bootloader/secrets*
+
+*.pem
+.vscode
+
+ports/unix/passport-mpy
+
+simulator/work/microsd/backups/
+
+simulator/snapshots/
+
+*.gif
+
+simulator/ENV/
+simulator/work/
+ports/stm32/ditto/ditto-component-library.json
+
+ports/stm32/ditto/index.js
+
+ports/stm32/ditto/Envoy \+ PP Clean Start.json
+
+ports/stm32/boards/Passport/bootloader/dev-secrets/

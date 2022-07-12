@@ -1,0 +1,34 @@
+{
+  "symbol": "ZCN",
+  "name": "0chain",
+  "type": "ERC20",
+  "address": "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78",
+  "ens_address": "",
+  "decimals": 10,
+  "website": "https://0chain.net",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/0chain",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/0chain",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/0costcloud",
+    "youtube": ""
+  }
+}

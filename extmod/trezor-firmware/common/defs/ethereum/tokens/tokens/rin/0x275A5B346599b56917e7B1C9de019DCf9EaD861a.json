@@ -1,0 +1,8 @@
+{
+  "symbol": "KC",
+  "name": "Karma Token",
+  "address": "0x275A5B346599b56917e7B1C9de019DCf9EaD861a",
+  "decimals": 18,
+  "support" : { "email": "support@baseblock.io" },
+  "website": "https://baseblock.io/"
+}

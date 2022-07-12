@@ -1,0 +1,33 @@
+{
+  "symbol": "MLN (new)",
+  "address": "0xec67005c4E498Ec7f55E092bd1d35cbC47C91892",
+  "decimals": 18,
+  "name": "Melonport",
+  "ens_address": "",
+  "website": "https://melonport.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "https://chat.melonport.com",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "ONG",
+  "address": "0xd341d1680Eeee3255b8C4c75bCCE7EB57f144dAe",
+  "decimals": 18,
+  "name": "SoMee.Social",
+  "ens_address": "",
+  "website": "https://somee.social",
+  "logo": {
+    "src": "https://etherscan.io/token/images/ongcoin_28.png",
+    "width": 28,
+    "height": 28,
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "success@ong.social",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/onGsocial",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "https://ongsocial.slack.com",
+    "telegram": "https://t.me/onG_social",
+    "twitter": "https://twitter.com/SoMeeOfficial",
+    "youtube": ""
+  }
+}

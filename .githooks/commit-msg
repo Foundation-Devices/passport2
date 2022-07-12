@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+commit_regex="^([A-Z]+[0-9]*-[0-9]+:\ )"
+
+if ! grep -iqE "$commit_regex" "$1"; then
+    echo "=========================================================================================" >&2
+    echo "Aborting commit. Your commit message must start with a Linear issue ID, colon then space." >&2
+    echo "Example: 'PASS1-123: '                     (To commit anyway, use the --no-verify option)" >&2
+    echo "=========================================================================================" >&2
+    exit 1
+fi

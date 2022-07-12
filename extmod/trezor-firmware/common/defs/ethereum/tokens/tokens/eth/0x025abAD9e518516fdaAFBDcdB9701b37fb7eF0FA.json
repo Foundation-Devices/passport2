@@ -1,0 +1,33 @@
+{
+  "symbol": "GTKT",
+  "address": "0x025abAD9e518516fdaAFBDcdB9701b37fb7eF0FA",
+  "decimals": 0,
+  "name": "GTKT",
+  "ens_address": "",
+  "website": "https://backto.earth",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/sprux/BackToEarth",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "",
+    "youtube": ""
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "symbol": "LEND",
+  "address": "0x80fB784B7eD66730e8b1DBd9820aFD29931aab03",
+  "decimals": 18,
+  "name": "ETHLend",
+  "ens_address": "",
+  "website": "https://aave.com/",
+  "logo": {
+    "src": "https://raw.githubusercontent.com/ETHLend/logos/master/LEND_128x128.png",
+    "width": 128,
+    "height": 128,
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@ethlend.io",
+    "url": "https://app.ethlend.io/ticket"
+  },
+  "social": {
+    "blog": "https://blog.ethlend.io/",
+    "chat": "",
+    "facebook": "https://www.facebook.com/ETHLend/",
+    "forum": "",
+    "github": "https://github.com/ETHLend",
+    "gitter": "https://gitter.im/EthLend/",
+    "instagram": "",
+    "linkedin": "https://www.linkedin.com/company/ethlend/",
+    "reddit": "https://www.reddit.com/r/ETHLend/",
+    "slack": "",
+    "telegram": "https://t.me/ETHLend",
+    "twitter": "https://twitter.com/ethlend1",
+    "youtube": "https://www.youtube.com/channel/UCZUFYgrvO7xpxzMjijgqWyQ"
+  }
+}

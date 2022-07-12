@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+CORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+EXTMOD_PATH = os.path.join(CORE_DIR, "embed", "extmod")
+MOCKS_PATH = os.path.join(CORE_DIR, "mocks", "generated")
+
+COMMENT_PREFIX = "/// "
+
+current_indent = 0
+current_class = None
+current_method = None
+current_package = None
+
+
+def split_to_parts(line, mod_desc=None):
+    global current_indent
+    global current_class
+    global current_method
+    global current_package
+
+    if line.startswith("package: "):
+        current_package = line[9:].strip()
+        return
+
+    if line.startswith("mock:global"):
+        current_indent = 0
+        current_class = None
+        return
+
+    if line.startswith("class "):
+        current_class = line[6:].split("(")[0].strip(":")
+        current_indent = 0
+
+        yield (current_package, "\n\n")
+        yield (current_package, "# " + mod_desc + "\n")
+
+    elif line.startswith("def "):
+        current_method = line[4:].split("(")[0]
+
+        if current_class is None:
+            yield (current_package, "\n\n")
+            yield (current_package, "# " + mod_desc + "\n")
+        else:
+            yield (current_package, "\n")
+            current_indent = 4
+
+    line = current_indent * " " + line
+
+    yield (current_package, line)
+
+
+def store_to_file(dest, parts):
+    for package, line in parts:
+        package = package.replace(".", "/")
+        dirpath = os.path.join(dest, os.path.dirname(package))
+        filename = os.path.basename(package) + ".pyi"
+        filepath = os.path.join(dirpath, filename)
+
+        os.makedirs(dirpath, exist_ok=True)
+
+        if os.path.isdir(os.path.join(dest, package)):
+            if not line.strip():
+                continue
+            print(f"Package exists: {package}")
+            print(f"You should set 'package:' in {line.strip()}")
+            sys.exit(1)
+
+        if not os.path.exists(filepath):
+            with open(filepath, "a") as f:
+                f.write("from typing import *\n")
+
+        with open(filepath, "a") as f:
+            f.write(line)
+
+
+def build_module(mod_file, dest):
+    global current_indent
+    global current_class
+    global current_package
+
+    filename = os.path.basename(mod_file)
+    assert filename.startswith("mod")
+    assert filename.endswith(".c") or filename.endswith(".h")
+    # modfoobar-xyz.h -> foobar-xyz
+    name = filename[3:-2]
+
+    current_indent = 0
+    current_class = None
+    current_package = name.split("-")[0]
+    mod_desc = re.sub(r"^.*/embed/", "", mod_file)
+
+    for l in open(mod_file):
+        if not l.startswith(COMMENT_PREFIX):
+            continue
+
+        l = l[len(COMMENT_PREFIX) :]  # .strip()
+        store_to_file(dest, split_to_parts(l, mod_desc))
+
+
+def build_directory(src, dest):
+    for modfile in sorted(glob.glob(os.path.join(src, "**", "mod*.[ch]"))):
+        build_module(modfile, dest)
+
+
+def do_check():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        build_directory(EXTMOD_PATH, tmpdir)
+        diff_out = subprocess.run(
+            ["diff", "-ur", MOCKS_PATH, tmpdir],
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+        ).stdout
+        if diff_out.strip():
+            print(diff_out, end="")
+            sys.exit(1)
+
+
+def do_generate():
+    shutil.rmtree(MOCKS_PATH)
+    build_directory(EXTMOD_PATH, MOCKS_PATH)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--check":
+        do_check()
+    else:
+        do_generate()

@@ -1,0 +1,33 @@
+{
+  "symbol": "ATL",
+  "address": "0x78B7FADA55A64dD895D8c8c35779DD8b67fA8a05",
+  "decimals": 18,
+  "name": "ATLANT",
+  "ens_address": "",
+  "website": "https://atlant.io",
+  "logo": {
+    "src": "https://atlant.io/promo/Atlant_custom_300x300_logo.png",
+    "width": "300",
+    "height": "300",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "help@atlant.io",
+    "url": ""
+  },
+  "social": {
+    "blog": "https://medium.com/@atlantio",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/Atlantio",
+    "slack": "",
+    "telegram": "https://t.me/atlant_eng",
+    "twitter": "https://twitter.com/atlantio",
+    "youtube": ""
+  }
+}

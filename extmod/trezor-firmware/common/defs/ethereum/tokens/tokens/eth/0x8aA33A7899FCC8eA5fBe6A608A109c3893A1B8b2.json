@@ -1,0 +1,33 @@
+{
+  "symbol": "BET",
+  "address": "0x8aA33A7899FCC8eA5fBe6A608A109c3893A1B8b2",
+  "decimals": 18,
+  "name": "DAO.Casino",
+  "ens_address": "",
+  "website": "https://dao.casino",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "",
+    "url": ""
+  },
+  "social": {
+    "blog": "",
+    "chat": "",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/daocasino",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/daocasino",
+    "youtube": ""
+  }
+}

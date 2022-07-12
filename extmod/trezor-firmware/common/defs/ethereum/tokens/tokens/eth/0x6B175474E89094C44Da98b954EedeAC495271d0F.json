@@ -1,0 +1,33 @@
+{
+  "symbol": "DAI",
+  "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  "decimals": 18,
+  "name": "Dai Stablecoin v2.0",
+  "ens_address": "",
+  "website": "https://makerdao.com",
+  "logo": {
+    "src": "",
+    "width": "",
+    "height": "",
+    "ipfs_hash": ""
+  },
+  "support": {
+    "email": "support@makerdao.com",
+    "url": "https://chat.makerdao.com"
+  },
+  "social": {
+    "blog": "",
+    "chat": "https://chat.makerdao.com",
+    "facebook": "",
+    "forum": "",
+    "github": "https://github.com/makerdao",
+    "gitter": "",
+    "instagram": "",
+    "linkedin": "",
+    "reddit": "https://www.reddit.com/r/MakerDAO",
+    "slack": "",
+    "telegram": "",
+    "twitter": "https://twitter.com/MakerDAO",
+    "youtube": ""
+  }
+}

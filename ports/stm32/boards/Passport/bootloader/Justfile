@@ -1,0 +1,98 @@
+# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+contribdir := join(justfile_directory(), "../contrib")
+openocd_cfg := join(contribdir, "openocd.cfg")
+
+# Launch OCD, run a command and then exit
+@run-ocd-command command:
+    openocd -f {{openocd_cfg}} -c "init; reset halt; {{command}}" -c "exit"
+
+# Build the bootloader (debug, release, locked or production)
+# NOTE: Pass "factory_test" for factory_test to enable it.
+build screen="mono" rel="release" factory_test="": clean
+    #!/usr/bin/env bash
+    set -e
+    echo -e "\nBuilding Bootloader..."
+
+    echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
+
+    make {{rel}} SCREEN_MODE={{uppercase(screen)}} FACTORY_TEST={{factory_test}}
+
+    if [[ "{{rel}}" == "debug" ]]; then
+        FOLDER=debug
+    else
+        FOLDER=release
+    fi
+
+    if test -f "secrets"; then
+        echo -e "\nAppending secrets to the end..."
+        add-secrets -b arm/${FOLDER}/bootloader-{{uppercase(screen)}}.bin -s secrets
+    fi
+
+    echo -e "\nBootloader Build Complete"
+
+# Clean the bootloader build
+clean:
+    @echo "Cleaning Bootloader..."
+    make clean
+    @echo "Bootloader Clean Complete"
+
+# Build and flash the bootloader with the secrets appended to the end
+flash screen="mono" rel="release" factory_test="": (build screen rel factory_test) && (reset)
+    #!/usr/bin/env bash
+    if [[ "{{rel}}" == "debug" ]]; then
+        FOLDER=debug
+    else
+        FOLDER=release
+    fi
+
+    just run-ocd-command "flash write_image erase arm/${FOLDER}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
+
+# Build and flash the bootloader with no secrets (use to setup a new Secure Element)
+# Also appends existing secrets to the bootloader if they're present on the device.
+# Doesn't overwrite the existing secrets on the bootloader folder.
+flash-raw screen="mono" rel="release" factory_test="": (build screen rel factory_test) && (reset)
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    EMPTY_SECRETS_BIN=$(mktemp /tmp/foundation.XXXXXX)
+    DEVICE_SECRETS_BIN=$(mktemp /tmp/foundation.XXXXXX)
+
+    printf -- 'FF %.0s' {1..256} | xxd -r -p - ${EMPTY_SECRETS_BIN}
+    just save-secrets ${DEVICE_SECRETS_BIN}
+
+    if cmp -s ${DEVICE_SECRETS_BIN} ${EMPTY_SECRETS_BIN};
+    then
+        echo "Board doesn't have secrets, flashing raw firmware"
+        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin 0x8000000"
+    else
+        echo "Appending existing secrets to the bootloader"
+        add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin" -s ${DEVICE_SECRETS_BIN}
+
+        echo "Flashing bootloader with secrets"
+        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
+    fi
+
+
+# Build and flash the bootloader with no secrets (use to setup a new Secure Element)
+flash-only screen="mono" rel="release": && (reset)
+    just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin 0x8000000"
+
+# Reset the Passport
+reset: (run-ocd-command "reset")
+
+# Read the "ROM Secrets" from Passport and save them to a file
+save-secrets screen="mono" filename="secrets":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Get the secrets address depending on the selected screen mode.
+    BL_NVROM_BASE=$(make bl_nvrom_base SCREEN_MODE={{uppercase(screen)}})
+    echo "Bootloader secrets address for '{{screen}}': $BL_NVROM_BASE"
+
+    just run-ocd-command "dump_image {{filename}} $BL_NVROM_BASE 256"
+
+images:
+    just ../../../images

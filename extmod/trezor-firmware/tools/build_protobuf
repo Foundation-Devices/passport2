@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+set -e
+cd $(dirname $0)/..
+
+PROTOB=common/protob
+
+CORE_PROTOBUF_SOURCES="\
+    $PROTOB/messages.proto \
+    $PROTOB/messages-binance.proto \
+    $PROTOB/messages-bitcoin.proto \
+    $PROTOB/messages-cardano.proto \
+    $PROTOB/messages-common.proto \
+    $PROTOB/messages-crypto.proto \
+    $PROTOB/messages-debug.proto \
+    $PROTOB/messages-eos.proto \
+    $PROTOB/messages-ethereum.proto \
+    $PROTOB/messages-ethereum-eip712.proto \
+    $PROTOB/messages-management.proto \
+    $PROTOB/messages-monero.proto \
+    $PROTOB/messages-nem.proto \
+    $PROTOB/messages-ripple.proto \
+    $PROTOB/messages-stellar.proto \
+    $PROTOB/messages-tezos.proto \
+    $PROTOB/messages-webauthn.proto \
+"
+
+PYTHON_PROTOBUF_SOURCES=$PROTOB/*.proto
+
+CORE_MESSAGES_IGNORE="\
+    CosiCommit \
+    CosiCommitment \
+    CosiSign \
+    CosiSignature \
+    DebugLinkFlashErase \
+    DebugLinkLog \
+    DebugLinkMemory \
+    DebugLinkMemoryRead \
+    DebugLinkMemoryWrite \
+    DebugLinkStop \
+    NEMDecryptMessage \
+    NEMDecryptedMessage \
+    PinMatrixAck \
+    PinMatrixRequest \
+    PinMatrixRequestType \
+    WordAck \
+    WordRequest \
+    WordRequestType \
+"
+
+PYTHON_MESSAGES_IGNORE=""
+
+RETURN=0
+
+do_rebuild() {
+    local FILE_OR_DIR="$1"
+    shift
+    local OUTPUT="$1"
+    shift
+    local SOURCES="$1"
+    shift
+
+    if [ "$FILE_OR_DIR" == file ]; then
+        local param="--outfile"
+    else
+        local param="--python-outdir"
+    fi
+
+    # note $SOURCES is unquoted - we want wildcard expansion and multiple args
+    $PROTOB/pb2py "$@" $param="$OUTPUT" $SOURCES
+}
+
+do_check() {
+    # rebuild protobuf in tmpdir and check result against specified directory
+    local TMPDIR=$(mktemp -d proto-check.XXXXXX)
+    trap "rm -r $TMPDIR" RETURN
+
+    local FILE_OR_DIR="$1"
+    shift
+    local OUTPUT="$1"
+    shift
+
+    if [ "$FILE_OR_DIR" == file ]; then
+        local TMPDEST="$TMPDIR/testfile"
+    else
+        cp -rT "$OUTPUT" "$TMPDIR"
+        local TMPDEST="$TMPDIR"
+    fi
+
+    do_rebuild "$FILE_OR_DIR" "$TMPDEST" "$@"
+    if ! diff -ur --exclude __pycache__ "$OUTPUT" "$TMPDEST"; then
+        RETURN=1
+    fi
+}
+
+if [ "$1" == "--check" ]; then
+    func=do_check
+else
+    func=do_rebuild
+fi
+
+$func dir core/src/trezor/enums "$CORE_PROTOBUF_SOURCES"
+$func file core/src/trezor/enums/__init__.py "$CORE_PROTOBUF_SOURCES" --template=core/src/trezor/enums/_proto_init.mako
+$func file core/src/trezor/messages.py "$CORE_PROTOBUF_SOURCES" --template=core/src/trezor/_proto_messages.mako
+
+$func file python/src/trezorlib/messages.py "$PYTHON_PROTOBUF_SOURCES" \
+    --template=python/src/trezorlib/_proto_messages.mako \
+    --include-deprecated
+
+exit $RETURN
