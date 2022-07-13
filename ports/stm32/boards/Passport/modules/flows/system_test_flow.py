@@ -4,11 +4,8 @@
 # system_test_flow.py - Runs a suite of system test flows
 
 from flows import Flow, TestMicroSDFlow, TestCameraFlow
-from pages import SuccessPage, LongTextPage, TestKeypadPage
+from pages import SuccessPage, LongTextPage, TestKeypadPage, QuestionPage, ShutdownPage
 import microns
-from common import system
-import machine
-from pages.question_page import QuestionPage
 
 
 class SystemTestFlow(Flow):
@@ -21,7 +18,7 @@ class SystemTestFlow(Flow):
             text='\n\nThe following pages contain system tests to check if this Passport\'s hardware '
             'is working correctly.').show()
         if not result:
-            system.shutdown()
+            await ShutdownPage().show()
         else:
             self.goto(self.test_microsd_flow)
 
@@ -54,8 +51,6 @@ class SystemTestFlow(Flow):
         result = await SuccessPage(
             'System Tests complete!',
             left_micron=microns.Shutdown,
-            right_micron=microns.Retry).show()
+            right_micron=None).show()
         if not result:
-            system.shutdown()
-        else:
-            machine.reset()
+            await ShutdownPage().show()

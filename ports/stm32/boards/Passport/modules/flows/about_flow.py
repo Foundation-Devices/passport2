@@ -7,9 +7,8 @@ import lvgl as lv
 from flows import Flow
 from pages import LongTextPage
 from utils import xfp2str, swab32, recolor
-from translations import t, T
 import microns
-from styles.colors import FD_BLUE_HEX
+from styles.colors import FD_BLUE_HEX, TEXT_GREY
 
 
 class AboutFlow(Flow):
@@ -77,6 +76,7 @@ Boston, MA 02109 USA""".format(title=recolor(FD_BLUE_HEX, 'PASSPORT'))
         await LongTextPage(
             text=msg,
             icon=lv.IMAGE_REGULATORY,
+            icon_color=TEXT_GREY,
             centered=True,
             card_header={'title': 'Regulatory'},
             right_micron=microns.Checkmark).show()
