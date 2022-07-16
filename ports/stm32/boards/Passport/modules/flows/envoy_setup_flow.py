@@ -3,6 +3,7 @@
 #
 # envoy_setup_flow.py - The main overall flow for Envoy setup - controls the process
 
+import lvgl as lv
 from flows import (
     Flow,
     ConnectWalletFlow,
@@ -54,7 +55,8 @@ class EnvoySetupFlow(Flow):
     async def scv_flow(self):
         result = await ScvFlow(envoy=True).run()
         if result is None:
-            self.set_result(None, forget_state=True)
+            # self.set_result(None, forget_state=True)
+            self.back()
         elif result:
             self.goto(self.set_initial_pin)
 
@@ -74,13 +76,19 @@ class EnvoySetupFlow(Flow):
         await self.ensure_logged_in()
 
         # Intro page
-        result = await QuestionPage(text='Do you want to update Passport\'s firmware now?').show()
+        result = await QuestionPage(
+            icon=lv.LARGE_ICON_FIRMWARE,
+            text='Do you want to update Passport\'s firmware now?',
+            statusbar={'title': 'UPDATE FIRMWARE', 'icon': lv.ICON_FIRMWARE}).show()
         if not result:
             await ErrorPage(text='We recommend updating Passport\'s firmware at your earliest convenience.').show()
             self.goto(self.setup_seed)
             return
 
-        result = await UpdateFirmwareFlow(reset_after=False).run()
+        result = await UpdateFirmwareFlow(
+            reset_after=False,
+            statusbar={'title': 'UPDATE FIRMWARE', 'icon': lv.ICON_FIRMWARE}
+        ).run()
         if result:
             import machine
             import common
@@ -123,13 +131,21 @@ class EnvoySetupFlow(Flow):
             return
         await self.ensure_logged_in()
 
-        result = await InfoPage(text='Now, let\'s connect Passport with Envoy.', left_micron=None).show()
+        result = await InfoPage(
+            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT},
+            text='Now, let\'s connect Passport with Envoy.',
+            left_micron=None).show()
         self.goto(self.connect_with_envoy)
 
     async def connect_with_envoy(self):
         import common
         from constants import DEFAULT_ACCOUNT_ENTRY
         from utils import has_seed
+
+        # Guards to ensure we can't get into a weird state
+        if not self.ensure_pin_set():
+            return
+        await self.ensure_logged_in()
 
         # Can't connect if we don't have a seed yet!
         if not has_seed():
@@ -144,7 +160,10 @@ class EnvoySetupFlow(Flow):
         # Set default account as active as ConnectWalletFlow needs it
         common.ui.set_active_account(DEFAULT_ACCOUNT_ENTRY)
 
-        result = await ConnectWalletFlow(sw_wallet='Envoy').run()
+        result = await ConnectWalletFlow(
+            sw_wallet='Envoy',
+            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT}
+        ).run()
         if result:
             self.goto(self.show_success)
         else:

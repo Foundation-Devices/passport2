@@ -9,11 +9,12 @@ import common
 
 
 class Flow():
-    def __init__(self, initial_state=None, name='Flow', settings_key=None):
+    def __init__(self, initial_state=None, name='Flow', settings_key=None, statusbar=None):
         self.state = initial_state
         self.name = name
         self.prev_states = []
         self.settings_key = settings_key
+        self.statusbar = statusbar
         self.result = None
         self.done = False
 
@@ -130,8 +131,15 @@ class Flow():
 
     async def run(self):
         try:
+            prev_statusbar = None
+            if self.statusbar is not None:
+                prev_statusbar = common.ui.set_statusbar(**self.statusbar)
+
             while not self.done:
                 await self.state()
+
+            if prev_statusbar is not None:
+                common.ui.set_statusbar(**prev_statusbar)
 
             return self.result
         except Exception as e:

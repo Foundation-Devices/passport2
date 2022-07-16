@@ -43,24 +43,9 @@ class Page(View):
     def attach(self, group):
         common.keypad.set_active_page(self)
 
-        # Set the custom card title if caller gave one
-        if self.card_header is not None:
-            self.prev_card_header = common.ui.set_card_header(**self.card_header)
-
-        if self.statusbar is not None:
-            self.prev_statusbar = common.ui.set_statusbar(**self.statusbar)
-
         super().attach(group)
 
     def detach(self):
-        # Restore statusbar if we overrode it
-        if self.prev_statusbar is not None:
-            common.ui.set_statusbar(**self.prev_statusbar)
-
-        # Restore card title if we overrode it
-        if self.prev_card_header is not None:
-            common.ui.set_card_header(**self.prev_card_header, force_all=True)
-
         super().detach()
         common.keypad.set_active_page(None)
 
@@ -106,6 +91,13 @@ class Page(View):
         else:
             self.auto_close_timer = None
 
+        # Set the custom card title if caller gave one
+        if self.card_header is not None:
+            self.prev_card_header = common.ui.set_card_header(**self.card_header)
+
+        if self.statusbar is not None:
+            self.prev_statusbar = common.ui.set_statusbar(**self.statusbar)
+
         g = self.poll_for_done()
         while not done:
             try:
@@ -113,6 +105,15 @@ class Page(View):
                 await sleep_ms(10)
             except StopIteration as result:
                 # The result is of type StopIteration, so we need to reach in and get the actual value
+
+                # Restore statusbar if we overrode it
+                if self.prev_statusbar is not None:
+                    common.ui.set_statusbar(**self.prev_statusbar)
+
+                # Restore card title if we overrode it
+                if self.prev_card_header is not None:
+                    common.ui.set_card_header(**self.prev_card_header, force_all=True)
+
                 return result.value
             except Exception as e:
                 handle_fatal_error(e)

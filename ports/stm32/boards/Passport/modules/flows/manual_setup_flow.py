@@ -3,6 +3,7 @@
 #
 # manual_setup_flow.py - The main overall flow for manual setup - controls the process
 
+import lvgl as lv
 from flows import (
     Flow,
     SetInitialPINFlow,
@@ -58,7 +59,7 @@ class ManualSetupFlow(Flow):
     async def set_initial_pin(self):
         result = await SetInitialPINFlow().run()
         if not result:
-            pass
+            self.back()
         else:
             self.goto(self.update_firmware)
 
@@ -71,13 +72,19 @@ class ManualSetupFlow(Flow):
         await self.ensure_logged_in()
 
         # Intro page
-        result = await QuestionPage(text='Do you want to update Passport\'s firmware now?').show()
+        result = await QuestionPage(
+            icon=lv.LARGE_ICON_FIRMWARE,
+            text='Do you want to update Passport\'s firmware now?',
+            statusbar={'title': 'UPDATE FIRMWARE', 'icon': lv.ICON_FIRMWARE}).show()
         if not result:
             await ErrorPage(text='We recommend updating Passport\'s firmware at your earliest convenience.').show()
             self.goto(self.setup_seed)
             return
 
-        result = await UpdateFirmwareFlow(reset_after=False).run()
+        result = await UpdateFirmwareFlow(
+            reset_after=False,
+            statusbar={'title': 'UPDATE FIRMWARE', 'icon': lv.ICON_FIRMWARE}
+        ).run()
         if result:
             import machine
             import common

@@ -24,6 +24,7 @@ from .wasabi import WasabiWallet
 # Array of all supported software wallets and their attributes.
 # Used to build wallet menus and drive their behavior.
 supported_software_wallets = [
+    EnvoyWallet,
     BitcoinCoreWallet,
     BlueWallet,
     BtcPayWallet,
@@ -31,7 +32,6 @@ supported_software_wallets = [
     CasaWallet,
     # DuxReserveWallet,
     ElectrumWallet,
-    EnvoyWallet,
     # FullyNodedWallet,
     # GordianWallet,
     # LilyWallet,

@@ -13,7 +13,7 @@ class InsertMicroSDPage(StatusPage):
     def __init__(self, text=None, card_header={'title': 'No microSD'},
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Retry):
         if text is None:
-            text = 'Please insert a microSD card and try again.'
+            text = 'Please insert a\nmicroSD card.'
 
         super().__init__(
             text=text,

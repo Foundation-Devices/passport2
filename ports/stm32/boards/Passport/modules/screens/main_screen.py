@@ -4,6 +4,7 @@
 # main_screen.py - Main screen that shows the recolorable background image, and contains
 #                  the StatusBar and CardNav components.
 
+from styles.colors import CARD_BG_GREY, BLACK
 from views import View
 
 
@@ -17,39 +18,40 @@ class MainScreen(View):
         import lvgl as lv
         from views import StatusBar, CardNav
         from styles import Stylize
+        from display import Display
 
         super().__init__()
         self.set_pos(0, 0)
         self.set_size(lv.pct(100), lv.pct(100))
         self.set_no_scroll()
-
-        from styles.colors import BLACK
         self.bg_color = BLACK
 
         with Stylize(self) as default:
             default.bg_color(BLACK)
 
-        # NOTE: The code below is a bit more complex as we draw a black border and rounded black corners on the
-        #       screen to help avoid seeing the sharp screen corners under the rounded corners of the plastic
-        #       front cover.
-        # Split the background into two parts so we can use two gradients
-        self.gradient = View()
-        self.gradient.set_pos(1, 1)
-        self.gradient.set_size(240 - 2, 320 - 2)
+        w = Display.WIDTH
+        h = Display.HEIGHT
 
-        # Diagonal lines background overlay
-        self.right_container = View()
-        # TODO: Make these calculated by screen height/width so they work for Gen 1 too
-        self.right_container.set_pos(240 // 2, 1)
-        self.right_container.set_size(240 // 2 - 1, 320 - 2)
-        with Stylize(self.right_container) as default:
-            default.bg_img(lv.IMAGE_DIAGONAL_LINES, tiled=True, opa=72)
+        # BG Container
+        self.bg_container = View()
+        self.bg_container.set_pos(1, 1)
+        self.bg_container.set_size(w - 2, h - 2)
 
+        # Overlay
+        self.overlay = View()
+        self.overlay.set_pos(1, 1)
+        self.overlay.set_size(w - 2, h - 2)
+        with Stylize(self.overlay) as default:
+            default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
+            default.radius(8)
+
+        # Main content container
         self.main_container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
+        self.main_container.set_pos(0, 0)
+        self.main_container.set_size(w, h)
+
         with Stylize(self.main_container) as default:
             default.pad_row(0)
-        self.main_container.set_pos(0, 0)
-        self.main_container.set_size(lv.pct(100), lv.pct(100))
 
         self.update_background()
 
@@ -62,16 +64,13 @@ class MainScreen(View):
 
         self.main_container.set_children([self.statusbar, self.card_nav])
 
-        self.set_children([self.gradient, self.right_container, self.main_container])
+        self.set_children([self.bg_container, self.overlay, self.main_container])
 
     def update_background(self):
-        import lvgl as lv
         from styles.local_style import LocalStyle
 
-        # Apply a style for the background gradient
-        with LocalStyle(self.gradient) as style:
-            style.bg_gradient(self.bg_color, lv.color_hex(0xF7F7F7), stop1=10, stop2=192)
-            style.radius(8)
+        with LocalStyle(self.bg_container) as style:
+            style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
 
     def get_title(self):
         return self.statusbar.title

@@ -3,6 +3,7 @@
 #
 # connect_wallet_flow.py - Connect a new software wallet with Passport.
 
+import lvgl as lv
 from flows import Flow, ImportMultisigWalletFlow
 from pages import (
     AddressTypeChooserPage,
@@ -30,6 +31,7 @@ from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
 from utils import random_hex, spinner_task
 import common
+import microns
 from errors import Error
 
 
@@ -76,16 +78,14 @@ def get_addresses_in_range(start, end, addr_type, acct_num, ms_wallet):
 
 
 class ConnectWalletFlow(Flow):
-    def __init__(self, sw_wallet=None):
+    def __init__(self, sw_wallet=None, statusbar=None):
         self.sw_wallet = find_wallet_by_label(sw_wallet, None)
         if self.sw_wallet is not None:
             start_state = self.choose_sig_type
         else:
             start_state = self.choose_sw_wallet
 
-        super().__init__(initial_state=start_state, name='ConnectWalletFlow')
-        # TODO: Use the following line to save the state in the connect flow
-        # super().__init__(initial_state=start_state, name='ConnectWalletFlow', settings_key='connect_wallet_state')
+        super().__init__(initial_state=start_state, name='ConnectWalletFlow', statusbar=statusbar)
 
         self.acct_num = common.ui.get_active_account().get('acct_num')
         self.sig_type = None
@@ -242,7 +242,11 @@ class ConnectWalletFlow(Flow):
                 'pairing_microsd', 'Next, Passport will save a {} file to your microSD card to use with {}.'.format(
                     ext, self.sw_wallet['label']))
 
-        result = await InfoPage(text=msg).show()
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_CONNECT,
+            text=msg,
+            left_micron=microns.Back,
+            right_micron=microns.Forward).show()
         if not result:
             if not self.back():
                 self.set_result(False)
@@ -269,7 +273,7 @@ class ConnectWalletFlow(Flow):
         qr_type = self.export_mode['qr_type']
 
         # Show the QR code
-        result = await ShowQRPage(statusbar={'title': 'SCAN TO CONNECT'}, qr_type=qr_type, qr_data=data).show()
+        result = await ShowQRPage(statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT}, qr_type=qr_type, qr_data=data).show()
         if result is False:
             if not self.back():
                 self.set_result(False)
@@ -432,7 +436,11 @@ class ConnectWalletFlow(Flow):
                 'On the next page, scan a receive address from {}.'.format(self.sw_wallet['label'])
                 ]
 
-        result = await InfoPage(text=msgs, left_micron=microns.Back, right_micron=microns.Forward).show()
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_CONNECT,
+            text=msgs,
+            left_micron=microns.Back,
+            right_micron=microns.Forward).show()
         if not result:
             if not self.back():
                 self.set_result(False)

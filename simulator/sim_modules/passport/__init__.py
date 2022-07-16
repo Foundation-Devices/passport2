@@ -112,7 +112,7 @@ class System:
             end_ticks = ticks_ms()
 
     def validate_firmware_header(self, buf):
-        return True
+        return (True, '2.0.1', None, False)
 
     def enable_lv_refresh(self, enable):
         pass

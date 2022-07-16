@@ -18,7 +18,7 @@ class SetupModeChooserPage(ChooserPage):
     def __init__(self, left_micron=microns.Back):
         super().__init__(
             options=self.OPTIONS,
-            icon=lv.LARGE_ICON_QUESTION,
+            icon=lv.LARGE_ICON_SETUP,
             text='How would you like to\nset up your Passport?',
             center=True,
             item_icon=None,

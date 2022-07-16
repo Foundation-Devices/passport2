@@ -168,7 +168,7 @@ def handle_fatal_error(exc):
 
             # Switch immediately to a new card to show the error
             fatal_error_card = {
-                'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_ABOUT},
+                'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_INFO},
                 'page_micron': microns.PageDot,
                 'bg_color': BLACK,
                 'flow': PageFlow,

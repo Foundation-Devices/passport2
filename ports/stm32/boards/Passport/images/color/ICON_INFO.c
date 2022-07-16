@@ -11,10 +11,10 @@
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
-#ifndef LV_ATTRIBUTE_IMG_ICON_ABOUT
-#define LV_ATTRIBUTE_IMG_ICON_ABOUT
+#ifndef LV_ATTRIBUTE_IMG_ICON_INFO
+#define LV_ATTRIBUTE_IMG_ICON_INFO
 #endif
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_ABOUT uint8_t ICON_ABOUT_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_INFO uint8_t ICON_INFO_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0xff, 0xff, 0xff, 0x21, 	/*Color of index 1*/
   0xfe, 0xfe, 0xfe, 0x6f, 	/*Color of index 2*/
@@ -42,12 +42,12 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_ABOUT uint8_t ICON_ABOUT_map[
   0x00, 0x00, 0x14, 0x00, 0x00, 
 };
 
-const lv_img_dsc_t ICON_ABOUT = {
+const lv_img_dsc_t ICON_INFO = {
   .header.cf = LV_IMG_CF_INDEXED_2BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 20,
   .header.h = 20,
   .data_size = 117,
-  .data = ICON_ABOUT_map,
+  .data = ICON_INFO_map,
 };

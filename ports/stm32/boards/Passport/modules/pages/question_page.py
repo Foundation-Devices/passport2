@@ -11,11 +11,11 @@ import microns
 
 class QuestionPage(StatusPage):
     def __init__(
-            self, text=None, card_header=None, statusbar=None, left_micron=microns.Cancel,
+            self, text=None, icon=lv.LARGE_ICON_QUESTION, card_header=None, statusbar=None, left_micron=microns.Cancel,
             right_micron=microns.Checkmark):
         super().__init__(
             text=text,
-            icon=lv.LARGE_ICON_QUESTION,
+            icon=icon,
             icon_color=FD_BLUE,
             card_header=card_header,
             statusbar=statusbar,

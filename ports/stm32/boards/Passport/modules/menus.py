@@ -5,6 +5,7 @@
 
 import lvgl as lv
 from utils import has_seed
+from pages import ColorPickerPage
 
 
 def manage_account_menu():
@@ -13,8 +14,9 @@ def manage_account_menu():
 
     return [
         {'icon': lv.ICON_FOLDER, 'label': 'Account Details', 'page': AccountDetailsPage},
-        {'icon': lv.ICON_ABOUT, 'label': 'Rename Account', 'flow': RenameAccountFlow},
-        {'icon': lv.ICON_FOLDER, 'label': 'Connect Wallet', 'flow': ConnectWalletFlow},
+        {'icon': lv.ICON_INFO, 'label': 'Rename Account', 'flow': RenameAccountFlow},
+        {'icon': lv.ICON_CONNECT, 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}},
         {'icon': lv.ICON_CANCEL, 'label': 'Delete Account', 'flow': DeleteAccountFlow},
     ]
 
@@ -49,8 +51,8 @@ def device_menu():
     return [
         {'icon': lv.ICON_BRIGHTNESS, 'label': 'Screen Brightness', 'page': BrightnessSettingPage},
         {'icon': lv.ICON_COUNTDOWN, 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
-        {'icon': lv.ICON_CHANGE_PIN, 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
-        {'icon': lv.ICON_ABOUT, 'label': 'About', 'flow': AboutFlow},
+        {'icon': lv.ICON_PIN, 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_INFO, 'label': 'About', 'flow': AboutFlow},
     ]
 
 
@@ -62,8 +64,8 @@ def backup_menu():
         {'icon': lv.ICON_RETRY, 'label': 'Restore', 'flow': RestoreBackupFlow,
          'args': {'refresh_cards_when_done': True}},
         {'icon': lv.ICON_CIRCLE_CHECK, 'label': 'Verify Backup', 'flow': VerifyBackupFlow},
-        {'icon': lv.ICON_CHANGE_PIN, 'label': 'View Backup Code', 'flow': ViewBackupCodeFlow,
-            'statusbar': {'title': 'BACKUP', 'icon': lv.ICON_CHANGE_PIN}, 'is_visible': has_seed}
+        {'icon': lv.ICON_PIN, 'label': 'View Backup Code', 'flow': ViewBackupCodeFlow,
+            'statusbar': {'title': 'BACKUP', 'icon': lv.ICON_PIN}, 'is_visible': has_seed}
     ]
 
 
@@ -98,7 +100,7 @@ def update_menu():
 
     return [
         {'icon': lv.ICON_FIRMWARE, 'label': 'Update Firmware', 'flow': UpdateFirmwareFlow, 'is_visible': is_logged_in},
-        {'icon': lv.ICON_ABOUT, 'label': 'Current Version', 'flow': ViewCurrentFirmwareFlow, 'statusbar': {}},
+        {'icon': lv.ICON_INFO, 'label': 'Current Version', 'flow': ViewCurrentFirmwareFlow, 'statusbar': {}},
     ]
 
 
@@ -108,7 +110,7 @@ def microsd_menu():
     return [
         {'icon': lv.ICON_MICROSD, 'label': 'Format Card', 'flow': FormatMicroSDFlow},
         {'icon': lv.ICON_FILE, 'label': 'List Files', 'flow': ListFilesFlow},
-        {'icon': lv.ICON_ABOUT, 'label': 'Export Summary', 'flow': ExportSummaryFlow, 'is_visible': has_seed},
+        {'icon': lv.ICON_INFO, 'label': 'Export Summary', 'flow': ExportSummaryFlow, 'is_visible': has_seed},
     ]
 
 

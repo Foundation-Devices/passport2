@@ -29,6 +29,8 @@ class ScvFlow(Flow):
         self.envoy = envoy
         self.uuid = None
 
+        self.statusbar = {'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}
+
     async def show_intro(self):
         from pages import ShieldPage
 
@@ -44,33 +46,33 @@ class ScvFlow(Flow):
 
         result = await ShieldPage(
             text=text,
-            statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD},
             left_micron=microns.Back, right_micron=microns.Forward).show()
         if result:
             self.goto(self.scan_qr_challenge)
         else:
-            self.set_result(False)
+            self.set_result(None)
 
     async def scan_qr_challenge(self):
         from utils import recolor
-        # result = await ScanQRPage(statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD},
         result = await ScanQRPage(left_micron=microns.Cancel, right_micron=None, decode_cbor_bytes=False).show()
 
         # User did not scan anything
         if result is None:
             from pages import QuestionPage
             if self.envoy:
-                cancel = await QuestionPage(text='Cancel Envoy Setup?\n\n{}'.format(
-                    recolor(FD_BLUE_HEX, '(Not recommended)')),
-                    statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}).show()
+                cancel = await QuestionPage(
+                    text='Cancel Envoy Setup?\n\n{}'.format(
+                        recolor(FD_BLUE_HEX, '(Not recommended)'))
+                ).show()
                 if cancel:
                     self.set_result(None)
                 else:
                     return
             else:
-                skip = await QuestionPage(text='Skip Security Check?\n\n{}'.format(
-                    recolor(FD_BLUE_HEX, '(Not recommended)')),
-                    statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}).show()
+                skip = await QuestionPage(
+                    text='Skip Security Check?\n\n{}'.format(
+                        recolor(FD_BLUE_HEX, '(Not recommended)'))
+                ).show()
                 if skip:
                     common.settings.set('validated_ok', True)
                     self.set_result(True)
@@ -94,6 +96,7 @@ class ScvFlow(Flow):
                 crypto_request.decode()
             except URException:
                 await self.show_error('Security Check QR code is invalid (3).')
+                return
 
             self.uuid = crypto_request.uuid
             challenge = crypto_request.scv_challenge
@@ -112,6 +115,7 @@ class ScvFlow(Flow):
                 # print('Manual: challenge={}'.format(challenge))
             except Exception as e:
                 await self.show_error('Security Check QR code is invalid (5).')
+                return
 
         id_hash = bytearray(32)
         foundation.sha256(challenge['id'], id_hash)
@@ -205,9 +209,10 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
         from pages import QuestionPage
         from utils import recolor
 
-        skip = await QuestionPage(text='Skip Security Check?\n\n{}'.format(
-            recolor(FD_BLUE_HEX, '(Not recommended)')),
-            statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}).show()
+        skip = await QuestionPage(
+            text='Skip Security Check?\n\n{}'.format(
+                recolor(FD_BLUE_HEX, '(Not recommended)'))
+        ).show()
         if skip:
             common.settings.set('validated_ok', True)
             self.set_result(True)

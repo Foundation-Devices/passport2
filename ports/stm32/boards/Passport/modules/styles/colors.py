@@ -6,6 +6,7 @@
 # Standard color bible
 
 import lvgl as lv
+import passport
 
 # Sometimes we need just the hex value, so we define them separately, but
 # also define an actual LVGL color object.
@@ -68,18 +69,28 @@ LIGHT_COPPER_HEX = 0xD2A794
 LIGHT_COPPER = lv.color_hex(LIGHT_COPPER_HEX)
 
 # Card colors
-CARD_BG_HEX = 0xF9F7F6
-CARD_BG = lv.color_hex(CARD_BG_HEX)
+CARD_BG_GREY_HEX = 0xF9F7F6
+CARD_BG_GREY = lv.color_hex(CARD_BG_GREY_HEX)
 
 CARD_BORDER_HEX = 0xFEFEFE
 CARD_BORDER = lv.color_hex(CARD_BORDER_HEX)
 
 # Account Colors
-ACCOUNT_COLORS = [
-    {'bg': lv.color_hex(0xBF755F), 'fg': WHITE},
-    {'bg': lv.color_hex(0x009DB9), 'fg': WHITE},
-    {'bg': lv.color_hex(0x007A7A), 'fg': WHITE},
-    {'bg': lv.color_hex(0xD68B6E), 'fg': WHITE},
-    {'bg': lv.color_hex(0x00BDCD), 'fg': WHITE},
-    {'bg': lv.color_hex(0x2B8A7A), 'fg': WHITE},
-]
+if passport.IS_SIMULATOR:
+    ACCOUNT_COLORS = [
+        {'bg': lv.color_hex(0xBF755F), 'fg': WHITE},
+        {'bg': lv.color_hex(0x009DB9), 'fg': WHITE},
+        {'bg': lv.color_hex(0x007A7A), 'fg': WHITE},
+        {'bg': lv.color_hex(0xD68B6E), 'fg': WHITE},
+        {'bg': lv.color_hex(0x00BDCD), 'fg': WHITE},
+        {'bg': lv.color_hex(0x2B8A7A), 'fg': WHITE},
+    ]
+else:
+    ACCOUNT_COLORS = [
+        {'bg': lv.color_hex(0xB04C40), 'fg': WHITE},
+        {'bg': lv.color_hex(0x007088), 'fg': WHITE},
+        {'bg': lv.color_hex(0x086C60), 'fg': WHITE},
+        {'bg': lv.color_hex(0xF06448), 'fg': WHITE},
+        {'bg': lv.color_hex(0x00A0A8), 'fg': WHITE},
+        {'bg': lv.color_hex(0x087C68), 'fg': WHITE},
+    ]

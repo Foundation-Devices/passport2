@@ -3,6 +3,7 @@
 #
 # view_seed_words_flow.py - Confirm the user wants to see this sensitive info, then show it.
 
+import lvgl as lv
 import microns
 from pages import InfoPage, ErrorPage, LongTextPage, QuestionPage
 from flows import Flow
@@ -16,7 +17,8 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_intro(self):
         result = await InfoPage(
-            'Passport is about to display your seed words and, if defined, your passphrase.',
+            icon=lv.LARGE_ICON_SEED,
+            text='Passport is about to display your seed words and, if defined, your passphrase.',
             left_micron=microns.Back, right_micron=microns.Forward).show()
 
         if result:

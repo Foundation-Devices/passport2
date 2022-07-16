@@ -53,7 +53,7 @@ class AutoBackupFlow(Flow):
         from errors import Error
 
         (error,) = await spinner_task(
-            'AutoBackup Running...\nDon\'t remove microSD!',
+            'AutoBackup Running\nDon\'t remove microSD!',
             save_backup_task,
             args=[None, self.backup_code])
         if error is None:

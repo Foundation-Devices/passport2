@@ -3,6 +3,7 @@
 #
 # set_initial_pin_flow.py - Change the user's PIN
 
+import lvgl as lv
 from flows import Flow
 import microns
 
@@ -10,6 +11,8 @@ import microns
 class SetInitialPINFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.intro, name='SetInitialPINFlow')
+
+        self.statusbar = {'title': 'SET PIN', 'icon': lv.ICON_PIN}
 
     async def intro(self):
         from common import pa
@@ -21,9 +24,10 @@ class SetInitialPINFlow(Flow):
             return
 
         result = await InfoPage(
-            text=["Now it's time to set your 6-12 digit PIN.",
-                  "There is no way to recover a lost PIN or reset Passport.",
-                  "Please record your PIN somewhere safe."],
+            icon=lv.LARGE_ICON_PIN,
+            text=['Now it\'s time to set your 6-12 digit PIN.',
+                  'There is no way to recover a lost PIN or reset Passport.',
+                  'Please record your PIN somewhere safe.'],
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if result:
