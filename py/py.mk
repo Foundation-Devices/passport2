@@ -33,7 +33,7 @@ LVGL_BINDING_DIR = $(TOP)/lib/lv_bindings
 LVGL_DIR = $(LVGL_BINDING_DIR)/lvgl
 LVGL_GENERIC_DRV_DIR = $(LVGL_BINDING_DIR)/driver/generic
 INC += -I$(LVGL_BINDING_DIR)
-ALL_LVGL_SRC = $(shell find $(LVGL_DIR) -type f -name '*.h') $(LVGL_BINDING_DIR)/lv_conf.h
+ALL_LVGL_SRC = $(sort $(shell find $(LVGL_DIR) -type f -name '*.h')) $(LVGL_BINDING_DIR)/lv_conf.h
 LVGL_PP = $(BUILD)/lvgl/lvgl.pp.c
 LVGL_MPY = $(BUILD)/lvgl/lv_mpy.c
 LVGL_MPY_METADATA = $(BUILD)/lvgl/lv_mpy.json
@@ -50,7 +50,7 @@ $(LVGL_MPY): $(ALL_LVGL_SRC) $(LVGL_BINDING_DIR)/gen/gen_mpy.py
 LVGL_MPY: $(LVGL_MPY)
 
 CFLAGS_MOD += -Wno-unused-function
-SRC_MOD += $(subst $(TOP)/,,$(shell find $(LVGL_DIR)/src $(LVGL_GENERIC_DRV_DIR) -type f -name "*.c") $(LVGL_MPY))
+SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(LVGL_DIR)/src $(LVGL_GENERIC_DRV_DIR) -type f -name "*.c")) $(LVGL_MPY))
 
 GIT_SUBMODULES += lib/lv_bindings
 
@@ -84,7 +84,7 @@ $(SECP256K1_MPY): $(SECP256K1_ECMULT_STATIC_CONTEXT_H)
 #lodepng
 LODEPNG_DIR = $(TOP)/lib/lv_bindings/driver/png/lodepng
 MP_LODEPNG_C = $(TOP)/lib/lv_bindings/driver/png/mp_lodepng.c
-ALL_LODEPNG_SRC = $(shell find $(LODEPNG_DIR) -type f)
+ALL_LODEPNG_SRC = $(sort $(shell find $(LODEPNG_DIR) -type f))
 LODEPNG_MODULE = $(BUILD)/lodepng/mp_lodepng.c
 LODEPNG_C = $(BUILD)/lodepng/lodepng.c
 LODEPNG_PP = $(BUILD)/lodepng/lodepng.pp.c
@@ -113,7 +113,7 @@ SRC_USERMOD_CXX :=
 CFLAGS_USERMOD :=
 CXXFLAGS_USERMOD :=
 LDFLAGS_USERMOD :=
-$(foreach module, $(wildcard $(USER_C_MODULES)/*/micropython.mk), \
+$(foreach module, $(sort $(wildcard $(USER_C_MODULES)/*/micropython.mk)), \
     $(eval USERMOD_DIR = $(patsubst %/,%,$(dir $(module))))\
     $(info Including User C Module from $(USERMOD_DIR))\
 	$(eval include $(module))\
@@ -128,11 +128,11 @@ endif
 
 # FOUNDATION CHANGE: BEGIN
 ifeq ($(SCREEN_MODE),COLOR)
-SRC_MOD += $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/color -type f -name "*.c"))
+SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/color -type f -name "*.c")))
 endif
 
 ifeq ($(SCREEN_MODE),MONO)
-SRC_MOD += $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/mono -type f -name "*.c"))
+SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/mono -type f -name "*.c")))
 endif
 # FOUNDATION CHANGE: END
 
