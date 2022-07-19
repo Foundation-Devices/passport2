@@ -108,7 +108,7 @@ class ShowQRPage(Page):
         self.prev_brightness = common.system.get_screen_brightness(100)
         try:
             self.curr_brightness_idx = brightness_levels.index(self.prev_brightness)
-        except:
+        except ValueError:
             self.curr_brightness_idx = 4
 
     def detach(self):

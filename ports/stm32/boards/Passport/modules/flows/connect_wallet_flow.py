@@ -273,7 +273,10 @@ class ConnectWalletFlow(Flow):
         qr_type = self.export_mode['qr_type']
 
         # Show the QR code
-        result = await ShowQRPage(statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT}, qr_type=qr_type, qr_data=data).show()
+        result = await ShowQRPage(
+            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT},
+            qr_type=qr_type,
+            qr_data=data).show()
         if result is False:
             if not self.back():
                 self.set_result(False)
