@@ -28,7 +28,7 @@ Code specific to Passport is included in the following folders:
 -   [`ports/stm32/boards/Passport`](ports/stm32/boards/Passport) C files that implement some device drivers and code that was 5-10 times faster in C than in Python.
     -   [`bootloader`](ports/stm32/boards/Passport/bootloader) C-based code that handles secure element initialization, firmware validation and updates, and system startup.
     -   [`common`](ports/stm32/boards/Passport/common) Common C code shared between the bootloader and the main firmware.
-    -   [`graphics`](ports/stm32/boards/Passport/graphics) Images and a build script that converts the images to Python data for easier loading.
+    -   [`images`](ports/stm32/boards/Passport/images) Images and a build script that converts the images to C data for LVGL to load.
     -   [`modules`](ports/stm32/boards/Passport/modules) The MicroPython code that implements the user interface and menu actions.
     -   [`trezor-firmware`](extmod/trezor-firmware) Contains a copy of the Trezor source code in order to use Trezor's crypto library. Only a small subset of this source code is included in Passport.
     -   [`tools`](ports/stm32/boards/Passport/tools) - Folder that contains the following tools for Passport development
