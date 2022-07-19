@@ -6,33 +6,40 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Development
 
-This document describes how to develop for Passport.
+This document describes how to develop for Passport.  The instructions below describe how to setup the developent environment and build Passport on a system running **Ubuntu 20.04**.  This OS is used for official Passport builds, as well as in the Dockerfile descibed below which creates reproducible builds.
 
-## Operating System
-While Passport may compile on other Linux distributions, the instructions below are based on **Ubuntu 18.04**, which is also what is used for official Passport builds.
+## Setup
+In order to build the Passport firmware, you need to:
 
-## Installation
+* Get the source code
+* Install the dependencies
+* Run the build or sign command
 
 ### Get the Source Code
-The instructions below assume you are installing into your home folder at `~/passport-firmware`.  You can choose
+The instructions below assume you are installing into your home folder at `~/passport2`.  You can choose
 to install to a different folder, and just update command paths appropriately.
 
     cd ~/
-    git clone git@github.com:Foundation-Devices/passport-firmware.git
+    git clone git@github.com:Foundation-Devices/passport2.git
 
 ### Install Dependencies
-Several tools are required for building and debugging Passport.
+Several tools are required for building Passport.
 
 #### Cross-Compiler Toolchain
+The cross compiler enables your PC to build code for the STM32H753 MCU used by Passport.  Use the following commands to install and build the cross compiler and MicroPython tools.
+
     sudo apt install gcc-arm-none-eabi
-    cd ~/passport-firmware
+    cd ~/passport2
     make -C mpy-cross
 
-#### Autotools and USB
+#### Autotools
+The makefiles used by MicroPython and Passport firmware use Autotools.  Install Autotools and related packages with the following command:
 
     sudo apt install autotools-dev automake libusb-1.0.0-dev libtool python3-virtualenv libsdl2-dev pkg-config curl
 
 #### OpenOCD - On-Chip Debugger
+OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only required for developers with a special Developer version of the Passport board.  If all you want to do is build the firmware and install it with a Developer Pubkey over microSD, then you do not need to install OpenOCD.
+
     cd ~/
     git clone https://github.com/ntfreak/openocd.git
     cd ~/openocd/
@@ -41,194 +48,81 @@ Several tools are required for building and debugging Passport.
     make
     sudo make install
 
-#### RShell - Micropython Shell and REPL
-    cd ~/
-    git clone https://github.com/dhylands/rshell
-    sudo apt install python3-pip
-    sudo pip3 install rshell                                  # (this should install rshell in /usr/local/)
 
-### Using Justfile commands
-To use Just for running commands, first follow the instructions here: https://github.com/casey/just#installation to install Just. Note that `Pillow` must be updated to `8.3.1` for all commands to work properly.
+## Building Passport Firmware
+Passport comes with a a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by following the instructions here:
 
-Once Just has been installed, the developer can use `just` commands to perform actions such as building, flashing, resetting and even taking screenshots of the displays screen.
+    https://github.com/casey/just#installation
+    
+Note that Python `Pillow` must be updated to `8.4.0` for all commands to work properly using the following command:
 
-Note that all `just` commands must be run from `ports/stm32/` directory.
+    pip install Pillow==8.4.0
 
-Here are some of the most common `just` commands and their usages:
+To build firmware for Passport, you can run the `just` commands in `ports/stm32/Justfile`.  You'll typically want to be in the `ports/stm32` folder to run these commands.
 
-    just flash {version} - Builds if necessary, signs with a user key and then flashes the device with the firmware binary created under `build-Passport/`
-    just reset - Resets the device
-    just screenshot {filename} - Screenshots the device and saves to the desired filename
+To build and sign the firmware with a Developer Pubkey, use one of the following commands:
 
-See the `Justfile` included in our source for the full list of `just` commands.
+    just sign 2.0.4 color
+    just sign 2.0.4 mono
 
-## Building
-### Open Shell Windows/Tabs
-You will need several shell windows or tabs open to interact with the various tools.
+If you just want to build without signing, use one of the following commands:
 
-### Build Window
+    just build color
+    just build mono
 
-#### Building the Simulators
-TBD: 
-    virtualenv -p python3 ENV
-    source ENV/bin/activate
-    pip install -r requirements.txt
+There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
 
+#### Building the Simulator
+First, make sure you are in the simulator folder:
 
-#### Building the Main Firwmare
-In one shell, make sure that you `cd` to the root `stm32` source folder, e.g., `cd ~/passport-firmware/ports/stm32`:
+    cd simulator
 
-    make BOARD=Passport
+Then run one of the simulator `just` commands:
 
-To include debug symbols for use in `ddd`, run the following:
+    just sim color
+    just sim mono
 
-    make BOARD=Passport DEBUG=1
-
-You should see it building various `.c` files and freezing `.py` files.  Once complete, the final output should look similar to the following:
-
-    LINK build-Passport/firmware.elf
-    text	   data	    bss	    dec	    hex	filename
-    475304	    792	  57600	 533696	  824c0	build-Passport/firmware.elf
-    GEN build-Passport/firmware.dfu
-    GEN build-Passport/firmware.hex
-
-If you are using `just` commands, then building the firmware can be done by running the following command:
-
-    just build
 
 #### Code Signing
-In order to load the files onto the device, they need to first be signed by two separate keys.
-The `cosign` program performs this task, and it needs to be called twice with two separate
-private keys.
+In order to load the files onto the device, they need to first be signed either by two separate keys (for Foundation's official updates), or by a Developer Pubkey if you are signing your own custom builds.  Since you are probably not a developer at Foundation, we'll just describe the process for the Developer Pubkey below.
+
+Foundation developed a tool called `cosign`, which we use internally to double-sign official firmware, and which you can use to sign with a Developer Pubkey.
 
 First, you need to build the `cosign` tool and copy it somewhere in your `PATH`:
 
-    sudo apt-get install libssl-dev
+    sudo apt install libssl-dev
     cd ports/stm32/boards/Passport/tools/cosign
     make
     cp x86/release/cosign ~/.local/bin   # You can run `echo $PATH` to see the list of possible places you can put this file
 
+Next you need to sign the firmware and give it a version number.  Once signed, `cosign` will output a filename of the format `v2.0.3-passport.bin`, but with the version number
+replaced with whatever you specified.  Note that you need to tell `cosign` whether you are signing for a `mono` (Founder's Edition) Passport or a `color` (Batch 2 onward) Passport.
 
-Next you need to sign the firmware twice.  The `cosign` tool appends `-signed` to the end of the main filename each time it signs.
-Assuming you are still in the `ports/stm32` folder run the following:
+    cosign -f build-Passport/firmware-COLOR.bin -k mykeys/user-pub.pem -t color -v 2.0.3
 
-    # TODO: Update command arguments once final signing flow is in place
-    cosign -f build-Passport/firmware.bin -k 1 -v 0.9
-    cosign -f build-Passport/firmware-signed.bin -k 2
+or
 
-You can also dump the contents of the firmware header with the following command:
+    cosign -f build-Passport/firmware-MONO.bin -k mykeys/user-pub.pem -t mono -v 2.0.3
 
-    cosign -f build-Passport/firmware-signed-signed.bin -x
+Note that the `Justfile` in `ports/stm32` contains a `just sign` command that you can use just by placing your private key in `~/bin/keys/user.pem`.  Alternatively, you can
+customize the location by setting `cosign_keypath` at the top of the `Justfile`.
 
-If you are using `just` commands, then signing the firmware can be done by running the following command with the desired version:
+    just sign 2.0.3 color
 
-    just sign 1.0.7
+You can also print the contents of the firmware header with the following command:
 
-It will build the firmware first if necessary.
+    cosign -f build-Passport/firmware-signed-signed.bin -p -t color
+
+The signed firmware can be put onto a microSD card and installed on Passport.  You just need to upload the corresponding Developer Pubkey first.
+
+***TBD: Insert link to article on installing Developer Pubkey***
 
 #### Building the Bootloader
-To build the bootloader do the following:
+To build the bootloader for a reproducibility check, go to the repo root folder:
 
-    cd ports/stm32/boards/Passport/bootloader folder
-    make
+    cd ~/passport2
 
-If you're using dev. board and wish to swap out the secure element chip, you can define
-`USE_DEVBOARD_SE_SOCKET` for the bootloader to use the chip from dev. board socket.
+Then run one of the following commands to build the corresponding bootloader:
 
-### OpenOCD Server Window
-OpenOCD server provides a socket on `localhost:4444` that you can connect to and issue commands.  This server acts as an intermediary between that socket and the board connected over JTAG.
-
-Once the OpenOCD server is running, you can pretty much ignore this window.  You will interact with the OpenOCD client window (see below).  Open a second shell and run the following:
-
-    /usr/local/bin/openocd -f stlink.cfg -c "adapter speed 1000; transport select hla_swd" -f stm32h7x.cfg
-
-You should see output similar to the following:
-
-    Open On-Chip Debugger 0.10.0+dev-01383-gd46f28c2e-dirty (2020-08-24-08:31)
-    Licensed under GNU GPL v2
-    For bug reports, read
-        http://openocd.org/doc/doxygen/bugs.html
-    hla_swd
-    Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
-    Info : Listening on port 6666 for tcl connections
-    Info : Listening on port 4444 for telnet connections
-    Info : clock speed 1800 kHz
-    Info : STLINK V2J29S7 (API v2) VID:PID 0483:3748
-    Info : Target voltage: 2.975559
-    Info : stm32h7x.cpu0: hardware has 8 breakpoints, 4 watchpoints
-    Info : starting gdb server for stm32h7x.cpu0 on 3333
-    Info : Listening on port 3333 for gdb connections
-
-### OpenOCD Client Window (aka `telnet` Window)
-We use `telnet` to connect to the OpenOCD Server.  Open a third shell and run the following:
-
-    telnet localhost 4444
-
-From here can connect over JTAG and run a range of commands (see the help for OpenOCD for details):
-
-Whenever you change any code in the `bootloader` folder or in the `common` folder, you will need to rebuild the bootloader (see above), and then flash it to the device with the following sequence in OpenOCD:
-
-    reset halt
-    flash write_image erase boards/Passport/bootloader/arm/release/bootloader.bin 0x8000000
-    reset
-
-### TBD: Add docs on appending secrets to the end of the bootloader.bin file during development.
-
-The following command sequence is one you will run repeatedly (i.e., after each build):
-
-    reset halt
-    flash write_image erase build-Passport/firmware-signed-signed.bin 0x8020000
-    reset
-
-These commands do the following:
-
-- Stop execution of code on the MCU
-- Write the firmware to flash at address 0x8000000
-- Reset the MCU and start executing code at address 0x8000000
-
-If you are using `just` commands, ocd and telnet steps are not required and instead, flashing the firmware can be done using the following command with the desired version number:
-
-    just flash 1.0.7
-
-It will build and sign the firmware first if necessary.
-
-### RShell Window
-We use `rshell` to connect to the MicroPython device over USB serial.  Open another shell and run:
-
-    sudo rshell -p /dev/ttyUSB0
-
-This gives us an interactive shell where we can do things like inspect the flash file system, or run a REPL:
-
-- `ls -la /flash` - Get a listing of the files in `/flash` on the device
-- `cp local_folder/my_math.py /flash` - Copy a local file into `/flash`
-- `repl` - Open a MicroPython REPL.  If there are any files in `/flash`, you can import them.  For example:
-
-```
-import my_math
-my_math.add(1, 2)
-```
-
-### Debugging with DDD
-To debug the firmware, open a new shell window or tab and run the following command from the `passport/ports/stm32` folder:
-
-    ddd --debugger gdb-multiarch build-Passport/firmware.elf &
-
-To debug the bootloader, open a new shell window or tab and run the following command from the `passport/ports/stm32/boards/Passport/bootloader` folder:
-
-    ddd --debugger gdb-multiarch bootloader.elf &
-
-Go to the `telnet` session with OpenOCD and run the following to prepare to connect DDD:
-
-    reset halt
-
-Next, connect DDD to the OpenOCD GDB server with:
-
-    target remote localhost:3333
-
-From here you can run normal GDB commands like:
-
-    b stm32_main          # Stop at stm32_main, which is MicroPython's entry point
-    list main.c           # Show the main.c file at line 1
-    c                     # continue
-    n                     # step over
-    s                     # step into
+    just build color
+    just build mono
