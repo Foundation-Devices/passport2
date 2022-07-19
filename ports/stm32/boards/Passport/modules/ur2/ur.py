@@ -141,19 +141,23 @@ class EnvoyURCryptoRequest(URCryptoRequest):
     """Envoy crypto-request uniform resource"""
 
     _TAG_SCV_CHALLENGE_REQUEST = const(710)
-    _TAG_FIRMWARE_VERSION_REQUEST = const(720)
+    _TAG_PASSPORT_MODEL_REQUEST = const(720)
+    _TAG_PASSPORT_FIRMWARE_VERSION_REQUEST = const(770)
 
     def __init__(self, cbor=None):
         super().__init__(cbor=cbor)
 
         self.scv_challenge = None
-        self.firmware_version_request = None
+        self.passport_firmware_version_request = False
+        self.passport_model_request = False
 
     def _decode_tag(self, tag):
         if tag == _TAG_SCV_CHALLENGE_REQUEST:
             self._decode_scv_challenge()
-        elif tag == _TAG_FIRMWARE_VERSION_REQUEST:
-            self._decode_firmware_version_request()
+        elif tag == _TAG_PASSPORT_MODEL_REQUEST:
+            self._decode_passport_model_request()
+        elif tag == _TAG_PASSPORT_FIRMWARE_VERSION_REQUEST:
+            self._decode_passport_firmware_version_request()
 
     def _decode_scv_challenge(self):
         self.scv_challenge = {}
@@ -168,29 +172,32 @@ class EnvoyURCryptoRequest(URCryptoRequest):
                 self.scv_challenge['id'] = text
             elif index == 2:
                 self.scv_challenge['signature'] = text
-            # TODO: PASS1-239
-            # elif index == 3:
-            #     self.scv_challenge['derSignature'] = text
 
-    def _decode_firmware_version_request(self):
+    def _decode_passport_model_request(self):
         pass
+
+    def _decode_passport_firmware_version_request(self):
+        # A dummy unsigned(0) is present.
+        self.cbor_decoder.decodeUnsigned()
 
 
 class EnvoyURCryptoResponse(URCryptoResponse):
     """Envoy crypto-response uniform resource"""
 
     _TAG_SCV_CHALLENGE_RESPONSE = const(711)
-    _TAG_SCV_PASSPORT_MODEL = const(721)
+    _TAG_PASSPORT_MODEL_RESPONSE = const(721)
+    _TAG_PASSPORT_FIRMWARE_VERSION_RESPONSE = const(771)
 
     PASSPORT_MODEL_FOUNDERS_EDITION = 1
     PASSPORT_MODEL_BATCH2 = 2
 
-    def __init__(self, uuid=None, words=None, model=PASSPORT_MODEL_BATCH2):
+    def __init__(self, uuid=None, words=None, model=PASSPORT_MODEL_BATCH2, version=None):
         super().__init__(uuid=uuid)
 
         self.words = words
-        self.encode_map_size = 3
+        self.encode_map_size = 4
         self.model = model
+        self.version = version
 
     def encode(self):
         super().encode()
@@ -213,8 +220,12 @@ class EnvoyURCryptoResponse(URCryptoResponse):
         self.cbor_encoder.encodeText(self.words[3])
 
         self.cbor_encoder.encodeUnsigned(3)
-        self.cbor_encoder.encodeTagSemantic(_TAG_SCV_PASSPORT_MODEL)
+        self.cbor_encoder.encodeTagSemantic(_TAG_PASSPORT_MODEL_RESPONSE)
         self.cbor_encoder.encodeUnsigned(self.model)
+
+        self.cbor_encoder.encodeUnsigned(4)
+        self.cbor_encoder.encodeTagSemantic(_TAG_PASSPORT_FIRMWARE_VERSION_RESPONSE)
+        self.cbor_encoder.encodeText(self.version)
 
         self.cbor = self.cbor_encoder.get_bytes()
         return self.cbor

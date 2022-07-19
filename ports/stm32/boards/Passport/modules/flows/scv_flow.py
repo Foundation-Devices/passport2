@@ -150,9 +150,13 @@ class ScvFlow(Flow):
             self.goto(self.show_envoy_response)
 
     async def show_envoy_response(self):
+        from common import system
+
+        (version, _, _, _, _) = system.get_software_info()
         crypto_response = EnvoyURCryptoResponse(uuid=self.uuid,
                                                 words=self.words,
-                                                model=EnvoyURCryptoResponse.PASSPORT_MODEL_BATCH2)
+                                                model=EnvoyURCryptoResponse.PASSPORT_MODEL_BATCH2,
+                                                version=version)
         crypto_response.encode()
         result = await ShowQRPage(qr_type=QRType.UR2,
                                   qr_data=crypto_response,
