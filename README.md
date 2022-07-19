@@ -64,6 +64,8 @@ Passport's firmware incorporates open-source software from several third-party p
 
 -   [MicroPython](https://github.com/micropython/micropython) - This forms the core foundation on which Passport is built.
 
+-   [LVGL for MicroPython](https://github.com/lvgl/lv_micropython) - LVGL is an embedded GUI framework written in C.  LVGL is used to draw all the screens in the main Passport firmware.  Passport uses LVGL via the `lv_micropython` repo, which provides a complete Python interface to LVGL.
+
 -   [Coldcard Firmware](https://github.com/Coldcard/firmware) - Passport's security model has a lot in common with Coldcard, and the Passport firmware was originally based directly on the ColdCard repository. As development progressed, however, we chose to follow MicroPython best practices and start with a fresh MicroPython repository. We've ported numerous files from Coldcard as needed, and we thank them for their great contribution to open source.
 
 -   [Trezor Firmware](https://github.com/trezor/trezor-firmware) - Trezor has kindly open-sourced a highly-optimized library of crypto algorithms. Rather than modify the Trezor code, we decided to include the original source. This will make it easier to incorporate future improvements and fixes from Trezor and their contributors. We may convert this to a git submodule in the future.
