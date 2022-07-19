@@ -15,13 +15,14 @@ from errors import Error
 
 
 class UpdateFirmwareFlow(Flow):
-    def __init__(self, reset_after=True):
+    def __init__(self, reset_after=True, statusbar=None):
         super().__init__(initial_state=self.choose_file, name='UpdateFirmwareFlow')
         self.update_file_path = None
         self.size = 0
         self.version = None
         self.error = None
         self.reset_after = reset_after
+        self.statusbar = statusbar
 
     async def on_done(self, error=None):
         self.error = error

@@ -12,6 +12,7 @@ class InitialSeedSetupFlow(Flow):
     def __init__(self, is_envoy=True):
         super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
         self.is_envoy = is_envoy
+        self.statusbar = {'title': 'CREATE SEED', 'icon': lv.ICON_SEED}
 
     async def show_intro(self):
         from pages import InfoPage
@@ -23,8 +24,10 @@ class InitialSeedSetupFlow(Flow):
             self.set_result(True)
             return
 
-        result = await InfoPage(text='Next, let\'s create or restore a wallet seed.',
-                                left_micron=None, right_micron=microns.Forward).show()
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_SEED,
+            text='Next, let\'s create or restore a wallet seed.',
+            left_micron=None, right_micron=microns.Forward).show()
         if result:
             self.goto(self.show_seed_setup_menu)
 
@@ -38,8 +41,12 @@ class InitialSeedSetupFlow(Flow):
                    {'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)}]
 
-        flow = await OptionsChooserPage(text=None, icon=lv.LARGE_ICON_SHIELD, options=options, default_idx=2,
-                                        left_micron=microns.Back).show()
+        flow = await OptionsChooserPage(
+            text=None,
+            icon=lv.LARGE_ICON_SEED,
+            options=options,
+            default_idx=2,
+            left_micron=microns.Back).show()
         if flow is None:
             self.back()
             return

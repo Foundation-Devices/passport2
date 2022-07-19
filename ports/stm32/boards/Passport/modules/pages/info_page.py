@@ -10,10 +10,12 @@ import microns
 
 
 class InfoPage(StatusPage):
-    def __init__(self, text=None, card_header=None, statusbar=None, left_micron=None, right_micron=microns.Checkmark):
+    def __init__(
+            self, text=None, icon=lv.LARGE_ICON_INFO, card_header=None, statusbar=None, left_micron=None,
+            right_micron=microns.Checkmark):
         super().__init__(
             text=text,
-            icon=lv.LARGE_ICON_INFO,
+            icon=icon,
             icon_color=FD_BLUE,
             card_header=card_header,
             statusbar=statusbar,

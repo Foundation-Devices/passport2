@@ -3,6 +3,7 @@
 #
 # backup_flow.py - Backup Passport to microSD
 
+import lvgl as lv
 from flows import Flow
 from constants import TOTAL_BACKUP_CODE_DIGITS
 from errors import Error
@@ -18,6 +19,8 @@ class BackupFlow(Flow):
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
 
+        self.statusbar = {'title': 'BACKUP', 'icon': lv.ICON_BACKUP}
+
     async def show_intro(self):
         from pages import InfoPage
         from utils import recolor
@@ -32,7 +35,11 @@ class BackupFlow(Flow):
                     'We recommend writing down the Backup Code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
 
-        result = await InfoPage(text=msgs, left_micron=microns.Back, right_micron=microns.Forward).show()
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_BACKUP,
+            text=msgs,
+            left_micron=microns.Back,
+            right_micron=microns.Forward).show()
         if result:
             self.goto(self.get_backup_code)
         else:
@@ -67,6 +74,7 @@ class BackupFlow(Flow):
             card_header={'title': 'Backup Code'}).show()
         if result:
             result = await InfoPage(
+                icon=lv.LARGE_ICON_BACKUP,
                 card_header={'title': 'Backup Code Quiz'},
                 text='Let\'s check that you recorded the Backup Code correctly.').show()
             if not result:

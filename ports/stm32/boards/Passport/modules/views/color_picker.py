@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from styles import Stylize
-from styles.colors import BLACK, BLUE, GREEN, RED, WHITE
+from styles.colors import BLACK, BLUE, GREEN, LIGHT_GREY, RED, WHITE
 from styles.local_style import LocalStyle
 from views import View, Label, Slider
 
@@ -14,7 +14,7 @@ SLIDER_WIDTH = 220
 
 
 class ColorPicker(View):
-    def __init__(self, flex_flow=lv.FLEX_FLOW.COLUMN, initial_color=0xFF0000):
+    def __init__(self, flex_flow=lv.FLEX_FLOW.COLUMN, initial_color=0xBF755F):
         super().__init__(flex_flow=flex_flow)
         with Stylize(self) as default:
             default.bg_color(WHITE)
@@ -101,7 +101,8 @@ class ColorPicker(View):
         red = self.red << 3
         green = self.green << 2
         blue = self.blue << 3
-        color_hex = '#{:02x}{:02x}{:02x}'.format(red, green, blue)
+        color_hex = '##{:02x}{:02x}{:02x}'.format(red, green, blue)
+        print('color_hex={}'.format(color_hex))
         self.color_label.set_text(color_hex)
         with LocalStyle(self.swatch) as default:
             default.bg_color(lv.color_make(red, green, blue))

@@ -141,7 +141,7 @@ class UI():
         return self.set_card_header(title=None)
 
     def create_single_card(self, flow, card=None, args=None, add_settings=False):
-        from styles.colors import CHARCOAL, LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
         import microns
 
         # Add the leftmost settings card
@@ -151,7 +151,7 @@ class UI():
                 'header_fg_color': TEXT_GREY,
                 'statusbar': {'title': 'PASSPORT', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
                 'page_micron': microns.PageDot,
-                'bg_color': CHARCOAL,
+                'bg_color': TEXT_GREY,
                 'flow': flow
             }
 
@@ -177,14 +177,14 @@ class UI():
         from flows import MenuFlow
         from menus import settings_menu
         import microns
-        from styles.colors import CHARCOAL, LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
 
         return {
             'header_color': LIGHT_GREY,
             'header_fg_color': TEXT_GREY,
             'statusbar': {'title': 'SETTINGS', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
             'page_micron': microns.PageHome,
-            'bg_color': CHARCOAL,
+            'bg_color': TEXT_GREY,
             'flow': MenuFlow,
             'args': {'menu': settings_menu, 'is_top_level': True}
         }
@@ -195,7 +195,7 @@ class UI():
         from utils import get_accounts, has_seed
         from menus import account_menu, plus_menu
         from constants import MAX_ACCOUNTS
-        from styles.colors import (BLACK, CHARCOAL, DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE, ACCOUNT_COLORS)
+        from styles.colors import (DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE)
         import microns
 
         # Add the leftmost settings card
@@ -239,8 +239,8 @@ class UI():
                 account_card = {
                     # 'icon': lv.ICON_BITCOIN,
                     'right_icon': lv.ICON_BITCOIN,
-                    'header_color': DARK_GREY,
-                    'header_fg_color': LIGHT_GREY,
+                    'header_color': LIGHT_GREY,
+                    'header_fg_color': TEXT_GREY,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': get_account_fg(account)},
                     'title': account.get('name'),
                     'page_micron': microns.PageDot,

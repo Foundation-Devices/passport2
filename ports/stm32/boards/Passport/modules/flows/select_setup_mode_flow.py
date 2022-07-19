@@ -19,7 +19,7 @@ class SelectSetupModeFlow(Flow):
             self.set_result(True)
             return
 
-        self.prev_statusbar = common.ui.set_statusbar(title='PASSPORT SETUP', icon=lv.ICON_SETUP)
+        self.statusbar = {'title': 'PASSPORT SETUP', 'icon': lv.ICON_SETUP}
 
     async def show_welcome(self):
         from pages import BrandmarkPage, ShutdownPage
@@ -52,7 +52,6 @@ class SelectSetupModeFlow(Flow):
             self.goto(self.show_manual_mode)
         else:
             # The "done" cases end here so that we end up skipping this once it's been completed
-            common.ui.set_statusbar(**self.prev_statusbar)
             self.set_result(False)
 
     async def show_envoy_mode(self):
@@ -64,7 +63,6 @@ class SelectSetupModeFlow(Flow):
             self.back()
             return
         common.settings.set('setup_mode', 'envoy_done')
-        common.ui.set_statusbar(**self.prev_statusbar)
         self.set_result(True, forget_state=True)
 
     async def show_manual_mode(self):
@@ -76,5 +74,4 @@ class SelectSetupModeFlow(Flow):
             self.back()
             return
         common.settings.set('setup_mode', 'manual_done')
-        common.ui.set_statusbar(**self.prev_statusbar)
         self.set_result(True, forget_state=True)

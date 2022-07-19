@@ -128,10 +128,13 @@ class LocalStyle():
         self.set_prop('bg_color', color)
         self.bg_opa(opa if opa is not None else 255)
 
-    def bg_img(self, img_src, opa=None, tiled=False):
+    def bg_img(self, img_src, opa=None, tiled=False, recolor=None, recolor_opa=255):
         self.set_prop('bg_img_src', img_src)
         if opa is not None:
             self.set_prop('bg_opa', opa)
+        if recolor is not None:
+            self.set_prop('bg_img_recolor', recolor)
+            self.set_prop('bg_img_recolor_opa', recolor_opa)
         self.set_prop('bg_img_tiled', tiled)
 
     def bg_transparent(self):

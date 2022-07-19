@@ -3,6 +3,7 @@
 #
 # terms_of_use_flow.py - Show the terms of use and get acceptance from user
 
+import lvgl as lv
 from flows import Flow
 import microns
 import common
@@ -12,6 +13,7 @@ class TermsOfUseFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.show_terms, name='TermsOfUseFlow')
 
+        self.statusbar = {'title': 'TERMS OF USE', 'icon': lv.ICON_INFO}
         # Skip if already accepted
         if common.settings.get('terms_ok') == 1:
             self.set_result(True)

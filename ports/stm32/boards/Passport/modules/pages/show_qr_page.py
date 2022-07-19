@@ -16,6 +16,8 @@ from constants import CARD_BORDER_WIDTH
 
 _FRAME_TIME = const(300)
 
+brightness_levels = [5, 25, 50, 75, 100]
+
 
 class ShowQRPage(Page):
     """Show a page with a QR code for the user to scan"""
@@ -44,6 +46,9 @@ class ShowQRPage(Page):
         self.prev_part = None
         self.prev_global_nav_keys = None
         self.timer = None
+
+        self.prev_brightness = 100
+        self.curr_brightness_idx = 0
 
         self.prev_card_descs = None
         self.prev_card_idx = common.ui.active_card_idx
@@ -100,7 +105,15 @@ class ShowQRPage(Page):
 
         self.prev_part = None
 
+        self.prev_brightness = common.system.get_screen_brightness(100)
+        try:
+            self.curr_brightness_idx = brightness_levels.index(self.prev_brightness)
+        except ValueError:
+            self.curr_brightness_idx = 4
+
     def detach(self):
+        common.display.set_brightness(self.prev_brightness)
+
         if self.is_qr_resizable():
             # Restore the card descs and header, if they were overridden
             if self.prev_card_descs is not None:
@@ -139,6 +152,16 @@ class ShowQRPage(Page):
                     self.qr_size_idx -= 1
                     self.qr_encoder = None
                     ui.set_micron_bar_active_idx(self.qr_size_idx)
+
+            # Handle brightness changes
+            elif key == lv.KEY.UP:
+                if self.curr_brightness_idx < len(brightness_levels) - 1:
+                    self.curr_brightness_idx += 1
+                    common.display.set_brightness(brightness_levels[self.curr_brightness_idx])
+            elif key == lv.KEY.DOWN:
+                if self.curr_brightness_idx > 0:
+                    self.curr_brightness_idx -= 1
+                    common.display.set_brightness(brightness_levels[self.curr_brightness_idx])
 
     def update(self):
         if self.is_attached():

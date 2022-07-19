@@ -18,22 +18,27 @@ The source code is organized according to the standard MicroPython project struc
 
 The source is, broadly speaking, split into two parts:
 
--   **Bootloader.** This is typically flashed into the device permanently at the factory, although we may release developer versions of Passport that allow users to flash their own bootloader.
+-   **Bootloader** - This is typically flashed into the device permanently at the factory, although we may release developer versions of Passport that allow users to flash their own bootloader.
 
--   **Main Firmware.** This is the main, updatable software running on Passport that provides the UI and wallet features.
+-   **Main Firmware** - This is the main, updatable software running on Passport that provides the UI and wallet features.
 
 Code specific to Passport is included in the following folders:
 
 -   [`ports/stm32`](ports/stm32) Low-level platform configuration for MicroPython.
 -   [`ports/stm32/boards/Passport`](ports/stm32/boards/Passport) C files that implement some device drivers and code that was 5-10 times faster in C than in Python.
--   [`bootloader`](ports/stm32/boards/Passport/bootloader) C-based code that handles secure element initialization, firmware validation and updates, and system startup.
--   [`common`](ports/stm32/boards/Passport/common) Common C code shared between the bootloader and the main firmware.
--   [`graphics`](ports/stm32/boards/Passport/graphics) Images and a build script that converts the images to Python data for easier loading.
--   [`modules`](ports/stm32/boards/Passport/modules) The MicroPython code that implements the user interface and menu actions.
--   [`trezor-firmware`](extmod/trezor-firmware) Contains a copy of the Trezor source code in order to use Trezor's crypto library. We will likely make this into a git submodule soon to make it even easier to keep the library up to date.
--   [`tools/cosign`](ports/stm32/boards/Passport/tools/cosign) - A C-based utility that provides the code signing that keeps Passport's firmware safe.
--   [`utils`](ports/stm32/boards/Passport/utils) Some CLI utilities used to generate BIP39 data for seed word lookup.
-
+    -   [`bootloader`](ports/stm32/boards/Passport/bootloader) C-based code that handles secure element initialization, firmware validation and updates, and system startup.
+    -   [`common`](ports/stm32/boards/Passport/common) Common C code shared between the bootloader and the main firmware.
+    -   [`graphics`](ports/stm32/boards/Passport/graphics) Images and a build script that converts the images to Python data for easier loading.
+    -   [`modules`](ports/stm32/boards/Passport/modules) The MicroPython code that implements the user interface and menu actions.
+    -   [`trezor-firmware`](extmod/trezor-firmware) Contains a copy of the Trezor source code in order to use Trezor's crypto library. Only a small subset of this source code is included in Passport.
+    -   [`tools`](ports/stm32/boards/Passport/tools) - Folder that contains the following tools for Passport development
+        -   [`add-secrets`](ports/stm32/boards/Passport/tools/add-secrets) - Simple tool for Foundation developers to append Secure Element secrets to the bootloader when testing new versions.
+        -   [`cosign`](ports/stm32/boards/Passport/tools/cosign) - A C-based utility that implements the code signing that keeps Passport's firmware safe.
+        -   [`pubkey-to-c`](ports/stm32/boards/Passport/tools/pubkey-to-c) - A C-based utility that concerts a pubkey to a C data structure for inclusion in the firmware and bootloader.
+        -   [`se_config_gen`](ports/stm32/boards/Passport/tools/se_config_gen) - Tool for specifying how Passport will use the slots of the Secure Element and generating the configuration data to pass to the chip during provisioning.  The conriguration gets locked down during provisioning and cannot be changed.
+        -   [`version_info`](ports/stm32/boards/Passport/tools/version_info) - A simple bash script for creating a date and version number available in C.
+        -   [`word_list_gen`](ports/stm32/boards/Passport/tools/word_list_gen) - Simple utility for creating optimized word lookup metadata for BIP-39 and bytewords.
+ 
 ## Development
 
 Please see [`DEVELOPMENT.md`](DEVELOPMENT.md) for information on developing for Passport.
@@ -45,6 +50,13 @@ To make building and verifying the firmware a simple process, there is a Dockerf
 ```shell
 just verify-sha <the-sha-sum>
 ```
+Those who wish to see further into this process can look at and run the following commands:
+
+    just build-docker
+    just build-firmware color
+    just build-bootloader
+    shasum -b -a 256 ports/stm32/build-Passport/firmware-COLOR.bin
+
 
 ## Open Source Components
 
@@ -60,9 +72,11 @@ Passport's firmware incorporates open-source software from several third-party p
 
 -   [QRCode](https://github.com/ricmoo/QRCode) - QRCode is a QR code creator library that takes a string or data and encode it to a QR code which can then be displayed on screen, saved to file, etc. This library has a simple clean interface and was easy to integrate.
 
+-   [QRCode](https://github.com/ricmoo/QRCode) - QRCode is a QR code creator library that takes a string or data and encode it to a QR code which can then be displayed on screen, saved to file, etc. This library has a simple clean interface and was easy to integrate.
+
 -   [Foundation UR Python 2.0](https://github.com/Foundation-Devices/foundation-ur-py) - This is our Python port of the UR 2.0 standard from the wonderful Blockchain Commons. It provides the ability to encode/decode multi-part animated QR codes that represent data which is too large to fit in a single QR code. This is the new standard air-gapped wallets are expected to adopt moving forward.
 
--   Foundation UR Python 1.0 (Coming Soon) - This is our Python port of the UR 1.0 standard from BlockChain Commons. It has the same goals as UR 2.0, but was more of an early experiment. Foundation Devices ported this to Python to be compatible with air-gapped software wallets like BlueWallet and Specter.
+-   [Foundation UR Python 1.0](https://github.com/Foundation-Devices/foundation-ur-py) - This is Foundation's Python port of the UR 1.0 standard from BlockChain Commons. It has the same goals as UR 2.0, but was more of an early experiment. Foundation Devices ported this to Python to be compatible with air-gapped software wallets like BlueWallet and Specter.  This standard is out of date and deprecated.  Foundation intends to remove support for UR 1.0 in the near future.
 
 ## Security Vulnerability Disclosure
 Please report suspected security vulnerabilities in private to security@foundationdevices.com. Please do NOT create publicly viewable issues for suspected security vulnerabilities.

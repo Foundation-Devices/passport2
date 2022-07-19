@@ -547,7 +547,7 @@ def start():
                             oled.movie_end()
                     continue
 
-                print('KEY: {}'.format(ch))
+                # print('KEY: {}'.format(ch))
 
                 if ch not in '0123456789xyrldu*#':
                     if ch.isprintable():
