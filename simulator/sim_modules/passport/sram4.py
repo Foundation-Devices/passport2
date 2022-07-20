@@ -10,7 +10,7 @@ def _qr_get_module_size_for_version(version):
 
 def _qr_buffer_size_for_version(version):
     size = _qr_get_module_size_for_version(version)
-    return ((size * size) + 7) // 8
+    return (((size * size) + 7) // 8) + 1
 
 
 def _alloc(ln):

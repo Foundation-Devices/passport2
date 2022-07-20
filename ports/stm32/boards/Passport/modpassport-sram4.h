@@ -19,17 +19,6 @@
 #define PASSPORT_MAX_QR_VERSION (24)
 
 /**
- * @brief Get QR code module size for the specified version.
- */
-#define QR_GET_MODULE_SIZE_FOR_VERSION(version) ((version) * 4 + 17)
-
-/**
- * @brief Get the QR buffer size for the specified version.
- */
-#define QR_BUFFER_SIZE_FOR_VERSION(version) \
-    (((QR_GET_MODULE_SIZE_FOR_VERSION(version) * QR_GET_MODULE_SIZE_FOR_VERSION(version)) + 7) / 8)
-
-/**
  * @brief Attribute used to allocate a static variable in the
  *        SRAM4 section.
  */
@@ -74,13 +63,13 @@ STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_sram4_psbt_tmp256_obj,
                                sizeof(mod_passport_psbt_tmp256));
 
 /// qrcode_buffer: bytearray
-STATIC MP_SRAM4 uint8_t mod_passport_sram4_qrcode_buffer[LV_CANVAS_BUF_SIZE_INDEXED_1BIT(LCD_HOR_RES, LCD_HOR_RES)];
+STATIC MP_SRAM4 uint8_t mod_passport_sram4_qrcode_buffer[LV_QRCODE_IMG_BUF_SIZE(LCD_HOR_RES)];
 STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_sram4_passport_qrcode_buffer_obj,
                                mod_passport_sram4_qrcode_buffer,
                                sizeof(mod_passport_sram4_qrcode_buffer));
 
 /// qrcode_modules_buffer: bytearray
-STATIC MP_SRAM4 uint8_t mod_passport_sram4_qrcode_modules_buffer[QR_BUFFER_SIZE_FOR_VERSION(PASSPORT_MAX_QR_VERSION)];
+STATIC MP_SRAM4 uint8_t mod_passport_sram4_qrcode_modules_buffer[LV_QRCODE_MODULES_BUF_SIZE(PASSPORT_MAX_QR_VERSION)];
 STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_sram4_qrcode_modules_buffer_obj,
                                mod_passport_sram4_qrcode_modules_buffer,
                                sizeof(mod_passport_sram4_qrcode_modules_buffer));
