@@ -91,7 +91,7 @@ int32_t lv_qrcode_get_last_version(lv_obj_t * obj)
 int32_t lv_qrcode_get_min_fit_version(lv_obj_t * obj, uint32_t data_len)
 {
     LV_UNUSED(obj);
-    return qrcodegen_getMinFitVersion(qrcodegen_Ecc_MEDIUM, data_len);
+    return qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, data_len);
 }
 
 lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, int32_t min_version)
@@ -107,7 +107,7 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     lv_img_dsc_t * imgdsc = lv_canvas_get_img(obj);
     lv_coord_t res = LV_MIN(imgdsc->header.w, imgdsc->header.h);
 
-    int32_t qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_MEDIUM, data_len);
+    int32_t qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, data_len);
     if(qr_version <= 0) return LV_RES_INV;
     if(qr_version > qrcode->max_version) return LV_RES_INV;
     if(qr_version < min_version) qr_version = min_version;
@@ -130,7 +130,7 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     lv_memcpy(data_tmp, data, data_len);
 
     bool ok = qrcodegen_encodeBinary(data_tmp, data_len,
-                                     qrcode->modules_buf, qrcodegen_Ecc_MEDIUM,
+                                     qrcode->modules_buf, qrcodegen_Ecc_LOW,
                                      qr_version, qr_version,
                                      qrcodegen_Mask_AUTO, true);
 
