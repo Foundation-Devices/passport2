@@ -15,6 +15,7 @@ class SystemTestFlow(Flow):
     async def intro(self):
         result = await LongTextPage(left_micron=microns.Shutdown, card_header={
             'title': 'System Test', 'icon': None, 'right_text': None},
+            centered=True,
             text='\n\nThe following pages contain system tests to check if this Passport\'s hardware '
             'is working correctly.').show()
         if not result:
