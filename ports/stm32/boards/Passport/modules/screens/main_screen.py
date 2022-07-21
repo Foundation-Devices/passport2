@@ -36,6 +36,8 @@ class MainScreen(View):
         self.bg_container = View()
         self.bg_container.set_pos(1, 1)
         self.bg_container.set_size(w - 2, h - 2)
+        with Stylize(self.bg_container) as default:
+            default.radius(8)
 
         # Overlay
         self.overlay = View()
