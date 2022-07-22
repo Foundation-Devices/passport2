@@ -1066,4 +1066,75 @@ def is_logged_in():
     import common
     return common.pa.is_logged_in
 
+
+async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exception=None):
+    """
+    Shows a page and polls for user input while polling for SD card insertion/removal at the same time.
+    SD card insertion/removal, user input and exception callbacks are available. Returning True from any of
+      the callbacks stops the function.
+
+    :param page: a page object to show
+    :param on_sd_card_change: a callback on SD card insertion/removal, a single bool parameter indicating
+      SD card presence
+    :param on_result: a user input callback, a single parameter is the user input.
+    :param on_exception: an exception callback, a single parameter is the exception object.
+    :return: None
+    """
+    from files import CardMissingError
+
+    sd_card_change = False
+    prev_sd_card_cb = None
+
+    def sd_card_cb():
+        nonlocal sd_card_change
+        if sd_card_change:
+            return
+
+        sd_card_change = True
+
+    def restore_sd_cb():
+        nonlocal prev_sd_card_cb
+        CardSlot.set_sd_card_change_cb(prev_sd_card_cb)
+
+    # Activate SD card hook
+    prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
+    CardSlot.set_sd_card_change_cb(sd_card_cb)
+
+    page.display()
+
+    g = page.poll_for_done()
+    while True:
+        try:
+            next(g)
+            await sleep_ms(10)
+
+            # SD card just got inserted or removed
+            if sd_card_change:
+                sd_card_change = False
+
+                try:
+                    with CardSlot():
+                        sd_card_present = True
+                except CardMissingError:
+                    sd_card_present = False
+
+                if on_sd_card_change(sd_card_present):
+                    page.restore_statusbar_and_card_header()
+                    restore_sd_cb()
+                    return
+
+        except StopIteration as result:
+            result = result.value
+
+            if on_result(result):
+                page.restore_statusbar_and_card_header()
+                restore_sd_cb()
+                return
+
+        except Exception as e:
+            if on_exception(e):
+                page.restore_statusbar_and_card_header()
+                restore_sd_cb()
+                return
+
 # EOF
