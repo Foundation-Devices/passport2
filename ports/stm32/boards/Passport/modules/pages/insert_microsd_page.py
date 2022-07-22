@@ -7,17 +7,9 @@ import lvgl as lv
 from pages import StatusPage
 from styles.colors import FD_BLUE
 import microns
-from files import CardMissingError, CardSlot
-from uasyncio import sleep_ms
 
 
 class InsertMicroSDPage(StatusPage):
-    # Used to back up a previous SD card callback if any
-    prev_sd_card_cb = None
-
-    # SD card interrupt event
-    sd_card_change = False
-
     def __init__(self, text=None, card_header={'title': 'No microSD'},
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Retry):
         if text is None:
@@ -33,49 +25,27 @@ class InsertMicroSDPage(StatusPage):
             right_micron=right_micron)
 
     async def show(self):
-        # Activate SD card hook
-        self.prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
-        CardSlot.set_sd_card_change_cb(self.handle_sd_card_cb)
+        from utils import show_page_with_sd_card
 
-        self.display()
+        result = False
 
-        # Poll the user input alongside SD card interrupt flag
-        g = self.poll_for_done()
-        while True:
-            try:
-                next(g)
-                await sleep_ms(10)
+        def on_sd_card_change(sd_card_present):
+            # Treat SD card being inserted as success.
+            nonlocal result
+            if sd_card_present:
+                result = True
 
-                # SD card just got inserted or removed
-                if self.sd_card_change:
-                    self.sd_card_change = False
+            return sd_card_present
 
-                    try:
-                        with CardSlot():
-                            # Restore previous SD card callback
-                            self.restore_sd_cb()
+        def on_result(res):
+            nonlocal result
+            result = res
+            return True
 
-                            # Restore statusbar and card header
-                            self.restore_statusbar_and_card_header()
+        def on_exception(exception):
+            self.handle_fatal_error(exception)
+            return True
 
-                            return True
-                    except CardMissingError:
-                        pass
+        await show_page_with_sd_card(self, on_sd_card_change, on_result, on_exception)
 
-            except StopIteration as result:
-                self.restore_statusbar_and_card_header()
-                self.restore_sd_cb()
-
-                return result.value
-            except Exception as e:
-                self.restore_sd_cb()
-                self.handle_fatal_error(e)
-
-    def handle_sd_card_cb(self):
-        if self.sd_card_change:
-            return
-
-        self.sd_card_change = True
-
-    def restore_sd_cb(self):
-        CardSlot.set_sd_card_change_cb(self.prev_sd_card_cb)
+        return result

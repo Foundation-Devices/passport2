@@ -16,12 +16,6 @@ from uasyncio import sleep_ms
 
 
 class FilePickerFlow(Flow):
-    # Used to back up a previous SD card callback if any
-    prev_sd_card_cb = None
-
-    # SD card interrupt event
-    sd_card_change = False
-
     def __init__(
             self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
             filter_fn=None):
@@ -34,9 +28,7 @@ class FilePickerFlow(Flow):
         self.filter_fn = filter_fn
 
     async def show_file_picker(self):
-        # Activate SD card hook
-        self.prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
-        CardSlot.set_sd_card_change_cb(self.handle_sd_card_cb)
+        from utils import show_page_with_sd_card
 
         while True:
             # Get list of files/folders at the current path
@@ -76,104 +68,84 @@ class FilePickerFlow(Flow):
                     icon=lv.LARGE_ICON_ERROR,
                     icon_color=COPPER,
                     left_micron=microns.Back,
-                    right_micron=microns.Retry
+                    right_micron=None,  # No retry micron because the SD card contents can't magically change
                 )
-                status_page.display()
 
-                g = status_page.poll_for_done()
-                while True:
-                    try:
-                        next(g)
-                        await sleep_ms(10)
+                def on_sd_card_change(sd_card_present):
+                    if sd_card_present:
+                        return True  # This will cause a refresh
+                    else:
+                        status_page.set_result(None)
+                        self.goto(self.show_insert_microsd_error)
+                        return False
 
-                        # SD card just got inserted or removed
-                        if self.sd_card_change:
-                            self.sd_card_change = False
+                result = None
 
-                            try:
-                                with CardSlot():
-                                    return  # Refresh
-                            except CardMissingError:
-                                status_page.set_result(None)
-                                self.restore_sd_cb()
-                                self.goto(self.show_insert_microsd_error)
-                                return
+                def on_result(res):
+                    nonlocal result
+                    result = res
+                    return True
 
-                    except StopIteration as result:
-                        result = result.value
+                def on_exception(exception):
+                    self.handle_fatal_error(exception)
+                    return True
 
-                        if not result:
-                            self.set_result(None)
-                            self.restore_sd_cb()
-                            return
-                        else:
-                            self.restore_sd_cb()
-                            return  # Refresh
+                await show_page_with_sd_card(status_page, on_sd_card_change, on_result, on_exception)
 
-                    except Exception as e:
-                        self.restore_sd_cb()
-                        self.handle_fatal_error(e)
+                # Quit the flow entirely when the error message is dismissed
+                if result is False:
+                    self.set_result(None)
+                    return
             else:
                 file_picker_page = FilePickerPage(
                     files=files,
                     card_header={'title': title, 'icon': icon}
                 )
-                file_picker_page.display()
 
-                g = file_picker_page.poll_for_done()
-                while True:
-                    try:
-                        next(g)
-                        await sleep_ms(10)
+                def on_sd_card_change(sd_card_present):
+                    if not sd_card_present:
+                        self.goto(self.show_insert_microsd_error)
+                        return True
 
-                        # SD card just got inserted or removed
-                        if self.sd_card_change:
-                            self.sd_card_change = False
+                finished = False
 
-                            try:
-                                with CardSlot():
-                                    pass
-                            except CardMissingError:
-                                file_picker_page.set_result(None)
-                                self.restore_sd_cb()
-                                self.goto(self.show_insert_microsd_error)
-                                return
+                def on_result(res):
+                    nonlocal finished
 
-                    except StopIteration as result:
-                        result = result.value
-
-                        # No file selected - go back to previous page
-                        if result is None:
-                            common.page_transition_dir = TRANSITION_DIR_POP
-                            if len(self.paths) <= 1:
-                                self.set_result(None)
-                            else:
-                                # Go back up a level
-                                self.paths.pop(-1)
-
-                            self.restore_sd_cb()
-                            return
-
-                        _filename, full_path, is_folder = result
-                        if is_folder:
-                            common.page_transition_dir = TRANSITION_DIR_PUSH
-                            self.paths.append(full_path)
-                            file_picker_page.restore_statusbar_and_card_header()
-                            self.restore_sd_cb()
-
-                            return
-
-                        # User chose this file
+                    # No file selected - go back to previous page
+                    if res is None:
                         common.page_transition_dir = TRANSITION_DIR_POP
-                        self.set_result(result)
+                        if len(self.paths) <= 1:
+                            self.set_result(None)
+                            finished = True
+                        else:
+                            # Go back up a level
+                            self.paths.pop(-1)
 
-                        file_picker_page.restore_statusbar_and_card_header()
-                        self.restore_sd_cb()
+                        return True
 
-                        return
-                    except Exception as e:
-                        self.restore_sd_cb()
-                        self.handle_fatal_error(e)
+                    _filename, full_path, is_folder = res
+                    if is_folder:
+                        common.page_transition_dir = TRANSITION_DIR_PUSH
+                        self.paths.append(full_path)
+
+                        return True
+
+                    # User chose this file
+                    common.page_transition_dir = TRANSITION_DIR_POP
+                    self.set_result(res)
+                    finished = True
+
+                    return True
+
+                def on_exception(exception):
+                    self.handle_fatal_error(exception)
+                    return True
+
+                await show_page_with_sd_card(file_picker_page, on_sd_card_change, on_result, on_exception)
+
+                if finished:
+                    return
 
     async def show_insert_microsd_error(self):
         result = await InsertMicroSDPage().show()
@@ -181,12 +153,3 @@ class FilePickerFlow(Flow):
             self.set_result(None)
         else:
             self.goto(self.show_file_picker)
-
-    def handle_sd_card_cb(self):
-        if self.sd_card_change:
-            return
-
-        self.sd_card_change = True
-
-    def restore_sd_cb(self):
-        CardSlot.set_sd_card_change_cb(self.prev_sd_card_cb)
