@@ -23,3 +23,29 @@ class InsertMicroSDPage(StatusPage):
             statusbar=statusbar,
             left_micron=left_micron,
             right_micron=right_micron)
+
+    async def show(self):
+        from utils import show_page_with_sd_card
+
+        result = False
+
+        def on_sd_card_change(sd_card_present):
+            # Treat SD card being inserted as success.
+            nonlocal result
+            if sd_card_present:
+                result = True
+
+            return sd_card_present
+
+        def on_result(res):
+            nonlocal result
+            result = res
+            return True
+
+        def on_exception(exception):
+            self.handle_fatal_error(exception)
+            return True
+
+        await show_page_with_sd_card(self, on_sd_card_change, on_result, on_exception)
+
+        return result

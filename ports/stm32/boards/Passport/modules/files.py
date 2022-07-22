@@ -60,6 +60,7 @@ class CardMissingError(RuntimeError):
 class CardSlot:
     # Touch interface must be disabled during any SD Card usage!
     last_change = None
+    sd_card_change_cb = None
 
     @classmethod
     def setup(cls):
@@ -72,15 +73,26 @@ class CardSlot:
             # Careful: these can come fast and furious!
             cls.last_change = utime.ticks_ms()
 
+            if cls.sd_card_change_cb is not None:
+                cls.sd_card_change_cb()
+
         cls.last_change = utime.ticks_ms()
 
         cls.irq = ExtInt(Pin('SD_SW'), ExtInt.IRQ_RISING_FALLING,
                          Pin.PULL_UP, card_change)
 
     @classmethod
-    def get_sd_root(self):
+    def get_sd_root(cls):
         from common import system
         return system.get_sd_root()
+
+    @classmethod
+    def get_sd_card_change_cb(cls):
+        return cls.sd_card_change_cb
+
+    @classmethod
+    def set_sd_card_change_cb(cls, sd_card_change_cb):
+        cls.sd_card_change_cb = sd_card_change_cb
 
     def __init__(self):
         self.active = False
