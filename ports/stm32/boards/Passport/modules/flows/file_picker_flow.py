@@ -21,6 +21,7 @@ class FilePickerFlow(Flow):
             filter_fn=None):
         super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
             initial_path))
+        self.initial_path = initial_path
         self.paths = [initial_path]
         self.show_folders = show_folders
         self.enable_parent_nav = enable_parent_nav
@@ -49,6 +50,7 @@ class FilePickerFlow(Flow):
                 files = sorted(files, key=file_key)
 
             except CardMissingError:
+                self.reset_paths()
                 self.goto(self.show_insert_microsd_error)
                 return
 
@@ -75,6 +77,7 @@ class FilePickerFlow(Flow):
                     if sd_card_present:
                         return True  # This will cause a refresh
                     else:
+                        self.reset_paths()
                         status_page.set_result(None)
                         self.goto(self.show_insert_microsd_error)
                         return False
@@ -104,6 +107,7 @@ class FilePickerFlow(Flow):
 
                 def on_sd_card_change(sd_card_present):
                     if not sd_card_present:
+                        self.reset_paths()
                         self.goto(self.show_insert_microsd_error)
                         return True
 
@@ -153,3 +157,6 @@ class FilePickerFlow(Flow):
             self.set_result(None)
         else:
             self.goto(self.show_file_picker)
+
+    def reset_paths(self):
+        self.paths = [self.initial_path]
