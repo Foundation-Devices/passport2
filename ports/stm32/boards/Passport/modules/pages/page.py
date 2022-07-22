@@ -70,9 +70,10 @@ class Page(View):
             # print('Set result to None')
             self.set_result(None)
 
-    async def show(self, auto_close_timeout=None):
+    # This only pushes the page to the screen without polling
+    def display(self, auto_close_timeout=None):
         from common import ui
-        done = False
+
         if ui.get_active_page() is None:
             ui.set_page(self)
         elif common.page_transition_dir == TRANSITION_DIR_PUSH:
@@ -98,21 +99,27 @@ class Page(View):
         if self.statusbar is not None:
             self.prev_statusbar = common.ui.set_statusbar(**self.statusbar)
 
+    def restore_statusbar_and_card_header(self):
+        # Restore statusbar if we overrode it
+        if self.prev_statusbar is not None:
+            common.ui.set_statusbar(**self.prev_statusbar)
+
+        # Restore card title if we overrode it
+        if self.prev_card_header is not None:
+            common.ui.set_card_header(**self.prev_card_header, force_all=True)
+
+    async def show(self, auto_close_timeout=None):
+        self.display(auto_close_timeout)
+
         g = self.poll_for_done()
-        while not done:
+        while True:
             try:
                 next(g)
                 await sleep_ms(10)
             except StopIteration as result:
                 # The result is of type StopIteration, so we need to reach in and get the actual value
 
-                # Restore statusbar if we overrode it
-                if self.prev_statusbar is not None:
-                    common.ui.set_statusbar(**self.prev_statusbar)
-
-                # Restore card title if we overrode it
-                if self.prev_card_header is not None:
-                    common.ui.set_card_header(**self.prev_card_header, force_all=True)
+                self.restore_statusbar_and_card_header()
 
                 return result.value
             except Exception as e:
