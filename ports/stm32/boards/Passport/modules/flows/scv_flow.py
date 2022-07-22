@@ -94,7 +94,7 @@ class ScvFlow(Flow):
             crypto_request = EnvoyURCryptoRequest(cbor=result.data.cbor)
             try:
                 crypto_request.decode()
-            except URException:
+            except:  # noqa
                 await self.show_error('Security Check QR code is invalid (3).')
                 return
 

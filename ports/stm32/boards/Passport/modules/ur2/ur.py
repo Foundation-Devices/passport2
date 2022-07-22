@@ -97,7 +97,7 @@ class URCryptoRequest(UR):
 
         (size, _) = self.cbor_decoder.decodeMapSize()
         for _ in range(0, size):
-            (index, length) = self.cbor_decoder.decodeUnsigned()
+            self.cbor_decoder.decodeUnsigned()
             (tag, length) = self.cbor_decoder.decodeTagSemantic()
             # decode
             if tag == _TAG_UUID:
@@ -148,8 +148,6 @@ class EnvoyURCryptoRequest(URCryptoRequest):
         super().__init__(cbor=cbor)
 
         self.scv_challenge = None
-        self.passport_firmware_version_request = False
-        self.passport_model_request = False
 
     def _decode_tag(self, tag):
         if tag == _TAG_SCV_CHALLENGE_REQUEST:
@@ -174,10 +172,9 @@ class EnvoyURCryptoRequest(URCryptoRequest):
                 self.scv_challenge['signature'] = text
 
     def _decode_passport_model_request(self):
-        pass
+        self.cbor_decoder.decodeUnsigned()
 
     def _decode_passport_firmware_version_request(self):
-        # A dummy unsigned(0) is present.
         self.cbor_decoder.decodeUnsigned()
 
 
