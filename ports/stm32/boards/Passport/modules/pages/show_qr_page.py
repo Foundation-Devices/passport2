@@ -49,6 +49,7 @@ class ShowQRPage(Page):
 
         self.prev_brightness = 100
         self.curr_brightness_idx = 0
+        self.curr_brightness = 100
 
         self.prev_card_descs = None
         self.prev_card_idx = common.ui.active_card_idx
@@ -106,12 +107,18 @@ class ShowQRPage(Page):
         self.prev_part = None
 
         self.prev_brightness = common.system.get_screen_brightness(100)
+
+        # We set the screen brightness to the level the user last left it at when on this page
+        self.curr_brightness = common.settings.get('last_qr_brightness', self.prev_brightness)
+        common.display.set_brightness(self.curr_brightness)
+
         try:
-            self.curr_brightness_idx = brightness_levels.index(self.prev_brightness)
+            self.curr_brightness_idx = brightness_levels.index(self.curr_brightness)
         except ValueError:
             self.curr_brightness_idx = 4
 
     def detach(self):
+        common.settings.set('last_qr_brightness', self.curr_brightness)
         common.display.set_brightness(self.prev_brightness)
 
         if self.is_qr_resizable():
@@ -157,11 +164,13 @@ class ShowQRPage(Page):
             elif key == lv.KEY.UP:
                 if self.curr_brightness_idx < len(brightness_levels) - 1:
                     self.curr_brightness_idx += 1
-                    common.display.set_brightness(brightness_levels[self.curr_brightness_idx])
+                    self.curr_brightness = brightness_levels[self.curr_brightness_idx]
+                    common.display.set_brightness(self.curr_brightness)
             elif key == lv.KEY.DOWN:
                 if self.curr_brightness_idx > 0:
                     self.curr_brightness_idx -= 1
-                    common.display.set_brightness(brightness_levels[self.curr_brightness_idx])
+                    self.curr_brightness = brightness_levels[self.curr_brightness_idx]
+                    common.display.set_brightness(self.curr_brightness)
 
     def update(self):
         if self.is_attached():
