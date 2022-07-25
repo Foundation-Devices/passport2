@@ -3,7 +3,7 @@
 #
 # fuelgauge_task.py - Task for updating the battery level in the UI by reading the fuel gauge
 
-
+import lvgl as lv
 from micropython import const
 from passport import fuelgauge
 from uasyncio.lock import Lock
@@ -48,6 +48,10 @@ async def fuelgauge_task():
 
     global soc_int_event
 
+    from pages import ShutdownPage
+    from utils import is_logged_in
+    from styles.colors import COPPER
+
     # Initialize the fuelgauge module
     fuelgauge.init(_DESIGN_CAPACITY)
 
@@ -58,6 +62,8 @@ async def fuelgauge_task():
 
     if not fuelgauge.is_sealed():
         fuelgauge.seal()
+
+    low_warning_shown = False
 
     # Register BAT_LOW and SOC_INT interrupt callback, the order is important
     # as we take priority on the BAT_LOW interrupt in order to shutdown the system.
@@ -87,6 +93,15 @@ async def fuelgauge_task():
         # If battery is too low, we avoid the doom loop of reboots by shutting down automatically
         if soc <= 2:
             common.system.shutdown()
+        elif soc <= 90 and not low_warning_shown and is_logged_in():
+            low_warning_shown = True
+
+            # Remember what the current page was
+            last_active_page = common.ui.get_active_page()
+
+            # Push the shutdown page and get back to the previous page if the shutdown was cancelled.
+            await ShutdownPage(icon=lv.LARGE_ICON_ERROR, icon_color=COPPER, text='Battery low!\n\nShutdown Passport now?').show()
+            common.ui.pop_page(last_active_page)
 
         # Wait for a SOC_INT pulse.
         await soc_int_event.wait()

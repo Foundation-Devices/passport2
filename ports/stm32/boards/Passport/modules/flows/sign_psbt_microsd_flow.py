@@ -100,7 +100,7 @@ class SignPsbtMicroSDFlow(Flow):
         self.goto(self.write_signed_transaction)
 
     async def write_signed_transaction(self):
-        from files import CardSlot, CardMissingError
+        from files import CardSlot, CardMissingError, securely_blank_file
         from utils import HexWriter
         from pages import ErrorPage
 
@@ -149,6 +149,8 @@ class SignPsbtMicroSDFlow(Flow):
                             with HexWriter(open(out2_full, 'w+t')) as fd:
                                 # save transaction, in hex
                                 self.txid = self.psbt.finalize(fd)
+
+                    securely_blank_file(self.file_path)
 
                 # Success and done!
                 self.goto(self.show_success)

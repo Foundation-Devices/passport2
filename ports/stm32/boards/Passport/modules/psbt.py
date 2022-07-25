@@ -392,7 +392,7 @@ class psbtOutputProxy(psbtProxy):
 
             if not redeem_script and not witness_script:
                 # Perhaps an omission, so let's not call fraud on it
-                # But definately required, else we don't know what script we're sending to.
+                # But definitely required, else we don't know what script we're sending to.
                 raise FatalPSBTIssue("Missing redeem/witness script for output #%d" % out_idx)
 
             if not is_segwit and redeem_script and \

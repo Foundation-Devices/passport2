@@ -3,14 +3,15 @@
 #
 # shutdown_page.py - Ask user if they want to shutdown
 
-
+import lvgl as lv
+from styles.colors import FD_BLUE
 import common
 from pages import QuestionPage
 
 
 class ShutdownPage(QuestionPage):
-    def __init__(self):
-        super().__init__(text='Shutdown Passport now?',)
+    def __init__(self, icon=lv.LARGE_ICON_QUESTION, icon_color=FD_BLUE, text='Shutdown Passport now?'):
+        super().__init__(icon=icon, icon_color=icon_color, text=text)
 
     def attach(self, group):
         super().attach(group)
