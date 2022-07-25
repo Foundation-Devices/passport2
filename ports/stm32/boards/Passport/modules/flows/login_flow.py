@@ -13,8 +13,12 @@ import common
 
 
 class LoginFlow(Flow):
-    def __init__(self):
-        super().__init__(initial_state=self.enter_pin, name='LoginFlow')
+    def __init__(self, auto_pin=None):
+        if auto_pin is not None:
+            self.pin = auto_pin
+            super().__init__(initial_state=self.check_pin, name='LoginFlow')
+        else:
+            super().__init__(initial_state=self.enter_pin, name='LoginFlow')
 
     async def enter_pin(self):
         try:

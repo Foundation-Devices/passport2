@@ -846,6 +846,8 @@ int main(void) {
         }
     }
 
+#define WARN_ON_USER_SIGNED_FIRMWARE 0
+#if WARN_ON_USER_SIGNED_FIRMWARE
     // Show a warning message if user-signed firmware (including Foundation Beta firmware) is loaded on the device
     if (is_user_signed_firmware_installed() == SEC_TRUE) {
         while (true) {
@@ -860,6 +862,7 @@ int main(void) {
             }
         }
     }
+#endif
 
 #endif /* FACTORY_TEST */
     // From here we'll boot to Micropython: see stm32_main() in /ports/stm32/main.c

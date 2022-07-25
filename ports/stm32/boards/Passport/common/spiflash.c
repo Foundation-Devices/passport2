@@ -86,7 +86,7 @@ static HAL_StatusTypeDef write_enable(void) {
     return rv;
 }
 
-HAL_StatusTypeDef spi_read_impl(uint32_t addr, int len, uint8_t* buf) {
+HAL_StatusTypeDef spi_read(uint32_t addr, int len, uint8_t* buf) {
     // send via SPI(1)
     uint8_t pkt[5] = {CMD_FAST_READ, (addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff, 0x0};  // for fast-read case
 
@@ -102,50 +102,50 @@ HAL_StatusTypeDef spi_read_impl(uint32_t addr, int len, uint8_t* buf) {
     return rv;
 }
 
-#define NUM_BUFS_TO_COMPARE 3
-#define MAX_SPI_REPEATED_READ_LEN 1024
-#define MAX_READ_ATTEMPTS 9
+// #define NUM_BUFS_TO_COMPARE 3
+// #define MAX_SPI_REPEATED_READ_LEN 1024
+// #define MAX_READ_ATTEMPTS 9
 
-HAL_StatusTypeDef spi_read(uint32_t addr, int len, uint8_t* buf) {
-    uint8_t temp_bufs[NUM_BUFS_TO_COMPARE][MAX_SPI_REPEATED_READ_LEN];
-    if (len > MAX_SPI_REPEATED_READ_LEN) {
-        return spi_read_impl(addr, len, buf);
-    }
+// HAL_StatusTypeDef spi_read(uint32_t addr, int len, uint8_t* buf) {
+//     uint8_t temp_bufs[NUM_BUFS_TO_COMPARE][MAX_SPI_REPEATED_READ_LEN];
+//     if (len > MAX_SPI_REPEATED_READ_LEN) {
+//         return spi_read_impl(addr, len, buf);
+//     }
 
-    // Repeated read to mitigate SPI read errors
-    uint32_t num_reads      = 0;
-    uint32_t curr_idx       = 0;
-    bool     all_bufs_equal = false;
-    do {
-        HAL_StatusTypeDef rv;
-    retry:
-        rv = spi_read_impl(addr, len, temp_bufs[curr_idx]);
-        if (rv != HAL_OK) {
-            printf("spi_read_impl() error: rv=%d\r\n", rv);
-            return rv;
-        }
+//     // Repeated read to mitigate SPI read errors
+//     uint32_t num_reads      = 0;
+//     uint32_t curr_idx       = 0;
+//     bool     all_bufs_equal = false;
+//     do {
+//         HAL_StatusTypeDef rv;
+//     retry:
+//         rv = spi_read_impl(addr, len, temp_bufs[curr_idx]);
+//         if (rv != HAL_OK) {
+//             printf("spi_read_impl() error: rv=%d\r\n", rv);
+//             return rv;
+//         }
 
-        // Next index, plus wrap around
-        curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
-        num_reads++;
+//         // Next index, plus wrap around
+//         curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
+//         num_reads++;
 
-        // Compare the buffers, but only after we've read the minimum number of times
-        if (num_reads >= NUM_BUFS_TO_COMPARE) {
-            all_bufs_equal = false;  // Assume they are all equal
-            for (uint32_t i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
-                if (memcmp(temp_bufs[i], temp_bufs[i + 1], len) != 0) {
-                    printf("Buffers not equal! Rereading: addr=%lu, len=%d, num_reads=%lu\r\n", addr, len, num_reads);
-                    goto retry;
-                }
-            }
-            all_bufs_equal = true;
-        }
-    } while (!all_bufs_equal && (num_reads < MAX_READ_ATTEMPTS));
+//         // Compare the buffers, but only after we've read the minimum number of times
+//         if (num_reads >= NUM_BUFS_TO_COMPARE) {
+//             all_bufs_equal = false;  // Assume they are all equal
+//             for (uint32_t i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
+//                 if (memcmp(temp_bufs[i], temp_bufs[i + 1], len) != 0) {
+//                     printf("Buffers not equal! Rereading: addr=%lu, len=%d, num_reads=%lu\r\n", addr, len, num_reads);
+//                     goto retry;
+//                 }
+//             }
+//             all_bufs_equal = true;
+//         }
+//     } while (!all_bufs_equal && (num_reads < MAX_READ_ATTEMPTS));
 
-    // Copy data out to caller's buffer
-    memcpy(buf, temp_bufs[0], len);
-    return HAL_OK;
-}
+//     // Copy data out to caller's buffer
+//     memcpy(buf, temp_bufs[0], len);
+//     return HAL_OK;
+// }
 
 // Supports only up to SPI_FLASH_PAGE_SIZE bytes writes
 HAL_StatusTypeDef spi_write(uint32_t addr, int len, const uint8_t* buf) {

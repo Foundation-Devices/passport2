@@ -9,20 +9,31 @@ from constants import FW_HEADER_SIZE, FW_MAX_SIZE
 import machine
 from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage
 from tasks import copy_firmware_to_spi_flash_task
-from flows import Flow, FilePickerFlow
+from flows import Flow
+from flows.file_picker_flow import FilePickerFlow
 from utils import read_user_firmware_pubkey, is_all_zero, start_task
 from errors import Error
 
 
 class UpdateFirmwareFlow(Flow):
-    def __init__(self, reset_after=True, statusbar=None):
-        super().__init__(initial_state=self.choose_file, name='UpdateFirmwareFlow')
-        self.update_file_path = None
+    def __init__(self, reset_after=True, statusbar=None, update_file_path=None):
         self.size = 0
         self.version = None
         self.error = None
         self.reset_after = reset_after
         self.statusbar = statusbar
+        if update_file_path is not None:
+            # This is only used for automated update testing, so we skip the version checks.
+            # They will be performed in the bootloader anyway.
+            self.update_file_path = update_file_path
+            import os
+
+            s = os.stat(self.update_file_path)
+            self.size = s[6]
+            super().__init__(initial_state=self.copy_to_flash, name='UpdateFirmwareFlow')
+        else:
+            self.update_file_path = None
+            super().__init__(initial_state=self.choose_file, name='UpdateFirmwareFlow')
 
     async def on_done(self, error=None):
         self.error = error
