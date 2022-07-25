@@ -26,10 +26,10 @@ build screen="mono" rel="release" factory_test="": clean
         FOLDER=release
     fi
 
-    if test -f "secrets"; then
-        echo -e "\nAppending secrets to the end..."
-        add-secrets -b arm/${FOLDER}/bootloader-{{uppercase(screen)}}.bin -s secrets
-    fi
+    # if test -f "secrets"; then
+    #     echo -e "\nAppending secrets to the end..."
+    #     add-secrets -b arm/${FOLDER}/bootloader-{{uppercase(screen)}}.bin -s secrets
+    # fi
 
     echo -e "\nBootloader Build Complete"
 
@@ -39,29 +39,17 @@ clean:
     make clean
     @echo "Bootloader Clean Complete"
 
-# Build and flash the bootloader with the secrets appended to the end
+# Build and flash the bootloader, appending the existing secrets, if any.
+# If no secrets are present in the device, then just flash the raw bootloader.
 flash screen="mono" rel="release" factory_test="": (build screen rel factory_test) && (reset)
-    #!/usr/bin/env bash
-    if [[ "{{rel}}" == "debug" ]]; then
-        FOLDER=debug
-    else
-        FOLDER=release
-    fi
-
-    just run-ocd-command "flash write_image erase arm/${FOLDER}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
-
-# Build and flash the bootloader with no secrets (use to setup a new Secure Element)
-# Also appends existing secrets to the bootloader if they're present on the device.
-# Doesn't overwrite the existing secrets on the bootloader folder.
-flash-raw screen="mono" rel="release" factory_test="": (build screen rel factory_test) && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 
-    EMPTY_SECRETS_BIN=$(mktemp /tmp/foundation.XXXXXX)
-    DEVICE_SECRETS_BIN=$(mktemp /tmp/foundation.XXXXXX)
+    EMPTY_SECRETS_BIN=$(mktemp /tmp/foundatiob-bl-flash.XXXXXX)
+    DEVICE_SECRETS_BIN=$(mktemp /tmp/foundation-bl-flash.XXXXXX)
 
     printf -- 'FF %.0s' {1..256} | xxd -r -p - ${EMPTY_SECRETS_BIN}
-    just save-secrets ${DEVICE_SECRETS_BIN}
+    just save-secrets {{screen}} ${DEVICE_SECRETS_BIN}
 
     if cmp -s ${DEVICE_SECRETS_BIN} ${EMPTY_SECRETS_BIN};
     then
@@ -74,6 +62,10 @@ flash-raw screen="mono" rel="release" factory_test="": (build screen rel factory
         echo "Flashing bootloader with secrets"
         just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
     fi
+
+    # Remove the tmp files
+    rm -f ${EMPTY_SECRETS_BIN}
+    rm -f ${DEVICE_SECRETS_BIN}
 
 
 # Build and flash the bootloader with no secrets (use to setup a new Secure Element)
