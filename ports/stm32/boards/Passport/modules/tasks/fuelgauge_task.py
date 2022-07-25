@@ -100,7 +100,10 @@ async def fuelgauge_task():
             last_active_page = common.ui.get_active_page()
 
             # Push the shutdown page and get back to the previous page if the shutdown was cancelled.
-            await ShutdownPage(icon=lv.LARGE_ICON_ERROR, icon_color=COPPER, text='Battery low!\n\nShutdown Passport now?').show()
+            await ShutdownPage(
+                icon=lv.LARGE_ICON_ERROR,
+                icon_color=COPPER,
+                text='Battery low!\n\nShutdown Passport now?').show()
             common.ui.pop_page(last_active_page)
 
         # Wait for a SOC_INT pulse.

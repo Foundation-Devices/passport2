@@ -290,7 +290,7 @@ class ConnectWalletFlow(Flow):
         # receive address from the wallet.
         if self.is_multisig():
             # Only perform multisig import if wallet does not prevent it
-            if self.is_skip_multisig_import_enabled() == False:
+            if not self.is_skip_multisig_import_enabled():
                 self.goto_multisig_import_mode()
 
             # Only perform address validation if wallet does not prevent it
@@ -357,7 +357,7 @@ class ConnectWalletFlow(Flow):
             # receive address from the wallet.
             if self.is_multisig():
                 # Only perform multisig import if wallet does not prevent it
-                if self.is_skip_multisig_import_enabled() == False:
+                if not self.is_skip_multisig_import_enabled():
                     self.goto_multisig_import_mode()
                     return
 
