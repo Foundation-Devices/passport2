@@ -48,11 +48,9 @@ const lv_obj_class_t lv_qrcode_class = {
 lv_obj_t * lv_qrcode_create(lv_obj_t * parent)
 {
     LV_LOG_INFO("begin");
-
     lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
     lv_obj_class_init_obj(obj);
     return obj;
-
 }
 
 
@@ -125,17 +123,17 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     }
     qrcode->last_version = qr_version;
 
-    uint8_t * data_tmp = lv_mem_alloc(data_len);
-    LV_ASSERT_MALLOC(data_tmp);
-    lv_memcpy(data_tmp, data, data_len);
+    if (data_len > sizeof(qrcode->data_and_tmp)) {
+        return LV_RES_INV;
+    }
 
-    bool ok = qrcodegen_encodeBinary(data_tmp, data_len,
+    lv_memcpy(qrcode->data_and_tmp, data, data_len);
+
+    bool ok = qrcodegen_encodeBinary(qrcode->data_and_tmp, data_len,
                                      qrcode->modules_buf, qrcodegen_Ecc_LOW,
                                      qr_version, qr_version,
                                      qrcodegen_Mask_AUTO, true);
-
-    if(!ok) {
-        lv_mem_free(data_tmp);
+    if (!ok) {
         return LV_RES_INV;
     }
 
@@ -194,7 +192,6 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
         }
     }
 
-    lv_mem_free(data_tmp);
     return LV_RES_OK;
 }
 

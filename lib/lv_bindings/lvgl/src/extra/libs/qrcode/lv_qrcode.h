@@ -36,6 +36,7 @@ typedef struct {
     void * modules_buf;
     int32_t max_version;
     int32_t last_version;
+    uint8_t data_and_tmp[500];
 } lv_qrcode_t;
 
 /**********************
