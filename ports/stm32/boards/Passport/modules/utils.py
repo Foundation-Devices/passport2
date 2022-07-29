@@ -938,6 +938,12 @@ def is_valid_btc_address(address):
     if address[0:8].lower() == 'bitcoin:':
         address = address[8:]
 
+    # We need to lowercase BECH32 addresses, but not legacy
+    # Some wallets format BECH32 in all uppercase, while legacy addresses can have mixed case.
+    lower_address = address.lower()
+    if lower_address.startswith('bc1') or lower_address.startswith('tb1'):
+        address = lower_address
+
     if not is_valid_address(address):
         return address, False
     else:
