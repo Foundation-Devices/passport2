@@ -1149,4 +1149,26 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
                 restore_sd_cb()
                 return
 
+
+def make_extension_path(ext_name, ext_prop):
+    return 'ext.{}.{}'.format(ext_name, ext_prop)
+
+
+def toggle_extension_enabled(ext_name):
+    from common import ui
+    ext_path = make_extension_path(ext_name, 'enabled')
+    is_enabled = common.settings.get(ext_path, False)
+    common.settings.set(ext_path, not is_enabled)
+    ui.update_cards_on_top_level()
+
+
+def is_extension_enabled(ext_name):
+    ext_path = make_extension_path(ext_name, 'enabled')
+    return common.settings.get(ext_path, False)
+
+
+def is_passphrase_active():
+    import stash
+    return stash.bip39_passphrase != ''
+
 # EOF

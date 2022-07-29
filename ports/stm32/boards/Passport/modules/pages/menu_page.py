@@ -58,6 +58,8 @@ class MenuPage(Page):
             item = MenuItem(
                 icon=item_desc.get('icon'),
                 label=item_desc.get('label'),
+                is_toggle=item_desc.get('is_toggle'),
+                value=item_desc.get('value'),
                 desc=item_desc)
             is_visible = item_desc.get('is_visible')
             if is_visible is None or (callable(is_visible) and is_visible()):

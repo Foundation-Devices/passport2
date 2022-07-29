@@ -34,6 +34,20 @@ def account_menu():
     ]
 
 
+def casa_menu():
+    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
+        {'icon': lv.ICON_FOLDER, 'label': 'Manage Account', 'submenu': manage_account_menu},
+    ]
+
+
 def plus_menu():
     from utils import is_passphrase_active
     from flows import NewAccountFlow, ApplyPassphraseFlow
@@ -234,6 +248,15 @@ def advanced_menu():
 #     ]
 
 
+def extensions_menu():
+    from utils import is_extension_enabled, toggle_extension_enabled
+    from pages import ColorPickerPage
+    return [
+        {'icon': lv.ICON_SETTINGS, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
+         'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
+    ]
+
+
 def settings_menu():
     from utils import is_logged_in
 
@@ -243,5 +266,6 @@ def settings_menu():
         {'icon': lv.ICON_FIRMWARE, 'label': 'Firmware', 'submenu': update_menu},
         {'icon': lv.ICON_BITCOIN, 'label': 'Bitcoin', 'submenu': bitcoin_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_ADVANCED, 'label': 'Advanced', 'submenu': advanced_menu, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_ADVANCED, 'label': 'Extensions', 'submenu': extensions_menu},
         # {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_logged_in},
     ]

@@ -189,14 +189,20 @@ class UI():
             'args': {'menu': settings_menu, 'is_top_level': True}
         }
 
+    def update_cards_on_top_level(self):
+        print('Setting update_cards_pending to True')
+        self.update_cards_pending = True
+
     def update_cards(
             self, is_delete_account=False, stay_on_same_card=False, is_new_account=False, is_init=False):
         from flows import MenuFlow
         from utils import get_accounts, has_seed
-        from menus import account_menu, plus_menu
+        from menus import account_menu, casa_menu, plus_menu
         from constants import MAX_ACCOUNTS
-        from styles.colors import (DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE)
+        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE
         import microns
+
+        self.update_cards_pending = False
 
         # Add the leftmost settings card
         settings_card = self.make_settings_card()
@@ -237,7 +243,6 @@ class UI():
                 account = accounts[i]
 
                 account_card = {
-                    # 'icon': lv.ICON_BITCOIN,
                     'right_icon': lv.ICON_BITCOIN,
                     'header_color': LIGHT_GREY,
                     'header_fg_color': TEXT_GREY,
@@ -254,14 +259,30 @@ class UI():
 
                 card_descs.append(account_card)
 
-            plus_card = {
-                'statusbar': {'title': 'ACCOUNTS', 'icon': lv.ICON_ADD_ACCOUNT, 'fg_color': WHITE},
+            # Add special accounts
+            if common.settings.get('ext.casa.enabled', False):
+                casa_card = {
+                    'right_icon': lv.ICON_BITCOIN,
+                    'header_color': LIGHT_GREY,
+                    'header_fg_color': TEXT_GREY,
+                    'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
+                    'title': 'Casa',
+                    'page_micron': microns.PageDot,
+                    'bg_color': CASA_PURPLE,
+                    'flow': MenuFlow,
+                    'args': {'menu': casa_menu, 'is_top_level': True},
+                    'account': account
+                }
+                card_descs.append(casa_card)
+
+            more_card = {
+                'statusbar': {'title': 'MORE', 'icon': lv.ICON_ADD_ACCOUNT, 'fg_color': WHITE},
                 'page_micron': microns.PagePlus,
                 'bg_color': DARK_GREY,
                 'flow': MenuFlow,
                 'args': {'menu': plus_menu, 'is_top_level': True}
             }
-            card_descs.append(plus_card)
+            card_descs.append(more_card)
 
         if new_card_idx is None:
             new_card_idx = 1 if len(card_descs) > 1 else 0

@@ -6,7 +6,7 @@
 import lvgl as lv
 from views import View
 from styles import Style
-from styles.colors import COPPER
+from styles.colors import FD_BLUE, MICRON_GREY, WHITE
 
 
 class Switch(View):
@@ -31,9 +31,26 @@ class Switch(View):
     def mount(self, lvgl_parent):
         super().mount(lvgl_parent)
 
-        default = Style(selector=lv.PART.INDICATOR | lv.STATE.CHECKED)
-        default.bg_color(COPPER)
+        default = Style()
+        default.bg_transparent()
         default.apply(self.lvgl_root)
+
+        knob = Style(selector=lv.PART.KNOB)
+        knob.pad_all(-5)
+        knob.bg_color(WHITE)
+        knob.apply(self.lvgl_root)
+
+        checked = Style(selector=lv.PART.INDICATOR | lv.STATE.CHECKED)
+        checked.bg_color(FD_BLUE)
+        checked.border_width(2)
+        checked.border_color(WHITE)
+        checked.apply(self.lvgl_root)
+
+        unchecked = Style(selector=lv.PART.INDICATOR)
+        unchecked.bg_color(MICRON_GREY)
+        unchecked.border_width(2)
+        unchecked.border_color(WHITE)
+        unchecked.apply(self.lvgl_root)
 
         if self.value:
             self.lvgl_root.add_state(lv.STATE.CHECKED)
