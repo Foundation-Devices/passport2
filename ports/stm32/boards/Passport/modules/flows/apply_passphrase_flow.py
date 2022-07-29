@@ -49,12 +49,12 @@ class ApplyPassphraseFlow(Flow):
             # Make a success page
             if len(self.passphrase) == 0:
                 await SuccessPage(
-                    text='Passphrase cleared\n\nFingerprint:\n{}'.format(
+                    text='Passphrase cleared\n\nFingerprint:\n\n{}'.format(
                         xfp2str(common.settings.get('xfp', '---')))
                 ).show()
             else:
                 result = await QuestionPage(
-                    text='Passphrase applied\n\nFingerprint correct?\n{}'.format(
+                    text='Passphrase applied\n\nFingerprint correct?\n\n{}'.format(
                         xfp2str(common.settings.get('xfp', '---')))
                 ).show()
                 if result is False:
