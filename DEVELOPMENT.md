@@ -35,7 +35,7 @@ The cross compiler enables your PC to build code for the STM32H753 MCU used by P
 #### Autotools
 The makefiles used by MicroPython and Passport firmware use Autotools.  Install Autotools and related packages with the following command:
 
-    sudo apt install autotools-dev automake libusb-1.0.0-dev libtool python3-virtualenv libsdl2-dev pkg-config curl
+    sudo apt install autotools-dev automake libusb-1.0-0-dev libtool python3-virtualenv libsdl2-dev pkg-config curl
 
 #### OpenOCD - On-Chip Debugger
 OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only required for developers with a special Developer version of the Passport board.  If all you want to do is build the firmware and install it with a Developer Pubkey over microSD, then you do not need to install OpenOCD.
