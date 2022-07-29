@@ -85,8 +85,10 @@ class UpdateFirmwareFlow(Flow):
                         self.set_result(False)
                         return
 
-                result = await QuestionPage(
-                    'Install this firmware update?\n\nVersion:\n{}'.format(version)).show()
+                    result = await ErrorPage(
+                        text='This firmware is signed by a custom Developer PubKey.'.format(version)).show()
+
+                result = await QuestionPage(text='Install this firmware update?\n\nVersion:\n{}'.format(version)).show()
                 if result:
                     self.goto(self.copy_to_flash)
                 else:
