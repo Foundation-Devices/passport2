@@ -71,7 +71,7 @@ class UR1Encoder(DataEncoder):
     def __init__(self, _args):
         self.parts = []
         self.next_index = 0
-        self.qr_sizes = [60, 200, 500]
+        self.qr_sizes = [500, 200, 60]
 
     # def get_num_supported_sizes(self):
     #     return len(self.qr_sizes)

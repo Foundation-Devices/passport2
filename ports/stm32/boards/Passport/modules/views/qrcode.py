@@ -8,6 +8,26 @@ from passport import sram4
 from styles.colors import WHITE, BLACK
 from .view import View
 
+MAX_QR_VERSION = 13
+
+# Capacity in bytes for LOW ECC and alphanumeric
+alphanumeric_capacity_by_version = [
+    0,
+    25,
+    47,
+    77,
+    114,
+    154,
+    195,
+    224,
+    279,
+    335,
+    339,
+    468,
+    535,
+    619
+]
+
 
 class QRCode(View):
     """Displays a QR code"""
@@ -52,12 +72,21 @@ class QRCode(View):
     def reset_sizing(self):
         self.lvgl_root.reset_last_version()
 
+    def get_version_for_data(self, encoded_data):
+        l = len(encoded_data)
+        for i in range(1, MAX_QR_VERSION + 1):
+            if alphanumeric_capacity_by_version[i] >= l:
+                return i
+        raise QRCodeException()
+
     def update(self, encoded_data):
         if self.res is None:
             self.configure_canvas_buffer()
             if self.res is None:
                 return
-        min_version = self.lvgl_root.get_min_fit_version(len(encoded_data))
+
+        min_version = self.get_version_for_data(encoded_data)
+
         last_version = self.lvgl_root.get_last_version()
 
         # Don't go to a smaller QR code, even if it means repeated data since

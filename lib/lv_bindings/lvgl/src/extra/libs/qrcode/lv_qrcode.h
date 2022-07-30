@@ -27,27 +27,28 @@ extern "C" {
  */
 #define LV_QRCODE_IMG_BUF_SIZE(size) LV_CANVAS_BUF_SIZE_INDEXED_1BIT((size), (size))
 
-#define LV_QRCODE_MODULES_BUF_SIZE(max_version) (((((max_version) * 4 + 17) * ((max_version) * 4 + 17) + 7) / 8) + 1)
+#define LV_QRCODE_MODULES_BUF_SIZE(max_version) (((((max_version)*4 + 17) * ((max_version)*4 + 17) + 7) / 8) + 1)
 
-extern const lv_obj_class_t lv_qrcode_class;
+    extern const lv_obj_class_t lv_qrcode_class;
 
-typedef struct {
-    lv_canvas_t canvas;
-    void * modules_buf;
-    int32_t max_version;
-    int32_t last_version;
-    uint8_t data_and_tmp[500];
-} lv_qrcode_t;
+    typedef struct
+    {
+        lv_canvas_t canvas;
+        void *modules_buf;
+        int32_t max_version;
+        int32_t last_version;
+        uint8_t data_and_tmp[650];
+    } lv_qrcode_t;
 
-/**********************
- *      TYPEDEFS
- **********************/
+    /**********************
+     *      TYPEDEFS
+     **********************/
 
-/**********************
- * GLOBAL PROTOTYPES
- **********************/
+    /**********************
+     * GLOBAL PROTOTYPES
+     **********************/
 
-/**
+    /**
  * Create an empty QR Code object.
  * @param parent point to an object where to create the QR code
  * @param parent pointer to an object where to create the QR code.
