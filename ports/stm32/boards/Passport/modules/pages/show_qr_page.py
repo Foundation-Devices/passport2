@@ -53,7 +53,7 @@ class ShowQRPage(Page):
 
         self.prev_card_descs = None
         self.prev_card_idx = common.ui.active_card_idx
-        self.qr_size_idx = 0
+        self.qr_size_idx = common.settings.get('last_qr_size_idx', 0)
         self.qr_card_descs = [
             {'page_micron': microns.PageQRSmall},
             {'page_micron': microns.PageQRMedium},
@@ -118,7 +118,11 @@ class ShowQRPage(Page):
             self.curr_brightness_idx = 4
 
     def detach(self):
+        # Save the last qr settings on the way out
+        common.settings.set('last_qr_size_idx', self.qr_size_idx)
         common.settings.set('last_qr_brightness', self.curr_brightness)
+
+        # Restore the previous screen brightness
         common.display.set_brightness(self.prev_brightness)
 
         if self.is_qr_resizable():

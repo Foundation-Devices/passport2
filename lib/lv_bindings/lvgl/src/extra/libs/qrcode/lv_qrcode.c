@@ -62,7 +62,7 @@ void lv_qrcode_set_buffer(lv_obj_t * obj, void * img_buf, lv_coord_t hor_res, lv
     qrcode->modules_buf = modules_buf;
     qrcode->max_version = max_version;
 
-    printf("modules buf %p\n", qrcode->modules_buf);
+    // printf("modules buf %p\n", qrcode->modules_buf);
 
     lv_canvas_set_buffer(obj, img_buf, hor_res, ver_res, LV_IMG_CF_INDEXED_1BIT);
     lv_canvas_set_palette(obj, 0, dark_color);
