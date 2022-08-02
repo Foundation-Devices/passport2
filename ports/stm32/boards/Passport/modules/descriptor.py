@@ -12,6 +12,7 @@
 # Based on: https://github.com/bitcoin/bitcoin/blob/master/src/script/descriptor.cpp
 #
 
+
 def polymod(c, val):
     c0 = c >> 35
     c = ((c & 0x7ffffffff) << 5) ^ val
