@@ -321,8 +321,8 @@ class CameraSimulator:
         h, w, c = cropped_img.shape
         # print("cropped_img: w={} h={} c={}".format(w, h, c))
 
-        cam_width = 396
-        cam_height = 330
+        cam_width = 350
+        cam_height = 350
         resized = cv2.resize(
             cropped_img, (cam_width, cam_height), interpolation=cv2.INTER_CUBIC)
         h, w, c = resized.shape

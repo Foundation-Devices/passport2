@@ -4,8 +4,8 @@
 
 import sys
 
-HOR_RES = 396
-VER_RES = 330
+HOR_RES = 350
+VER_RES = 350
 FRAMEBUFFER_SIZE = HOR_RES * VER_RES * 2
 
 cam_cmd_wx = open(int(sys.argv[4]), 'wb')
