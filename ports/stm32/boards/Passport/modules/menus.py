@@ -35,7 +35,7 @@ def account_menu():
 
 
 def casa_menu():
-    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow
+    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
 
     return [
         {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
@@ -44,7 +44,8 @@ def casa_menu():
          'statusbar': {'title': 'SIGN'}},
         {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
         {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
-        {'icon': lv.ICON_FOLDER, 'label': 'Manage Account', 'submenu': manage_account_menu},
+        {'icon': lv.ICON_CONNECT, 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
     ]
 
 
@@ -252,8 +253,11 @@ def extensions_menu():
     from utils import is_extension_enabled, toggle_extension_enabled
     from pages import ColorPickerPage
     return [
+        {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
         {'icon': lv.ICON_SETTINGS, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
          'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
+        {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
+         'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
     ]
 
 

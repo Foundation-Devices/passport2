@@ -7,22 +7,10 @@ from files import CardMissingError, CardSlot
 from flows import Flow, FilePickerFlow
 from pages import SuccessPage, ErrorPage, InsertMicroSDPage
 from tasks import sign_text_file_task
-from utils import cleanup_deriv_path, spinner_task
+from utils import spinner_task, validate_sign_text
 from translations import t, T
-from public_constants import AF_CLASSIC, MSG_SIGNING_MAX_LENGTH
+from public_constants import AF_CLASSIC, MSG_SIGNING_MAX_LENGTH, RFC_SIGNATURE_TEMPLATE
 import sys
-
-MSG_CHARSET = range(32, 127)
-MSG_MAX_SPACES = 4
-
-RFC_SIGNATURE_TEMPLATE = '''\
------BEGIN {blockchain} SIGNED MESSAGE-----
-{msg}
------BEGIN SIGNATURE-----
-{addr}
-{sig}
------END {blockchain} SIGNED MESSAGE-----
-'''
 
 
 def is_signable(filename):
@@ -80,47 +68,14 @@ class SignTextFileFlow(Flow):
 
                 self.subpath = fd.readline().strip().decode('utf-8')
 
-                # Check for leading or trailing whitespace
-                if self.text[0] == ' ':
-                    await ErrorPage(text='File contains leading whitespace.').show()
+                # Validate
+                (subpath, error) = validate_sign_text(self.text, self.subpath)
+                if error is not None:
+                    await ErrorPage(text=error).show()
                     self.set_result(False)
                     return
 
-                if self.text[-1] == ' ':
-                    await ErrorPage(text='File contains trailing whitespace.').show()
-                    self.set_result(False)
-                    return
-
-                # Ensure characters are in range and not too many spaces
-                run = 0
-                # print('self.text="{}"'.format(self.text))
-                for ch in self.text:
-                    # print('ch="{}"'.format(ch))
-                    if ord(ch) not in MSG_CHARSET:
-                        await ErrorPage(text='File contains non-ASCII character: 0x%02x' % ord(ch)).show()
-                        self.set_result(False)
-                        return
-
-                    if ch == ' ':
-                        run += 1
-                        if run >= MSG_MAX_SPACES:
-                            await ErrorPage(
-                                'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1)).show()
-                            self.set_result(False)
-                            return
-                    else:
-                        run = 0
-
-                # Check subpath, if given
-                if self.subpath:
-                    try:
-                        assert self.subpath[0:1] == 'm'
-                        subpath = cleanup_deriv_path(subpath)
-                    except BaseException:
-                        await ErrorPage(
-                            "Second line of file, if included, must specify a subkey path, like: m/44'/0/0").show()
-                        self.set_result(False)
-                        return
+                self.subpath = subpath
 
                 # All looks good so far, so try to sign it
                 self.goto(self.do_sign)

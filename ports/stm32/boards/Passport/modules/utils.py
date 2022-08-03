@@ -1177,4 +1177,42 @@ def is_passphrase_active():
     import stash
     return stash.bip39_passphrase != ''
 
+
+MSG_CHARSET = range(32, 127)
+MSG_MAX_SPACES = 4
+
+
+def validate_sign_text(text, subpath):
+    # Check for leading or trailing whitespace
+    if text[0] == ' ':
+        return (subpath, 'File contains leading whitespace.')
+
+    if text[-1] == ' ':
+        (subpath, 'File contains trailing whitespace.')
+
+    # Ensure characters are in range and not too many spaces
+    run = 0
+    # print('text="{}"'.format(text))
+    for ch in text:
+        # print('ch="{}"'.format(ch))
+        if ord(ch) not in MSG_CHARSET:
+            return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
+
+        if ch == ' ':
+            run += 1
+            if run >= MSG_MAX_SPACES:
+                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+        else:
+            run = 0
+
+    # Check subpath, if given
+    if subpath:
+        try:
+            assert subpath[0:1] == 'm'
+            subpath = cleanup_deriv_path(subpath)
+        except BaseException:
+            return (subpath, 'Second line, if included, must specify a subkey path.')
+
+    return (subpath, None)
+
 # EOF

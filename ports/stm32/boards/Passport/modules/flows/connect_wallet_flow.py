@@ -297,8 +297,8 @@ class ConnectWalletFlow(Flow):
             if self.is_skip_address_verification_enabled():
                 if self.is_force_multisig_policy_enabled():
                     result = await InfoPage(
-                        text='For compatibility with {}, Passport will set your Multisig Policy ' +
-                        'to Skip Verification.'.format(self.sw_wallet['label']))
+                        text='For compatibility with {}, Passport will set '.format(self.sw_wallet['label']) +
+                        'your Multisig Policy to Skip Verification.').show()
                     if not result:
                         if not self.back():
                             self.set_result(False)

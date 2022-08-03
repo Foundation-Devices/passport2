@@ -433,7 +433,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 
 #define LV_USE_SLIDER       0   /*Requires: lv_bar*/
 
-#define LV_USE_SWITCH    0
+#define LV_USE_SWITCH    1
 
 #define LV_USE_TEXTAREA   1     /*Requires: lv_label*/
 #if LV_USE_TEXTAREA != 0
