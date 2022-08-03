@@ -6,6 +6,7 @@
 
 #ifdef SCREEN_MODE_COLOR
 extern const lv_img_dsc_t ICON_SETTINGS;
+extern const lv_img_dsc_t ICON_HEALTH_CHECK2;
 extern const lv_img_dsc_t ICON_BATTERY;
 extern const lv_img_dsc_t ICON_BITCOIN;
 extern const lv_img_dsc_t IMAGE_REGULATORY;
@@ -31,6 +32,7 @@ extern const lv_img_dsc_t ICON_PAGE_DOT;
 extern const lv_img_dsc_t LARGE_ICON_QUESTION;
 extern const lv_img_dsc_t LARGE_ICON_INFO;
 extern const lv_img_dsc_t LARGE_ICON_ERROR;
+extern const lv_img_dsc_t ICON_HEALTH_CHECK;
 extern const lv_img_dsc_t ICON_INPUT_MODE_PUNCTUATION;
 extern const lv_img_dsc_t LARGE_ICON_MICROSD;
 extern const lv_img_dsc_t ICON_BATTERY_CHARGING;

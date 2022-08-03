@@ -43,7 +43,7 @@ def casa_menu():
         {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
+        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
         {'icon': lv.ICON_CONNECT, 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
     ]
