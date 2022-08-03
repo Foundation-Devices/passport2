@@ -136,6 +136,47 @@ def call_later_ms(delay_ms, coro):
     loop.create_task(delay_fn())
 
 
+def save_error_log(msg, filename):
+    from files import CardSlot
+
+    wrote_to_sd = False
+    try:
+        with CardSlot() as card:
+            # Full path and short filename
+            fname, _ = card.get_file_path(filename)
+            with open(fname, 'wb') as fd:
+                fd.write(msg)
+                wrote_to_sd = True
+    except Exception:
+        return wrote_to_sd
+
+    return wrote_to_sd
+
+
+async def save_error_log_to_microsd_task(msg, filename):
+    import common
+
+    sd_card_change = False
+
+    def sd_card_cb():
+        nonlocal sd_card_change
+
+        if not sd_card_change:
+            sd_card_change = True
+
+    # Activate SD card hook
+    CardSlot.set_sd_card_change_cb(sd_card_cb)
+
+    while True:
+        if sd_card_change:
+            sd_card_change = False
+            saved = save_error_log(msg, filename)
+            if saved:
+                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+
+        await sleep_ms(100)
+
+
 def handle_fatal_error(exc):
     import common
     from styles.colors import BLACK
@@ -166,6 +207,9 @@ def handle_fatal_error(exc):
             print(msg)
             print('===============================================================')
 
+            filename = 'error.log'
+            saved = save_error_log(msg, filename)
+
             # Switch immediately to a new card to show the error
             fatal_error_card = {
                 'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_INFO},
@@ -177,8 +221,14 @@ def handle_fatal_error(exc):
             }
 
             common.ui.set_cards([fatal_error_card])
+            if saved:
+                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+            else:
+                common.ui.set_card_header(title='Insert microSD', icon=lv.ICON_MICROSD)
+
             loop = get_event_loop()
-            fatal_card_task = loop.create_task(card_task(fatal_error_card))
+            _fatal_card_task = loop.create_task(card_task(fatal_error_card))
+            _microsd_task = loop.create_task(save_error_log_to_microsd_task(msg, filename))
 
         except Exception as exc2:
             sys.print_exception(exc2)
