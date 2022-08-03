@@ -12,6 +12,7 @@
 
 # Caution: limited ability in Micropython to override system exceptions.
 
+
 # PSBT / transaction related
 class FatalPSBTIssue(RuntimeError):
     pass

@@ -9,6 +9,7 @@
 #
 # double_check_psbt_change_task.py - Iterate through the PSBT and double check the change details
 
+
 async def double_check_psbt_change_task(on_done, psbt):
     import stash
     from utils import swab32, keypath_to_str

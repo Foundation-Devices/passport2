@@ -27,7 +27,7 @@ class Camera(View):
     Keep this in mind when using animations with the camera component.
 
     When running on the simulator, the display driver is not changed.
-    The camera framebuffer is used directy with the LVGL canvas.
+    The camera framebuffer is used directly with the LVGL canvas.
     """
 
     HOR_RES = camera.HOR_RES
