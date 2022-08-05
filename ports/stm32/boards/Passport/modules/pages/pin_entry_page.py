@@ -5,16 +5,20 @@
 
 
 import lvgl as lv
-from styles.colors import BLACK, FD_BLUE, TEXT_GREY, WHITE
+from styles.colors import BLACK, FD_BLUE, TEXT_GREY, WHITE, COPPER
 from pages import Page
 from tasks import get_security_words_task
 from utils import InputMode
-from views import Label, View, PINInput
+from views import Label, View, PINInput, Icon
 from constants import MENU_ITEM_CORNER_RADIUS
 from styles import Stylize
 from t9 import T9
 import microns
 import common
+from common import pa
+
+NUM_ATTEMPTS_LEFT_BRICK_WARNING = 5
+BRICK_WARNING_MSG = '%s attempts left before Passport is permanently disabled.'
 
 NUM_DIGITS_FOR_SECURITY_WORDS = 4
 MIN_PIN_LENGTH = 6
@@ -47,6 +51,8 @@ class PINEntryPage(Page):
         self.show_security_words = False
         self.security_container = None
         self.message_container = None
+        self.message_icon = None
+        self.message = None
         self.words_container = None
 
         if self.user_wants_to_see_security_words:
@@ -76,10 +82,26 @@ class PINEntryPage(Page):
         self.input.set_width(lv.pct(100))
         self.add_child(self.input)
 
-        self.update_security_words()
+        show_security_words = self.show_security_words and self.user_wants_to_see_security_words
+        if show_security_words:
+            self.update_message(show_security_words, title=self.security_words_message)
+        else:
+            if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+                self.show_brick_warning()
 
-    def update_security_words(self):
+    def show_brick_warning(self):
+        message = BRICK_WARNING_MSG % pa.attempts_left
+        self.update_message(show_security_words=False, title='WARNING!', icon=lv.ICON_WARNING,
+                            message=message, color=COPPER)
+
+    def update_message(self, show_security_words=False, title=None, icon=None, message=None, color=FD_BLUE):
         if self.is_mounted():
+            if self.message is not None:
+                self.message.unmount()
+                self.message = None
+            if self.message_icon is not None:
+                self.message_icon.unmount()
+                self.message_icon = None
             if self.message_container is not None:
                 self.message_container.unmount()
                 self.message_container = None
@@ -90,8 +112,8 @@ class PINEntryPage(Page):
                 self.security_container.unmount()
                 self.security_container = None
 
-        if self.show_security_words and self.user_wants_to_see_security_words:
-            # Make a fancy rounded container for the security words
+        # Make a fancy rounded container for the security words or a warning message
+        if show_security_words or message is not None:
             self.security_container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
             self.security_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
             with Stylize(self.security_container) as default:
@@ -99,37 +121,53 @@ class PINEntryPage(Page):
                 default.clip_corner(True)
                 default.border_width(2)
                 default.pad_row(0)
-                default.border_color(FD_BLUE)
-                default.bg_color(FD_BLUE)
+                default.border_color(color)
+                default.bg_color(color)
             self.add_child(self.security_container)
 
             # Show the message
-            self.message_container = View()
+            self.message_container = View(flex_flow=lv.FLEX_FLOW.ROW)
             self.message_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
             with Stylize(self.message_container) as default:
-                default.bg_color(FD_BLUE)
+                default.flex_align(main=lv.FLEX_ALIGN.CENTER)
+                default.bg_color(color)
 
-            self.message = Label(text=self.security_words_message, color=WHITE)
-            self.message.set_width(lv.pct(100))
+            if icon is not None:
+                self.message_icon = Icon(icon, color=WHITE)
+                with Stylize(self.message_icon) as default:
+                    default.pad(left=8, right=0, top=8)
+                self.message_container.add_child(self.message_icon)
+
+            self.message = Label(text=title, color=WHITE)
+            if icon is None:
+                self.message.set_width(lv.pct(100))
             with Stylize(self.message) as default:
                 default.text_align(lv.TEXT_ALIGN.CENTER)
-                default.pad(left=6, right=6, top=8, bottom=8)
+                default.pad(left=0, right=6, top=8, bottom=8)
             self.message_container.add_child(self.message)
             self.security_container.add_child(self.message_container)
 
-            # Show the words
             self.words_container = View(flex_flow=lv.FLEX_FLOW.ROW)
             self.words_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
             with Stylize(self.words_container) as default:
                 default.radius(MENU_ITEM_CORNER_RADIUS - 2)
                 default.clip_corner(True)
-                default.pad(left=16, right=16, bottom=10, top=10)
+                default.pad(left=8, right=8, bottom=8, top=8)
                 default.flex_align(main=lv.FLEX_ALIGN.SPACE_BETWEEN)
                 default.bg_color(WHITE)
 
-            for i in range(len(self.security_words)):
-                word_view = Label(text=self.security_words[i], color=TEXT_GREY)
-                self.words_container.add_child(word_view)
+            # Show the security words or a message
+            if show_security_words:
+                for i in range(len(self.security_words)):
+                    word_view = Label(text=self.security_words[i], color=TEXT_GREY)
+                    self.words_container.add_child(word_view)
+            else:
+                message_view = Label(text=message, color=BLACK)
+                message_view.set_width(lv.pct(100))
+                with Stylize(message_view) as default:
+                    default.text_align(lv.TEXT_ALIGN.CENTER)
+                    default.pad(left=6, right=6, top=6, bottom=6)
+                self.words_container.add_child(message_view)
 
             self.security_container.add_child(self.words_container)
 
@@ -146,7 +184,11 @@ class PINEntryPage(Page):
             if self.show_security_words and self.user_wants_to_see_security_words:
                 self.show_security_words = False
                 self.security_words = []
-                self.update_security_words()
+                self.update_message(show_security_words=False, title=self.security_words_message)
+
+                if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+                    self.show_brick_warning()
+
                 self.t9.set_max_length(MAX_PIN_LENGTH)
                 return
 
@@ -182,14 +224,21 @@ class PINEntryPage(Page):
             self.input.set_mode(self.t9.mode)
 
         if self.user_wants_to_see_security_words:
-            self.update_security_words()
+            self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
+
+        if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+            self.show_brick_warning()
 
     async def on_security_words(self, security_words, error):
         # NOTE: Be aware that this is called from the context of another task
         if error is None:
             self.security_words = security_words
             self.show_security_words = True
-            self.update_security_words()
+            show_security_words = self.show_security_words and self.user_wants_to_see_security_words
+            self.update_message(show_security_words=show_security_words, title=self.security_words_message)
+
+        if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+            self.show_brick_warning()
 
     def on_ready(self, prefix):
         from utils import start_task
@@ -204,8 +253,11 @@ class PINEntryPage(Page):
                 start_task(get_security_words_task(self.on_security_words, prefix))
             else:
                 self.show_security_words = False
-            self.update_security_words()
+            self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
 
             # If user goes back below the minimum, then we need to show security words again
             if len(prefix) < NUM_DIGITS_FOR_SECURITY_WORDS:
                 self.t9.set_max_length(NUM_DIGITS_FOR_SECURITY_WORDS)
+
+        if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+            self.show_brick_warning()
