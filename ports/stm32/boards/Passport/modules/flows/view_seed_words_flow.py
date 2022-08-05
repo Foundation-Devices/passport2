@@ -38,26 +38,9 @@ class ViewSeedWordsFlow(Flow):
 
         (words, passphrase, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
         if error is None and words is not None:
-            msg = '\n'.join('         %2d. %s' % (i + 1, w) for i, w in enumerate(words))
-
-            if passphrase is not None:
-                msg += '\n\nPassphrase:\n  {}'.format(passphrase)
-
-            result = await LongTextPage(
-                card_header={'title': 'Seed Words'},
-                text=msg,
-                left_micron=microns.Back,
-                right_micron=microns.Checkmark).show()
-
-            # TODO: Can we Blank msg, words and passphrase?
+            from pages import SeedWordsListPage
+            result = await SeedWordsListPage(words=words).show()
             self.set_result(result)
-
-            # TODO: Verify seed?  In FE, we have Verify Seed as the right button action
-            # ch = await ux_show_story(msg, sensitive=True, right_btn='VERIFY')
-            # if ch == 'y':
-            #     seed_check = SeedCheckUX(seed_words=words, title='Verify Seed')
-            #     await seed_check.show()
-            #     return
         else:
             await ErrorPage(text='Unable to retrieve seed: {}'.format(error)).show()
             self.set_result(False)

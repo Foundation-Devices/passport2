@@ -10,7 +10,8 @@ from styles import Stylize, FONT_NORMAL
 
 
 class Label(View):
-    def __init__(self, text='', color=None, font=FONT_NORMAL, long_mode=lv.label.LONG.WRAP, center=False, recolor=True):
+    def __init__(self, text='', color=None, font=FONT_NORMAL, long_mode=lv.label.LONG.WRAP, center=False, recolor=True,
+                 text_align=None):
         super().__init__()
         self.text = text
         self.color = color
@@ -18,6 +19,7 @@ class Label(View):
         self.long_mode = long_mode
         self.center = center
         self.recolor = recolor
+        self.text_align = text_align
 
         with Stylize(self) as default:
             default.font(self.font)
@@ -25,6 +27,8 @@ class Label(View):
                 default.text_color(self.color)
             if center:
                 default.text_align(lv.TEXT_ALIGN.CENTER)
+            elif text_align is not None:
+                default.text_align(self.text_align)
 
     def set_text(self, text):
         self.text = text

@@ -43,6 +43,9 @@ async def copy_psbt_to_external_flash_task(on_done, on_progress, data, offset):
             decoder = Base64Streamer()
             output_encoder = Base64Writer
             psbt_len = (psbt_len * 3 // 4) + 10
+        else:
+            await on_done(0, None, Error.PSBT_INVALID)
+            return
 
         total = 0
         with SFFile(offset, max_size=psbt_len) as out:

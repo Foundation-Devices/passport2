@@ -167,9 +167,10 @@ def multisig_menu():
                 'args': {'context': ms.storage_idx}
             })
 
-    items.append({'icon': lv.ICON_SCAN_QR, 'label': 'Import from QR', 'flow': ImportMultisigWalletFromQRFlow})
+    items.append({'icon': lv.ICON_SCAN_QR, 'label': 'Import from QR', 'flow': ImportMultisigWalletFromQRFlow,
+                 'statusbar': {'title': 'IMPORT'}})
     items.append({'icon': lv.ICON_MICROSD, 'label': 'Import from microSD',
-                  'flow': ImportMultisigWalletFromMicroSDFlow})
+                  'flow': ImportMultisigWalletFromMicroSDFlow, 'statusbar': {'title': 'IMPORT'}})
     items.append({'icon': lv.ICON_SETTINGS, 'label': 'Multisig Policy', 'page': MultisigPolicySettingPage})
 
     return items
@@ -195,7 +196,8 @@ def advanced_menu():
 
     return [
         {'icon': lv.ICON_SETTINGS, 'label': 'Security Words', 'page': ShowSecurityWordsSettingPage},
-        {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed},
+        {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
+         'statusbar': {'title': 'SEED WORDS', 'icon': lv.ICON_SEED}},
         {'icon': lv.ICON_ONE_KEY, 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': lv.ICON_MICROSD, 'label': 'microSD', 'submenu': microsd_menu},
@@ -251,13 +253,13 @@ def advanced_menu():
 
 def extensions_menu():
     from utils import is_extension_enabled, toggle_extension_enabled
-    from pages import ColorPickerPage
+    # from pages import ColorPickerPage
     return [
-        {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
+        # {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
         {'icon': lv.ICON_SETTINGS, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
          'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
-        {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
-         'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
+        # {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
+        #  'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
     ]
 
 
@@ -270,6 +272,6 @@ def settings_menu():
         {'icon': lv.ICON_FIRMWARE, 'label': 'Firmware', 'submenu': update_menu},
         {'icon': lv.ICON_BITCOIN, 'label': 'Bitcoin', 'submenu': bitcoin_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_ADVANCED, 'label': 'Advanced', 'submenu': advanced_menu, 'is_visible': is_logged_in},
-        {'icon': lv.ICON_ADVANCED, 'label': 'Extensions', 'submenu': extensions_menu},
+        {'icon': lv.ICON_EXTENSIONS, 'label': 'Extensions', 'submenu': extensions_menu},
         # {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_logged_in},
     ]

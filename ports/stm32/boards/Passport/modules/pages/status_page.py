@@ -48,6 +48,9 @@ class StatusPage(Page):
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
         self.set_children([self.container])
 
+        with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
+            scrollbar.pad(right=0)
+
         self.update()
 
     def update(self):

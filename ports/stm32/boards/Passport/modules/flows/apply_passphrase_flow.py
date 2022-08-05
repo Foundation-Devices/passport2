@@ -15,7 +15,7 @@ class ApplyPassphraseFlow(Flow):
     def __init__(self, passphrase=None):
 
         # Caller wants to set this passphrase
-        if passphrase != None:
+        if passphrase is not None:
             self.passphrase = passphrase
             super().__init__(initial_state=self.apply_passphrase, name='ApplyPassphraseFlow')
         else:

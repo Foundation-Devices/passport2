@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
+# qrcode.py - Wrapper for LVGL QR code widget
 
 import lvgl as lv
-import foundation
 from passport import sram4
 from styles.colors import WHITE, BLACK
 from .view import View
@@ -73,9 +73,9 @@ class QRCode(View):
         self.lvgl_root.reset_last_version()
 
     def get_version_for_data(self, encoded_data):
-        l = len(encoded_data)
+        enc_len = len(encoded_data)
         for i in range(1, MAX_QR_VERSION + 1):
-            if alphanumeric_capacity_by_version[i] >= l:
+            if alphanumeric_capacity_by_version[i] >= enc_len:
                 return i
         raise QRCodeException()
 

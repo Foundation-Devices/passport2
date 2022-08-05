@@ -402,10 +402,6 @@ class ConnectWalletFlow(Flow):
                 self.set_result(False)
             return
 
-        # Import the config info and save to settings
-        common.new_multisig_wallet = None
-        common.is_new_wallet_a_duplicate = False
-
         scan_result = await self.sig_type['import_qr']()
         if scan_result is None:
             # Retry
@@ -438,10 +434,6 @@ class ConnectWalletFlow(Flow):
                 self.set_result(False)
             return
 
-        # Import the config info and save to settings
-        common.new_multisig_wallet = None
-        common.is_new_wallet_a_duplicate = False
-
         self.multisig_import_data = await self.sig_type['import_microsd']()
         if self.multisig_import_data is None:
             # Retry
@@ -462,6 +454,9 @@ class ConnectWalletFlow(Flow):
             if not self.back():
                 self.set_result(False)
             return
+
+        # Remember it for the latter states after this
+        self.multisig_wallet = ms
 
         # Only perform address validation if wallet does not prevent it
         if self.is_skip_address_verification_enabled():

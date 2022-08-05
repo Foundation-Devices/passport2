@@ -63,6 +63,7 @@ void frequency_turbo_toggle(bool enable) {
 
     /* Select HSI clock as main clock */
     RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_SW)) | RCC_CFGR_SW_HSI;
+    // RCC->CFGR = (RCC->CFGR & ~(RCC_CFGR_SW)) | RCC_CFGR_SW_PLL1;
 
     /* Reconfigure the clocks based on enable flag:
      *   64 MHz core clock if false
