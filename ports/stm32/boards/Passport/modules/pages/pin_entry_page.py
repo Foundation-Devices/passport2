@@ -173,7 +173,7 @@ class PINEntryPage(Page):
                     word_view = Label(text=self.security_words[i], color=TEXT_GREY)
                     self.words_container.add_child(word_view)
             else:
-                message_view = Label(text=message, color=BLACK)
+                message_view = Label(text=message, color=TEXT_GREY)
                 message_view.set_width(lv.pct(100))
                 with Stylize(message_view) as default:
                     default.text_align(lv.TEXT_ALIGN.CENTER)
