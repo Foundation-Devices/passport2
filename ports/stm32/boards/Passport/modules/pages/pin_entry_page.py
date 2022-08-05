@@ -54,6 +54,7 @@ class PINEntryPage(Page):
         self.message_icon = None
         self.message = None
         self.words_container = None
+        self.brick_warning_shown = False
 
         if self.user_wants_to_see_security_words:
             initial_max_length = NUM_DIGITS_FOR_SECURITY_WORDS
@@ -90,11 +91,17 @@ class PINEntryPage(Page):
                 self.show_brick_warning()
 
     def show_brick_warning(self):
-        message = BRICK_WARNING_MSG % pa.attempts_left
-        self.update_message(show_security_words=False, title='WARNING!', icon=lv.ICON_WARNING,
-                            message=message, color=COPPER)
+        if not self.brick_warning_shown:
+            message = BRICK_WARNING_MSG % pa.attempts_left
+            self.update_message(show_security_words=False, title='WARNING!', icon=lv.ICON_WARNING,
+                                message=message, color=COPPER)
+            self.brick_warning_shown = True
 
     def update_message(self, show_security_words=False, title=None, icon=None, message=None, color=FD_BLUE):
+        # Avoid updating if showing brick warning again
+        if not show_security_words and self.brick_warning_shown:
+            return
+
         if self.is_mounted():
             if self.message is not None:
                 self.message.unmount()
@@ -111,6 +118,10 @@ class PINEntryPage(Page):
             if self.security_container is not None:
                 self.security_container.unmount()
                 self.security_container = None
+
+        # Allow for a brick warning to be shown after security words were shown
+        if show_security_words:
+            self.brick_warning_shown = False
 
         # Make a fancy rounded container for the security words or a warning message
         if show_security_words or message is not None:
@@ -223,10 +234,9 @@ class PINEntryPage(Page):
             self.input.set_pin(self.pin)
             self.input.set_mode(self.t9.mode)
 
-        if self.user_wants_to_see_security_words:
-            self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
-
-        if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+        if self.user_wants_to_see_security_words and self.show_security_words:
+            self.update_message(show_security_words=True, title=self.security_words_message)
+        elif pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()
 
     async def on_security_words(self, security_words, error):
@@ -234,8 +244,8 @@ class PINEntryPage(Page):
         if error is None:
             self.security_words = security_words
             self.show_security_words = True
-            show_security_words = self.show_security_words and self.user_wants_to_see_security_words
-            self.update_message(show_security_words=show_security_words, title=self.security_words_message)
+            if self.show_security_words and self.user_wants_to_see_security_words:
+                self.update_message(show_security_words=True, title=self.security_words_message)
 
         if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()
