@@ -187,6 +187,7 @@ class PinAttempt:
             # Reset to 21 when successfully logged in
             self.attempts_left = MAX_PIN_ATTEMPTS
             self.is_logged_in = True
+            self.num_fails = 0
             settings.set('__attempts_left__', MAX_PIN_ATTEMPTS)
 
         return self.is_logged_in

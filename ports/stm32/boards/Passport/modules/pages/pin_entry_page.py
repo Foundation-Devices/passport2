@@ -18,7 +18,6 @@ import common
 from common import pa
 
 NUM_ATTEMPTS_LEFT_BRICK_WARNING = 5
-BRICK_WARNING_MSG = '%s attempts left before Passport is permanently disabled.'
 
 NUM_DIGITS_FOR_SECURITY_WORDS = 4
 MIN_PIN_LENGTH = 6
@@ -30,7 +29,7 @@ class PINEntryPage(Page):
                  title=None,
                  pin='',
                  confirm_security_words=True,
-                 security_words_message='Recognize these security words?',
+                 security_words_message='Recognize these\nsecurity words?',
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
@@ -92,8 +91,11 @@ class PINEntryPage(Page):
 
     def show_brick_warning(self):
         if not self.brick_warning_shown:
-            message = BRICK_WARNING_MSG % pa.attempts_left
-            self.update_message(show_security_words=False, title='WARNING!', icon=lv.ICON_WARNING,
+            if pa.attempts_left == 1:
+                message = 'This is your FINAL attempt before Passport is permanently disabled.'
+            else:
+                message = '{} attempts left\nuntil Passport is permanently disabled.'.format(pa.attempts_left)
+            self.update_message(show_security_words=False, title='WARNING', icon=lv.ICON_WARNING,
                                 message=message, color=COPPER)
             self.brick_warning_shown = True
 
@@ -143,18 +145,22 @@ class PINEntryPage(Page):
                 default.flex_align(main=lv.FLEX_ALIGN.CENTER)
                 default.bg_color(color)
 
+            # TODO: Cleanup the alignment of the icon and message to use flex settings instead of padding
             if icon is not None:
                 self.message_icon = Icon(icon, color=WHITE)
                 with Stylize(self.message_icon) as default:
                     default.pad(left=8, right=0, top=8)
                 self.message_container.add_child(self.message_icon)
 
-            self.message = Label(text=title, color=WHITE)
+            self.message = Label(text=title, color=WHITE, center=True)
             if icon is None:
                 self.message.set_width(lv.pct(100))
             with Stylize(self.message) as default:
                 default.text_align(lv.TEXT_ALIGN.CENTER)
-                default.pad(left=0, right=6, top=8, bottom=8)
+                if show_security_words:
+                    default.pad(left=8, right=8, top=4, bottom=4)
+                else:
+                    default.pad(left=0, right=6, top=8, bottom=8)
             self.message_container.add_child(self.message)
             self.security_container.add_child(self.message_container)
 
@@ -163,8 +169,11 @@ class PINEntryPage(Page):
             with Stylize(self.words_container) as default:
                 default.radius(MENU_ITEM_CORNER_RADIUS - 2)
                 default.clip_corner(True)
-                default.pad(left=8, right=8, bottom=8, top=8)
-                default.flex_align(main=lv.FLEX_ALIGN.SPACE_BETWEEN)
+                if show_security_words:
+                    default.pad(left=8, right=8, bottom=8, top=8)
+                else:
+                    default.pad(left=4, right=4, bottom=2, top=2)
+                default.flex_align(main=lv.FLEX_ALIGN.SPACE_AROUND)
                 default.bg_color(WHITE)
 
             # Show the security words or a message

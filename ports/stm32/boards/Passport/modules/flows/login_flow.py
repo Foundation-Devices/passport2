@@ -10,7 +10,7 @@ from tasks import login_task
 from utils import spinner_task
 import microns
 
-DIRE_WARNING_NUM_ATTEMPTS = const(5)
+BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 
 class LoginFlow(Flow):
@@ -50,14 +50,14 @@ class LoginFlow(Flow):
         if pa.attempts_left == 1:
             attempt_msg = 'This is your FINAL attempt'
         else:
-            attempt_msg = 'You have {} attempts remaining'.format(pa.attempts_left)
+            attempt_msg = 'You have {} attempts left'.format(pa.attempts_left)
 
-        if pa.attempts_left <= DIRE_WARNING_NUM_ATTEMPTS:
-            dire_warning = ' until Passport is permanently disabled'
+        if pa.attempts_left <= BRICK_WARNING_NUM_ATTEMPTS:
+            brick_warning = ' before Passport is permanently disabled'
         else:
-            dire_warning = ''
+            brick_warning = ''
 
-        msg = 'Wrong PIN!\n\n{}{}.'.format(attempt_msg, dire_warning)
+        msg = 'Wrong PIN!\n\n{}{}.'.format(attempt_msg, brick_warning)
         result = await ErrorPage(text=msg,
                                  left_micron=microns.Shutdown,
                                  right_micron=microns.Retry).show()
