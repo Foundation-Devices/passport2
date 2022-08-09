@@ -6,7 +6,7 @@
 import lvgl as lv
 from flows import Flow
 from pages import ScanQRPage, ShowQRPage, QRScanResult
-from pages.options_chooser_page import OptionsChooserPage
+from pages.chooser_page import ChooserPage
 from styles.colors import FD_BLUE_HEX
 from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR, URException
 from data_codecs.qr_type import QRType
@@ -188,10 +188,11 @@ class ScvFlow(Flow):
         from pages import ErrorPage
 
         options = [{'label': 'Passed', 'value': True}, {'label': 'Failed', 'value': False}]
-        result = await OptionsChooserPage(
+        result = await ChooserPage(
             text='Select Security Check Result',
             options=options,
             icon=lv.LARGE_ICON_SHIELD,
+            initial_value=options[0].get('value'),
             left_micron=microns.Back,
             right_micron=microns.Checkmark).show()
         if result is None:

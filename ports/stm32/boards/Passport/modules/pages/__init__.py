@@ -26,7 +26,6 @@ from .info_page import *
 from .insert_microsd_page import *
 from .menu_page import *
 from .multisig_policy_setting_page import *
-from .options_chooser_page import *
 from .pin_entry_page import *
 from .predictive_text_input_page import *
 from .progress_page import *

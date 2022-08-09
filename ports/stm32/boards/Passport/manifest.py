@@ -184,7 +184,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'pages/units_setting_page.py',
 
         # Chooser pages
-        'pages/options_chooser_page.py',
         'pages/accept_terms_chooser_page.py',
         'pages/address_type_chooser_page.py',
         'pages/export_mode_chooser_page.py',
