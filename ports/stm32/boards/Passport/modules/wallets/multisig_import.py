@@ -16,10 +16,10 @@
 
 async def read_multisig_config_from_qr():
     from pages import ScanQRPage
-    result = await ScanQRPage(card_header={'title': 'Multisig Import'}).show()
+    data = await ScanQRPage(card_header={'title': 'Multisig Import'}).show()
 
-    if result is not None or result.error is not None:
-        selt.set_result(False)
+    if data is not None and data.error is not None:
+        data.set_result(False)
         return
 
     if isinstance(data, (bytes, bytearray)):
