@@ -19,8 +19,11 @@ LV_CFLAGS_MONO="-DLV_COLOR_DEPTH=16 -DSCREEN_MODE_MONO"
 VARIANT ?= simulator
 VARIANT_DIR ?= $(PWD)/variant/$(VARIANT)
 
-# bugfix for my Mac at least
-export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+# bugfix for macOS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+endif
 
 MAKE_ARGS = -j 4 VARIANT=$(VARIANT) VARIANT_DIR=$(VARIANT_DIR) CC_UNIX_TOP=$(CC_UNIX_TOP) PROG=passport-mpy V=$(V) DEBUG=1
 
