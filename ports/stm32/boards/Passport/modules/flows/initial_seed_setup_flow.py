@@ -32,7 +32,7 @@ class InitialSeedSetupFlow(Flow):
             self.goto(self.show_seed_setup_menu)
 
     async def show_seed_setup_menu(self):
-        from pages import OptionsChooserPage
+        from pages import ChooserPage
         from flows import NewSeedFlow, RestoreSeedFlow, RestoreBackupFlow
         import microns
 
@@ -41,11 +41,11 @@ class InitialSeedSetupFlow(Flow):
                    {'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)}]
 
-        flow = await OptionsChooserPage(
+        flow = await ChooserPage(
             text=None,
             icon=lv.LARGE_ICON_SEED,
             options=options,
-            default_idx=2,
+            initial_value=options[2].get('value'),
             left_micron=microns.Back).show()
         if flow is None:
             self.back()
