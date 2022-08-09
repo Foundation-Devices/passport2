@@ -190,7 +190,7 @@ class UI():
         }
 
     def update_cards_on_top_level(self):
-        print('Setting update_cards_pending to True')
+        # print('Setting update_cards_pending to True')
         self.update_cards_pending = True
 
     def update_cards(
