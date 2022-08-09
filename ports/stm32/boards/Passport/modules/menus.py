@@ -98,7 +98,7 @@ def bitcoin_menu():
     return [
         {'icon': lv.ICON_BITCOIN, 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
-        {'icon': lv.ICON_NETWORK, 'label': 'Testnet', 'flow': SetChainFlow, 'statusbar': {},
+        {'icon': lv.ICON_NETWORK, 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
     ]
 
