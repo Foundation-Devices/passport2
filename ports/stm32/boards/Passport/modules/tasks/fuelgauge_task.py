@@ -12,6 +12,12 @@ import common
 # Battery design capacity. In mAh.
 _DESIGN_CAPACITY = const(1200)
 
+# A SoC value when battery level is considered low and the user has to be notified.
+_LOW_BATTERY_THRESHOLD = const(5)
+
+# A SoC value when battery level is considered extremely low and device is not functional.
+_EXTREMELY_LOW_BATTERY_THRESHOLD = const(2)
+
 
 class InterruptEvent(Lock):
     def __init__(self):
@@ -91,9 +97,9 @@ async def fuelgauge_task():
         common.ui.set_battery_level(soc)
 
         # If battery is too low, we avoid the doom loop of reboots by shutting down automatically
-        if soc <= 2:
+        if soc <= _EXTREMELY_LOW_BATTERY_THRESHOLD:
             common.system.shutdown()
-        elif soc <= 90 and not low_warning_shown and is_logged_in():
+        elif soc <= _LOW_BATTERY_THRESHOLD and not low_warning_shown and is_logged_in():
             low_warning_shown = True
 
             # Remember what the current page was
