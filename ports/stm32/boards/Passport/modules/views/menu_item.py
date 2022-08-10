@@ -27,7 +27,7 @@ class MenuItem(View):
         with Stylize(self) as default:
             default.bg_transparent()
             default.text_color(DARK_GREY)
-            default.pad(top=0, right=6, bottom=0, left=10)
+            default.pad(top=0, right=0, bottom=0, left=9)
             default.flex_align(track=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
             default.img_recolor(DARK_GREY)
 
