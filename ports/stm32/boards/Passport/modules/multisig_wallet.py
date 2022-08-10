@@ -599,6 +599,9 @@ class MultisigWallet:
         my_deriv = None
         expect_chain = chains.current_chain().ctype
 
+        if isinstance(config, (bytes, bytearray)):
+            config = config.decode('utf-8')
+
         lines = config.split('\n')
 
         for ln in lines:
