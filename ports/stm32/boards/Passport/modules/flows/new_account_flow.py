@@ -39,7 +39,7 @@ class NewAccountFlow(Flow):
 
         result = await TextInputPage(card_header={'title': 'Account Number'}, numeric_only=True,
                                      initial_text='' if self.account_num is None else str(self.account_num),
-                                     max_length=5,
+                                     max_length=10,
                                      left_micron=microns.Back,
                                      right_micron=microns.Checkmark).show()
         if result is not None:

@@ -21,6 +21,7 @@ class TextInputPage(Page):
                  initial_mode=InputMode.UPPER_ALPHA,
                  max_length=64,
                  numeric_only=False,
+                 max_value=2_147_483_647,  # Max signed 32-bit int
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
