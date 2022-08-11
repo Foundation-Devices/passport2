@@ -936,7 +936,12 @@ CHANGE_ADDR = 1
 def is_valid_btc_address(address):
     # Strip prefix if present
     if address[0:8].lower() == 'bitcoin:':
-        address = address[8:]
+        # Find the parameters part and strip it.
+        bitcoinparams_start = address.find('?')
+        if bitcoinparams_start == -1:
+            bitcoinparams_start = len(address)
+
+        address = address[8:bitcoinparams_start]
 
     # We need to lowercase BECH32 addresses, but not legacy
     # Some wallets format BECH32 in all uppercase, while legacy addresses can have mixed case.
