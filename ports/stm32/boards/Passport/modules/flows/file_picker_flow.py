@@ -95,10 +95,16 @@ class FilePickerFlow(Flow):
 
                 await show_page_with_sd_card(status_page, on_sd_card_change, on_result, on_exception)
 
-                # Quit the flow entirely when the error message is dismissed
                 if result is False:
-                    self.set_result(None)
-                    return
+                    # When error message is dismissed, only quit the flow entirely if
+                    # there's no way back up to a previous level
+                    if len(self.paths) <= 1:
+                        self.set_result(None)
+                        return
+                    else:
+                        # Go back up a level and refresh the flow
+                        self.paths.pop(-1)
+                        continue
             else:
                 file_picker_page = FilePickerPage(
                     files=files,
