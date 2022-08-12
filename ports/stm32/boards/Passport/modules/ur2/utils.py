@@ -37,7 +37,7 @@ def string_to_bytes(s):
 
 def is_ur_type(type):
     for ch in type:
-        if not (ch >= 'a' and ch <= 'z') and not(ch >= '0' and ch <= '9') and ch != '-':
+        if not (ch >= 'a' and ch <= 'z') and not (ch >= '0' and ch <= '9') and ch != '-':
             return False
 
     return True
