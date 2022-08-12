@@ -194,7 +194,7 @@ class FountainDecoder:
 
             # Verify the message checksum and note success or failure
             checksum = crc32_int(message)
-            if(checksum == self.expected_checksum):
+            if checksum == self.expected_checksum:
                 result = bytes(message)
                 self.result = result
             else:
