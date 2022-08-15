@@ -18,24 +18,22 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_PAGE_PLUS uint8_t ICON_PAGE_P
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0xff, 0xff, 0xff, 0xff, 	/*Color of index 1*/
 
-  0x00, 0x00, 
-  0x0c, 0x00, 
-  0x0c, 0x00, 
-  0x0c, 0x00, 
-  0x7f, 0x80, 
-  0x7f, 0x80, 
-  0x0c, 0x00, 
-  0x0c, 0x00, 
-  0x0c, 0x00, 
-  0x00, 0x00, 
+  0x18, 
+  0x18, 
+  0x18, 
+  0xff, 
+  0xff, 
+  0x18, 
+  0x18, 
+  0x18, 
 };
 
 const lv_img_dsc_t ICON_PAGE_PLUS = {
   .header.cf = LV_IMG_CF_INDEXED_1BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
-  .header.w = 10,
-  .header.h = 10,
-  .data_size = 29,
+  .header.w = 8,
+  .header.h = 8,
+  .data_size = 17,
   .data = ICON_PAGE_PLUS_map,
 };
