@@ -104,7 +104,12 @@ sign version="1.0.0" screen="mono" ext="": (build screen ext)
     cosign -t {{lowercase(screen)}} -f $COSIGN_FILEPATH -k {{cosign_keypath}} -v {{version}}
 
     # Remove .bin and append the signed filename string
-    SIGNED_FILE="build-Passport/v{{version}}-passport-key-user.bin"
+    if [ $SCREEN_EXT == "color" ]
+    then
+        SIGNED_FILE="build-Passport/v{{version}}-passport-key-user.bin"
+    else
+        SIGNED_FILE="build-Passport/v{{version}}-passport-fe-key-user.bin"
+    fi
 
     # Show the signature data
     cosign -t {{lowercase(screen)}} -f $SIGNED_FILE -p
@@ -119,7 +124,14 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
     BL_FW_HDR_BASE=$(make bl_fw_hdr_base SCREEN_MODE={{uppercase(screen)}} V=0)
     echo "Firmware address for '{{screen}}': $BL_FW_HDR_BASE"
 
-    just run-ocd-command "flash write_image erase build-Passport/v{{version}}-passport-key-user.bin $BL_FW_HDR_BASE"
+    if [ {{screen}} == "color"]
+    then
+        SIGNED_FILENAME="v{{version}}-passport-key-user.bin"
+    else
+        SIGNED_FILENAME="v{{version}}-passport-fe-key-user.bin"
+    fi
+
+    just run-ocd-command "flash write_image erase build-Passport/$SIGNED_FILENAME $BL_FW_HDR_BASE"
 
 # Install a recent Foundation-signed build
 flash-foundation screen="mono" filename="v2.0.3-passport.bin": && (reset)
