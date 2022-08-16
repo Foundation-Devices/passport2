@@ -118,12 +118,32 @@ class ChooserPage(Page):
         if initial_focus is not None:
             lv.gridnav_set_focused(self.scroll_container.lvgl_root, initial_focus, False)
 
+        self.scroll_to_selected_option()
+
     def detach(self):
         lv.group_remove_obj(self.scroll_container.lvgl_root)
 
         # Hide scrollbars during transitions
         self.scroll_container.set_no_scroll()
         super().detach()
+
+    def scroll_to_selected_option(self):
+        """Scrolls the menu list to make the selected option visible."""
+        selected = self.scroll_container.children[self.selected_idx].get_lvgl_root()
+        if selected is not None:
+            sc = self.scroll_container.lvgl_root
+
+            # Reset the current scroll to have a clear reference
+            sc.scroll_by(0, sc.get_scroll_y(), lv.ANIM.OFF)
+
+            selected_y = selected.get_y2()
+            selected_h = selected.get_height()
+            scroll_container_h = sc.get_content_height()
+
+            # Scroll to the selected item if it's outside the visible area
+            if selected_y + selected_h > scroll_container_h:
+                scroll_y = selected_y - scroll_container_h + selected_h
+                sc.scroll_by(0, -scroll_y, lv.ANIM.OFF)
 
     def get_selected_option_index_by_value(self, value):
         for index in range(len(self.options)):
