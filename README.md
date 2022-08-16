@@ -74,8 +74,6 @@ Passport's firmware incorporates open-source software from several third-party p
 
 -   [QRCode](https://github.com/ricmoo/QRCode) - QRCode is a QR code creator library that takes a string or data and encode it to a QR code which can then be displayed on screen, saved to file, etc. This library has a simple clean interface and was easy to integrate.
 
--   [QRCode](https://github.com/ricmoo/QRCode) - QRCode is a QR code creator library that takes a string or data and encode it to a QR code which can then be displayed on screen, saved to file, etc. This library has a simple clean interface and was easy to integrate.
-
 -   [Foundation UR Python 2.0](https://github.com/Foundation-Devices/foundation-ur-py) - This is our Python port of the UR 2.0 standard from the wonderful Blockchain Commons. It provides the ability to encode/decode multi-part animated QR codes that represent data which is too large to fit in a single QR code. This is the new standard air-gapped wallets are expected to adopt moving forward.
 
 -   [Foundation UR Python 1.0](https://github.com/Foundation-Devices/foundation-ur-py) - This is Foundation's Python port of the UR 1.0 standard from BlockChain Commons. It has the same goals as UR 2.0, but was more of an early experiment. Foundation Devices ported this to Python to be compatible with air-gapped software wallets like BlueWallet and Specter.  This standard is out of date and deprecated.  Foundation intends to remove support for UR 1.0 in the near future.
