@@ -6,7 +6,7 @@
 import lvgl as lv
 import microns
 import common
-from pages import Page
+from pages import BrightnessAdjustablePage
 from views import QRCode
 from styles.style import Stylize
 from micropython import const
@@ -16,10 +16,8 @@ from constants import CARD_BORDER_WIDTH
 
 _FRAME_TIME = const(300)
 
-brightness_levels = [5, 25, 50, 75, 100]
 
-
-class ShowQRPage(Page):
+class ShowQRPage(BrightnessAdjustablePage):
     """Show a page with a QR code for the user to scan"""
 
     def __init__(self,
@@ -106,24 +104,9 @@ class ShowQRPage(Page):
 
         self.prev_part = None
 
-        self.prev_brightness = common.system.get_screen_brightness(100)
-
-        # We set the screen brightness to the level the user last left it at when on this page
-        self.curr_brightness = common.settings.get('last_qr_brightness', self.prev_brightness)
-        common.display.set_brightness(self.curr_brightness)
-
-        try:
-            self.curr_brightness_idx = brightness_levels.index(self.curr_brightness)
-        except ValueError:
-            self.curr_brightness_idx = 4
-
     def detach(self):
         # Save the last qr settings on the way out
         common.settings.set('last_qr_size_idx', self.qr_size_idx)
-        common.settings.set('last_qr_brightness', self.curr_brightness)
-
-        # Restore the previous screen brightness
-        common.display.set_brightness(self.prev_brightness)
 
         if self.is_qr_resizable():
             # Restore the card descs and header, if they were overridden
@@ -151,6 +134,8 @@ class ShowQRPage(Page):
         import passport
         is_sim = passport.IS_SIMULATOR
 
+        super().on_key(key, pressed)
+
         if pressed:
             # TODO: Fix this so the keycodes are the same here
             if key == lv.KEY.RIGHT or (is_sim and key == 114):
@@ -163,18 +148,6 @@ class ShowQRPage(Page):
                     self.qr_size_idx -= 1
                     self.qr_encoder = None
                     ui.set_micron_bar_active_idx(self.qr_size_idx)
-
-            # Handle brightness changes
-            elif key == lv.KEY.UP:
-                if self.curr_brightness_idx < len(brightness_levels) - 1:
-                    self.curr_brightness_idx += 1
-                    self.curr_brightness = brightness_levels[self.curr_brightness_idx]
-                    common.display.set_brightness(self.curr_brightness)
-            elif key == lv.KEY.DOWN:
-                if self.curr_brightness_idx > 0:
-                    self.curr_brightness_idx -= 1
-                    self.curr_brightness = brightness_levels[self.curr_brightness_idx]
-                    common.display.set_brightness(self.curr_brightness)
 
     def update(self):
         if self.is_attached():

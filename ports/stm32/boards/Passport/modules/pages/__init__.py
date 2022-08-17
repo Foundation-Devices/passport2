@@ -4,6 +4,7 @@
 # __init__.py
 
 from .page import *
+from .brightness_adjustable_page import *
 from .chooser_page import *
 from .setting_page import *
 from .status_page import *
@@ -11,6 +12,7 @@ from .long_text_page import *
 
 from .accept_terms_chooser_page import *
 from .account_details_page import *
+from .address_explorer_page import *
 from .address_type_chooser_page import *
 from .auto_shutdown_setting_page import *
 from .backup_code_page import *

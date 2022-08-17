@@ -15,6 +15,9 @@ sim screen='mono' ext='': (build screen)
 
     ./simulator.py {{screen}} {{ext}}
 
+sim-noenv screen='mono' ext='': (build screen)
+    ./simulator.py {{screen}} {{ext}}
+
 # Build the simulator.
 build screen='mono' ext='':
     make {{screen}} {{ext}}

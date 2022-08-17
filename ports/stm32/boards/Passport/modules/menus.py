@@ -9,11 +9,13 @@ from pages import ColorPickerPage
 
 
 def manage_account_menu():
-    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow
+    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow, AddressExplorerFlow
     from pages import AccountDetailsPage
 
     return [
         {'icon': lv.ICON_FOLDER, 'label': 'Account Details', 'page': AccountDetailsPage},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+         'statusbar': {'title': 'ADDRESS LIST'}},
         {'icon': lv.ICON_INFO, 'label': 'Rename Account', 'flow': RenameAccountFlow},
         {'icon': lv.ICON_CONNECT, 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},

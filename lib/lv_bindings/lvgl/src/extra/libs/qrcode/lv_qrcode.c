@@ -45,11 +45,16 @@ const lv_obj_class_t lv_qrcode_class = {
  *   GLOBAL FUNCTIONS
  **********************/
 
-lv_obj_t * lv_qrcode_create(lv_obj_t * parent)
+lv_obj_t * lv_qrcode_create(lv_obj_t * parent, int32_t last_version)
 {
     LV_LOG_INFO("begin");
+
     lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
     lv_obj_class_init_obj(obj);
+
+    lv_qrcode_t * qrcode = (lv_qrcode_t *)obj;
+    qrcode->last_version = last_version;
+
     return obj;
 }
 
@@ -212,7 +217,6 @@ static void lv_qrcode_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj
     lv_qrcode_t  * qrcode = (lv_qrcode_t *)obj;
     qrcode->modules_buf = NULL;
     qrcode->max_version = 0;
-    qrcode->last_version = 0;
 }
 
 static void lv_qrcode_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj)

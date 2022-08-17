@@ -32,7 +32,7 @@ alphanumeric_capacity_by_version = [
 class QRCode(View):
     """Displays a QR code"""
 
-    def __init__(self):
+    def __init__(self, last_version=0):
         """
         Initialize the QR code view.
 
@@ -45,9 +45,10 @@ class QRCode(View):
 
         super().__init__()
         self.res = None
+        self.initial_last_version = last_version
 
     def create_lvgl_root(self, lvgl_parent):
-        return lv.qrcode(lvgl_parent)
+        return lv.qrcode(lvgl_parent, self.initial_last_version)
 
     def configure_canvas_buffer(self):
         content_width = self.lvgl_root.get_content_width()
@@ -78,6 +79,9 @@ class QRCode(View):
             if alphanumeric_capacity_by_version[i] >= enc_len:
                 return i
         raise QRCodeException()
+
+    def last_version(self):
+        return self.lvgl_root.get_last_version()
 
     def update(self, encoded_data):
         if self.res is None:
