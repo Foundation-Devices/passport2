@@ -42,6 +42,7 @@ extern const lv_img_dsc_t ICON_INPUT_MODE_UPPER_ALPHA;
 extern const lv_img_dsc_t ICON_WARNING;
 extern const lv_img_dsc_t ICON_EDIT1;
 extern const lv_img_dsc_t ICON_MICROSD;
+extern const lv_img_dsc_t ICON_CASA;
 extern const lv_img_dsc_t ICON_CLOCK;
 extern const lv_img_dsc_t ICON_SEED;
 extern const lv_img_dsc_t ICON_VERIFY_ADDRESS;
@@ -61,6 +62,7 @@ extern const lv_img_dsc_t ICON_ADD_ACCOUNT;
 extern const lv_img_dsc_t ICON_INPUT_MODE_NUMERIC;
 extern const lv_img_dsc_t ICON_SMALL_CHECKMARK;
 extern const lv_img_dsc_t ICON_PIN;
+extern const lv_img_dsc_t ICON_SPIRAL;
 extern const lv_img_dsc_t ICON_BRIGHTNESS;
 extern const lv_img_dsc_t LARGE_ICON_SETUP;
 extern const lv_img_dsc_t ICON_DEVICE;
@@ -85,6 +87,5 @@ extern const lv_img_dsc_t ICON_HAMBURGER;
 
 #ifdef SCREEN_MODE_MONO
 extern const lv_img_dsc_t battery100;
-extern const lv_img_dsc_t dark_bg;
 #endif
 

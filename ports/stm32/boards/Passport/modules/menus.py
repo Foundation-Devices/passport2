@@ -49,6 +49,20 @@ def casa_menu():
     ]
 
 
+def postmix_menu():
+    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': lv.ICON_CONNECT, 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}},
+    ]
+
+
 def plus_menu():
     from utils import is_passphrase_active
     from flows import NewAccountFlow, ApplyPassphraseFlow
@@ -256,8 +270,10 @@ def extensions_menu():
     # from pages import ColorPickerPage
     return [
         # {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
-        {'icon': lv.ICON_SETTINGS, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
+        {'icon': lv.ICON_CASA, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
          'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
+        {'icon': lv.ICON_SPIRAL, 'label': 'Postmix', 'action': lambda item: toggle_extension_enabled('postmix'),
+         'is_toggle': True, 'value': lambda: is_extension_enabled('postmix')},
         # {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
         #  'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
     ]
