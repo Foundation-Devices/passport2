@@ -242,7 +242,7 @@ class UI():
             import stash
             for i in range(len(accounts)):
                 account = accounts[i]
-                print('account[{}]={}'.format(account, i))
+                # print('account[{}]={}'.format(account, i))
 
                 account_card = {
                     'right_icon': lv.ICON_BITCOIN,
