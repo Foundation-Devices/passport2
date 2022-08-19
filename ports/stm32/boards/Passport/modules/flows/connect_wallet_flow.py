@@ -451,8 +451,8 @@ class ConnectWalletFlow(Flow):
         # Show the wallet to the user
         result = await ImportMultisigWalletFlow(ms).run()
         if not result:
-            if not self.back():
-                self.set_result(False)
+            # The wallet was probably a duplicate or some other error occured
+            self.set_result(False)
             return
 
         # Remember it for the latter states after this

@@ -952,7 +952,7 @@ class MultisigWallet:
 wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.join(diff_items)
             is_dup = True
         elif num_dups:
-            msg = 'Duplicate wallet. All details are the same as existing.'
+            msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.'
             is_dup = True
         else:
             msg = 'Create new multisig wallet?'
@@ -982,7 +982,7 @@ wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.jo
             deriv_title=recolor(FD_BLUE_HEX, 'Derivation'),
             dsum=dsum,
             at=MultisigWallet.render_addr_fmt(self.addr_fmt))
-        return msg
+        return msg, is_dup
 
     def format_details(self):
         import uio
