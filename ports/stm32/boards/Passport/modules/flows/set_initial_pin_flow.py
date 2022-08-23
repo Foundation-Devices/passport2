@@ -63,11 +63,11 @@ class SetInitialPINFlow(Flow):
             if self.new_pin == confirmed_pin:
 
                 (result, error) = await spinner_task('Setting initial PIN', set_initial_pin_task,
-                                                     args=[self.new_pin], no_anim=True)
+                                                     args=[self.new_pin])
                 if not result:
                     self.goto(self.show_error)
 
-                (result, error) = await spinner_task('Logging in', login_task, args=[self.new_pin], no_anim=True)
+                (result, error) = await spinner_task('Logging in', login_task, args=[self.new_pin])
                 if result:
                     self.goto(self.show_success)
                 else:

@@ -32,7 +32,7 @@ void lv_refresh() {
     if (lv_refresh_enabled) {
         uint32_t now = HAL_GetTick();
 
-        if (now - last_tick >= 75) {
+        if (now - last_tick >= 150) {
             // printf("R\r\n");
             lv_refr_now(lv_disp_get_default());
             last_tick = now;

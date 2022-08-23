@@ -32,7 +32,7 @@ class LoginFlow(Flow):
             pass
 
     async def check_pin(self):
-        (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin], no_anim=True)
+        (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin])
         if result:
             self.set_result(True)
         else:
