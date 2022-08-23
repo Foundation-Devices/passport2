@@ -5,7 +5,7 @@
 
 
 import lvgl as lv
-from styles.colors import FD_BLUE, FD_PALE_GREY
+from styles.colors import FD_BLUE, SPINNER_BG
 from views import View
 
 
@@ -33,7 +33,7 @@ class Arc(View):
         self.lvgl_root.set_style_arc_color(self.arc_color, lv.PART.INDICATOR)
         self.lvgl_root.set_style_arc_width(self.arc_width, lv.PART.INDICATOR)
 
-        self.lvgl_root.set_style_arc_color(FD_PALE_GREY, lv.PART.MAIN)
+        self.lvgl_root.set_style_arc_color(SPINNER_BG, lv.PART.MAIN)
         self.lvgl_root.set_style_arc_width(self.arc_width, lv.PART.MAIN)
 
         # Knob

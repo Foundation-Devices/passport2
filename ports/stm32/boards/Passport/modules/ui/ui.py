@@ -142,14 +142,14 @@ class UI():
         return self.set_card_header(title=None)
 
     def create_single_card(self, flow, card=None, args=None, add_settings=False):
-        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE, LIGHT_TEXT
         import microns
 
         # Add the leftmost settings card
         if card is None:
             card = {
                 'header_color': LIGHT_GREY,
-                'header_fg_color': TEXT_GREY,
+                'header_fg_color': LIGHT_TEXT,
                 'statusbar': {'title': 'PASSPORT', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
                 'page_micron': microns.PageDot,
                 'bg_color': TEXT_GREY,
@@ -178,11 +178,11 @@ class UI():
         from flows import MenuFlow
         from menus import settings_menu
         import microns
-        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE, LIGHT_TEXT
 
         return {
             'header_color': LIGHT_GREY,
-            'header_fg_color': TEXT_GREY,
+            'header_fg_color': LIGHT_TEXT,
             'statusbar': {'title': 'SETTINGS', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
             'page_micron': microns.PageHome,
             'bg_color': TEXT_GREY,
@@ -200,7 +200,7 @@ class UI():
         from utils import get_accounts, has_seed
         from menus import account_menu, casa_menu, plus_menu, postmix_menu
         from constants import MAX_ACCOUNTS
-        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
         self.update_cards_pending = False
@@ -247,7 +247,7 @@ class UI():
                 account_card = {
                     'right_icon': lv.ICON_BITCOIN,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': get_account_fg(account)},
                     'title': account.get('name'),
                     'page_micron': microns.PageDot,
@@ -269,7 +269,7 @@ class UI():
                 casa_card = {
                     'right_icon': lv.ICON_CASA,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
                     'title': 'Casa',
                     'page_micron': microns.PageDot,
@@ -286,7 +286,7 @@ class UI():
                 postmix_card = {
                     'right_icon': lv.ICON_SPIRAL,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
                     'title': 'Postmix',
                     'page_micron': microns.PageDot,

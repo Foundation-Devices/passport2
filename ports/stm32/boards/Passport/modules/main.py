@@ -134,8 +134,7 @@ def go():
     main_screen = MainScreen()
     common.ui = UI(main_screen)
 
-    common.is_color = True
-    common.ui.set_theme('color' if common.is_color else 'mono', common.is_dark_theme)
+    common.ui.set_theme('color', common.is_dark_theme)
 
     # Setup LVGL task
     common.loop.create_task(tasks.lvgl_task())

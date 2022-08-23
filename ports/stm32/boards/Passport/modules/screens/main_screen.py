@@ -4,8 +4,9 @@
 # main_screen.py - Main screen that shows the recolorable background image, and contains
 #                  the StatusBar and CardNav components.
 
-from styles.colors import CARD_BG_GREY, BLACK
+from styles.colors import CARD_BG_GREY, BLACK, WHITE
 from views import View
+import passport
 
 
 class MainScreen(View):
@@ -44,7 +45,10 @@ class MainScreen(View):
         self.overlay.set_pos(1, 1)
         self.overlay.set_size(w - 2, h - 2)
         with Stylize(self.overlay) as default:
-            default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
+            if passport.IS_COLOR:
+                default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
+            else:
+                default.bg_color(WHITE)
             default.radius(8)
 
         # Main content container
@@ -72,7 +76,10 @@ class MainScreen(View):
         from styles.local_style import LocalStyle
 
         with LocalStyle(self.bg_container) as style:
-            style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
+            if passport.IS_COLOR:
+                style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
+            else:
+                style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=0, stop2=192)
 
     def get_title(self):
         return self.statusbar.title

@@ -7,8 +7,9 @@
 import lvgl as lv
 from views import View, Icon, BoldLabel, BatteryIndicator
 from styles import Stylize
-from styles.colors import WHITE
+from styles.colors import WHITE, BLACK
 from constants import STATUS_BAR_HEIGHT
+import passport
 
 
 class StatusBar(View):
@@ -23,6 +24,9 @@ class StatusBar(View):
         self.icon_view = None
 
         with Stylize(self) as default:
+            if not passport.IS_COLOR:
+                default.bg_color(BLACK)
+
             default.pad(top=0, bottom=0, left=10, right=10)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 

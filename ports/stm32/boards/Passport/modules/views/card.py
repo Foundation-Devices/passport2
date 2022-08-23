@@ -48,6 +48,7 @@ class Card(View):
         # Background container
         self.bg_container = View()
         self.bg_container.set_size(lv.pct(100), lv.pct(100))
+        self.bg_container.set_no_scroll()
         with Stylize(self.bg_container) as default:
             default.align(lv.ALIGN.TOP_MID)
             default.pad_row(0)
