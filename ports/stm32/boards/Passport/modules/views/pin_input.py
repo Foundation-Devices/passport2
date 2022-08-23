@@ -6,7 +6,7 @@
 
 import lvgl as lv
 from styles import Stylize
-from styles.colors import TEXT_GREY, TEXT_INPUT_BG, TEXT_INPUT_CURSOR, TEXT_INPUT_TEXT, TEXT_INPUT_CURSOR
+from styles.colors import FD_BLUE, LIGHT_GREY, LIGHT_TEXT
 from views import View
 from utils import InputMode
 from views import Label, Icon
@@ -66,9 +66,9 @@ class PINInput(View):
             # item = Label(text=ch, color=TEXT_GREY)
             if i == num_chars - 1 and self.show_last_char:
                 ch = self.pin[i]
-                item = Label(text=ch, color=TEXT_INPUT_TEXT)
+                item = Label(text=ch, color=LIGHT_TEXT)
             else:
-                item = Icon(lv.ICON_PAGE_DOT, color=TEXT_INPUT_TEXT)
+                item = Icon(lv.ICON_PAGE_DOT, color=LIGHT_TEXT)
             self.pin_container.add_child(item)
 
         # Finally, draw a "cursor", which is always at the end

@@ -4,11 +4,9 @@
 # main_screen.py - Main screen that shows the recolorable background image, and contains
 #                  the StatusBar and CardNav components.
 
-import lvgl as lv
-from styles.colors import CARD_BG_GREY, BLACK
+from styles.colors import CARD_BG_GREY, BLACK, WHITE
 from views import View
 import passport
-import common
 
 
 class MainScreen(View):
@@ -52,7 +50,7 @@ class MainScreen(View):
             if passport.IS_COLOR:
                 default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
             else:
-                default.bg_img(lv.IMAGE_SCREEN_OVERLAY_6)
+                default.bg_color(WHITE)
             default.radius(8)
 
         # Main content container
@@ -79,12 +77,11 @@ class MainScreen(View):
     def update_background(self):
         from styles.local_style import LocalStyle
 
-        if passport.IS_COLOR:
-            # Update the gradient only for the color screen
-            with LocalStyle(self.bg_container) as style:
+        with LocalStyle(self.bg_container) as style:
+            if passport.IS_COLOR:
                 style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
-        else:
-            NUM_ACCOUNT_TEXTURES = 6
+            else:
+                style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=0, stop2=192)
 
             # Mono screen backgrounds use texture instead of color
             acct = None
