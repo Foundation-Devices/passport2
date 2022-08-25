@@ -84,8 +84,8 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
             encoder.encodeUnsigned(8)
             encoder.encodeUnsigned(0)
 
-            # import binascii
-            # print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
+            import binascii
+            print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
             return (UR('crypto-hdkey', encoder.get_bytes()), None)
     else:
         with stash.SensitiveValues() as sv:
