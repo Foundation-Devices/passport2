@@ -58,7 +58,7 @@ class CasaHealthCheckFlow(Flow):
                 self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
-        (signature, address, error) = await spinner_task('Signing File', sign_text_file_task,
+        (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
                                                          args=[self.text, self.subpath, AF_CLASSIC])
         if error is None:
             self.signature = signature

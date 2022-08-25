@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# casa.py - Casa support (preliminary)
+# casa.py - Casa support
 #
 
 from .multisig_import import read_multisig_config_from_microsd
@@ -10,6 +10,7 @@ import stash
 from utils import xfp2str
 from data_codecs.qr_type import QRType
 from ur2.cbor_lite import CBOREncoder
+from ur2.ur import UR
 
 
 def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
@@ -20,19 +21,20 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
     # or #comments
     # but value is JSON
     from common import settings
-    from public_constants import AF_CLASSIC
 
     chain = chains.current_chain()
 
     if export_mode == 'qr':
+        # crypto-hdkey spec: https://github.com/BlockchainCommons/Research/blob/master/papers/bcr-2020-007-hdkey.md
+        #
         # Casa `crypto-hdkey` CDDL:
         # {
         #     is-private: false,
         #     key-data: bytes,
         #     chain-code: bytes,
         #     use-info: {
-        #         type: cointype-eth,
-        #         network: testnet-eth-ropsten
+        #         type: cointype-btc,
+        #         network: testnet-btc
         #     },
         #     origin: {
         #         source-fingerprint: uint32,
@@ -43,7 +45,7 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
         with stash.SensitiveValues() as sv:
             # Encoder
             encoder = CBOREncoder()
-            xpub = chain.serialize_public(sv.node)
+            is_mainnet = chain.ctype == 'BTC'
             pk = sv.node.public_key()
             cc = sv.node.chain_code()
 
@@ -62,12 +64,12 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
             encoder.encodeUnsigned(5)
             encoder.encodeUndefined(305)
             encoder.encodeMapSize(2)
-            # use-info Tag 1: type 0 = BTC TODO add logic to support testnet coin types
+            # use-info Tag 1: type 0 = BTC
             encoder.encodeUnsigned(1)
             encoder.encodeUnsigned(0)
-            # use-info Tag 2: network 0 = Mainnet TODO add logic to support testnet network
+            # use-info Tag 2: network 0 = Mainnet=0, Testnet=1
             encoder.encodeUnsigned(2)
-            encoder.encodeUnsigned(0)
+            encoder.encodeUnsigned(0 if is_mainnet else 1)
             # Tag 6 (304): origin
             encoder.encodeUnsigned(6)
             encoder.encodeUndefined(304)
@@ -75,7 +77,7 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
             # origin Tag 2: source-fingerprint
             encoder.encodeUnsigned(2)
             encoder.encodeUnsigned(int(xfp2str(settings.get('xfp')), 16))
-            # origin Tag 3: depth = 0 TODO add logic for depth
+            # origin Tag 3: depth = 0 (Always depth zero for Casa)
             encoder.encodeUnsigned(3)
             encoder.encodeUnsigned(0)
             # Tag 8: parent-fingerprint
@@ -84,24 +86,24 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
 
             # import binascii
             # print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
-            return (encoder.get_bytes(), None)
+            return (UR('crypto-hdkey', encoder.get_bytes()), None)
     else:
         with stash.SensitiveValues() as sv:
             s = '''\
     # Passport Summary File
-    ## For wallet with master key fingerprint: {xfp}
+    # For wallet with master key fingerprint: {xfp}
 
     Wallet operates on blockchain: {nb}
 
     For BIP44, this is coin_type '{ct}', and internally we use
     symbol {sym} for this blockchain.
 
-    ## IMPORTANT WARNING
+    # IMPORTANT WARNING
 
     Do **not** deposit to any address in this file unless you have a working
     wallet system that is ready to handle the funds at that address!
 
-    ## Top-level, 'master' extended public key ('m/'):
+    # Top-level, 'master' extended public key ('m/'):
 
     {xpub}
     '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
