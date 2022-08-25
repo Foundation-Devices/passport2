@@ -13,7 +13,7 @@ from ur2.cbor_lite import CBOREncoder
 from ur2.ur import UR
 
 
-def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
+def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr',):
     # Get public details about wallet.
     #
     # simple text format:
@@ -84,8 +84,8 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
             encoder.encodeUnsigned(8)
             encoder.encodeUnsigned(0)
 
-            # import binascii
-            # print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
+            import binascii
+            print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
             return (UR('crypto-hdkey', encoder.get_bytes()), None)
     else:
         with stash.SensitiveValues() as sv:
@@ -109,7 +109,7 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
     '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
                sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
 
-            # print('create_casa_export() returning:\n{}'.format(s))
+            print('create_casa_export() returning:\n{}'.format(s))
             return (s, None)  # No 'acct_info'
 
 
