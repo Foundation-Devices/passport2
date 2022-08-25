@@ -7,6 +7,7 @@
 import stash
 import ujson
 import chains
+import common
 from utils import to_str, get_accounts
 from data_codecs.qr_type import QRType
 from public_constants import AF_CLASSIC, AF_P2WPKH
@@ -42,12 +43,19 @@ def create_envoy_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fal
         # print('xpub to export: {}'.format(xpub))
 
     accounts = get_accounts()
-    act_name = None
+    acct_name = ''
     if accounts is not None and len(accounts) > 0:
         for acct in accounts:
             if acct.get('acct_num') == acct_num:
                 acct_name = acct.get('name', None)
                 break
+
+    # Try to use the account name from the active account if no real account was found by the lookup.
+    # Used for extension accounts like Postmix.
+    if acct_name == '':
+        acct = common.ui.get_active_account()
+        if acct != None:
+            acct_name = acct.get('name', '')
 
     rv = dict(derivation=acct_path,
               xfp=xfp,

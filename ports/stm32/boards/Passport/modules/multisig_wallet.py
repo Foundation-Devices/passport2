@@ -870,7 +870,7 @@ class MultisigWallet:
         assert has_mine == 1         # 'my key not included'
 
         name = 'PSBT-%d-of-%d' % (M, N)
-        ms = cls(name, (M, N), xpubs, chain_type=expect_chain, addr_fmt=addr_fmt or AF_P2SH)
+        ms = cls(name, (M, N), xpubs, -1, chain_type=expect_chain, addr_fmt=addr_fmt or AF_P2SH)
 
         # may just keep just in-memory version, no approval required, if we are
         # trusting PSBT's today, otherwise caller will need to handle UX w.r.t new wallet
