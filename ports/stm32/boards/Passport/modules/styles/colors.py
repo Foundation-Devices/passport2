@@ -36,11 +36,17 @@ if passport.IS_COLOR:
     CARD_BORDER_HEX = 0xFEFEFE
     LIGHT_TEXT_HEX = TEXT_GREY_HEX
     SPINNER_BG_HEX = 0xE0E0E0
+    HIGHLIGHT_TEXT_HEX = FD_BLUE_HEX
 else:
     # On monochrome, white is white, and everything else is black
     # Shades of grey
-    WHITE_HEX = 0xFFFFFF
-    BLACK_HEX = 0x000000
+    invert = False
+    if invert:
+        WHITE_HEX = 0x000000
+        BLACK_HEX = 0xFFFFFF
+    else:
+        WHITE_HEX = 0xFFFFFF
+        BLACK_HEX = 0x000000
 
     VERY_LIGHT_GREY_HEX = BLACK_HEX
     LIGHT_GREY_HEX = BLACK_HEX
@@ -62,6 +68,7 @@ else:
     CARD_BORDER_HEX = BLACK_HEX
     LIGHT_TEXT_HEX = WHITE_HEX
     SPINNER_BG_HEX = WHITE_HEX
+    HIGHLIGHT_TEXT_HEX = WHITE_HEX
 
 WHITE = lv.color_hex(WHITE_HEX)
 VERY_LIGHT_GREY = lv.color_hex(VERY_LIGHT_GREY_HEX)
@@ -89,6 +96,7 @@ LIGHT_COPPER = lv.color_hex(LIGHT_COPPER_HEX)
 CARD_BG_GREY = lv.color_hex(CARD_BG_GREY_HEX)
 CARD_BORDER = lv.color_hex(CARD_BORDER_HEX)
 LIGHT_TEXT = lv.color_hex(LIGHT_TEXT_HEX)
+HIGHLIGHT_TEXT = lv.color_hex(HIGHLIGHT_TEXT_HEX)
 SPINNER_BG = lv.color_hex(SPINNER_BG_HEX)
 
 

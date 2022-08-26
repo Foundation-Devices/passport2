@@ -24,8 +24,8 @@ class StatusBar(View):
         self.icon_view = None
 
         with Stylize(self) as default:
-            if not passport.IS_COLOR:
-                default.bg_color(BLACK)
+            # if not passport.IS_COLOR:
+            # default.bg_color(BLACK)
 
             default.pad(top=0, bottom=0, left=10, right=10)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
@@ -86,7 +86,7 @@ class StatusBar(View):
         self.update_icon()
 
     def set_fg_color(self, fg_color):
-        self.fg_color = fg_color
+        self.fg_color = WHITE
         self.battery.set_outline_color(self.fg_color)
         self.update_title()
         self.update_icon()

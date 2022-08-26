@@ -25,7 +25,6 @@ class MainScreen(View):
         self.set_pos(0, 0)
         self.set_size(lv.pct(100), lv.pct(100))
         self.set_no_scroll()
-        self.bg_color = BLACK
 
         with Stylize(self) as default:
             default.bg_color(BLACK)
