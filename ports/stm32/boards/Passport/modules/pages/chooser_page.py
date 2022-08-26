@@ -115,7 +115,6 @@ class ChooserPage(Page):
         initial_focus = self.scroll_container.children[self.selected_idx].get_lvgl_root()
         gridnav_options = lv.GRIDNAV_CTRL.ROLLOVER | lv.GRIDNAV_CTRL.IGNORE_HORIZONTAL_KEYS
         lv.gridnav_add(self.scroll_container.lvgl_root, gridnav_options)
-        lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.NONE)
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
         if initial_focus is not None:
             lv.gridnav_set_focused(self.scroll_container.lvgl_root, initial_focus, False)
