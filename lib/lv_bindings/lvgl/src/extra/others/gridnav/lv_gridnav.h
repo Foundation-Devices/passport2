@@ -82,13 +82,6 @@ extern "C"
      * If there is no more room for scrolling the next/previous object will be focused normally */
       LV_GRIDNAV_CTRL_SCROLL_FIRST = 0x2,
 
-      // FOUNDATION CHANGE ======================================================================
-      /**
-       * Ignore left and right arrow key presses.
-      */
-      LV_GRIDNAV_CTRL_IGNORE_HORIZONTAL_KEYS = 0x4,
-      // FOUNDATION CHANGE ======================================================================
-
    } lv_gridnav_ctrl_t;
 
    /**********************
@@ -115,10 +108,10 @@ extern "C"
    void lv_gridnav_set_focused(lv_obj_t *cont, lv_obj_t *to_focus, lv_anim_enable_t anim_en);
 
    /**
- * @brief
- *
- * @param cont
- * @return lv_obj_t*
+ * @brief 
+ * 
+ * @param cont 
+ * @return lv_obj_t* 
  */
    lv_obj_t *lv_gridnav_get_focused(lv_obj_t *cont);
 
