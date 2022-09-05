@@ -92,7 +92,7 @@ class MenuPage(Page):
             self.focus_idx = num_items - 1
 
         initial_focus = self.visible_items[self.focus_idx].get_lvgl_root()
-        lv.gridnav_add(self.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER | lv.GRIDNAV_CTRL.IGNORE_HORIZONTAL_KEYS)
+        lv.gridnav_add(self.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER)
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
         lv.gridnav_set_focused(self.lvgl_root, initial_focus, False)
 
