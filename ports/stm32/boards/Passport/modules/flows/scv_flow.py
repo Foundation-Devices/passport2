@@ -19,7 +19,7 @@ import common
 
 
 class ScvFlow(Flow):
-    def __init__(self, envoy=True):
+    def __init__(self, envoy=True, ask_to_skip=True):
         """
         :param envoy: True for Envoy App flow. False is manual Supply Chain Validation.
         """
@@ -27,6 +27,7 @@ class ScvFlow(Flow):
         super().__init__(initial_state=self.show_intro, name='ScvFlow')
         self.words = None
         self.envoy = envoy
+        self.ask_to_skip = ask_to_skip
         self.uuid = None
 
         self.statusbar = {'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}
@@ -69,15 +70,18 @@ class ScvFlow(Flow):
                 else:
                     return
             else:
-                skip = await QuestionPage(
-                    text='Skip Security Check?\n\n{}'.format(
-                        recolor(FD_BLUE_HEX, '(Not recommended)'))
-                ).show()
-                if skip:
-                    common.settings.set('validated_ok', True)
+                if not self.ask_to_skip:
                     self.set_result(True)
                 else:
-                    self.back()
+                    skip = await QuestionPage(
+                        text='Skip Security Check?\n\n{}'.format(
+                            recolor(FD_BLUE_HEX, '(Not recommended)'))
+                    ).show()
+                    if skip:
+                        common.settings.set('validated_ok', True)
+                        self.set_result(True)
+                    else:
+                        self.back()
             return
 
         # Scan succeeded -- verify its content
