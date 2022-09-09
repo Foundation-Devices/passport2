@@ -43,7 +43,7 @@ class ScvFlow(Flow):
         if self.envoy:
             text.append('On the next screen, scan the QR code shown in Envoy.')
         else:
-            text.append('On the next screen, scan the Security Check QR code.')
+            text.append('On the next screen, scan the Security Check QR code from validate.foundationdevices.com.')
 
         result = await ShieldPage(
             text=text,
