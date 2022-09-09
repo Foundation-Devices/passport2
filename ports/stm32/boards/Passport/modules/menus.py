@@ -205,7 +205,7 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow
+    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow
     from pages import ShowSecurityWordsSettingPage
 
     return [
@@ -216,6 +216,8 @@ def advanced_menu():
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': lv.ICON_MICROSD, 'label': 'microSD', 'submenu': microsd_menu},
         {'icon': lv.ICON_ERASE, 'label': 'Erase Passport', 'flow': ErasePassportFlow},
+        {'icon': lv.ICON_SHIELD, 'label': 'Security Check', 'flow': ScvFlow,
+         'args': {'envoy': False, 'ask_to_skip': False}},
     ]
 
 
