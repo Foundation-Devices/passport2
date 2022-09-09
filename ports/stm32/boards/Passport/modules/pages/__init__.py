@@ -26,7 +26,6 @@ from .info_page import *
 from .insert_microsd_page import *
 from .menu_page import *
 from .multisig_policy_setting_page import *
-from .options_chooser_page import *
 from .pin_entry_page import *
 from .predictive_text_input_page import *
 from .progress_page import *
@@ -34,6 +33,7 @@ from .question_page import *
 from .recovery_mode_chooser_page import *
 from .scan_qr_page import *
 from .seed_length_chooser_page import *
+from .seed_words_list_page import *
 from .setup_mode_chooser_page import *
 from .shield_page import *
 from .show_security_words_setting_page import *

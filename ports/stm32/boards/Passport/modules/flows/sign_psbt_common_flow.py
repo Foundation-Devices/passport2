@@ -12,7 +12,7 @@
 import lvgl as lv
 from flows import Flow
 import microns
-from pages.options_chooser_page import OptionsChooserPage
+from pages.chooser_page import ChooserPage
 from styles.colors import FD_BLUE_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 from utils import spinner_task, recolor
@@ -145,10 +145,11 @@ class SignPsbtCommonFlow(Flow):
             options = [{'label': 'Cancel', 'value': True},
                        {'label': 'Review Details', 'value': False}]
 
-            should_cancel = await OptionsChooserPage(
+            should_cancel = await ChooserPage(
                 text='Cancel this transaction?',
                 options=options,
-                icon=lv.LARGE_ICON_QUESTION).show()
+                icon=lv.LARGE_ICON_QUESTION,
+                initial_value=options[0].get('value')).show()
             if should_cancel:
                 self.set_result(None)
             else:

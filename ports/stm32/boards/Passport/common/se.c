@@ -145,16 +145,12 @@ uint8_t se_show_error(void) {
 }
 
 static inline void _send_byte(uint8_t ch) {
-    // reset timeout timer (Systick)
-    uint32_t ticks = 0;
-    SysTick->VAL   = 0;
+    uint32_t start_tick = HAL_GetTick();
 
     while (!(MY_UART->ISR & UART_FLAG_TXE)) {
-        // busy-wait until able to send (no fifo?)
-        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) {
-            // failsafe timeout
-            ticks += 1;
-            if (ticks > 10) break;
+        uint32_t curr_tick = HAL_GetTick();
+        if (curr_tick - start_tick > 10) {
+            break;
         }
     }
     MY_UART->TDR = ch;
@@ -180,24 +176,16 @@ static void _send_serialized(const uint8_t* buf, int len) {
 // Return -1 in case of timeout, else one byte.
 //
 static inline int _read_byte(void) {
-    uint32_t ticks = 0;
-
-    // reset timeout timer (Systick)
-    SysTick->VAL = 0;
+    uint32_t start_tick = HAL_GetTick();
 
     while (!(MY_UART->ISR & UART_FLAG_RXNE) && !(MY_UART->ISR & UART_FLAG_RTOF)) {
         // busy-waiting
-
-        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) {
-            ticks += 1;
-            if (ticks >= 5) {
-                // a full Xms has been wasted; give up.
-
-                // NOTE: this is a failsafe long timeout, not reached in
-                // practise because the bit-time timeout from UART (RTOF)
-                ++notrxne;
-                return -1;
-            }
+        uint32_t curr_tick = HAL_GetTick();
+        if (curr_tick - start_tick > 5) {
+            // NOTE: this is a failsafe long timeout, not reached in
+            // practise because the bit-time timeout from UART (RTOF)
+            ++notrxne;
+            return -1;
         }
     }
 
@@ -240,14 +228,12 @@ static void deserialize(const uint8_t* from, int from_len, uint8_t* into, int ma
 }
 
 static inline void _flush_rx(void) {
-    // reset timeout timer (Systick)
-    SysTick->VAL = 0;
+    uint32_t start_tick = HAL_GetTick();
 
     while (!(MY_UART->ISR & UART_FLAG_TC)) {
         // wait for last bit(byte) to be serialized and sent
-
-        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) {
-            // full 1ms has passed -- timeout.
+        uint32_t curr_tick = HAL_GetTick();
+        if (curr_tick - start_tick > 1) {
             break;
         }
     }

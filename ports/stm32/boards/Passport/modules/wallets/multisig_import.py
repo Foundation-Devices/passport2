@@ -16,17 +16,7 @@
 
 async def read_multisig_config_from_qr():
     from pages import ScanQRPage
-    result = await ScanQRPage(card_header={'title': 'Multisig Import'}).show()
-
-    if result is not None or result.error is not None:
-        selt.set_result(False)
-        return
-
-    if isinstance(data, (bytes, bytearray)):
-        data = data.decode('utf-8')
-
-    # print('data received="{}"'.format(data))
-    return data
+    return await ScanQRPage(decode_cbor_bytes=True).show()
 
 
 async def read_multisig_config_from_microsd():

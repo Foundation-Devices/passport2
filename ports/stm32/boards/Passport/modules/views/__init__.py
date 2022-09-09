@@ -31,6 +31,7 @@ from .battery_indicator import *
 from .statusbar import *
 from .card_nav import *
 from .slider import *
+from .switch import *
 from .color_picker import *
 from .pin_input import *
 from .symbol_picker import *

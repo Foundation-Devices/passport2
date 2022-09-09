@@ -16,13 +16,12 @@
 #include "delay.h"
 
 void delay_ms(int ms) {
-    SysTick->VAL = 0;
+    uint32_t start_tick = HAL_GetTick();
 
-    while (ms > 0) {
-        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) {
-            ms--;
-        }
-    }
+    uint32_t curr_tick;
+    do {
+        curr_tick = HAL_GetTick();
+    } while (curr_tick - start_tick < ms);
 }
 
 void delay_us(int us) {

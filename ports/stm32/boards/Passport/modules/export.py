@@ -24,7 +24,7 @@ def ms_has_master_xfp(xpubs):
     master_xfp = settings.get('xfp', None)
 
     for xpub in xpubs:
-        (xfp, _) = xpub
+        xfp = xpub[0]
         # print('ms_has_master_xfp: xfp={} master_xfp={}'.format(xfp, master_xfp))
         if xfp == master_xfp:
             # print('Including this one')

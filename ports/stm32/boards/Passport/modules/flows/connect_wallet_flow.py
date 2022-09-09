@@ -9,7 +9,9 @@ from pages import (
     AddressTypeChooserPage,
     ExportModeChooserPage,
     ErrorPage,
+    InfoPage,
     InsertMicroSDPage,
+    QuestionPage,
     ShowQRPage,
     SigTypeChooserPage,
     StatusPage,
@@ -27,11 +29,13 @@ from wallets.utils import (
     get_deriv_path_from_addr_type_and_acct,
     get_addr_type_from_deriv,
     derive_address)
+from public_constants import TRUST_PSBT
 from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
 from utils import random_hex, spinner_task
 import common
 import microns
+import foundation
 from errors import Error
 
 
@@ -230,8 +234,6 @@ class ConnectWalletFlow(Flow):
         self.goto(self.show_connect_message, save_curr=save_curr)
 
     async def show_connect_message(self):
-        from pages import InfoPage
-
         if self.export_mode['id'] == EXPORT_MODE_QR:
             msg = self.get_custom_text(
                 'pairing_qr', 'Next, scan the QR code on the following screen into {}.'.format(self.sw_wallet['label']))
@@ -287,14 +289,31 @@ class ConnectWalletFlow(Flow):
         # If multisig, we need to import the quorum/config info first, else go right to validating the first
         # receive address from the wallet.
         if self.is_multisig():
-            self.goto_multisig_import_mode()
+            # Only perform multisig import if wallet does not prevent it
+            if not self.is_skip_multisig_import_enabled():
+                self.goto_multisig_import_mode()
+
+            # Only perform address validation if wallet does not prevent it
+            if self.is_skip_address_verification_enabled():
+                if self.is_force_multisig_policy_enabled():
+                    result = await InfoPage(
+                        text='For compatibility with {}, Passport will set '.format(self.sw_wallet['label']) +
+                        'your Multisig Policy to Skip Verification.').show()
+                    if not result:
+                        if not self.back():
+                            self.set_result(False)
+                            return
+                    else:
+                        common.settings.set('multisig_policy', TRUST_PSBT)
+                        self.goto(self.complete)
+                else:
+                    self.goto(self.complete)
         else:
             self.goto_address_verification_method(save_curr=False)
 
     async def export_by_microsd(self):
         from files import CardSlot
         from utils import xfp2str
-        import foundation
 
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
@@ -337,7 +356,26 @@ class ConnectWalletFlow(Flow):
             # If multisig, we need to import the quorum/config info first, else go right to validating the first
             # receive address from the wallet.
             if self.is_multisig():
-                self.goto_multisig_import_mode()
+                # Only perform multisig import if wallet does not prevent it
+                if not self.is_skip_multisig_import_enabled():
+                    self.goto_multisig_import_mode()
+                    return
+
+                # Only perform address validation if wallet does not prevent it
+                if self.is_skip_address_verification_enabled():
+                    if self.is_force_multisig_policy_enabled():
+                        result = await InfoPage(
+                            text='For compatibility with {}, Passport will set your Multisig Policy ' +
+                                 'to Skip Verification.'.format(self.sw_wallet['label']))
+                        if not result:
+                            if not self.back():
+                                self.set_result(False)
+                                return
+                        else:
+                            common.settings.set('multisig_policy', TRUST_PSBT)
+                            self.goto(self.complete)
+                    else:
+                        self.goto(self.complete)
             else:
                 self.goto_address_verification_method(save_curr=False)
 
@@ -355,8 +393,6 @@ class ConnectWalletFlow(Flow):
             self.set_result(False)
 
     async def import_multisig_config_from_qr(self):
-        from pages import InfoPage
-
         msg = self.get_custom_text(
             'multisig_import_qr', 'Next, import the multisig configuration from {} via QR code.'.format(
                 self.sw_wallet['label']))
@@ -365,10 +401,6 @@ class ConnectWalletFlow(Flow):
             if not self.back():
                 self.set_result(False)
             return
-
-        # Import the config info and save to settings
-        common.new_multisig_wallet = None
-        common.is_new_wallet_a_duplicate = False
 
         scan_result = await self.sig_type['import_qr']()
         if scan_result is None:
@@ -392,8 +424,6 @@ class ConnectWalletFlow(Flow):
         self.goto(self.do_multisig_config_import)
 
     async def import_multisig_config_from_microsd(self):
-        from pages import InfoPage
-
         msg = self.get_custom_text('multisig_import_microsd',
                                    'Next, import the multisig configuration from {} via microSD card.'.format(
                                        self.sw_wallet['label']))
@@ -403,10 +433,6 @@ class ConnectWalletFlow(Flow):
             if not self.back():
                 self.set_result(False)
             return
-
-        # Import the config info and save to settings
-        common.new_multisig_wallet = None
-        common.is_new_wallet_a_duplicate = False
 
         self.multisig_import_data = await self.sig_type['import_microsd']()
         if self.multisig_import_data is None:
@@ -425,16 +451,32 @@ class ConnectWalletFlow(Flow):
         # Show the wallet to the user
         result = await ImportMultisigWalletFlow(ms).run()
         if not result:
-            if not self.back():
-                self.set_result(False)
+            # The wallet was probably a duplicate or some other error occured
+            self.set_result(False)
             return
 
-        self.goto_address_verification_method()
+        # Remember it for the latter states after this
+        self.multisig_wallet = ms
+
+        # Only perform address validation if wallet does not prevent it
+        if self.is_skip_address_verification_enabled():
+            if self.is_force_multisig_policy_enabled():
+                result = await InfoPage(
+                    text='For compatibility with {}, Passport will set your Multisig Policy ' +
+                    'to Skip Verification.'.format(self.sw_wallet['label']))
+                if not result:
+                    if not self.back():
+                        self.set_result(False)
+                        return
+                else:
+                    common.settings.set('multisig_policy', TRUST_PSBT)
+                    self.goto(self.complete)
+            else:
+                self.goto(self.complete)
+        else:
+            self.goto_address_verification_method()
 
     async def scan_rx_address_intro(self):
-        from pages import InfoPage
-        import microns
-
         msgs = ['Next, let\'s check that the wallet connected correctly.',
                 'On the next page, scan a receive address from {}.'.format(self.sw_wallet['label'])
                 ]
@@ -453,8 +495,6 @@ class ConnectWalletFlow(Flow):
 
     async def scan_rx_address(self):
         from flows import VerifyAddressFlow
-        from pages import QuestionPage, InfoPage
-        import microns
 
         result = await VerifyAddressFlow(sig_type=self.sig_type, multisig_wallet=self.multisig_wallet).run()
         if result:
@@ -531,29 +571,23 @@ class ConnectWalletFlow(Flow):
     def is_multisig(self):
         return self.sig_type['id'] == 'multisig'
 
-    def goto_multisig_import_mode(self):
-        import gc
-        gc.collect()
-
-        ALWAYS_IMPORT_MULTISIG_BY_MICROSD = False
-        if 'multisig_import_mode' in self.export_mode:
-            if self.export_mode['multisig_import_mode'] == EXPORT_MODE_QR:
-                # TEMPORARY FOR TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                if ALWAYS_IMPORT_MULTISIG_BY_MICROSD:
-                    self.goto(self.import_multisig_config_from_microsd, save_curr=False)
-                else:
-                    self.goto(self.import_multisig_config_from_qr, save_curr=False)
-            else:
-                self.goto(self.import_multisig_config_from_microsd, save_curr=False)
-        elif self.export_mode['id'] == EXPORT_MODE_QR:
-            # TEMPORARY FOR TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if ALWAYS_IMPORT_MULTISIG_BY_MICROSD:
-                self.goto(self.import_multisig_config_from_microsd, save_curr=False)
-            else:
-                self.goto(self.import_multisig_config_from_qr, save_curr=False)
-
+    def is_skip_address_verification_enabled(self):
+        if 'skip_address_validation' in self.sw_wallet:
+            return self.sw_wallet['skip_address_validation']
         else:
-            self.goto(self.import_multisig_config_from_microsd, save_curr=False)
+            return False
+
+    def is_skip_multisig_import_enabled(self):
+        if 'skip_multisig_import' in self.sw_wallet:
+            return self.sw_wallet['skip_multisig_import']
+        else:
+            return False
+
+    def is_force_multisig_policy_enabled(self):
+        if 'force_multisig_policy' in self.sw_wallet:
+            return self.sw_wallet['force_multisig_policy']
+        else:
+            return False
 
     def goto_address_verification_method(self, save_curr=True):
         method = self.sw_wallet.get('address_validation_method', 'scan_rx_address')

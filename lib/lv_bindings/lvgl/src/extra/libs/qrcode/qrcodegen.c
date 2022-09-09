@@ -213,7 +213,7 @@ bool qrcodegen_encodeSegmentsAdvanced(const struct qrcodegen_Segment segs[], siz
 		dataUsedBits = getTotalBits(segs, len, version);
 		if (dataUsedBits != -1 && dataUsedBits <= dataCapacityBits)
 			break;  // This version number is found to be suitable
-		if (version >= maxVersion) {  // All versions in the range could not fit the given data
+		if (version > maxVersion) {
 			qrcode[0] = 0;  // Set size to invalid value for safety
 			return false;
 		}

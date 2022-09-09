@@ -136,6 +136,47 @@ def call_later_ms(delay_ms, coro):
     loop.create_task(delay_fn())
 
 
+def save_error_log(msg, filename):
+    from files import CardSlot
+
+    wrote_to_sd = False
+    try:
+        with CardSlot() as card:
+            # Full path and short filename
+            fname, _ = card.get_file_path(filename)
+            with open(fname, 'wb') as fd:
+                fd.write(msg)
+                wrote_to_sd = True
+    except Exception:
+        return wrote_to_sd
+
+    return wrote_to_sd
+
+
+async def save_error_log_to_microsd_task(msg, filename):
+    import common
+
+    sd_card_change = False
+
+    def sd_card_cb():
+        nonlocal sd_card_change
+
+        if not sd_card_change:
+            sd_card_change = True
+
+    # Activate SD card hook
+    CardSlot.set_sd_card_change_cb(sd_card_cb)
+
+    while True:
+        if sd_card_change:
+            sd_card_change = False
+            saved = save_error_log(msg, filename)
+            if saved:
+                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+
+        await sleep_ms(100)
+
+
 def handle_fatal_error(exc):
     import common
     from styles.colors import BLACK
@@ -166,6 +207,9 @@ def handle_fatal_error(exc):
             print(msg)
             print('===============================================================')
 
+            filename = 'error.log'
+            saved = save_error_log(msg, filename)
+
             # Switch immediately to a new card to show the error
             fatal_error_card = {
                 'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_INFO},
@@ -177,8 +221,14 @@ def handle_fatal_error(exc):
             }
 
             common.ui.set_cards([fatal_error_card])
+            if saved:
+                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+            else:
+                common.ui.set_card_header(title='Insert microSD', icon=lv.ICON_MICROSD)
+
             loop = get_event_loop()
-            fatal_card_task = loop.create_task(card_task(fatal_error_card))
+            _fatal_card_task = loop.create_task(card_task(fatal_error_card))
+            _microsd_task = loop.create_task(save_error_log_to_microsd_task(msg, filename))
 
         except Exception as exc2:
             sys.print_exception(exc2)
@@ -790,44 +840,6 @@ def folder_exists(path):
     except OSError as e:
         return False
 
-# # Derive addresses from the specified path until we find the address or have tried max_to_check addresses
-# # If single sig, we need `path`.
-# # If multisig, we need `ms_wallet`, but not `path`
-#
-#
-# def find_address(path, start_address_idx, address, addr_type, ms_wallet, is_change, max_to_check=100, reverse=False):
-#     import stash
-#
-#     try:
-#         with stash.SensitiveValues() as sv:
-#             if ms_wallet:
-#                 # NOTE: Can't easily reverse order here, so this is slightly less efficient
-#                 for (curr_idx, paths, curr_address, script) in ms_wallet.yield_addresses(start_address_idx,
-#                        max_to_check):
-#                     # print('curr_idx={}: paths={} curr_address = {}'.format(curr_idx, paths, curr_address))
-#
-#                     if curr_address == address:
-#                         return (curr_idx, paths)  # NOTE: Paths are the full paths of the addresses of each signer
-#
-#             else:
-#                 r = range(start_address_idx, start_address_idx + max_to_check)
-#                 if reverse:
-#                     r = reversed(r)
-#
-#                 for curr_idx in r:
-#                     addr_path = '{}/{}/{}'.format(path, is_change, curr_idx)  # Zero for non-change address
-#                     # print('addr_path={}'.format(addr_path))
-#                     node = sv.derive_path(addr_path)
-#                     curr_address = sv.chain.address(node, addr_type)
-#                     # print('curr_idx={}: path={} addr_type={} curr_address = {}'.format(curr_idx, addr_path,
-#                             addr_type, curr_address))
-#                     if curr_address == address:
-#                         return (curr_idx, addr_path)
-#         return (-1, None)
-#     except Exception as e:
-#         # Any address handling exceptions result in no address found
-#         return (-1, None)
-
 
 def get_accounts():
     from common import settings
@@ -924,7 +936,18 @@ CHANGE_ADDR = 1
 def is_valid_btc_address(address):
     # Strip prefix if present
     if address[0:8].lower() == 'bitcoin:':
-        address = address[8:]
+        # Find the parameters part and strip it.
+        bitcoinparams_start = address.find('?')
+        if bitcoinparams_start == -1:
+            bitcoinparams_start = len(address)
+
+        address = address[8:bitcoinparams_start]
+
+    # We need to lowercase BECH32 addresses, but not legacy
+    # Some wallets format BECH32 in all uppercase, while legacy addresses can have mixed case.
+    lower_address = address.lower()
+    if lower_address.startswith('bc1') or lower_address.startswith('tb1'):
+        address = lower_address
 
     if not is_valid_address(address):
         return address, False
@@ -1065,5 +1088,136 @@ def has_seed():
 def is_logged_in():
     import common
     return common.pa.is_logged_in
+
+
+async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exception=None):
+    """
+    Shows a page and polls for user input while polling for SD card insertion/removal at the same time.
+    SD card insertion/removal, user input and exception callbacks are available. Returning True from any of
+      the callbacks stops the function.
+
+    :param page: a page object to show
+    :param on_sd_card_change: a callback on SD card insertion/removal, a single bool parameter indicating
+      SD card presence
+    :param on_result: a user input callback, a single parameter is the user input.
+    :param on_exception: an exception callback, a single parameter is the exception object.
+    :return: None
+    """
+    from files import CardMissingError
+
+    sd_card_change = False
+    prev_sd_card_cb = None
+
+    def sd_card_cb():
+        nonlocal sd_card_change
+        if sd_card_change:
+            return
+
+        sd_card_change = True
+
+    def restore_sd_cb():
+        nonlocal prev_sd_card_cb
+        CardSlot.set_sd_card_change_cb(prev_sd_card_cb)
+
+    # Activate SD card hook
+    prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
+    CardSlot.set_sd_card_change_cb(sd_card_cb)
+
+    page.display()
+
+    g = page.poll_for_done()
+    while True:
+        try:
+            next(g)
+            await sleep_ms(10)
+
+            # SD card just got inserted or removed
+            if sd_card_change:
+                sd_card_change = False
+
+                try:
+                    with CardSlot():
+                        sd_card_present = True
+                except CardMissingError:
+                    sd_card_present = False
+
+                if on_sd_card_change(sd_card_present):
+                    page.restore_statusbar_and_card_header()
+                    restore_sd_cb()
+                    return
+
+        except StopIteration as result:
+            result = result.value
+
+            if on_result(result):
+                page.restore_statusbar_and_card_header()
+                restore_sd_cb()
+                return
+
+        except Exception as e:
+            if on_exception(e):
+                page.restore_statusbar_and_card_header()
+                restore_sd_cb()
+                return
+
+
+def make_extension_path(ext_name, ext_prop):
+    return 'ext.{}.{}'.format(ext_name, ext_prop)
+
+
+def toggle_extension_enabled(ext_name):
+    from common import ui
+    ext_path = make_extension_path(ext_name, 'enabled')
+    is_enabled = common.settings.get(ext_path, False)
+    common.settings.set(ext_path, not is_enabled)
+    ui.update_cards_on_top_level()
+
+
+def is_extension_enabled(ext_name):
+    ext_path = make_extension_path(ext_name, 'enabled')
+    return common.settings.get(ext_path, False)
+
+
+def is_passphrase_active():
+    import stash
+    return stash.bip39_passphrase != ''
+
+
+MSG_CHARSET = range(32, 127)
+MSG_MAX_SPACES = 4
+
+
+def validate_sign_text(text, subpath):
+    # Check for leading or trailing whitespace
+    if text[0] == ' ':
+        return (subpath, 'File contains leading whitespace.')
+
+    if text[-1] == ' ':
+        (subpath, 'File contains trailing whitespace.')
+
+    # Ensure characters are in range and not too many spaces
+    run = 0
+    # print('text="{}"'.format(text))
+    for ch in text:
+        # print('ch="{}"'.format(ch))
+        if ord(ch) not in MSG_CHARSET:
+            return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
+
+        if ch == ' ':
+            run += 1
+            if run >= MSG_MAX_SPACES:
+                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+        else:
+            run = 0
+
+    # Check subpath, if given
+    if subpath:
+        try:
+            assert subpath[0:1] == 'm'
+            subpath = cleanup_deriv_path(subpath)
+        except BaseException:
+            return (subpath, 'Second line, if included, must specify a subkey path.')
+
+    return (subpath, None)
 
 # EOF

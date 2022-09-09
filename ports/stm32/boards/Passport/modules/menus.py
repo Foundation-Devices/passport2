@@ -34,12 +34,47 @@ def account_menu():
     ]
 
 
+def casa_menu():
+    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
+        {'icon': lv.ICON_CONNECT, 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
+    ]
+
+
+def postmix_menu():
+    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': lv.ICON_CONNECT, 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}},
+    ]
+
+
 def plus_menu():
+    from utils import is_passphrase_active
     from flows import NewAccountFlow, ApplyPassphraseFlow
+
     return [
         {'icon': lv.ICON_ADD_ACCOUNT, 'label': 'New Account', 'flow': NewAccountFlow},
         {'icon': lv.ICON_PASSPHRASE, 'label': 'Enter Passphrase', 'flow': ApplyPassphraseFlow,
-         'statusbar': {'title': 'PASSPHRASE'}},
+         'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': lambda: not is_passphrase_active()},
+        {'icon': lv.ICON_PASSPHRASE, 'label': 'Clear Passphrase', 'flow': ApplyPassphraseFlow,
+         'args': {'passphrase': ''}, 'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
+        {'icon': lv.ICON_PASSPHRASE, 'label': 'Change Passphrase', 'flow': ApplyPassphraseFlow,
+         'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
     ]
 
 
@@ -77,7 +112,7 @@ def bitcoin_menu():
     return [
         {'icon': lv.ICON_BITCOIN, 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
-        {'icon': lv.ICON_NETWORK, 'label': 'Testnet', 'flow': SetChainFlow, 'statusbar': {},
+        {'icon': lv.ICON_NETWORK, 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
     ]
 
@@ -146,9 +181,10 @@ def multisig_menu():
                 'args': {'context': ms.storage_idx}
             })
 
-    items.append({'icon': lv.ICON_SCAN_QR, 'label': 'Import from QR', 'flow': ImportMultisigWalletFromQRFlow})
+    items.append({'icon': lv.ICON_SCAN_QR, 'label': 'Import from QR', 'flow': ImportMultisigWalletFromQRFlow,
+                 'statusbar': {'title': 'IMPORT'}})
     items.append({'icon': lv.ICON_MICROSD, 'label': 'Import from microSD',
-                  'flow': ImportMultisigWalletFromMicroSDFlow})
+                  'flow': ImportMultisigWalletFromMicroSDFlow, 'statusbar': {'title': 'IMPORT'}})
     items.append({'icon': lv.ICON_SETTINGS, 'label': 'Multisig Policy', 'page': MultisigPolicySettingPage})
 
     return items
@@ -169,16 +205,19 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow
+    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow
     from pages import ShowSecurityWordsSettingPage
 
     return [
         {'icon': lv.ICON_SETTINGS, 'label': 'Security Words', 'page': ShowSecurityWordsSettingPage},
-        {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed},
+        {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
+         'statusbar': {'title': 'SEED WORDS', 'icon': lv.ICON_SEED}},
         {'icon': lv.ICON_ONE_KEY, 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': lv.ICON_MICROSD, 'label': 'microSD', 'submenu': microsd_menu},
         {'icon': lv.ICON_ERASE, 'label': 'Erase Passport', 'flow': ErasePassportFlow},
+        {'icon': lv.ICON_SHIELD, 'label': 'Security Check', 'flow': ScvFlow,
+         'args': {'envoy': False, 'ask_to_skip': False}},
     ]
 
 
@@ -228,6 +267,20 @@ def advanced_menu():
 #     ]
 
 
+def extensions_menu():
+    from utils import is_extension_enabled, toggle_extension_enabled
+    # from pages import ColorPickerPage
+    return [
+        # {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
+        {'icon': lv.ICON_CASA, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
+         'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
+        {'icon': lv.ICON_SPIRAL, 'label': 'Postmix', 'action': lambda item: toggle_extension_enabled('postmix'),
+         'is_toggle': True, 'value': lambda: is_extension_enabled('postmix')},
+        # {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
+        #  'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
+    ]
+
+
 def settings_menu():
     from utils import is_logged_in
 
@@ -237,5 +290,6 @@ def settings_menu():
         {'icon': lv.ICON_FIRMWARE, 'label': 'Firmware', 'submenu': update_menu},
         {'icon': lv.ICON_BITCOIN, 'label': 'Bitcoin', 'submenu': bitcoin_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_ADVANCED, 'label': 'Advanced', 'submenu': advanced_menu, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_EXTENSIONS, 'label': 'Extensions', 'submenu': extensions_menu},
         # {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_logged_in},
     ]

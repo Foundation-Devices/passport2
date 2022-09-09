@@ -60,6 +60,7 @@ class CardMissingError(RuntimeError):
 class CardSlot:
     # Touch interface must be disabled during any SD Card usage!
     last_change = None
+    sd_card_change_cb = None
 
     @classmethod
     def setup(cls):
@@ -72,15 +73,26 @@ class CardSlot:
             # Careful: these can come fast and furious!
             cls.last_change = utime.ticks_ms()
 
+            if cls.sd_card_change_cb is not None:
+                cls.sd_card_change_cb()
+
         cls.last_change = utime.ticks_ms()
 
         cls.irq = ExtInt(Pin('SD_SW'), ExtInt.IRQ_RISING_FALLING,
                          Pin.PULL_UP, card_change)
 
     @classmethod
-    def get_sd_root(self):
+    def get_sd_root(cls):
         from common import system
         return system.get_sd_root()
+
+    @classmethod
+    def get_sd_card_change_cb(cls):
+        return cls.sd_card_change_cb
+
+    @classmethod
+    def set_sd_card_change_cb(cls, sd_card_change_cb):
+        cls.sd_card_change_cb = sd_card_change_cb
 
     def __init__(self):
         self.active = False
@@ -195,4 +207,44 @@ class CardSlot:
 
         return fname, basename + ext
 
+
+def securely_blank_file(full_path):
+    # input PSBT file no longer required; so delete it
+    # - blank with zeros
+    # - rename to garbage (to hide filename after undelete)
+    # - delete
+    # - ok if file missing already (card maybe have been swapped)
+    #
+    # NOTE: we know the FAT filesystem code is simple, see
+    #       ../external/micropython/extmod/vfs_fat.[ch]
+
+    path, basename = full_path.rsplit('/', 1)
+
+    with CardSlot() as card:
+        try:
+            blk = bytes(64)
+
+            with open(full_path, 'r+b') as fd:
+                size = fd.seek(0, 2)
+                fd.seek(0)
+
+                # blank it
+                for i in range((size // len(blk)) + 1):
+                    fd.write(blk)
+
+                assert fd.seek(0, 1) >= size
+
+            # probably pointless, but why not:
+            os.sync()
+
+        except OSError as exc:
+            # missing file is okay
+            if exc.args[0] == ENOENT:
+                return
+            raise
+
+        # rename it and delete
+        new_name = path + '/' + ('x' * len(basename))
+        os.rename(full_path, new_name)
+        os.remove(new_name)
 # EOF

@@ -266,10 +266,12 @@ class ExtSettings:
         # print(' RESET SETTINGS FLASH')
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
+        rev = self.current['_revision']
         self.current = self.default_values()
         self.overrides.clear()
-        self.my_pos = 0
-        self.is_dirty = False
+
+        self.current['_revision'] = rev + 1
+        self.changed()
 
     async def write_out(self):
         # delayed write handler

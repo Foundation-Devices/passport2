@@ -56,7 +56,7 @@ class ChangePINFlow(Flow):
 
     async def change_pin(self):
         (result, error) = await spinner_task('Changing PIN', change_pin_task,
-                                             args=[self.old_pin, self.new_pin], no_anim=True)
+                                             args=[self.old_pin, self.new_pin])
         if result:
             self.goto(self.show_success)
         else:

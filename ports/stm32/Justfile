@@ -122,7 +122,7 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
     just run-ocd-command "flash write_image erase build-Passport/v{{version}}-passport-key-user.bin $BL_FW_HDR_BASE"
 
 # Install a recent Foundation-signed build
-flash-foundation screen="mono" version="1.0.0": && (reset)
+flash-foundation screen="mono" filename="v2.0.3-passport.bin": && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -130,7 +130,7 @@ flash-foundation screen="mono" version="1.0.0": && (reset)
     BL_FW_HDR_BASE=$(make bl_fw_hdr_base SCREEN_MODE={{uppercase(screen)}} V=0)
     echo "Firmware address for '{{screen}}': $BL_FW_HDR_BASE"
 
-    just run-ocd-command "flash write_image erase ../../releases/passport-fw-{{version}}.bin $BL_FW_HDR_BASE"
+    just run-ocd-command "flash write_image erase ../../releases/{{filename}} $BL_FW_HDR_BASE"
 
 # Clean the firmware build
 clean:

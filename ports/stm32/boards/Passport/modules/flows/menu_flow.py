@@ -70,6 +70,10 @@ class MenuFlow(Flow):
                 if prev_statusbar is not None:
                     ui.set_statusbar(**prev_statusbar)
 
+                # Trigger a card refresh, usually because an Extension was enabled or disabled
+                if self.is_top_level and ui.update_cards_pending:
+                    ui.update_cards(stay_on_same_card=True)
+
             elif item.get('page') is not None:
                 # If there is a page, present it with the simple PageFlow
                 args = self.apply_page_args(item)
@@ -93,6 +97,11 @@ class MenuFlow(Flow):
                 await flow(**args).run()
                 if prev_statusbar is not None:
                     ui.set_statusbar(**prev_statusbar)
+
+            elif item.get('action') is not None:
+                action = item.get('action')
+                if callable(action):
+                    action(item)
 
             self.cleanup()
             if self.one_shot:

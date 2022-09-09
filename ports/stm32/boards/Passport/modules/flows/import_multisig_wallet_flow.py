@@ -13,12 +13,17 @@ class ImportMultisigWalletFlow(Flow):
         self.ms = ms
 
     async def show_overview(self):
-        msg = self.ms.format_overview()
+        msg, is_dup = self.ms.format_overview()
 
-        result = await LongTextPage(card_header={'title': 'Confirm Import'}, text=msg, centered=True).show()
-        if not result:
+        if is_dup:
+            await ErrorPage(text="Duplicate wallet will not be imported.").show()
             self.set_result(False)
             return
+        else:
+            result = await LongTextPage(card_header={'title': 'Confirm Import'}, text=msg, centered=True).show()
+            if not result:
+                self.set_result(False)
+                return
 
         self.goto(self.show_details)
 

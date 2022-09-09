@@ -28,8 +28,10 @@ async def search_for_address_task(
         with stash.SensitiveValues() as sv:
             if multisig_wallet:
                 # NOTE: Can't easily reverse order here, so this is slightly less efficient
-                for (curr_idx, paths, curr_address, script) in multisig_wallet.yield_addresses(start_address_idx,
-                                                                                               max_to_check):
+                for (curr_idx, paths, curr_address, script) in multisig_wallet.yield_addresses(
+                    start_address_idx,
+                    max_to_check,
+                        change_idx=1 if is_change else 0):
                     # print('Multisig: curr_idx={}: paths={} curr_address = {}'.format(curr_idx, paths, curr_address))
 
                     if curr_address == address:

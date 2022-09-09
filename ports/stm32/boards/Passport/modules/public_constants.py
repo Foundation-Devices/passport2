@@ -94,5 +94,14 @@ TRUST_VERIFY = const(0)
 TRUST_OFFER = const(1)
 TRUST_PSBT = const(2)
 
+RFC_SIGNATURE_TEMPLATE = '''\
+-----BEGIN {blockchain} SIGNED MESSAGE-----
+{msg}
+-----BEGIN SIGNATURE-----
+{addr}
+{sig}
+-----END {blockchain} SIGNED MESSAGE-----
+'''
+
 
 # EOF

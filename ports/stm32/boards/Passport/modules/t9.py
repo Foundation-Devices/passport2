@@ -47,7 +47,7 @@ class T9:
     }
 
     def __init__(self, text='', cursor_pos=None, mode=InputMode.NUMERIC, numeric_only=False, input_delay=1000,
-                 max_length=64, on_ready=None, allow_cursor_keys=True, allow_backspace=True):
+                 max_length=64, on_ready=None, allow_cursor_keys=True, allow_backspace=True, max_value=2_147_483_646):
         self.text = [ch for ch in text]
         self.cursor_pos = cursor_pos if cursor_pos is not None else len(self.text)
         self.numeric_only = numeric_only
@@ -57,6 +57,7 @@ class T9:
         self.on_ready = on_ready
         self.allow_cursor_keys = allow_cursor_keys
         self.allow_backspace = allow_backspace
+        self.max_value = max_value
 
         self.timer = None
         self.map_pos = 0
@@ -106,9 +107,8 @@ class T9:
             self.last_key = None
             if self.allow_backspace:
                 if self.cursor_pos > 0:
-                    # Delete the character under the cursor if maxed out, else the one to the left
-                    if not self.is_maxed_out():
-                        self.cursor_pos = max(self.cursor_pos - 1, 0)
+                    # Delete the character to the left of the cursor
+                    self.cursor_pos -= 1
 
                     if len(self.text) > self.cursor_pos:
                         del self.text[self.cursor_pos]
@@ -142,6 +142,20 @@ class T9:
             if self.last_key is None:
                 if not self.is_maxed_out():
                     ch = chars[0]
+                    if self.numeric_only:
+                        text = self.text[:]
+                        text.insert(self.cursor_pos, ch)
+
+                        # If conversion fails or it's too big, then don't insert the key
+                        try:
+                            str = "".join(text)
+                            value = int(str)
+                            if value > self.max_value:
+                                return
+                        except ValueError:
+                            # Take no action
+                            return
+
                     self.text.insert(self.cursor_pos, ch)
                     self.advance_cursor()
 

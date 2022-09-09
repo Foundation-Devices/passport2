@@ -6,7 +6,7 @@
 import lvgl as lv
 from flows import Flow
 from pages import ScanQRPage, ShowQRPage, QRScanResult
-from pages.options_chooser_page import OptionsChooserPage
+from pages.chooser_page import ChooserPage
 from styles.colors import FD_BLUE_HEX
 from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR, URException
 from data_codecs.qr_type import QRType
@@ -19,7 +19,7 @@ import common
 
 
 class ScvFlow(Flow):
-    def __init__(self, envoy=True):
+    def __init__(self, envoy=True, ask_to_skip=True):
         """
         :param envoy: True for Envoy App flow. False is manual Supply Chain Validation.
         """
@@ -27,6 +27,7 @@ class ScvFlow(Flow):
         super().__init__(initial_state=self.show_intro, name='ScvFlow')
         self.words = None
         self.envoy = envoy
+        self.ask_to_skip = ask_to_skip
         self.uuid = None
 
         self.statusbar = {'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}
@@ -69,15 +70,18 @@ class ScvFlow(Flow):
                 else:
                     return
             else:
-                skip = await QuestionPage(
-                    text='Skip Security Check?\n\n{}'.format(
-                        recolor(FD_BLUE_HEX, '(Not recommended)'))
-                ).show()
-                if skip:
-                    common.settings.set('validated_ok', True)
+                if not self.ask_to_skip:
                     self.set_result(True)
                 else:
-                    self.back()
+                    skip = await QuestionPage(
+                        text='Skip Security Check?\n\n{}'.format(
+                            recolor(FD_BLUE_HEX, '(Not recommended)'))
+                    ).show()
+                    if skip:
+                        common.settings.set('validated_ok', True)
+                        self.set_result(True)
+                    else:
+                        self.back()
             return
 
         # Scan succeeded -- verify its content
@@ -94,7 +98,7 @@ class ScvFlow(Flow):
             crypto_request = EnvoyURCryptoRequest(cbor=result.data.cbor)
             try:
                 crypto_request.decode()
-            except URException:
+            except:  # noqa
                 await self.show_error('Security Check QR code is invalid (3).')
                 return
 
@@ -150,9 +154,13 @@ class ScvFlow(Flow):
             self.goto(self.show_envoy_response)
 
     async def show_envoy_response(self):
+        from common import system
+
+        (version, _, _, _, _) = system.get_software_info()
         crypto_response = EnvoyURCryptoResponse(uuid=self.uuid,
                                                 words=self.words,
-                                                model=EnvoyURCryptoResponse.PASSPORT_MODEL_BATCH2)
+                                                model=EnvoyURCryptoResponse.PASSPORT_MODEL_BATCH2,
+                                                version=version)
         crypto_response.encode()
         result = await ShowQRPage(qr_type=QRType.UR2,
                                   qr_data=crypto_response,
@@ -184,10 +192,11 @@ class ScvFlow(Flow):
         from pages import ErrorPage
 
         options = [{'label': 'Passed', 'value': True}, {'label': 'Failed', 'value': False}]
-        result = await OptionsChooserPage(
+        result = await ChooserPage(
             text='Select Security Check Result',
             options=options,
             icon=lv.LARGE_ICON_SHIELD,
+            initial_value=options[0].get('value'),
             left_micron=microns.Back,
             right_micron=microns.Checkmark).show()
         if result is None:

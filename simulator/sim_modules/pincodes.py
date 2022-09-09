@@ -61,6 +61,7 @@ class PinAttempt:
         self.secret = None
         self.attempts_left = 0          # ignore in mk1/2 case, only valid for mk3
         self.max_attempts = MAX_PIN_ATTEMPTS          # Number of attempts allowed
+        self.num_fails = 0
         self.is_logged_in = False
 
     def __repr__(self):
@@ -177,12 +178,16 @@ class PinAttempt:
             # print('PIN mismatch!')
             if self.attempts_left > 0:
                 self.attempts_left -= 1
+                self.num_fails += 1
+                if self.attempts_left > MAX_PIN_ATTEMPTS:
+                    self.attempts_left = MAX_PIN_ATTEMPTS
                 settings.set('__attempts_left__', self.attempts_left)
                 raise RuntimeError()
         else:
             # Reset to 21 when successfully logged in
             self.attempts_left = MAX_PIN_ATTEMPTS
             self.is_logged_in = True
+            self.num_fails = 0
             settings.set('__attempts_left__', MAX_PIN_ATTEMPTS)
 
         return self.is_logged_in

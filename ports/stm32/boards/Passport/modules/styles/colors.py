@@ -75,6 +75,7 @@ CARD_BG_GREY = lv.color_hex(CARD_BG_GREY_HEX)
 CARD_BORDER_HEX = 0xFEFEFE
 CARD_BORDER = lv.color_hex(CARD_BORDER_HEX)
 
+
 # Account Colors
 if passport.IS_SIMULATOR:
     ACCOUNT_COLORS = [
@@ -84,7 +85,12 @@ if passport.IS_SIMULATOR:
         {'bg': lv.color_hex(0xD68B6E), 'fg': WHITE},
         {'bg': lv.color_hex(0x00BDCD), 'fg': WHITE},
         {'bg': lv.color_hex(0x2B8A7A), 'fg': WHITE},
+
     ]
+
+    # Special colors
+    CASA_PURPLE_HEX = 0x865EFC
+    CASA_PURPLE = lv.color_hex(CASA_PURPLE_HEX)
 else:
     ACCOUNT_COLORS = [
         {'bg': lv.color_hex(0xB04C40), 'fg': WHITE},
@@ -94,3 +100,7 @@ else:
         {'bg': lv.color_hex(0x00A0A8), 'fg': WHITE},
         {'bg': lv.color_hex(0x087C68), 'fg': WHITE},
     ]
+
+    # Special colors
+    CASA_PURPLE_HEX = 0x966EFC
+    CASA_PURPLE = lv.color_hex(CASA_PURPLE_HEX)

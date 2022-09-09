@@ -9,7 +9,8 @@ from pages import PINEntryPage, ShutdownPage, ErrorPage
 from tasks import login_task
 from utils import spinner_task
 import microns
-import common
+
+BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 
 class LoginFlow(Flow):
@@ -31,7 +32,7 @@ class LoginFlow(Flow):
             pass
 
     async def check_pin(self):
-        (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin], no_anim=True)
+        (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin])
         if result:
             self.set_result(True)
         else:
@@ -46,7 +47,18 @@ class LoginFlow(Flow):
             self.goto(self.show_bricked_message)
             return
 
-        result = await ErrorPage(text='Wrong PIN!\n\nYou have {} attempts remaining.'.format(pa.attempts_left),
+        if pa.attempts_left == 1:
+            attempt_msg = 'This is your FINAL attempt'
+        else:
+            attempt_msg = 'You have {} attempts left'.format(pa.attempts_left)
+
+        if pa.attempts_left <= BRICK_WARNING_NUM_ATTEMPTS:
+            brick_warning = ' before Passport is permanently disabled'
+        else:
+            brick_warning = ''
+
+        msg = 'Wrong PIN!\n\n{}{}.'.format(attempt_msg, brick_warning)
+        result = await ErrorPage(text=msg,
                                  left_micron=microns.Shutdown,
                                  right_micron=microns.Retry).show()
         if result:
@@ -58,11 +70,11 @@ class LoginFlow(Flow):
     async def show_bricked_message(self):
         from common import pa
 
-        msg = '''After %d failed PIN attempts, this Passport is now permanently disabled.
+        msg = '''This Passport is now permanently disabled.
 
 Restore a microSD backup or seed phrase onto a new Passport to recover your funds.''' % pa.num_fails
 
-        result = await ErrorPage(text='Fatal Error.\n\n{}'.format(msg),
+        result = await ErrorPage(text=msg,
                                  left_micron=microns.Shutdown,
                                  right_micron=microns.Retry).show()
         if result:

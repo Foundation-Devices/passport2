@@ -21,7 +21,7 @@ jobs:
       run: |
         STYLE_TEMP=$(mktemp)
         
-        if ! pycodestyle --exclude trezor-firmware,unused_modules,graphics.py,translations --statistics ports/stm32/boards/Passport > "$STYLE_TEMP"
+        if ! pycodestyle --exclude trezor-firmware,unused_modules,graphics.py,translations --statistics ports/stm32/boards/Passport | tee "$STYLE_TEMP"
         then
           sed -n -e 's/^\(.*\.py\):\([[:digit:]]\+\):\([[:digit:]]\+\): \(E[[:digit:]]\+\) \(.*\)$/::error file=\1,line=\2,col=\3,title=\4::\5/p' < "$STYLE_TEMP"
           sed -n -e 's/^\(.*\.py\):\([[:digit:]]\+\):\([[:digit:]]\+\): \(W[[:digit:]]\+\) \(.*\)$/::warning file=\1,line=\2,col=\3,title=\4::\5/p' < "$STYLE_TEMP"

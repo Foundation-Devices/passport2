@@ -35,9 +35,6 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
                 args=[full_path])
             (data, error) = result
             if error is None:
-                if isinstance(data, (bytes, bytearray)):
-                    data = data.decode('utf-8')
-
                 self.ms = MultisigWallet.from_file(data)
                 # print('New MS: {}'.format(self.ms.serialize()))
 

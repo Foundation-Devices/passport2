@@ -74,7 +74,7 @@ class UR2Decoder(DataDecoder):
 class UR2Encoder(DataEncoder):
     def __init__(self, args):
         self.ur_encoder = None
-        self.qr_sizes = [80, 140, 280]
+        self.qr_sizes = [140, 70, 25]
         self.type = None
         if isinstance(args, dict):
             self.prefix = args['prefix'] or 'bytes'

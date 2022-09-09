@@ -12,11 +12,19 @@ from translations import t, T
 
 
 class ApplyPassphraseFlow(Flow):
-    def __init__(self):
-        super().__init__(initial_state=self.enter_passphrase, name='ApplyPassphraseFlow')
+    def __init__(self, passphrase=None):
+
+        # Caller wants to set this passphrase
+        if passphrase is not None:
+            self.passphrase = passphrase
+            super().__init__(initial_state=self.apply_passphrase, name='ApplyPassphraseFlow')
+        else:
+            self.passphrase = ''
+            super().__init__(initial_state=self.enter_passphrase, name='ApplyPassphraseFlow')
 
     async def enter_passphrase(self):
-        self.passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'}).show()
+        self.passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'},
+                                              initial_text=self.passphrase).show()
         if self.passphrase is not None:
             self.goto(self.apply_passphrase)
         else:
@@ -36,13 +44,22 @@ class ApplyPassphraseFlow(Flow):
         (error,) = await spinner_task(msg, apply_passphrase_task, args=[self.passphrase])
         if error is None:
             import common
-            from utils import start_task
+            from utils import start_task, xfp2str
 
             # Make a success page
             if len(self.passphrase) == 0:
-                await SuccessPage(text='Passphrase cleared').show()
+                await SuccessPage(
+                    text='Passphrase cleared\n\nFingerprint:\n\n{}'.format(
+                        xfp2str(common.settings.get('xfp', '---')))
+                ).show()
             else:
-                await SuccessPage(text='Passphrase applied').show()
+                result = await QuestionPage(
+                    text='Passphrase applied\n\nFingerprint correct?\n\n{}'.format(
+                        xfp2str(common.settings.get('xfp', '---')))
+                ).show()
+                if result is False:
+                    self.goto(self.enter_passphrase)
+                    return
 
             common.ui.update_cards(stay_on_same_card=True)
 

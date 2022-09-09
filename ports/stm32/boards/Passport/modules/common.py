@@ -57,9 +57,6 @@ enable_battery_mon = False
 # Active account
 active_account = None
 
-# Multisig wallet to associate with New Account flow
-new_multisig_wallet = None
-is_new_wallet_a_duplicate = False
 
 # The QRType of the last QR code that was scanned
 last_scanned_qr_type = None

@@ -17,7 +17,7 @@ class ViewMultisigDetailsFlow(Flow):
         self.ms = MultisigWallet.get_by_idx(self.storage_idx)
 
     async def show_overview(self):
-        msg = self.ms.format_overview()
+        msg, _ = self.ms.format_overview()
 
         result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
         if not result:

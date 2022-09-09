@@ -599,6 +599,9 @@ class MultisigWallet:
         my_deriv = None
         expect_chain = chains.current_chain().ctype
 
+        if isinstance(config, (bytes, bytearray)):
+            config = config.decode('utf-8')
+
         lines = config.split('\n')
 
         for ln in lines:
@@ -867,7 +870,7 @@ class MultisigWallet:
         assert has_mine == 1         # 'my key not included'
 
         name = 'PSBT-%d-of-%d' % (M, N)
-        ms = cls(name, (M, N), xpubs, chain_type=expect_chain, addr_fmt=addr_fmt or AF_P2SH)
+        ms = cls(name, (M, N), xpubs, -1, chain_type=expect_chain, addr_fmt=addr_fmt or AF_P2SH)
 
         # may just keep just in-memory version, no approval required, if we are
         # trusting PSBT's today, otherwise caller will need to handle UX w.r.t new wallet
@@ -949,7 +952,7 @@ class MultisigWallet:
 wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.join(diff_items)
             is_dup = True
         elif num_dups:
-            msg = 'Duplicate wallet. All details are the same as existing.'
+            msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.'
             is_dup = True
         else:
             msg = 'Create new multisig wallet?'
@@ -979,7 +982,7 @@ wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.jo
             deriv_title=recolor(FD_BLUE_HEX, 'Derivation'),
             dsum=dsum,
             at=MultisigWallet.render_addr_fmt(self.addr_fmt))
-        return msg
+        return msg, is_dup
 
     def format_details(self):
         import uio
