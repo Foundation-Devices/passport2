@@ -102,7 +102,6 @@ class Camera(View):
             self.content_width = None
             self.content_height = None
 
-
     def disable(self):
         """Disable the camera"""
 
