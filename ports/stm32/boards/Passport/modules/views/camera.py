@@ -62,6 +62,7 @@ class Camera(View):
             if self.content_width is None or self.content_height is None:
                 print('Not enabled')
                 return
+        print('{}x{}'.format(self.content_width, self.content_height))
 
         # Take the camera image.
         camera.snapshot()
@@ -100,6 +101,7 @@ class Camera(View):
         else:
             self.content_width = None
             self.content_height = None
+
 
     def disable(self):
         """Disable the camera"""
