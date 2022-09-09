@@ -56,6 +56,14 @@ class Camera(View):
         if not self.is_mounted():
             return
 
+        # Enable the camera only when the widget has a proper size.
+        if self.content_width is None or self.content_height is None:
+            self.enable()
+            if self.content_width is None or self.content_height is None:
+                print('Not enabled')
+                return
+        print('{}x{}'.format(self.content_width, self.content_height))
+
         # Take the camera image.
         camera.snapshot()
 
@@ -67,30 +75,33 @@ class Camera(View):
         camera.resize(self.content_width, self.content_height)
         self.lvgl_root.invalidate()
 
-    def mount(self, lvgl_parent):
-        super().mount(lvgl_parent)
-        self.enable()
-
     def enable(self):
         """Enable the camera"""
         assert self.is_mounted()
 
-        # Turn on the camera. This is where the display driver is updated.
-        camera.enable()
+        self.content_width = self.lvgl_root.get_content_width()
+        self.content_height = self.lvgl_root.get_content_height()
+        if self.content_width > 0 and self.content_height > 0:
+            # Turn on the camera. This is where the display driver is updated.
+            camera.enable()
 
-        # Set the canvas "drawing buffer" directly to the camera framebuffer,
-        # in order to tell LVGL when a frame has been updated we use a task and
-        # the lv.obj().invalidate() method to tell LVGL to redraw it (the
-        # complete area). The pixel format of the camera is the same one as the
-        # LVGL format.
-        self._framebuffer = camera.framebuffer()
-        self.lvgl_root.refr_size()
-        self.content_width = min(212, self.HOR_RES)
-        self.content_height = min(200, self.VER_RES)
-        self.lvgl_root.set_buffer(self._framebuffer,
-                                  self.content_width,
-                                  self.content_height,
-                                  lv.img.CF.TRUE_COLOR)
+            # Set the canvas "drawing buffer" directly to the camera framebuffer,
+            # in order to tell LVGL when a frame has been updated we use a task and
+            # the lv.obj().invalidate() method to tell LVGL to redraw it (the
+            # complete area). The pixel format of the camera is the same one as the
+            # LVGL format.
+            self._framebuffer = camera.framebuffer()
+            self.lvgl_root.refr_size()
+            self.content_width = min(self.content_width, self.HOR_RES)
+            self.content_height = min(self.content_height, self.VER_RES)
+            self.lvgl_root.set_buffer(self._framebuffer,
+                                      self.content_width,
+                                      self.content_height,
+                                      lv.img.CF.TRUE_COLOR)
+        else:
+            self.content_width = None
+            self.content_height = None
+
 
     def disable(self):
         """Disable the camera"""
