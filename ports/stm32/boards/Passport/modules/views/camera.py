@@ -62,7 +62,6 @@ class Camera(View):
             if self.content_width is None or self.content_height is None:
                 print('Not enabled')
                 return
-        print('{}x{}'.format(self.content_width, self.content_height))
 
         # Take the camera image.
         camera.snapshot()
