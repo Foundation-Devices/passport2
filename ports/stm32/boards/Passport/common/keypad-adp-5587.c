@@ -160,7 +160,7 @@ bool keypad_poll_key(uint8_t* key) {
     }
 
     // A delay to not overwhelm the keypad chip to avoid its lockup
-    delay_ms(50);
+    delay_ms(100);
 
     int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, key, 1);
     if (rc < 0) {
