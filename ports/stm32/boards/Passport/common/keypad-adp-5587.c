@@ -32,6 +32,22 @@ static void keypad_reset(void) {
 static int keypad_setup(void) {
     int rc;
 
+#ifndef PASSPORT_BOOTLOADER
+    // Enable GPIO interrupt
+    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN1, 0xFF);
+    if (rc < 0) return -1;
+
+    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN2, 0xFF);
+    if (rc < 0) return -1;
+
+    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN3, 0x03);
+    if (rc < 0) return -1;
+
+    // Setup the configuration register
+    rc = keypad_write(KBD_ADDR, KBD_REG_CFG, KBD_REG_CFG_INT_CFG | KBD_REG_CFG_GPI_IEN | KBD_REG_CFG_KE_IEN);
+    if (rc < 0) return -1;
+#endif /* PASSPORT_BOOTLOADER */
+
     // Enable GPI part of event FIFO (R0 to R7, C0 to C7, C8 to C9)
     rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG1, 0xFF);
     if (rc < 0) return -1;
@@ -44,6 +60,50 @@ static int keypad_setup(void) {
     return 0;
 }
 
+#ifndef PASSPORT_BOOTLOADER
+void keypad_ISR(void) {
+    int     rc;
+    uint8_t key        = 0;
+    uint8_t key_count  = 0;
+    uint8_t loop_count = 0;
+
+    while (loop_count < 10) {
+        rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, &key, 1);
+        if (rc < 0) {
+#ifndef PASSPORT_BOOTLOADER
+            // printf("keypad_ISR() read error\n");
+#endif /* PASSPORT_BOOTLOADER */
+            break;
+        }
+
+        if (key == 0) {
+            // printf("keypad_ISR() no key in queue\n");
+            break;
+        }
+
+        ring_buffer_enqueue(key);
+        key_count++;
+        loop_count++;
+    }
+
+    if (key_count) {
+        /* Clear the interrupt on the keypad controller */
+        rc = keypad_write(KBD_ADDR, KBD_REG_INT_STAT, 0xFF);
+        if (rc < 0) {
+            // printf("[%s] I2C problem\n", __func__);
+        }
+    } else {
+        /*
+         * We're getting interrupts but no key codes...the keypad
+         * controller is in a strange state. We'll reset it and reconfigure
+         * it to get it working again.
+         */
+        keypad_reset();
+        keypad_setup();
+    }
+}
+#endif /* PASSPORT_BOOTLOADER */
+
 void keypad_init(void) {
     int              rcc;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -55,6 +115,11 @@ void keypad_init(void) {
     GPIO_InitStruct.Pull  = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+#ifndef PASSPORT_BOOTLOADER
+    // Need to specify the size of the ring buffer 128 for a test
+    ring_buffer_init();
+#endif /* PASSPORT_BOOTLOADER */
 
     i2c_init();
     hi2c = &g_hi2c2;
