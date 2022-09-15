@@ -634,7 +634,6 @@ void test_se_firmware_hash() {
 int main(void) {
     HAL_StatusTypeDef rc;
 #ifndef FACTORY_TEST
-    uint8_t keycount;
     uint8_t key;
 #endif /* FACTORY_TEST */
     SystemInit();
@@ -815,8 +814,7 @@ int main(void) {
     uint8_t* p_sram4 = (uint8_t*)0x38000000;
     *p_sram4         = 0;
 
-    keycount = ring_buffer_dequeue(&key);
-    if (keycount > 0) {
+    if (keypad_poll_key(&key)) {
         // The '1' key
         if ((key & 0x7f) == KEY_1) {
             show_more_info();
