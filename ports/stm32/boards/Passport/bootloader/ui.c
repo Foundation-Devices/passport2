@@ -9,7 +9,7 @@
 #include "display.h"
 #include "gpio.h"
 #include "passport_fonts.h"
-#include "ring_buffer.h"
+#include "keypad-adp-5587.h"
 #include "ui.h"
 #include "utils.h"
 
@@ -137,9 +137,8 @@ uint16_t ui_draw_wrapped_text(uint16_t x, uint16_t y, uint16_t max_width, char* 
 
 static bool poll_for_key(uint8_t* p_key, bool* p_is_key_down) {
     uint8_t key;
-    uint8_t count = ring_buffer_dequeue(&key);
 
-    if (count == 0) {
+    if (!keypad_poll_key(&key)) {
         return false;
     }
 
@@ -462,24 +461,6 @@ void ui_draw_wrapped_text(uint16_t x, uint16_t y, uint16_t max_width, char* text
         curr_y += FontTiny.leading;
     }
 }
-
-#ifndef DEBUG
-
-static bool poll_for_key(uint8_t* p_key, bool* p_is_key_down) {
-    uint8_t key;
-    uint8_t count = ring_buffer_dequeue(&key);
-
-    if (count == 0) {
-        return false;
-    }
-
-    *p_key         = key & 0x7F;
-    *p_is_key_down = (key & 0x80) ? true : false;
-
-    return true;
-}
-
-#endif  // DEBUG
 
 // Show message and then delay or wait for button press
 bool ui_show_message(char* title, char* message, char* left_btn, char* right_btn, bool center) {

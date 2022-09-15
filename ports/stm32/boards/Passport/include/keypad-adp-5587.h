@@ -87,5 +87,6 @@ extern int  keypad_write(uint8_t address, uint8_t reg, uint8_t data);
 extern int  keypad_read(uint8_t address, uint8_t reg, uint8_t* data, uint8_t len);
 extern void keypad_test(void);
 extern void keypad_ISR(void);
+extern bool keypad_poll_key(uint8_t* key);
 
 #endif

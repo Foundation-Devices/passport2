@@ -56,13 +56,6 @@ void SysTick_Handler(void) {
     HAL_IncTick();
 }
 
-void EXTI15_10_IRQHandler(void) {
-    if (__HAL_GPIO_EXTI_GET_FLAG(1 << 12)) {
-        __HAL_GPIO_EXTI_CLEAR_FLAG(1 << 12);
-        keypad_ISR();
-    }
-}
-
 static void SystemClock_Config(void) {
     HAL_StatusTypeDef        rc;
     RCC_ClkInitTypeDef       RCC_ClkInitStruct   = {0};
