@@ -228,6 +228,7 @@ class OLEDSimulator:
 
     def snapshot(self):
         filename = time.strftime('../snapshots/snapshot-$j-%H:%M:%S.png')
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         with tempfile.NamedTemporaryFile() as tmp:
             sdl2.SDL_SaveBMP(self.sprite.surface, tmp.name.encode('ascii'))
             tmp.file.seek(0)
@@ -439,7 +440,9 @@ def start():
     # - pass in open fd numbers
     pass_fds = [oled_w, numpad_r, led_w, cam_cmd_w, cam_img_r]
 
-    os.chdir('./work')
+    workdir = './work'
+    os.makedirs(os.path.dirname(workdir), exist_ok=True)
+    os.chdir(workdir)
     # We use RAM for flash simulation, so make sure to allocate enough here.  3m seems good.
     passport_cmd = ['../../ports/unix/passport-mpy',
                     '-X', 'heapsize=30m',
