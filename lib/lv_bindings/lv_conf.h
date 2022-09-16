@@ -297,7 +297,11 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #define LV_FONT_MONTSERRAT_10    0
 #define LV_FONT_MONTSERRAT_12    0
 #define LV_FONT_MONTSERRAT_14    0
+#ifdef SCREEN_MODE_COLOR
 #define LV_FONT_MONTSERRAT_16    1
+#else
+#define LV_FONT_MONTSERRAT_16_MONO    1
+#endif
 #define LV_FONT_MONTSERRAT_18    0
 #define LV_FONT_MONTSERRAT_20    0
 #define LV_FONT_MONTSERRAT_22    0
@@ -331,7 +335,11 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #define LV_FONT_CUSTOM_DECLARE
 
 /*Always set a default font*/
+#ifdef SCREEN_MODE_COLOR
 #define LV_FONT_DEFAULT &lv_font_montserrat_16
+#else
+#define LV_FONT_DEFAULT &lv_font_montserrat_16_mono
+#endif
 
 /*Enable handling large font and/or fonts with a lot of characters.
  *The limit depends on the font size, font face and bpp.
