@@ -8,7 +8,7 @@ import lvgl as lv
 from views import View, Icon, BoldLabel, BatteryIndicator
 from styles import Stylize
 from styles.colors import WHITE, BLACK
-from constants import STATUS_BAR_HEIGHT
+from constants import STATUSBAR_HEIGHT
 import passport
 
 
@@ -30,7 +30,7 @@ class StatusBar(View):
             default.pad(top=0, bottom=0, left=10, right=10)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.set_size(lv.pct(100), STATUS_BAR_HEIGHT)
+        self.set_size(lv.pct(100), STATUSBAR_HEIGHT)
         self.set_pos(0, 0)
         self.set_no_scroll()
 
@@ -39,8 +39,20 @@ class StatusBar(View):
         self.update_title()
 
         self.battery = BatteryIndicator()
+        if passport.IS_COLOR:
+            self.add_child(self.battery)
+        else:
+            self.battery_container = View(flex_flow=None)
+            self.battery_container.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
+            # self.battery_container.set_size(24, 24)
+            with Stylize(self.battery_container) as default:
+                default.bg_color(BLACK)
+                default.pad(left=2, right=2)
+                default.radius(4)
+                default.align(lv.ALIGN.CENTER)
 
-        self.add_child(self.battery)
+            self.battery_container.add_child(self.battery)
+            self.add_child(self.battery_container)
 
     def update_icon(self):
         if self.is_mounted():
@@ -48,9 +60,24 @@ class StatusBar(View):
             del self.children[0]
 
         if self.icon is None:
-            self.icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
+            icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
         else:
-            self.icon_view = Icon(icon=self.icon, color=self.fg_color)
+            icon_view = Icon(icon=self.icon, color=self.fg_color)
+
+        if passport.IS_COLOR:
+            self.icon_view = icon_view
+        else:
+            self.icon_view = View(flex_flow=None)
+            self.icon_view.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
+            with Stylize(self.icon_view) as default:
+                default.bg_color(BLACK)
+                default.pad_all(2)
+                default.radius(4)
+                default.align(lv.ALIGN.CENTER)
+
+            self.icon_view.add_child(icon_view)
+            self.add_child(self.icon_view)
+
         self.insert_child(0, self.icon_view)
 
         if self.is_mounted():
