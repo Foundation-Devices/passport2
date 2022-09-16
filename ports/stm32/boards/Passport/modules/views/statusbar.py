@@ -8,7 +8,7 @@ import lvgl as lv
 from views import View, Icon, BoldLabel, BatteryIndicator
 from styles import Stylize
 from styles.colors import WHITE, BLACK
-from constants import STATUS_BAR_HEIGHT
+from constants import STATUSBAR_HEIGHT
 import passport
 
 

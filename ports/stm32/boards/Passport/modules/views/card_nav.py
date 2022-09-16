@@ -53,17 +53,14 @@ class CardNav(View):
         super().detach()
 
     def set_card_pos(self, card, is_offscreen=False):
-        if passport.IS_COLOR:
-            card_y = 0
-        else:
-            card_y = 4
+        card_y = 0
 
         if is_offscreen:
             card.set_pos(CARD_PAD_LEFT + common.display.WIDTH, card_y)
         else:
             card.set_pos(CARD_PAD_LEFT, card_y)
         card.set_size(common.display.WIDTH - (CARD_PAD_LEFT + CARD_PAD_RIGHT), common.display.HEIGHT -
-                      (CARD_PAD_BOTTOM + STATUS_BAR_HEIGHT + card_y))
+                      (CARD_PAD_BOTTOM + STATUSBAR_HEIGHT + card_y))
 
     def set_cards(self, card_descs, active_idx=0):
         # TODO: Need to remove/unset/delete any Cards that were already here

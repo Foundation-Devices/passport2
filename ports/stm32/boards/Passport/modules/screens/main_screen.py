@@ -4,9 +4,11 @@
 # main_screen.py - Main screen that shows the recolorable background image, and contains
 #                  the StatusBar and CardNav components.
 
-from styles.colors import CARD_BG_GREY, BLACK, WHITE
+import lvgl as lv
+from styles.colors import CARD_BG_GREY, BLACK
 from views import View
 import passport
+import common
 
 
 class MainScreen(View):
@@ -50,7 +52,7 @@ class MainScreen(View):
             if passport.IS_COLOR:
                 default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
             else:
-                default.bg_color(WHITE)
+                default.bg_img(lv.IMAGE_SCREEN_OVERLAY_6)
             default.radius(8)
 
         # Main content container
@@ -77,11 +79,29 @@ class MainScreen(View):
     def update_background(self):
         from styles.local_style import LocalStyle
 
-        with LocalStyle(self.bg_container) as style:
-            if passport.IS_COLOR:
+        if passport.IS_COLOR:
+            # Update the gradient only for the color screen
+            with LocalStyle(self.bg_container) as style:
                 style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
+        else:
+            NUM_ACCOUNT_TEXTURES = 6
+
+            # Mono screen backgrounds use texture instead of color
+            acct = None
+            if common.ui is not None:
+                acct = common.ui.get_active_account()
+
+            if acct is not None:
+                idx = acct.get('acct_num') % NUM_ACCOUNT_TEXTURES
             else:
-                style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=0, stop2=192)
+                # There is a final texture for other screens
+                idx = NUM_ACCOUNT_TEXTURES
+
+            overlay_name = 'IMAGE_SCREEN_OVERLAY_{}'.format(idx)
+            print('overlay_name={}'.format(overlay_name))
+            with LocalStyle(self.overlay) as default:
+                default.bg_img(getattr(lv, overlay_name))
+                default.radius(8)
 
             # Mono screen backgrounds use texture instead of color
             acct = None
