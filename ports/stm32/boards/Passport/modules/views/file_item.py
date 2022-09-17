@@ -7,7 +7,7 @@
 import lvgl as lv
 from views import Label, Icon
 from styles import Stylize
-from styles.colors import FOCUSED_LIST_ITEM_BG, FOCUSED_LIST_ITEM_TEXT, NORMAL_TEXT
+from styles.colors import FD_BLUE, WHITE, NORMAL_TEXT
 from views import View
 from constants import MENU_ITEM_CORNER_RADIUS
 

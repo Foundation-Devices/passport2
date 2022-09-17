@@ -8,7 +8,6 @@ from constants import (STATUSBAR_HEIGHT, CARD_PAD_BOTTOM, CARD_PAD_LEFT, CARD_PA
                        MICRON_BAR_HEIGHT)
 import lvgl as lv
 import common
-import passport
 from styles import Stylize
 from styles.colors import CARD_HEADER_TEXT, LIGHT_GREY, BLACK, CARD_HEADER_TEXT
 from views import View, Card, MicronBar

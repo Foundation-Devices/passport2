@@ -6,7 +6,8 @@
 
 import lvgl as lv
 from views import View
-from styles.colors import FD_BLUE, SPINNER_BG
+from styles.colors import DEFAULT_SPINNER, SPINNER_BG
+import passport
 
 
 class Spinner(View):
