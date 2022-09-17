@@ -6,11 +6,12 @@
 
 import lvgl as lv
 from views import View
-from styles.colors import FD_BLUE, SPINNER_BG
+from styles.colors import DEFAULT_SPINNER, SPINNER_BG
+import passport
 
 
 class Spinner(View):
-    def __init__(self, width=7, color=FD_BLUE):
+    def __init__(self, width=7, color=DEFAULT_SPINNER):
         super().__init__()
         self.arc_width = width
         self.arc_color = color

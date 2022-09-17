@@ -7,7 +7,7 @@
 import lvgl as lv
 from views import View
 from styles import Stylize
-from styles.colors import FD_BLUE, TEXT_GREY
+from styles.colors import TEXT_INPUT_CURSOR, TEXT_INPUT_TEXT
 
 
 class TextArea(View):
@@ -19,13 +19,13 @@ class TextArea(View):
         self.set_no_scroll()
         self.set_width(lv.pct(50))
         with Stylize(self) as default:
-            default.text_color(TEXT_GREY)
+            default.text_color(TEXT_INPUT_TEXT)
             default.bg_transparent()
             default.border_width(0)
             default.text_align(lv.TEXT_ALIGN.CENTER)
 
         with Stylize(self, selector=lv.PART.CURSOR) as cursor:
-            cursor.border_color(FD_BLUE)
+            cursor.border_color(TEXT_INPUT_CURSOR)
             cursor.border_width(2)
             cursor.border_side(lv.BORDER_SIDE.LEFT)
             cursor.anim_time(500)

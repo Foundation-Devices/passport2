@@ -6,7 +6,7 @@
 
 import lvgl as lv
 import microns
-from styles.colors import FD_BLUE
+from styles.colors import CHOOSER_ICON
 from styles import Stylize
 from pages import Page
 import common
@@ -22,7 +22,7 @@ class ChooserPage(Page):
     def __init__(
             self, card_header=None, statusbar=None, options=[],
             initial_value=None, on_change=None,
-            icon=None, icon_color=FD_BLUE, text=None, center=False, item_icon=lv.ICON_SMALL_CHECKMARK,
+            icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon=lv.ICON_SMALL_CHECKMARK,
             left_micron=microns.Cancel, right_micron=microns.Checkmark):
 
         from views import ListItem, View
@@ -71,9 +71,9 @@ class ChooserPage(Page):
         # Add text if provided
         if self.text is not None:
             from views import Label
-            from styles.colors import TEXT_GREY
+            from styles.colors import NORMAL_TEXT
 
-            self.text_view = Label(text=self.text, color=TEXT_GREY)
+            self.text_view = Label(text=self.text, color=NORMAL_TEXT)
             self.text_view.set_width(lv.pct(100))
             with Stylize(self.text_view) as default:
                 default.text_align(lv.TEXT_ALIGN.CENTER)

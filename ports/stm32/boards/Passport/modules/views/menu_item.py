@@ -7,7 +7,7 @@
 import lvgl as lv
 from views import Label, Icon
 from styles import Stylize
-from styles.colors import MENU_ITEM_BG, WHITE, DARK_GREY
+from styles.colors import MENU_ITEM_BG, WHITE, NORMAL_TEXT
 from constants import MENU_ITEM_CORNER_RADIUS
 from views import View
 
@@ -26,11 +26,11 @@ class MenuItem(View):
         # Default style
         with Stylize(self) as default:
             default.bg_transparent()
-            default.text_color(DARK_GREY)
+            default.text_color(NORMAL_TEXT)
             right_pad = 8 if self.is_toggle else 0
             default.pad(top=0, right=right_pad, bottom=0, left=9)
             default.flex_align(track=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
-            default.img_recolor(DARK_GREY)
+            default.img_recolor(NORMAL_TEXT)
 
         self.set_width(lv.pct(100))
         self.set_height(40)

@@ -4,7 +4,7 @@
 # card.py - Card header and card content - Custom content and header title and icon can be passed in
 
 import lvgl as lv
-from styles.colors import (BLACK, LIGHT_GREY, MEDIUM_GREY, TEXT_GREY, WHITE)
+from styles.colors import (LIGHT_GREY, MEDIUM_GREY, CARD_HEADER_TEXT, WHITE)
 from styles import Stylize, LocalStyle
 from views import View, Image, Label
 import microns
@@ -26,8 +26,7 @@ class Card(View):
             initial_page=None,
             bg_color=MEDIUM_GREY,
             header_color=LIGHT_GREY,
-            header_fg_color=TEXT_GREY):
-        from common import display
+            header_fg_color=CARD_HEADER_TEXT):
         super().__init__()
 
         self.title = title

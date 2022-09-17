@@ -7,7 +7,7 @@
 import lvgl as lv
 from views import Label, Icon
 from styles import Stylize
-from styles.colors import FD_BLUE, WHITE, DARK_GREY
+from styles.colors import FD_BLUE, WHITE, NORMAL_TEXT
 from views import View
 from constants import MENU_ITEM_CORNER_RADIUS
 
@@ -22,10 +22,10 @@ class FileItem(View):
         # Default style
         with Stylize(self) as default:
             default.bg_transparent()
-            default.text_color(DARK_GREY)
+            default.text_color(NORMAL_TEXT)
             default.pad(top=10, right=0, bottom=10, left=10)
             default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
-            default.img_recolor(DARK_GREY)
+            default.img_recolor(NORMAL_TEXT)
             default.radius(MENU_ITEM_CORNER_RADIUS)
 
         self.set_width(lv.pct(100))

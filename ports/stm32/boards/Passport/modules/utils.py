@@ -13,7 +13,7 @@
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
 from files import CardSlot
-from styles.colors import FD_BLUE
+from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
 import uos
 import trezorcrypto
@@ -92,7 +92,7 @@ async def spinner_task(text, task, args=(), left_micron=None, right_micron=None,
     start_time = ticks_ms()
     if no_anim:
         spinner = StatusPage(text, left_micron=left_micron, right_micron=right_micron,
-                             icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=FD_BLUE)
+                             icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=DEFAULT_LARGE_ICON_COLOR)
     else:
         spinner = SpinnerPage(text, left_micron=left_micron, right_micron=right_micron)
 

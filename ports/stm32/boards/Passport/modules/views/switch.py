@@ -6,7 +6,7 @@
 import lvgl as lv
 from views import View
 from styles import Style
-from styles.colors import FD_BLUE, MICRON_GREY, WHITE
+from styles.colors import SWITCH_BG_CHECKED, SWITCH_BG_UNCHECKED, SWITCH_BORDER, SWITCH_KNOB
 
 
 class Switch(View):
@@ -37,19 +37,19 @@ class Switch(View):
 
         knob = Style(selector=lv.PART.KNOB)
         knob.pad_all(-5)
-        knob.bg_color(WHITE)
+        knob.bg_color(SWITCH_KNOB)
         knob.apply(self.lvgl_root)
 
         checked = Style(selector=lv.PART.INDICATOR | lv.STATE.CHECKED)
-        checked.bg_color(FD_BLUE)
+        checked.bg_color(SWITCH_BG_CHECKED)
         checked.border_width(2)
-        checked.border_color(WHITE)
+        checked.border_color(SWITCH_BORDER)
         checked.apply(self.lvgl_root)
 
         unchecked = Style(selector=lv.PART.INDICATOR)
-        unchecked.bg_color(MICRON_GREY)
+        unchecked.bg_color(SWITCH_BG_UNCHECKED)
         unchecked.border_width(2)
-        unchecked.border_color(WHITE)
+        unchecked.border_color(SWITCH_BORDER)
         unchecked.apply(self.lvgl_root)
 
         if self.value:

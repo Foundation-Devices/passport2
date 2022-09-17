@@ -8,9 +8,8 @@ from constants import (STATUSBAR_HEIGHT, CARD_PAD_BOTTOM, CARD_PAD_LEFT, CARD_PA
                        MICRON_BAR_HEIGHT)
 import lvgl as lv
 import common
-import passport
 from styles import Stylize
-from styles.colors import LIGHT_GREY, MEDIUM_GREY, BLACK, TEXT_GREY
+from styles.colors import CARD_HEADER_TEXT, LIGHT_GREY, BLACK, CARD_HEADER_TEXT
 from views import View, Card, MicronBar
 from animations import card_anim
 
@@ -93,7 +92,7 @@ class CardNav(View):
             right_text=new_card_desc.get('right_text'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         new_card.attach(self.group)
@@ -130,7 +129,7 @@ class CardNav(View):
             right_text=new_card_desc.get('right_text'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         new_card.attach(self.group)
@@ -166,7 +165,7 @@ class CardNav(View):
             initial_page=new_card_desc.get('initial_page'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         self.set_card_pos(new_card_widget)
