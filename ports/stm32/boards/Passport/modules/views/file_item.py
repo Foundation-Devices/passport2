@@ -7,7 +7,7 @@
 import lvgl as lv
 from views import Label, Icon
 from styles import Stylize
-from styles.colors import FD_BLUE, WHITE, NORMAL_TEXT
+from styles.colors import FOCUSED_LIST_ITEM_BG, FOCUSED_LIST_ITEM_TEXT, NORMAL_TEXT
 from views import View
 from constants import MENU_ITEM_CORNER_RADIUS
 
@@ -33,9 +33,9 @@ class FileItem(View):
 
         # Focus style
         with Stylize(self, selector=lv.STATE.FOCUS_KEY) as focus:
-            focus.text_color(WHITE)
-            focus.bg_color(FD_BLUE)
-            focus.img_recolor(WHITE)
+            focus.text_color(FOCUSED_LIST_ITEM_TEXT)
+            focus.bg_color(FOCUSED_LIST_ITEM_BG)
+            focus.img_recolor(FOCUSED_LIST_ITEM_TEXT)
 
         # Icon
         self.icon_view = Icon(icon=lv.ICON_FOLDER if self.is_folder else lv.ICON_FILE)
