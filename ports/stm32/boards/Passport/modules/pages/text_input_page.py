@@ -12,6 +12,7 @@ from styles import Stylize
 from t9 import T9
 from keys import KEY_1
 import microns
+import passport
 
 
 class TextInputPage(Page):
@@ -45,8 +46,11 @@ class TextInputPage(Page):
                      numeric_only=self.numeric_only,
                      max_length=max_length)
 
+        self.set_no_scroll()
         with Stylize(self) as default:
             default.pad(left=0, right=0)
+            if not passport.IS_COLOR:
+                default.pad_row(4)
 
         # TODO: Replace with built-in Card Title?
         if self.title is not None:
