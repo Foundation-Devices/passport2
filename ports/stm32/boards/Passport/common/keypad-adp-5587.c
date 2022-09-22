@@ -14,7 +14,7 @@
 static I2C_HandleTypeDef* hi2c = NULL;
 
 static void keypad_reset(void) {
-    volatile int i;
+    int i;
 
     // Toggle reset pin of keypad controller (pin PE2 on schematic)
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, 0);
