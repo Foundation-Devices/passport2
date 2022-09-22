@@ -154,6 +154,26 @@ int keypad_read(uint8_t address, uint8_t reg, uint8_t* data, uint8_t len) {
     return 0;
 }
 
+/**
+ * Reads number of keys in the key queue.
+ */
+static bool read_num_keys(uint8_t *num_keys) {
+    uint8_t data = 0;
+
+    if (!num_keys) {
+        return false;
+    }
+
+    int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_LCK_EC_STAT, &data, 1);
+    if (rc < 0) {
+        return false;
+    }
+
+    *num_keys = data & 0x0f; // Use lower 4 bits
+
+    return true;
+}
+
 bool keypad_poll_key(uint8_t* key) {
     if (!key) {
         return false;
@@ -162,6 +182,13 @@ bool keypad_poll_key(uint8_t* key) {
     // A delay to not overwhelm the keypad chip to avoid its lockup
     delay_ms(100);
 
+    // Only read from the key queue if it's not empty
+    uint8_t num_keys = 0;
+    if (read_num_keys(&num_keys) && num_keys) {
+        return false;
+    }
+
+    // Read from the key queue
     int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, key, 1);
     if (rc < 0) {
         return false;
