@@ -129,7 +129,7 @@ bool keypad_poll_key(uint8_t* key) {
 
     // Only read from the key queue if it's not empty
     uint8_t num_keys = 0;
-    if (!read_num_keys(&num_keys) || !num_keys) {
+    if (!read_num_keys(&num_keys) || num_keys == 0) {
         return false;
     }
 
