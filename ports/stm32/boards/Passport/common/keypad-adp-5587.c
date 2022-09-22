@@ -127,9 +127,6 @@ bool keypad_poll_key(uint8_t* key) {
         return false;
     }
 
-    // A delay to not overwhelm the keypad chip to avoid its lockup
-    delay_ms(100);
-
     // Only read from the key queue if it's not empty
     uint8_t num_keys = 0;
     if (!read_num_keys(&num_keys) || !num_keys) {
