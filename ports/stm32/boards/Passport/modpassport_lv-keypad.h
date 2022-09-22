@@ -121,10 +121,7 @@ STATIC mp_obj_t mod_passport_lv_Keypad_make_new(const mp_obj_type_t* type,
     mp_obj_Keypad_t* keypad = m_new_obj(mp_obj_Keypad_t);
     keypad->base.type       = &mod_passport_lv_Keypad_type;
 
-    extint_register((mp_obj_t)pin_B12, GPIO_MODE_IT_FALLING, GPIO_NOPULL,
-                    (mp_obj_t)&mod_passport_lv_Keypad_irq_callback_obj, true);
     keypad_init();
-    extint_enable(pin_B12->pin);
 
     return MP_OBJ_FROM_PTR(keypad);
 }
@@ -134,8 +131,12 @@ STATIC mp_obj_t mod_passport_lv_Keypad_make_new(const mp_obj_type_t* type,
 ///     """
 STATIC mp_obj_t mod_passport_lv_Keypad_get_keycode(mp_obj_t self) {
     uint8_t buf;
-    if (ring_buffer_dequeue(&buf) == 0) {
-        return mp_const_none;
+
+    // Try read from ring buffer first, then from keypad controller
+    if (!ring_buffer_dequeue(&buf)) {
+        if (!keypad_poll_key(&buf)) {
+            return mp_const_none;
+        }
     }
 
     uint8_t flag    = buf & 0x80;
@@ -232,8 +233,12 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     g_drv = drv;
 
     uint8_t keycode;
-    if (ring_buffer_dequeue(&keycode) == 0) {
-        return;
+
+    // Try read from ring buffer first, then from keypad controller
+    if (!ring_buffer_dequeue(&keycode)) {
+        if (!keypad_poll_key(&keycode)) {
+            return;
+        }
     }
 
     uint32_t key        = keycode_to_char(keycode & 0x7F);
@@ -261,12 +266,6 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     // printf("key=%lu is_pressed=%s\n", key, is_pressed ? "true" : "false");
 }
 DEFINE_PTR_OBJ(mod_passport_lv_Keypad_read_cb);
-
-STATIC mp_obj_t mod_passport_lv_Keypad_irq_callback(mp_obj_t line) {
-    keypad_ISR();
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_lv_Keypad_irq_callback_obj, mod_passport_lv_Keypad_irq_callback);
 
 /// def inject(self, ch, is_pressed):
 ///     """
