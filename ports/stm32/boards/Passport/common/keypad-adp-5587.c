@@ -11,10 +11,6 @@
 #include "delay.h"
 #include "keypad-adp-5587.h"
 
-#ifndef PASSPORT_BOOTLOADER
-#include "extint.h"
-#endif /* PASSPORT_BOOTLOADER */
-
 static I2C_HandleTypeDef* hi2c = NULL;
 
 static void keypad_reset(void) {
@@ -30,79 +26,31 @@ static void keypad_reset(void) {
 }
 
 static int keypad_setup(void) {
-    int rc;
-
-#ifndef PASSPORT_BOOTLOADER
-    // Enable GPIO interrupt
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN1, 0xFF);
-    if (rc < 0) return -1;
-
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN2, 0xFF);
-    if (rc < 0) return -1;
-
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPIO_INT_EN3, 0x03);
-    if (rc < 0) return -1;
-
-    // Setup the configuration register
-    rc = keypad_write(KBD_ADDR, KBD_REG_CFG, KBD_REG_CFG_INT_CFG | KBD_REG_CFG_GPI_IEN | KBD_REG_CFG_KE_IEN);
-    if (rc < 0) return -1;
-#endif /* PASSPORT_BOOTLOADER */
+    int rc = 0;
 
     // Enable GPI part of event FIFO (R0 to R7, C0 to C7, C8 to C9)
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG1, 0xFF);
-    if (rc < 0) return -1;
-
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG2, 0xFF);
-    if (rc < 0) return -1;
-
-    rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG3, 0x03);
-    if (rc < 0) return -1;
-    return 0;
-}
-
-#ifndef PASSPORT_BOOTLOADER
-void keypad_ISR(void) {
-    int     rc;
-    uint8_t key        = 0;
-    uint8_t key_count  = 0;
-    uint8_t loop_count = 0;
-
-    while (loop_count < 10) {
-        rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, &key, 1);
+    // With retry in case of i2c error
+    for (int i = 0; i < 5; i++) {
+        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG1, 0xFF);
         if (rc < 0) {
-#ifndef PASSPORT_BOOTLOADER
-            // printf("keypad_ISR() read error\n");
-#endif /* PASSPORT_BOOTLOADER */
-            break;
+            continue; // Retry
         }
 
-        if (key == 0) {
-            // printf("keypad_ISR() no key in queue\n");
-            break;
+        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG2, 0xFF);
+        if (rc < 0) {
+            continue; // Retry
         }
 
-        ring_buffer_enqueue(key);
-        key_count++;
-        loop_count++;
+        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG3, 0x03);
+        if (rc < 0) {
+            continue; // Retry
+        }
+
+        break;
     }
 
-    if (key_count) {
-        /* Clear the interrupt on the keypad controller */
-        rc = keypad_write(KBD_ADDR, KBD_REG_INT_STAT, 0xFF);
-        if (rc < 0) {
-            // printf("[%s] I2C problem\n", __func__);
-        }
-    } else {
-        /*
-         * We're getting interrupts but no key codes...the keypad
-         * controller is in a strange state. We'll reset it and reconfigure
-         * it to get it working again.
-         */
-        keypad_reset();
-        keypad_setup();
-    }
+    return rc;
 }
-#endif /* PASSPORT_BOOTLOADER */
 
 void keypad_init(void) {
     int              rcc;
