@@ -509,14 +509,14 @@ class ConnectWalletFlow(Flow):
                 await InfoPage(text='Skipping address verification.').show()
                 self.set_result(False)
 
-    async def show_rx_addresses_intro(self):
+    async def show_rx_address_intro(self):
         from pages import InfoPage
         import microns
 
         msgs = ['Next, let\'s check that the wallet connected correctly.',
                 '{name} should display a list of addresses from this Passport.'.format(
                     name=self.sw_wallet['label']),
-                'Ensure they match the the addresses shown on the next screen.'
+                'Ensure the first address matches the one shown on the next screen.'
                 ]
 
         result = await InfoPage(
@@ -529,30 +529,34 @@ class ConnectWalletFlow(Flow):
                 self.set_result(False)
             return
 
-        self.goto(self.show_rx_addresses)
+        self.goto(self.show_rx_address)
 
-    async def show_rx_addresses(self):
+    async def show_rx_address(self):
+        from utils import split_to_lines
         from pages import LongTextPage
-        NUM_ADDRESSES = 3
+        from math import ceil
+        NUM_ADDRESSES = 1
 
         (addresses, error) = await spinner_task(
-            'Generating Addresses',
+            'Generating Address',
             generate_addresses_task,
             args=[0, NUM_ADDRESSES, self.addr_type, self.acct_num, self.multisig_wallet])
 
         if error is not None:
-            await ErrorPage(text='Unable to generate addresses for verification').show()
+            await ErrorPage(text='Unable to generate address for verification').show()
             self.set_result(False)
             return
 
-        # Show the addresses to the user
-        msg = 'First {} Addresses'.format(NUM_ADDRESSES)
+        # Show the first address to the user
+        msg = '\nFirst Address\n\n'
 
         for entry in addresses:
-            deriv_path, address = entry
-            msg += '\n\n{}\n{}'.format(deriv_path, address)
+            _, address = entry
+            # Split to three lines for readability (addresses are 27-34 characters)
+            max_line_len = ceil(len(address) / 3)
+            msg += split_to_lines(address, max_line_len)
 
-        result = await LongTextPage(text=msg, card_header={'title': 'Verify Addresses'}, centered=True).show()
+        result = await LongTextPage(text=msg, card_header={'title': 'Verify Address'}, centered=True).show()
         if not result:
             if not self.back():
                 self.set_result(False)
@@ -593,8 +597,8 @@ class ConnectWalletFlow(Flow):
         method = self.sw_wallet.get('address_validation_method', 'scan_rx_address')
         if method == 'scan_rx_address':
             self.goto(self.scan_rx_address_intro, save_curr=save_curr)
-        elif method == 'show_addresses':
-            self.goto(self.show_rx_addresses_intro, save_curr=save_curr)
+        elif method == 'show_address':
+            self.goto(self.show_rx_address_intro, save_curr=save_curr)
 
     def goto_multisig_import_mode(self):
         if 'multisig_import_mode' in self.export_mode:
