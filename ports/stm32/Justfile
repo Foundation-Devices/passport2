@@ -104,7 +104,7 @@ sign version="1.0.0" screen="mono" ext="": (build screen ext)
     cosign -t {{lowercase(screen)}} -f $COSIGN_FILEPATH -k {{cosign_keypath}} -v {{version}}
 
     # Remove .bin and append the signed filename string
-    if [ $SCREEN_EXT == "color" ]
+    if [ {{screen}} == "color" ]
     then
         SIGNED_FILE="build-Passport/v{{version}}-passport-key-user.bin"
     else
@@ -124,7 +124,7 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
     BL_FW_HDR_BASE=$(make bl_fw_hdr_base SCREEN_MODE={{uppercase(screen)}} V=0)
     echo "Firmware address for '{{screen}}': $BL_FW_HDR_BASE"
 
-    if [ {{screen}} == "color"]
+    if [ {{screen}} == "color" ]
     then
         SIGNED_FILENAME="v{{version}}-passport-key-user.bin"
     else
