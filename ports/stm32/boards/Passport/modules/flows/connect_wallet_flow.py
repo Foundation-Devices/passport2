@@ -317,7 +317,7 @@ class ConnectWalletFlow(Flow):
 
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
-            'Preparing Data...',
+            'Preparing Data',
             create_wallet_export_task,
             args=[self.sig_type['create_wallet'],
                   self.sw_wallet,
@@ -514,7 +514,7 @@ class ConnectWalletFlow(Flow):
         import microns
 
         msgs = ['Next, let\'s check that the wallet connected correctly.',
-                '{name} should display a list of addresses from this Passport.'.format(
+                '{name} should display a list of addresses which belong to this Passport.'.format(
                     name=self.sw_wallet['label']),
                 'Ensure the first address matches the one shown on the next screen.'
                 ]
