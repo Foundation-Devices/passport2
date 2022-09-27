@@ -114,6 +114,7 @@ class BackupCodePage(Page):
 
     def delete_digit(self):
         self.set_digit(None, goto_next=False)
+        self.prev_digit()
 
     def prev_digit(self):
         if not self.prev_col():
