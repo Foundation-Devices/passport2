@@ -13,7 +13,7 @@ BtcPayWallet = {
     'sig_types': [
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_vault_export},
     ],
-    'address_validation_method': 'show_addresses',
+    'address_validation_method': 'show_address',
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.QR},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-btcpay.json',
