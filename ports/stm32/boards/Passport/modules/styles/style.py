@@ -144,6 +144,9 @@ class FoundationBaseTheme():
     def bg_transparent(self):
         self.style.set_bg_opa(0)
 
+    def bg_opaque(self):
+        self.style.set_bg_opa(255)
+
     def bg_opa(self, opa):
         self.style.set_bg_opa(opa)
 
