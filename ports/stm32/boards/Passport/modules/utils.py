@@ -23,6 +23,7 @@ from ubinascii import unhexlify as a2b_hex
 from ubinascii import a2b_base64, b2a_base64
 from uasyncio import get_event_loop, sleep_ms
 import common
+import passport
 
 ENABLE_LOGGING = True
 
@@ -1219,5 +1220,19 @@ def validate_sign_text(text, subpath):
             return (subpath, 'Second line, if included, must specify a subkey path.')
 
     return (subpath, None)
+
+
+def get_screen_brightness(default_value):
+    if passport.IS_COLOR:
+        return common.system.get_screen_brightness(default_value)
+    else:
+        return common.settings.get('screen_brightness', default_value)
+
+
+def set_screen_brightness(value):
+    if passport.IS_COLOR:
+        common.system.set_screen_brightness(value)
+    else:
+        common.settings.set('screen_brightness', value)
 
 # EOF
