@@ -10,8 +10,8 @@ import passport
 
 
 async def auto_shutdown_task():
-    if passport.IS_SIMULATOR:
-        return
+    # if passport.IS_SIMULATOR:
+    #    return
 
     common.last_interaction_time = utime.ticks_ms()
 
@@ -22,4 +22,5 @@ async def auto_shutdown_task():
         timeout = common.settings.get('shutdown_timeout', 5 * 60)
         now = utime.ticks_ms()
         if timeout > 0 and now - common.last_interaction_time >= timeout * 1000:
+            print("you're too slow")
             common.system.shutdown()
