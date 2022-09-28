@@ -96,10 +96,11 @@ class ShowQRPage(Page):
         self.timer = lv.timer_create(lambda timer: self.update(), _FRAME_TIME, None)
         self.prev_card_header = common.ui.hide_card_header()
 
-        if self.is_qr_resizable():
+        # Intercept keys for size and brightness level change
+        common.keypad.set_intercept_key_cb(self.on_key)
 
+        if self.is_qr_resizable():
             self.prev_top_level = common.ui.set_is_top_level(False)
-            common.keypad.set_intercept_key_cb(self.on_key)
 
             self.prev_card_descs = common.ui.set_micron_bar_cards(self.qr_card_descs, force_show=True)
             common.ui.set_micron_bar_active_idx(self.qr_size_idx)
