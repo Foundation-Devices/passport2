@@ -44,6 +44,15 @@ class Version:
             return c
         return c >= 0
 
+    def major_version(self):
+        return self.version[0]
+
+    def minor_version(self):
+        return self.version[1]
+
+    def patch_version(self):
+        return self.version[2]
+
     def parse(self, vstring):
         parts = vstring.split('.')
         self.version = tuple(map(int, parts))
