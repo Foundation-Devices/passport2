@@ -28,6 +28,7 @@ class StatusBar(View):
             # default.bg_color(BLACK)
 
             default.pad(top=0, bottom=0, left=10, right=10)
+            default.pad_col(2)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
         self.set_size(lv.pct(100), STATUSBAR_HEIGHT)
