@@ -27,7 +27,12 @@ class StatusBar(View):
             # if not passport.IS_COLOR:
             # default.bg_color(BLACK)
 
-            default.pad(top=0, bottom=0, left=10, right=10)
+            if passport.IS_COLOR:
+                top_pad = 0
+            else:
+                top_pad = 2
+
+            default.pad(top=top_pad, bottom=0, left=10, right=10)
             default.pad_col(2)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
