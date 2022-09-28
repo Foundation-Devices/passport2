@@ -133,8 +133,10 @@ class ShowQRPage(Page):
                 common.ui.set_micron_bar_active_idx(self.prev_card_idx)
                 self.prev_card_descs = None
 
-            common.keypad.set_intercept_key_cb(None)
             common.ui.set_is_top_level(self.prev_top_level)
+
+        # Stop intercepting key presses
+        common.keypad.set_intercept_key_cb(None)
 
         if self.prev_card_header is not None:
             common.ui.set_card_header(**self.prev_card_header, force_all=True)
