@@ -34,7 +34,8 @@ class ShowQRPage(Page):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
-                         right_micron=right_micron)
+                         right_micron=right_micron,
+                         extend_timeout=True)
         self.qr_type = qr_type
         self.qr_args = qr_args
         self.qr_data = qr_data
