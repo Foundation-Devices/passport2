@@ -37,11 +37,13 @@ class SetInitialPINFlow(Flow):
 
     async def enter_new_pin(self):
         from pages import PINEntryPage
-        self.new_pin = await PINEntryPage(
+        (self.new_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter PIN'},
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
+        print("self.new_pin: {}".format(self.new_pin))
+        print(is_done)
         if self.new_pin is None:
             self.back()
         else:
@@ -52,11 +54,13 @@ class SetInitialPINFlow(Flow):
         from tasks import set_initial_pin_task, login_task
         from utils import spinner_task
 
-        confirmed_pin = await PINEntryPage(
+        (confirmed_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Confirm PIN'},
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
+        print("confirmed_pin: {}".format(confirmed_pin))
+        print(is_done)
         if confirmed_pin is None:
             self.back()
         else:

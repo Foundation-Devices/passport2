@@ -27,7 +27,7 @@ class LoginFlow(Flow):
                 right_micron=microns.Checkmark).show()
             print(self.pin)
             print(is_done)
-            # TODO: check if pin is empty intstead
+            # TODO: check if pin is not empty intstead
             if is_done and self.pin is not None:
                 self.goto(self.check_pin)
             else:

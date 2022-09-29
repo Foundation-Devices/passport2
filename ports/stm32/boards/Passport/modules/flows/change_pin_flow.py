@@ -16,7 +16,7 @@ class ChangePINFlow(Flow):
         super().__init__(initial_state=self.enter_old_pin, name='ChangePINFlow')
 
     async def enter_old_pin(self):
-        self.old_pin = await PINEntryPage(
+        (self.old_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter Current PIN'},
             security_words_message='Recognize these Security Words?',
 
@@ -29,7 +29,7 @@ class ChangePINFlow(Flow):
             self.goto(self.enter_new_pin)
 
     async def enter_new_pin(self):
-        self.new_pin = await PINEntryPage(
+        (self.new_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter New PIN'},
             security_words_message='Remember these Security Words',
 
@@ -41,7 +41,7 @@ class ChangePINFlow(Flow):
             self.goto(self.confirm_new_pin)
 
     async def confirm_new_pin(self):
-        confirmed_pin = await PINEntryPage(
+        (confirmed_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Confirm New PIN'},
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
