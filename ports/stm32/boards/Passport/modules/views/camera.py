@@ -47,18 +47,8 @@ class Camera(View):
     def hook(self):
         pass
 
-    def attach(self, group):
-        # TODO: this is repeated in views/qrcode.py, would be good to unify
-        # If auto-shutdown is enabled, set its floor at 5 minutes while displaying the QR code
-        five_minutes = 5 * 60
-        permanent_timeout = common.settings.get('shutdown_timeout', five_minutes)
-        if permanent_timeout > 0 and permanent_timeout < five_minutes:
-            common.settings.set_volatile('shutdown_timeout', five_minutes)
-        super().attach(group)
-
     def detach(self):
         self.disable()
-        common.settings.clear_volatile('shutdown_timeout')
         super().detach()
 
     def update(self):

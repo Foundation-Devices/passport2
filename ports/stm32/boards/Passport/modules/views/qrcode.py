@@ -46,18 +46,6 @@ class QRCode(View):
         super().__init__()
         self.res = None
 
-    def attach(self, group):
-        # If auto-shutdown is enabled, set its floor at 5 minutes while displaying the QR code
-        five_minutes = 5 * 60
-        permanent_timeout = common.settings.get('shutdown_timeout', five_minutes)
-        if permanent_timeout > 0 and permanent_timeout < five_minutes:
-            common.settings.set_volatile('shutdown_timeout', five_minutes)
-        super().attach(group)
-
-    def detach(self):
-        common.settings.clear_volatile('shutdown_timeout')
-        super().detach()
-
     def create_lvgl_root(self, lvgl_parent):
         return lv.qrcode(lvgl_parent)
 
