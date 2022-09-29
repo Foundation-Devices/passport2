@@ -214,7 +214,7 @@ class PINEntryPage(Page):
 
             pin = self.input.get_pin()
             if len(pin) >= MIN_PIN_LENGTH:
-                self.set_result(pin)
+                self.set_result((pin, True))
             else:
                 # TODO: Show a warning message
                 # print('PIN is too short')
@@ -222,7 +222,7 @@ class PINEntryPage(Page):
 
     def left_action(self, is_pressed):
         if not is_pressed:
-            self.set_result(None)
+            self.set_result((pin, False))
 
     def attach(self, group):
         super().attach(group)
@@ -235,6 +235,7 @@ class PINEntryPage(Page):
         super().detach()
 
     def on_key(self, event):
+        # TODO: no backspace if len=4?
         key = event.get_key()
 
         if not self.show_security_words:

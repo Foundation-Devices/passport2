@@ -19,12 +19,16 @@ class LoginFlow(Flow):
 
     async def enter_pin(self):
         try:
-            self.pin = await PINEntryPage(
+            # TODO: could use a touple to return status
+            (self.pin, is_done) = await PINEntryPage(
                 card_header={'title': 'Enter PIN'},
                 security_words_message='Recognize these Security Words?',
                 left_micron=microns.Shutdown,
                 right_micron=microns.Checkmark).show()
-            if self.pin is not None:
+            print(self.pin)
+            print(is_done)
+            # TODO: check if pin is empty intstead
+            if is_done and self.pin is not None:
                 self.goto(self.check_pin)
             else:
                 await ShutdownPage().show()
