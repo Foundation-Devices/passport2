@@ -5,7 +5,6 @@
 
 import lvgl as lv
 import foundation
-import common
 from foundation import qr
 from passport import camera
 from views import View
