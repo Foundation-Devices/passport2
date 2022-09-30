@@ -22,7 +22,7 @@ class ChangePINFlow(Flow):
 
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
-        if self.old_pin is None:
+        if not is_done:
             self.set_result(None)
             return
         else:
@@ -35,7 +35,7 @@ class ChangePINFlow(Flow):
 
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
-        if self.new_pin is None:
+        if not is_done:
             self.back()
         else:
             self.goto(self.confirm_new_pin)
@@ -46,7 +46,7 @@ class ChangePINFlow(Flow):
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
-        if confirmed_pin is None:
+        if not is_done:
             self.back()
         else:
             if self.new_pin == confirmed_pin:

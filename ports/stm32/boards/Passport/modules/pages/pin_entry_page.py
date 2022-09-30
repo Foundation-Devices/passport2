@@ -54,8 +54,12 @@ class PINEntryPage(Page):
         self.message = None
         self.words_container = None
         self.brick_warning_shown = False
+        if len(pin) == NUM_DIGITS_FOR_SECURITY_WORDS and self.user_wants_to_see_security_words:
+            self.disable_backspace = True
+        else:
+            self.disable_backspace = False
 
-        if self.user_wants_to_see_security_words:
+        if len(pin) < NUM_DIGITS_FOR_SECURITY_WORDS and self.user_wants_to_see_security_words:
             initial_max_length = NUM_DIGITS_FOR_SECURITY_WORDS
         else:
             initial_max_length = MAX_PIN_LENGTH
@@ -221,6 +225,7 @@ class PINEntryPage(Page):
                 pass
 
     def left_action(self, is_pressed):
+        pin = self.input.get_pin()
         if not is_pressed:
             self.set_result((pin, False))
 
@@ -235,8 +240,11 @@ class PINEntryPage(Page):
         super().detach()
 
     def on_key(self, event):
-        # TODO: no backspace if len=4?
         key = event.get_key()
+
+        # Disable backspace if viewing the security words
+        if self.disable_backspace and key == 8:
+            return
 
         if not self.show_security_words:
             self.t9.on_key(key)
@@ -271,8 +279,11 @@ class PINEntryPage(Page):
                 # TODO: Lookup security words in a task (have to do this way as we are not being called
                 #       in an async context).
                 start_task(get_security_words_task(self.on_security_words, prefix))
+                # Prevent user from backspacing to index all security words
+                self.disable_backspace = True
             else:
                 self.show_security_words = False
+                self.disable_backspace = False
             self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
 
             # If user goes back below the minimum, then we need to show security words again

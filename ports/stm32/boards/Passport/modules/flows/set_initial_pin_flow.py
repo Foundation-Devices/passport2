@@ -42,9 +42,7 @@ class SetInitialPINFlow(Flow):
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
-        print("self.new_pin: {}".format(self.new_pin))
-        print(is_done)
-        if self.new_pin is None:
+        if not is_done:
             self.back()
         else:
             self.goto(self.confirm_new_pin)
@@ -59,9 +57,7 @@ class SetInitialPINFlow(Flow):
             security_words_message='Remember these Security Words',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
-        print("confirmed_pin: {}".format(confirmed_pin))
-        print(is_done)
-        if confirmed_pin is None:
+        if not is_done:
             self.back()
         else:
             if self.new_pin == confirmed_pin:

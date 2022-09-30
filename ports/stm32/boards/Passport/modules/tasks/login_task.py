@@ -26,18 +26,7 @@ async def login_task(on_done, pin):
         if passport.IS_SIMULATOR:
             await sleep_ms(1000)
 
-        print(pin)
         pa.setup(pin)
-    except BootloaderError as err:
-        print('BootloaderError {}'.format(err))
-        await on_done(False, err)
-    except RuntimeError as err:
-        print('RuntimeError a {}'.format(err))
-        await on_done(False, err)
-    except Exception as err:
-        print('Exception {}'.format(err))
-        await on_done(False, err)
-    try:
         if pa.login():
             # PIN is correct!
 
@@ -51,11 +40,11 @@ async def login_task(on_done, pin):
             await on_done(True, None)
 
     except BootloaderError as err:
-        print('BootloaderError {}'.format(err))
+        # print('BootloaderError {}'.format(err))
         await on_done(False, err)
     except RuntimeError as err:
-        print('RuntimeError b {}'.format(err))
+        # print('RuntimeError {}'.format(err))
         await on_done(False, err)
     except Exception as err:
-        print('Exception {}'.format(err))
+        # print('Exception {}'.format(err))
         await on_done(False, err)

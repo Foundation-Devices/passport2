@@ -15,20 +15,18 @@ BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 class LoginFlow(Flow):
     def __init__(self):
+        self.pin = ''
         super().__init__(initial_state=self.enter_pin, name='LoginFlow')
 
     async def enter_pin(self):
         try:
-            # TODO: could use a touple to return status
             (self.pin, is_done) = await PINEntryPage(
                 card_header={'title': 'Enter PIN'},
                 security_words_message='Recognize these Security Words?',
                 left_micron=microns.Shutdown,
-                right_micron=microns.Checkmark).show()
-            print(self.pin)
-            print(is_done)
-            # TODO: check if pin is not empty intstead
-            if is_done and self.pin is not None:
+                right_micron=microns.Checkmark,
+                pin=self.pin).show()
+            if is_done:
                 self.goto(self.check_pin)
             else:
                 await ShutdownPage().show()
