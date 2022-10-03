@@ -243,8 +243,7 @@ class PINEntryPage(Page):
         key = event.get_key()
 
         # Disable backspace if viewing the security words
-        # TODO: is there a define for the backspace key value?
-        if self.disable_backspace and key == 8:
+        if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
 
         if not self.show_security_words:
