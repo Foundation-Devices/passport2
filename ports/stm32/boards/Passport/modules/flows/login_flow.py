@@ -64,7 +64,7 @@ class LoginFlow(Flow):
                                  left_micron=microns.Shutdown,
                                  right_micron=microns.Retry).show()
         if result:
-            self.pin = None
+            self.pin = ''
             self.goto(self.enter_pin)
         else:
             await ShutdownPage().show()
