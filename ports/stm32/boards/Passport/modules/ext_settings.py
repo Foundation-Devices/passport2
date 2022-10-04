@@ -244,6 +244,10 @@ class ExtSettings:
     def set_volatile(self, kn, v):
         self.overrides[kn] = v
 
+    def clear_volatile(self, kn):
+        if kn in self.overrides:
+            del self.overrides[kn]
+
     def remove(self, kn):
         # print('remove(\'{}\') called!'.format(kn))
         if kn in self.current:
