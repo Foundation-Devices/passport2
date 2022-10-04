@@ -439,6 +439,12 @@ def start():
     # - pass in open fd numbers
     pass_fds = [oled_w, numpad_r, led_w, cam_cmd_w, cam_img_r]
 
+    # generate any necessary directories
+    directories = ['./work', './snapshots', './work/microsd']
+    for path in directories:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
     os.chdir('./work')
     # We use RAM for flash simulation, so make sure to allocate enough here.  3m seems good.
     passport_cmd = ['../../ports/unix/passport-mpy',

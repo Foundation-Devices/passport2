@@ -54,7 +54,7 @@ def create_envoy_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fal
     # Used for extension accounts like Postmix.
     if acct_name == '':
         acct = common.ui.get_active_account()
-        if acct != None:
+        if acct is not None:
             acct_name = acct.get('name', '')
 
     rv = dict(derivation=acct_path,
