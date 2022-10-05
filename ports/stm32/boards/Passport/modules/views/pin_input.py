@@ -6,7 +6,7 @@
 
 import lvgl as lv
 from styles import Stylize
-from styles.colors import FD_BLUE, LIGHT_GREY, TEXT_GREY
+from styles.colors import TEXT_GREY, TEXT_INPUT_BG, TEXT_INPUT_CURSOR, TEXT_INPUT_TEXT, TEXT_INPUT_CURSOR
 from views import View
 from utils import InputMode
 from views import Label, Icon
@@ -27,7 +27,7 @@ class PINInput(View):
 
         with Stylize(self) as default:
             default.radius(MENU_ITEM_CORNER_RADIUS)
-            default.bg_color(LIGHT_GREY)
+            default.bg_color(TEXT_INPUT_BG)
             default.no_pad()
             default.pad_col(4)
 
@@ -37,7 +37,7 @@ class PINInput(View):
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=FD_BLUE)
+        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=TEXT_GREY)
         self.mode_view.add_child(self.mode_icon)
 
         self.pin_container = View(flex_flow=lv.FLEX_FLOW.ROW)
@@ -66,13 +66,13 @@ class PINInput(View):
             # item = Label(text=ch, color=TEXT_GREY)
             if i == num_chars - 1 and self.show_last_char:
                 ch = self.pin[i]
-                item = Label(text=ch, color=TEXT_GREY)
+                item = Label(text=ch, color=TEXT_INPUT_TEXT)
             else:
-                item = Icon(lv.ICON_PAGE_DOT, color=TEXT_GREY)
+                item = Icon(lv.ICON_PAGE_DOT, color=TEXT_INPUT_TEXT)
             self.pin_container.add_child(item)
 
         # Finally, draw a "cursor", which is always at the end
-        cursor = Label(text='|', color=FD_BLUE)
+        cursor = Label(text='|', color=TEXT_INPUT_CURSOR)
         self.pin_container.add_child(cursor)
 
         if self.is_mounted():

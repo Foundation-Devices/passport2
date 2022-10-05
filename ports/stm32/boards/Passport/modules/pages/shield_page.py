@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from pages import StatusPage
-from styles.colors import FD_BLUE
+from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import microns
 
 
@@ -21,7 +21,7 @@ class ShieldPage(StatusPage):
         super().__init__(
             text=text,
             icon=lv.LARGE_ICON_SHIELD,
-            icon_color=FD_BLUE,
+            icon_color=DEFAULT_LARGE_ICON_COLOR,
             centered=centered,
             card_header=card_header,
             statusbar=statusbar,

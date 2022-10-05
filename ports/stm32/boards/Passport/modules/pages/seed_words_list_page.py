@@ -8,7 +8,7 @@ from pages import Page
 from styles.style import Stylize
 from views import View, Label
 import microns
-from styles.colors import BLUE, FD_BLUE_HEX, GREEN, RED, TEXT_GREY
+from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
 import common
 
 NUM_COLUMNS = 2
@@ -108,7 +108,7 @@ class SeedWordsListPage(Page):
             for w in range(words_per_column):
                 # Add the number
                 number_view = Label(
-                    text='{}'.format(recolor(FD_BLUE_HEX, str(word_idx + 1))),
+                    text='{}'.format(recolor(HIGHLIGHT_TEXT_HEX, str(word_idx + 1))),
                     text_align=lv.TEXT_ALIGN.RIGHT)
                 number_view.set_width(lv.pct(100))
                 with Stylize(number_view) as default:

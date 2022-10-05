@@ -10,6 +10,7 @@ from pages import Page
 from styles.colors import FD_BLUE, TEXT_GREY
 import microns
 import common
+import passport
 
 
 class StatusPage(Page):
@@ -22,6 +23,9 @@ class StatusPage(Page):
                          statusbar=statusbar,
                          left_micron=left_micron,
                          right_micron=right_micron)
+
+        if not passport.IS_COLOR:
+            self.CENTER_SIZE = 75
 
         self.text = text
         self.page_idx = 0

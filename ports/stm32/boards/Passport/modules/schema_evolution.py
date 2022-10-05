@@ -63,6 +63,10 @@ def migrate_settings():
         new_settings.set(key, value)
         # print('migrate_settings(): Copying {} = {}'.format(key, value))
 
+    # Set the default value for onboarding setup_mode so we don't show it by default, but if the user erases Passport,
+    # we will show the onboarding again.
+    new_settings.set('setup_mode', 'manual_done')
+
     # Force a save
     new_settings.save()
 
@@ -83,21 +87,17 @@ def handle_foundational_evolutions():
     if not passport.IS_COLOR:
         from settings import Settings
         old_settings = Settings(None)
-        # update_from_to = old_settings.get('update', '1.0.9->2.0.0')
-        update_from_to = old_settings.get('update', '2.0.0->2.0.0')
-        if update_from_to:
+        update_from_to = old_settings.get('update', None)
+        if update_from_to != None:
             parts = update_from_to.split('->')
             from_version = Version(parts[0])
             to_version = Version(parts[1])
 
-            # print('handle_foundational_evolutions(): from_version={} -> to_version={}'.format(
-            #       from_version, to_version))
+            # print('handle_foundational_evolutions(): {}->{}'.format(from_version, to_version))
 
-            # print("({} or {}) and {}".format(to_version == '1.9.0', to_version == '2.0.0', from_version < to_version))
-
-            # Loop can run multiple times to handle the case of a user skipping firmware versions with data format
-            # changes
-            if (to_version == '1.9.0' or to_version == '2.0.0') and from_version < to_version:
+            # When updating from v1.x.x firmware to v2.x.x firmware, we migrate the user settings.
+            # This will only happen once, since from this point on the from_version major version will be 2 or more.
+            if to_version.major_version() == 2 and from_version.major_version() == 1:
                 # First handle the flash cache migration
                 init_flash_cache()
 

@@ -138,7 +138,10 @@ class LocalStyle():
         self.set_prop('bg_img_tiled', tiled)
 
     def bg_transparent(self):
-        self.bg_transparent(0)
+        self.bg_opa(0)
+
+    def bg_opaque(self):
+        self.bg_opa(255)
 
     def bg_opa(self, opa):
         self.set_prop('bg_opa', opa)

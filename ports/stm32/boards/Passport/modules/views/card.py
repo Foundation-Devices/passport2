@@ -4,13 +4,14 @@
 # card.py - Card header and card content - Custom content and header title and icon can be passed in
 
 import lvgl as lv
-from styles.colors import (BLACK, LIGHT_GREY, MEDIUM_GREY, TEXT_GREY, WHITE)
+from styles.colors import (LIGHT_GREY, MEDIUM_GREY, CARD_HEADER_TEXT, WHITE)
 from styles import Stylize, LocalStyle
 from views import View, Image, Label
 import microns
 from animations import page_anim
+import passport
 from constants import (CARD_CONTENT_HEIGHT_WITHOUT_HEADER, CARD_HEADER_HEIGHT,
-                       CARD_BORDER_WIDTH, OUTER_CORNER_RADIUS, INNER_CORNER_RADIUS)
+                       CARD_BORDER_WIDTH, OUTER_CORNER_RADIUS, CARD_OUTER_MONO_BORDER_WIDTH)
 
 
 class Card(View):
@@ -25,8 +26,7 @@ class Card(View):
             initial_page=None,
             bg_color=MEDIUM_GREY,
             header_color=LIGHT_GREY,
-            header_fg_color=TEXT_GREY):
-        from common import display
+            header_fg_color=CARD_HEADER_TEXT):
         super().__init__()
 
         self.title = title
@@ -48,24 +48,46 @@ class Card(View):
         # Background container
         self.bg_container = View()
         self.bg_container.set_size(lv.pct(100), lv.pct(100))
+        self.bg_container.set_no_scroll()
         with Stylize(self.bg_container) as default:
             default.align(lv.ALIGN.TOP_MID)
             default.pad_row(0)
         self.add_child(self.bg_container)
 
+        border_radius = OUTER_CORNER_RADIUS
+        # Need an extra outer border for the mono screen
+        if passport.IS_COLOR:
+            container = self.bg_container
+        else:
+            border_radius = OUTER_CORNER_RADIUS + 4
+            self.card_border_outer = View()
+            self.card_border_outer.set_size(lv.pct(100), lv.pct(94))
+            with Stylize(self.card_border_outer) as default:
+                default.pad(top=CARD_OUTER_MONO_BORDER_WIDTH,
+                            left=CARD_OUTER_MONO_BORDER_WIDTH, right=CARD_OUTER_MONO_BORDER_WIDTH)
+                default.radius(border_radius)
+                default.bg_color(WHITE)
+            border_radius -= CARD_OUTER_MONO_BORDER_WIDTH
+            self.bg_container.add_child(self.card_border_outer)
+            container = self.card_border_outer
+
         self.card_border = View()
-        self.card_border.set_size(lv.pct(100), lv.pct(94))
+        if passport.IS_COLOR:
+            self.card_border.set_size(lv.pct(100), lv.pct(94))
+        else:
+            self.card_border.set_size(lv.pct(100), lv.pct(100))
         with Stylize(self.card_border) as default:
             default.pad(left=CARD_BORDER_WIDTH, right=CARD_BORDER_WIDTH)
-            default.radius(OUTER_CORNER_RADIUS)
+            default.radius(border_radius)
+        border_radius -= CARD_BORDER_WIDTH
 
-        self.bg_container.add_child(self.card_border)
+        container.add_child(self.card_border)
 
         self.card_fill = View()
         self.card_fill.set_size(lv.pct(100), lv.pct(100))
         with Stylize(self.card_fill) as default:
             default.bg_color(WHITE)
-            default.radius(INNER_CORNER_RADIUS)
+            default.radius(border_radius)
         self.card_border.add_child(self.card_fill)
 
         # Bottom chevron
@@ -80,8 +102,12 @@ class Card(View):
         self.fg_container.set_height(CARD_CONTENT_HEIGHT_WITHOUT_HEADER)
         self.fg_container.set_no_scroll()
         with Stylize(self.fg_container) as default:
-            default.pad(left=CARD_BORDER_WIDTH * 2, right=CARD_BORDER_WIDTH * 2)
-            default.radius(INNER_CORNER_RADIUS)
+            if passport.IS_COLOR:
+                default.pad(left=CARD_BORDER_WIDTH * 2, right=CARD_BORDER_WIDTH * 2)
+            else:
+                default.pad(left=CARD_BORDER_WIDTH * 2 + CARD_OUTER_MONO_BORDER_WIDTH,
+                            right=CARD_BORDER_WIDTH * 2 + CARD_OUTER_MONO_BORDER_WIDTH)
+            default.radius(border_radius)
         self.add_child(self.fg_container)
 
         # Page container (no flex layout so animations work)
@@ -208,11 +234,17 @@ class Card(View):
         # fg_container styles
         if self.is_header_visible():
             with LocalStyle(self.fg_container) as style:
-                style.pad(top=0)
+                if passport.IS_COLOR:
+                    style.pad(top=0)
+                else:
+                    style.pad(top=CARD_OUTER_MONO_BORDER_WIDTH)
                 style.pad_row(CARD_BORDER_WIDTH)
         else:
             with LocalStyle(self.fg_container) as style:
-                style.pad(top=CARD_BORDER_WIDTH * 2)
+                if passport.IS_COLOR:
+                    style.pad(top=CARD_BORDER_WIDTH * 2)
+                else:
+                    style.pad(top=CARD_BORDER_WIDTH * 2 + CARD_OUTER_MONO_BORDER_WIDTH)
                 style.pad_row(0)
 
     def attach(self, group):

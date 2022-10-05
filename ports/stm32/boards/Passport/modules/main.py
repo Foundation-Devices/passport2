@@ -24,6 +24,7 @@ def go():
     import common
     import tasks
     import passport
+    from utils import get_screen_brightness
 
     # Initialize the common objects
 
@@ -105,7 +106,9 @@ def go():
     # Initialize the display and show the splash screen
     from display import Display
     common.display = Display()
-    brightness = common.system.get_screen_brightness(100)
+
+    brightness = get_screen_brightness(100)
+
     # print('>>>>>> brightness={}'.format(brightness))
     common.display.set_brightness(brightness)
 
@@ -134,8 +137,7 @@ def go():
     main_screen = MainScreen()
     common.ui = UI(main_screen)
 
-    common.is_color = True
-    common.ui.set_theme('color' if common.is_color else 'mono', common.is_dark_theme)
+    common.ui.set_theme('color', common.is_dark_theme)
 
     # Setup LVGL task
     common.loop.create_task(tasks.lvgl_task())

@@ -7,8 +7,8 @@ import lvgl as lv
 from flows import Flow
 from pages import ScanQRPage, ShowQRPage, QRScanResult
 from pages.chooser_page import ChooserPage
-from styles.colors import FD_BLUE_HEX
-from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR, URException
+from styles.colors import HIGHLIGHT_TEXT_HEX
+from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR
 from data_codecs.qr_type import QRType
 from utils import a2b_hex
 from pincodes import PinAttempt
@@ -63,7 +63,7 @@ class ScvFlow(Flow):
             if self.envoy:
                 cancel = await QuestionPage(
                     text='Cancel Envoy Setup?\n\n{}'.format(
-                        recolor(FD_BLUE_HEX, '(Not recommended)'))
+                        recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
                 ).show()
                 if cancel:
                     self.set_result(None)
@@ -145,7 +145,7 @@ class ScvFlow(Flow):
         from utils import recolor
 
         result = await InfoPage(
-            text='On Envoy, select {next}, and scan the following QR code.'.format(next=recolor(FD_BLUE_HEX, 'Next')),
+            text='On Envoy, select {next}, and scan the following QR code.'.format(next=recolor(HIGHLIGHT_TEXT_HEX, 'Next')),
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if not result:
@@ -220,7 +220,7 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
 
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
-                recolor(FD_BLUE_HEX, '(Not recommended)'))
+                recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
         ).show()
         if skip:
             common.settings.set('validated_ok', True)

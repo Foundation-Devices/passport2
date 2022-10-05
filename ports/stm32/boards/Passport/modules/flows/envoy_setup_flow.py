@@ -25,13 +25,13 @@ class EnvoySetupFlow(Flow):
     async def check_if_envoy_installed(self):
         from pages import ChooserPage
         from utils import recolor
-        from styles.colors import FD_BLUE_HEX
+        from styles.colors import HIGHLIGHT_TEXT_HEX
 
         options = [{'label': 'Continue on Envoy', 'value': True},
                    {'label': 'Download Envoy App', 'value': False}]
 
         is_envoy_installed = await ChooserPage(
-            text='In Envoy, select:\n{}'.format(recolor(FD_BLUE_HEX, 'Set up a new Passport')),
+            text='In Envoy, select:\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Set up a new Passport')),
             options=options,
             icon=lv.LARGE_ICON_INFO,
             left_micron=microns.Back,

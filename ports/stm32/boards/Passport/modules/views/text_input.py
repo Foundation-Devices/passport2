@@ -9,7 +9,7 @@ from styles.style import Stylize
 from views import View
 from utils import InputMode
 from views import Icon, TextArea
-from styles.colors import LIGHT_GREY, FD_BLUE
+from styles.colors import TEXT_INPUT_BG, TEXT_INPUT_ICON
 from constants import MENU_ITEM_CORNER_RADIUS
 
 SIDE_WIDTH = const(18)
@@ -26,7 +26,7 @@ class TextInput(View):
 
         with Stylize(self) as default:
             default.radius(MENU_ITEM_CORNER_RADIUS)
-            default.bg_color(LIGHT_GREY)
+            default.bg_color(TEXT_INPUT_BG)
             default.no_pad()
             default.pad_col(2)
             default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
@@ -38,7 +38,7 @@ class TextInput(View):
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=FD_BLUE)
+        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=TEXT_INPUT_ICON)
         self.mode_view.add_child(self.mode_icon)
 
         self.filler = View(flex_flow=lv.FLEX_FLOW.COLUMN)

@@ -5,6 +5,7 @@
 
 
 from pages import SettingPage
+from utils import get_screen_brightness, set_screen_brightness
 import common
 
 
@@ -30,7 +31,7 @@ class BrightnessSettingPage(SettingPage):
         common.display.set_brightness(new_value)
 
     def get_setting(self):
-        return common.system.get_screen_brightness(self.default_value)
+        return get_screen_brightness(self.default_value)
 
     def save_setting(self, new_value):
-        common.system.set_screen_brightness(new_value)
+        set_screen_brightness(new_value)

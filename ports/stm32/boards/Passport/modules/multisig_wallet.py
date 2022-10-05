@@ -924,19 +924,21 @@ class MultisigWallet:
 
     def format_overview(self):
         from utils import recolor
-        from styles.colors import FD_BLUE_HEX, COPPER_HEX
+        from styles.colors import HIGHLIGHT_TEXT_HEX, COPPER_HEX
 
         M, N = self.M, self.N
 
         if M == N == 1:
             exp = 'The one signer must approve transactions.'
         if M == N:
-            exp = 'All {} co-signers must approve transactions.'.format(recolor(FD_BLUE_HEX, '%d' % N))
+            exp = 'All {} co-signers must approve transactions.'.format(recolor(HIGHLIGHT_TEXT_HEX, '%d' % N))
         elif M == 1:
-            exp = 'Any signature from {} co-signers will approve transactions.'.format(recolor(FD_BLUE_HEX, '%d' % N))
+            exp = 'Any signature from {} co-signers will approve transactions.'.format(
+                recolor(
+                    HIGHLIGHT_TEXT_HEX, '%d' % N))
         else:
             exp = '{M} signatures, from {N} possible co-signers, will be required to approve transactions.'.format(
-                M=recolor(FD_BLUE_HEX, '%d' % M), N=recolor(FD_BLUE_HEX, '%d' % N))
+                M=recolor(HIGHLIGHT_TEXT_HEX, '%d' % M), N=recolor(HIGHLIGHT_TEXT_HEX, '%d' % N))
 
         # Look for duplicate stuff
         name_change, diff_items, num_dups = self.has_similar()
@@ -974,12 +976,12 @@ wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.jo
   {dsum}'''.format(
             M=M,
             N=N,
-            name_title=recolor(FD_BLUE_HEX, 'Wallet Name'),
+            name_title=recolor(HIGHLIGHT_TEXT_HEX, 'Wallet Name'),
             name=self.name,
-            policy_title=recolor(FD_BLUE_HEX, 'Policy:'),
+            policy_title=recolor(HIGHLIGHT_TEXT_HEX, 'Policy:'),
             exp=exp,
-            addr_title=recolor(FD_BLUE_HEX, 'Addresses'),
-            deriv_title=recolor(FD_BLUE_HEX, 'Derivation'),
+            addr_title=recolor(HIGHLIGHT_TEXT_HEX, 'Addresses'),
+            deriv_title=recolor(HIGHLIGHT_TEXT_HEX, 'Derivation'),
             dsum=dsum,
             at=MultisigWallet.render_addr_fmt(self.addr_fmt))
         return msg, is_dup

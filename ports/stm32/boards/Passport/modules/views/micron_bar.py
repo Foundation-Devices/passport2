@@ -6,10 +6,11 @@
 
 import lvgl as lv
 from styles import Stylize
-from styles.colors import FD_BLUE, MEDIUM_GREY, MICRON_GREY
+from styles.colors import FD_BLUE, MEDIUM_GREY, MICRON_GREY, WHITE, BLACK
 from styles.local_style import LocalStyle
-from views import View
+from views import View, Icon
 import common
+import passport
 
 
 class MicronBar(View):
@@ -30,7 +31,12 @@ class MicronBar(View):
         self.left_micron = None
         self.right_micron = None
 
+        if not passport.IS_COLOR:
+            self.BUTTONS_PAD_BOTTOM = 8
+
         self.set_no_scroll()
+        # with Stylize(self) as default:
+        #     default.bg_color(WHITE)
 
         # Page-specific content
         with Stylize(self.page_specific_content) as default:
@@ -90,16 +96,38 @@ class MicronBar(View):
                     # log('NOT SELECTED')
                     color = MICRON_GREY
                 if card_desc is not None and callable(card_desc.get('page_micron')):
+
                     icon = card_desc.get('page_micron')()
                     with Stylize(icon) as default:
                         default.img_recolor(color)
 
-                    # print('icon={}'.format(icon))
-                    self.page_dots_container.add_child(icon)
+                    if passport.IS_COLOR:
+                        page_dot = icon
+                    else:
+                        # We use a different style for indicating the active page on mono
+                        page_dot = View(flex_flow=lv.FLEX_FLOW.COLUMN)
+                        page_dot.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
+                        with Stylize(page_dot) as default:
+                            default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER,
+                                               track=lv.FLEX_ALIGN.CENTER)
+                            default.pad_row(2)
+                            default.pad(bottom=2)
+                            default.bg_color(BLACK)
+
+                        page_dot.add_child(icon)
+
+                        if i == self.active_card_idx:
+                            indicator = Icon(icon=lv.ICON_PAGE_INDICATOR, color=WHITE)
+                            page_dot.add_child(indicator)
+
+                    self.add_child(page_dot)
+
+                    # print('page_dot={}'.format(page_dot))
+                    self.page_dots_container.add_child(page_dot)
 
                     if self.page_dots_container.is_mounted():
-                        # print('mounting icon')
-                        icon.mount(self.page_dots_container.lvgl_root)
+                        # print('mounting page_dot')
+                        page_dot.mount(self.page_dots_container.lvgl_root)
 
     def mount(self, lvgl_parent):
         super().mount(lvgl_parent)

@@ -5,16 +5,21 @@
 
 
 import lvgl as lv
-from styles.colors import FD_BLUE, LIGHT_GREY, TEXT_GREY, VERY_LIGHT_GREY
+from styles.colors import (
+    BACKUP_CODE_SECTION_OUTLINE,
+    BACKUP_CODE_DIGIT,
+    BACKUP_CODE_DIGIT_FOCUSED,
+    BACKUP_CODE_SECTION_BG,
+    DIGIT_BORDER_COLOR_FOCUSED,
+    DIGIT_BORDER_COLOR_UNFOCUSED)
 from styles.local_style import LocalStyle
 from views import View
 from styles import Stylize
 from views import Label
+import passport
 
 NUM_DIGITS = 4
 HEIGHT = 30
-DIGIT_BORDER_COLOR_UNFOCUSED = LIGHT_GREY
-DIGIT_BORDER_COLOR_FOCUSED = FD_BLUE
 
 
 class BackupCodeSection(View):
@@ -22,6 +27,7 @@ class BackupCodeSection(View):
     def __init__(self, digits=[None] * NUM_DIGITS, editable=True, focused_idx=None):
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
         self.digits = digits
+        self.digits_labels = []
         self.editable = editable
         self.focused_idx = focused_idx
 
@@ -33,8 +39,8 @@ class BackupCodeSection(View):
             default.pad(top=4, bottom=4, left=10, right=10)
 
         with Stylize(self, selector=lv.STATE.FOCUS_KEY) as focus:
-            focus.bg_color(VERY_LIGHT_GREY)
-            focus.outline(width=2, color=FD_BLUE)
+            focus.bg_color(BACKUP_CODE_SECTION_BG)
+            focus.outline(width=2, color=BACKUP_CODE_SECTION_OUTLINE)
 
         for col in range(NUM_DIGITS):
             container = View()
@@ -46,18 +52,34 @@ class BackupCodeSection(View):
                 default.flex_fill()
                 default.border_width(2)
                 default.border_side(lv.BORDER_SIDE.BOTTOM)
+                default.bg_color(DIGIT_BORDER_COLOR_FOCUSED)
+                default.bg_transparent()  # We go between transparent and not to show the bg color
+
                 if not self.editable or self.focused_idx is None:
                     default.border_color(DIGIT_BORDER_COLOR_UNFOCUSED)
                 else:
-                    default.border_color(DIGIT_BORDER_COLOR_FOCUSED if col ==
-                                         self.focused_idx else DIGIT_BORDER_COLOR_UNFOCUSED)
+                    if passport.IS_COLOR:
+                        default.bg_transparent()
+                        if col == self.focused_idx:
+                            default.border_color(DIGIT_BORDER_COLOR_FOCUSED)
+                        else:
+                            default.border_color(DIGIT_BORDER_COLOR_UNFOCUSED)
+                    else:
+                        if col == self.focused_idx:
+                            default.bg_opaque()
+                            default.radius(4)
+                            default.border_side(lv.BORDER_SIDE.NONE)
 
             digit_text = str(self.digits[col]) if self.digits[col] is not None else ' '
-            digit = Label(text=digit_text, color=TEXT_GREY)
-            with Stylize(digit) as default:
+            digit_label = Label(text=digit_text, color=BACKUP_CODE_DIGIT)
+            with Stylize(digit_label) as default:
                 default.align(lv.ALIGN.TOP_MID)
+                if self.editable and self.focused_idx is not None:
+                    if col == self.focused_idx:
+                        default.text_color(BACKUP_CODE_DIGIT_FOCUSED)
+            self.digits_labels.append(digit_label)
 
-            container.set_children([digit])
+            container.set_children([digit_label])
 
             # Add the digit to the root
             self.add_child(container)
@@ -66,18 +88,22 @@ class BackupCodeSection(View):
         if prev_focused_idx is not None:
             # Set previous index to grey
             with LocalStyle(self.children[prev_focused_idx]) as prev:
+                prev.bg_transparent()
                 prev.border_color(DIGIT_BORDER_COLOR_UNFOCUSED)
-                # prev.bg_color(WHITE, opa=0)
+                prev.border_side(lv.BORDER_SIDE.BOTTOM)
+
+            with LocalStyle(self.digits_labels[prev_focused_idx]) as prev_label:
+                prev_label.text_color(BACKUP_CODE_DIGIT)
 
         # Set new focus to blue if focused and mounted
         if self.focused_idx is not None:
-            focus_color = DIGIT_BORDER_COLOR_UNFOCUSED
-            if self.is_mounted() and self.lvgl_root.get_state() & lv.STATE.FOCUS_KEY:
-                focus_color = DIGIT_BORDER_COLOR_FOCUSED
+            with LocalStyle(self.children[self.focused_idx]) as next:
+                next.radius(4)
+                next.border_side(lv.BORDER_SIDE.NONE)
+                next.bg_opaque()
 
-            with LocalStyle(self.children[self.focused_idx]) as new:
-                new.border_color(focus_color)
-                # new.bg_color(focus_color)
+            with LocalStyle(self.digits_labels[self.focused_idx]) as next_label:
+                next_label.text_color(BACKUP_CODE_DIGIT_FOCUSED)
 
     def set_focused_idx(self, focused_idx):
         prev_focused_idx = self.focused_idx

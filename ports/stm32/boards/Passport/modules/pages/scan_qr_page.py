@@ -10,6 +10,7 @@ from constants import MENU_ITEM_CORNER_RADIUS
 from views import CameraQRScanner, Label
 import microns
 import common
+import passport
 
 
 def progress_text(p):
@@ -46,8 +47,12 @@ class ScanQRPage(Page):
         #   invalid values for it's content width.
         #   MOVE THIS CODE SO IT'S CALLED THE FIRST TIME IN update().
         #   THAT WAY, THE lv.pct(100) sizes will work properly.
-        self.camera.set_width(212)
-        self.camera.set_height(200)
+        if passport.IS_COLOR:
+            self.camera.set_width(212)
+            self.camera.set_height(200)
+        else:
+            self.camera.set_width(202)
+            self.camera.set_height(180)
         self.camera.set_y(-11)
         self.set_scroll_dir(dir=lv.DIR.NONE)
         with Stylize(self.camera) as default:
