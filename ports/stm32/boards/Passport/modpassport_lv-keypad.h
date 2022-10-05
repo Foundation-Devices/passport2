@@ -233,16 +233,24 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     g_drv = drv;
 
     uint8_t keycode;
+    bool from_keypad = false;
 
     // Try read from ring buffer first, then from keypad controller
     if (!ring_buffer_dequeue(&keycode)) {
         if (!keypad_poll_key(&keycode)) {
             return;
+        } else {
+            //check to prevent accidental double taps, only if received from polling
+            from_keypad = true;
         }
     }
 
     uint32_t key        = keycode_to_char(keycode & 0x7F);
     bool     is_pressed = (keycode & 0x80) == 0x80;
+
+    if (from_keypad) {
+        printf("%s key %lu\n", (is_pressed ? "pressed" : "released"), key);
+    }
 
     // Remember this for repeat handling
     if (is_pressed && is_repeatable_key(key)) {
