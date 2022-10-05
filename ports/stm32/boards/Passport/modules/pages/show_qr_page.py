@@ -35,7 +35,8 @@ class ShowQRPage(Page):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
-                         right_micron=right_micron)
+                         right_micron=right_micron,
+                         extend_timeout=True)
         self.qr_type = qr_type
         self.qr_args = qr_args
         self.qr_data = qr_data
@@ -97,10 +98,11 @@ class ShowQRPage(Page):
         self.timer = lv.timer_create(lambda timer: self.update(), _FRAME_TIME, None)
         self.prev_card_header = common.ui.hide_card_header()
 
-        if self.is_qr_resizable():
+        # Intercept keys for size and brightness level change
+        common.keypad.set_intercept_key_cb(self.on_key)
 
+        if self.is_qr_resizable():
             self.prev_top_level = common.ui.set_is_top_level(False)
-            common.keypad.set_intercept_key_cb(self.on_key)
 
             self.prev_card_descs = common.ui.set_micron_bar_cards(self.qr_card_descs, force_show=True)
             common.ui.set_micron_bar_active_idx(self.qr_size_idx)
@@ -133,8 +135,10 @@ class ShowQRPage(Page):
                 common.ui.set_micron_bar_active_idx(self.prev_card_idx)
                 self.prev_card_descs = None
 
-            common.keypad.set_intercept_key_cb(None)
             common.ui.set_is_top_level(self.prev_top_level)
+
+        # Stop intercepting key presses
+        common.keypad.set_intercept_key_cb(None)
 
         if self.prev_card_header is not None:
             common.ui.set_card_header(**self.prev_card_header, force_all=True)

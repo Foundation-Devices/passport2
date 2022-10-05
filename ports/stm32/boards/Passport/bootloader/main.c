@@ -56,13 +56,6 @@ void SysTick_Handler(void) {
     HAL_IncTick();
 }
 
-void EXTI15_10_IRQHandler(void) {
-    if (__HAL_GPIO_EXTI_GET_FLAG(1 << 12)) {
-        __HAL_GPIO_EXTI_CLEAR_FLAG(1 << 12);
-        keypad_ISR();
-    }
-}
-
 static void SystemClock_Config(void) {
     HAL_StatusTypeDef        rc;
     RCC_ClkInitTypeDef       RCC_ClkInitStruct   = {0};
@@ -641,7 +634,6 @@ void test_se_firmware_hash() {
 int main(void) {
     HAL_StatusTypeDef rc;
 #ifndef FACTORY_TEST
-    uint8_t keycount;
     uint8_t key;
 #endif /* FACTORY_TEST */
     SystemInit();
@@ -822,8 +814,7 @@ int main(void) {
     uint8_t* p_sram4 = (uint8_t*)0x38000000;
     *p_sram4         = 0;
 
-    keycount = ring_buffer_dequeue(&key);
-    if (keycount > 0) {
+    if (keypad_poll_key(&key)) {
         // The '1' key
         if ((key & 0x7f) == KEY_1) {
             show_more_info();

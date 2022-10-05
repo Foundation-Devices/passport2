@@ -73,7 +73,11 @@ If you just want to build without signing, use one of the following commands:
 There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
 
 #### Building the Simulator
-First, make sure you are in the simulator folder:
+First, install xterm
+
+    sudo apt install xterm
+
+Next, make sure you are in the simulator folder:
 
     cd simulator
 

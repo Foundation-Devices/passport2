@@ -32,7 +32,8 @@ class ScanQRPage(Page):
                          card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
-                         right_micron=right_micron)
+                         right_micron=right_micron,
+                         extend_timeout=True)
 
         # TODO: Temporary flag until we can cleanup the CBOR handling
         self.decode_cbor_bytes = decode_cbor_bytes

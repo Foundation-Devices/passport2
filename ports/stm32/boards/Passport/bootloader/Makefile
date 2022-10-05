@@ -195,7 +195,6 @@ endif
 
 # Keypad support
 SOURCES += keypad-adp-5587.c
-SOURCES += ring_buffer.c
 
 SOURCES += i2c-init.c
 SOURCES += stm32h7xx_hal_i2c.c
