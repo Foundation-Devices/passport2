@@ -5,6 +5,7 @@
 
 import lvgl as lv
 import foundation
+import passport
 from foundation import qr
 from passport import camera
 from views import View
@@ -39,9 +40,10 @@ class Camera(View):
         self._framebuffer = None
         self.content_width = None
         self.content_height = None
+        self.img_dsc = None
 
     def create_lvgl_root(self, lvgl_parent):  # noqa
-        return lv.canvas(lvgl_parent)
+        return lv.img(lvgl_parent)
 
     def hook(self):
         pass
@@ -93,10 +95,18 @@ class Camera(View):
             self.lvgl_root.refr_size()
             self.content_width = min(self.content_width, self.HOR_RES)
             self.content_height = min(self.content_height, self.VER_RES)
-            self.lvgl_root.set_buffer(self._framebuffer,
-                                      self.content_width,
-                                      self.content_height,
-                                      lv.img.CF.TRUE_COLOR)
+            self.img_dsc = lv.img_dsc_t({
+                'header': {
+                    'cf': lv.img.CF.TRUE_COLOR,
+                    'w': self.content_width,
+                    'h': self.content_height,
+                },
+                'data': self._framebuffer,
+            })
+            self.lvgl_root.set_src(self.img_dsc)
+            if not passport.IS_COLOR:
+                self.lvgl_root.set_pivot(self.content_width // 2, self.content_height // 2)
+                self.lvgl_root.set_angle(900)
         else:
             self.content_width = None
             self.content_height = None
