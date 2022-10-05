@@ -87,11 +87,13 @@ class ScvFlow(Flow):
         # Scan succeeded -- verify its content
         if self.envoy:
             if not is_valid_envoy_qrcode(result):
-                await self.show_error('Security Check QR code is invalid (1).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "Make sure you're scanning an Envoy QR code."))
                 return
         else:
             if not is_valid_website_qrcode(result):
-                await self.show_error('Security Check QR code is invalid (2).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "There was an error scanning the QR code."))
                 return
 
         if self.envoy:
@@ -99,7 +101,8 @@ class ScvFlow(Flow):
             try:
                 crypto_request.decode()
             except:  # noqa
-                await self.show_error('Security Check QR code is invalid (3).')
+                await self.show_error("Security Check QR code is invalid.\n"
+                                      "The QR code could not be decoded.")
                 return
 
             self.uuid = crypto_request.uuid
@@ -109,7 +112,8 @@ class ScvFlow(Flow):
             try:
                 parts = result.data.split(' ')
                 if len(parts) != 2:
-                    await self.show_error('Security Check QR code is invalid (4).')
+                    await self.show_error(("Security Check QR code is invalid.\n"
+                                           "There's not enough information in the QR code."))
                     return
 
                 challenge = {
@@ -118,7 +122,8 @@ class ScvFlow(Flow):
                 }
                 # print('Manual: challenge={}'.format(challenge))
             except Exception as e:
-                await self.show_error('Security Check QR code is invalid (5).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "Make sure you're scanning a manual setup QR code."))
                 return
 
         id_hash = bytearray(32)
