@@ -16,10 +16,20 @@ class ShowSecurityWordsSettingPage(SettingPage):
     ]
 
     def __init__(self, card_header=None, statusbar=None):
+        print("Here!")
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
             options=self.OPTIONS,
             setting_name='security_words',
-            default_value=self.OPTIONS[1].get('value')
+            default_value=self.OPTIONS[1].get('value'),
+            on_change=self.on_change
         )
+
+    def on_change(self, selected_value):
+        if selected_value is True:
+            (pin, is_done) = await PINEntryPage(
+                card_header={'title': 'Enter PIN'},
+                security_words_message='Remember these Security Words',
+                left_micron=microns.Back,
+                right_micron=microns.Checkmark).show()
