@@ -22,6 +22,9 @@ STATIC const mp_obj_fun_builtin_fixed_t mod_passport_lv_Keypad_irq_callback_obj;
 STATIC mp_obj_t                         key_cb                  = mp_const_none;
 STATIC bool                             global_nav_keys_enabled = true;
 STATIC bool                             intercept_all_keys      = false;
+STATIC uint32_t                         last_press_time         = 0;
+STATIC uint32_t                         last_press_key          = 0;
+STATIC bool                             eat_next_release        = false;
 
 typedef struct _keycode_map_t {
     uint8_t keycode;
@@ -234,6 +237,7 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
 
     uint8_t keycode;
     bool from_keypad = false;
+    uint32_t press_time = 0;
 
     // Try read from ring buffer first, then from keypad controller
     if (!ring_buffer_dequeue(&keycode)) {
@@ -242,6 +246,7 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
         } else {
             //check to prevent accidental double taps, only if received from polling
             from_keypad = true;
+            press_time = HAL_GetTick();
         }
     }
 
@@ -249,7 +254,17 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     bool     is_pressed = (keycode & 0x80) == 0x80;
 
     if (from_keypad) {
-        printf("%s key %lu\n", (is_pressed ? "pressed" : "released"), key);
+        if (is_pressed && press_time - last_press_time < 100 && key == last_press_key) {
+            eat_next_release = true;
+            return;
+        } else if (!is_pressed && eat_next_release && key == last_press_key) {
+            eat_next_release = false;
+            return;
+        } else {
+            eat_next_release = false;
+        }
+        last_press_time = press_time;
+        last_press_key = key;
     }
 
     // Remember this for repeat handling
