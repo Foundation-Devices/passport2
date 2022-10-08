@@ -51,7 +51,9 @@ class ScanQRPage(Page):
             self.camera.set_width(212)
             self.camera.set_height(200)
         else:
-            self.camera.set_width(202)
+            # Camera needs to be a square on Founders Edition so that the rotation
+            # works properly.
+            self.camera.set_width(180)
             self.camera.set_height(180)
         self.camera.set_y(-11)
         self.set_scroll_dir(dir=lv.DIR.NONE)
