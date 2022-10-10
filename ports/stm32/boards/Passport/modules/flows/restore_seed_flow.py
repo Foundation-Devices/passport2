@@ -51,8 +51,7 @@ class RestoreSeedFlow(Flow):
     async def validate_seed_words(self):
         from trezorcrypto import bip39
 
-        # self.mnemonic = ' '.join(self.seed_words)
-        self.mnemonic = 'brick repeat nothing grunt genius trap hollow meat hawk jacket denial miss impose gorilla best logic divorce good broken prison illness awkward banana electric'
+        self.mnemonic = ' '.join(self.seed_words)
 
         if not bip39.check(self.mnemonic):
             self.goto(self.invalid_seed)

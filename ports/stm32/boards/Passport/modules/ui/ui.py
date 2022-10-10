@@ -394,22 +394,27 @@ class UI():
         num_cards = len(self.card_descs)
         if self.active_card_idx < num_cards - 1:
             self.active_card_idx += 1
-            new_card_desc = self.card_descs[self.active_card_idx]
-            self.active_screen.card_nav.push_card(new_card_desc, self.active_card_idx)
+        elif self.active_card_idx == num_cards - 1:
+            self.active_card_idx = 0
+        new_card_desc = self.card_descs[self.active_card_idx]
+        self.active_screen.card_nav.push_card(new_card_desc, self.active_card_idx)
 
-            self.update_screen_info(new_card_desc)
+        self.update_screen_info(new_card_desc)
 
-            self.start_card_task(new_card_desc=new_card_desc)
+        self.start_card_task(new_card_desc=new_card_desc)
 
     def prev_card(self):
+        num_cards = len(self.card_descs)
         if self.active_card_idx > 0:
             self.active_card_idx -= 1
-            new_card_desc = self.card_descs[self.active_card_idx]
-            self.active_screen.card_nav.pop_card(new_card_desc, self.active_card_idx)
+        elif self.active_card_idx == 0:
+            self.active_card_idx = num_cards - 1
+        new_card_desc = self.card_descs[self.active_card_idx]
+        self.active_screen.card_nav.pop_card(new_card_desc, self.active_card_idx)
 
-            self.update_screen_info(new_card_desc)
+        self.update_screen_info(new_card_desc)
 
-            self.start_card_task(new_card_desc=new_card_desc)
+        self.start_card_task(new_card_desc=new_card_desc)
 
     # Mount and animate the given page so it replaces the current page with a "push" style
     def push_page(self, page):
