@@ -75,7 +75,7 @@ class ScvFlow(Flow):
                 else:
                     skip = await QuestionPage(
                         text='Skip Security Check?\n\n{}'.format(
-                            recolor(FD_BLUE_HEX, '(Not recommended)'))
+                            recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
                     ).show()
                     if skip:
                         common.settings.set('validated_ok', True)
@@ -145,7 +145,8 @@ class ScvFlow(Flow):
         from utils import recolor
 
         result = await InfoPage(
-            text='On Envoy, select {next}, and scan the following QR code.'.format(next=recolor(HIGHLIGHT_TEXT_HEX, 'Next')),
+            text='On Envoy, select {next}, and scan the following QR code.'
+            .format(next=recolor(HIGHLIGHT_TEXT_HEX, 'Next')),
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if not result:

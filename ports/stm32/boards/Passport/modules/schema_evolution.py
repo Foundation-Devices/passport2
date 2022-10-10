@@ -88,7 +88,7 @@ def handle_foundational_evolutions():
         from settings import Settings
         old_settings = Settings(None)
         update_from_to = old_settings.get('update', None)
-        if update_from_to != None:
+        if update_from_to is not None:
             parts = update_from_to.split('->')
             from_version = Version(parts[0])
             to_version = Version(parts[1])
