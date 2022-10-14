@@ -77,6 +77,7 @@ class Camera(View):
         self.lvgl_root.invalidate()
 
     def enable(self):
+        # TODO: consider copying some of the camera's lvgl init to the qr code
         """Enable the camera"""
         assert self.is_mounted()
 

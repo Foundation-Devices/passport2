@@ -14,6 +14,7 @@ from data_codecs.qr_type import QRType
 from data_codecs.qr_factory import make_qr_encoder
 from constants import CARD_BORDER_WIDTH
 from utils import get_screen_brightness
+import passport
 
 _FRAME_TIME = const(300)
 
@@ -69,6 +70,7 @@ class ShowQRPage(Page):
             default.pad_row(6)
 
         self.qrcode = QRCode()
+        # TODO: this is a discrepency with how a camera view is setup
         self.qrcode.set_width(lv.pct(100))
         self.qrcode.set_height(lv.pct(100))
 
