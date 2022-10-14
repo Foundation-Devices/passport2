@@ -50,8 +50,11 @@ class QRCode(View):
         return lv.qrcode(lvgl_parent)
 
     def configure_canvas_buffer(self):
+        # TODO: these are returning -8 and 0 when starting the setup process from scratch
         content_width = self.lvgl_root.get_content_width()
         content_height = self.lvgl_root.get_content_height()
+        print("content_width: {}, content_height: {}".format(content_width, content_height))
+        # TODO: res is not being set
         if content_width > 0 and content_height > 0:
             self.res = min(content_width, content_height)
 
@@ -80,22 +83,31 @@ class QRCode(View):
         raise QRCodeException()
 
     def update(self, encoded_data):
+        print(encoded_data)
+        print("check 1")
         if self.res is None:
+            print("check 2")
             self.configure_canvas_buffer()
             if self.res is None:
+                print("check 3")
                 return
 
         min_version = self.get_version_for_data(encoded_data)
 
         last_version = self.lvgl_root.get_last_version()
+        print("check 4")
 
         # Don't go to a smaller QR code, even if it means repeated data since
         # it looks weird to change the QR code size
         if last_version > min_version:
+            print("check 5")
             min_version = last_version
 
         ret = self.lvgl_root.update(encoded_data, len(encoded_data), min_version)
+        print("check 6")
+        # ret = None
         if ret is lv.RES.INV:
+            print("check 7")
             raise QRCodeException()
 
 
