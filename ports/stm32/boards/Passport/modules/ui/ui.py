@@ -392,6 +392,10 @@ class UI():
 
     def next_card(self):
         num_cards = len(self.card_descs)
+
+        if num_cards == 1:
+            return
+
         if self.active_card_idx < num_cards - 1:
             self.active_card_idx += 1
         elif self.active_card_idx == num_cards - 1:
@@ -405,6 +409,10 @@ class UI():
 
     def prev_card(self):
         num_cards = len(self.card_descs)
+
+        if num_cards == 1:
+            return
+
         if self.active_card_idx > 0:
             self.active_card_idx -= 1
         elif self.active_card_idx == 0:
