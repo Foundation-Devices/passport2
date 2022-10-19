@@ -645,7 +645,7 @@ class MultisigWallet:
                     N = int(mat.group(2))
                     assert 1 <= M <= N <= MAX_SIGNERS
                 except BaseException:
-                    raise AssertionError('bad policy line')
+                    raise AssertionError('Bad policy line, import aborted.')
 
             elif label == 'derivation':
                 # reveal the path derivation for following key(s)
@@ -653,7 +653,7 @@ class MultisigWallet:
                     assert value, 'blank'
                     deriv = cleanup_deriv_path(value)
                 except BaseException as exc:
-                    raise AssertionError('bad derivation line: ' + str(exc))
+                    raise AssertionError('Bad derivation line: ' + str(exc) + ', import aborted.')
 
             elif label == 'format':
                 # pick segwit vs. classic vs. wrapped version
@@ -663,7 +663,7 @@ class MultisigWallet:
                         addr_fmt = fmt_code
                         break
                 else:
-                    raise AssertionError('bad format line')
+                    raise AssertionError('Bad format line, import aborted.')
             elif len(label) == 8:
                 try:
                     xfp = str2xfp(label)
@@ -680,7 +680,7 @@ class MultisigWallet:
                     my_deriv = deriv  # Use the last-parsed (pattern is Derivation, then XFP: XPUB
                     has_mine += 1
 
-        assert len(xpubs), 'No XPUBS found.'
+        assert len(xpubs), 'No XPUBS found. Import aborted.'
 
         if M == N == -1:
             # default policy: all keys
@@ -694,16 +694,16 @@ class MultisigWallet:
             name = str(name, 'ascii')
             name = name[:MAX_MULTISIG_NAME_LEN]
         except BaseException:
-            raise AssertionError('Name must be ASCII, and 1 to 20 characters long.')
+            raise AssertionError('Name must be ASCII, and 1 to 20 characters long. Import aborted.')
 
-        assert 1 <= M <= N <= MAX_SIGNERS, 'M/N range'
+        assert 1 <= M <= N <= MAX_SIGNERS, 'M of N parameters out of bounds, import aborted'
         assert N == len(xpubs), 'wrong # of xpubs, expect %d' % N
-        assert addr_fmt & AFC_SCRIPT, 'script style addr fmt'
+        assert addr_fmt & AFC_SCRIPT, 'must use script style addr fmt'
 
         # check we're included... do not insert ourselves, even tho we
         # have enough info, simply because other signers need to know my xpubkey anyway
-        assert has_mine != 0, 'File does not include a key owned by this Passport'
-        assert has_mine == 1    # 'my key included more than once'
+        assert has_mine != 0, 'File does not include a key owned by this Passport, import aborted'
+        assert has_mine == 1, 'User key included more than once, import aborted'
 
         from common import noise
         # Hacky way to give the wallet a unique ID and pass it back to the New Account flow for correlation

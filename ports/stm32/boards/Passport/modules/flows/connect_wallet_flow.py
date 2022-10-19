@@ -102,6 +102,7 @@ class ConnectWalletFlow(Flow):
         self.next_addr = 0
         self.addr_type = None
         self.progress_made = False
+        self.error = None
 
         # We will use the defaults above for anything not restored below
         self.restore()
@@ -444,7 +445,14 @@ class ConnectWalletFlow(Flow):
     async def do_multisig_config_import(self):
         from multisig_wallet import MultisigWallet
 
-        ms = MultisigWallet.from_file(self.multisig_import_data)
+        try:
+            ms = MultisigWallet.from_file(self.multisig_import_data)
+        except BaseException as e:
+            self.error = e.args[0];
+            if self.error is None:
+                self.error = "Unknown Error"
+            self.goto(self.show_error)
+            return
         # if ms is not None:
         #     print('New MS: {}'.format(ms.serialize()))
 
@@ -567,6 +575,11 @@ class ConnectWalletFlow(Flow):
     async def complete(self):
         await SuccessPage(text='Connection Complete').show()
         self.set_result(True)
+
+    async def show_error(self):
+        await ErrorPage(text=self.error).show()
+        self.error = None
+        self.reset(self.choose_sig_type)
 
     # ===========================================================================================
     # Helper functions
