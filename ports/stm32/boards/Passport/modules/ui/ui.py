@@ -278,6 +278,9 @@ class UI():
                     'args': {'menu': casa_menu, 'is_top_level': True},
                     'account': casa_account
                 }
+                if len(stash.bip39_passphrase) > 0:
+                    casa_card['icon'] = lv.ICON_PASSPHRASE
+
                 card_descs.append(casa_card)
 
             # Postmix account for CoinJoin
@@ -295,6 +298,9 @@ class UI():
                     'args': {'menu': postmix_menu, 'is_top_level': True},
                     'account': postmix_account
                 }
+                if len(stash.bip39_passphrase) > 0:
+                    postmix_card['icon'] = lv.ICON_PASSPHRASE
+
                 card_descs.append(postmix_card)
 
             more_card = {
