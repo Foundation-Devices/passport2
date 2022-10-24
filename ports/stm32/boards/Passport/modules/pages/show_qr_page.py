@@ -14,7 +14,6 @@ from data_codecs.qr_type import QRType
 from data_codecs.qr_factory import make_qr_encoder
 from constants import CARD_BORDER_WIDTH
 from utils import get_screen_brightness
-import passport
 
 _FRAME_TIME = const(300)
 
@@ -49,6 +48,7 @@ class ShowQRPage(Page):
         self.prev_part = None
         self.prev_global_nav_keys = None
         self.timer = None
+        self.rendered = False
 
         self.prev_brightness = 100
         self.curr_brightness_idx = 0
@@ -70,7 +70,6 @@ class ShowQRPage(Page):
             default.pad_row(6)
 
         self.qrcode = QRCode()
-        # TODO: this is a discrepency with how a camera view is setup
         self.qrcode.set_width(lv.pct(100))
         self.qrcode.set_height(lv.pct(100))
 
@@ -203,8 +202,8 @@ class ShowQRPage(Page):
 
             # TODO: Optimization: Don't update if the fragment is the
             #       same as last time (or, if possible, if part count == 1).
-            if self.prev_part != part:
+            if self.prev_part != part or not self.rendered:
                 self.prev_part = part
                 data = part.encode('ascii')
                 # print('data={}'.format(data))
-                self.qrcode.update(data)
+                self.rendered = self.qrcode.update(data)
