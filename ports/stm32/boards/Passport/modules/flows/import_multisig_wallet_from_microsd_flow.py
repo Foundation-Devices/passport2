@@ -37,7 +37,7 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
             (data, error) = result
             if error is None:
                 try:
-                    self.ms = MultisigWallet.from_file(data)
+                    self.ms = await MultisigWallet.from_file(data)
                 except BaseException as e:
                     self.error = e.args[0]
                     if self.error is None:

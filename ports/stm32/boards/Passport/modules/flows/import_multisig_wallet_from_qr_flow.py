@@ -26,7 +26,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
             data = data.decode('utf-8')
 
         try:
-            self.ms = MultisigWallet.from_file(data)
+            self.ms = await MultisigWallet.from_file(data)
         except BaseException as e:
             self.error = e.args[0]
             if self.error is None:

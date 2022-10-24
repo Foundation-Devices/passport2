@@ -446,7 +446,7 @@ class ConnectWalletFlow(Flow):
         from multisig_wallet import MultisigWallet
 
         try:
-            ms = MultisigWallet.from_file(self.multisig_import_data)
+            ms = await MultisigWallet.from_file(self.multisig_import_data)
         except BaseException as e:
             self.error = e.args[0]
             if self.error is None:
