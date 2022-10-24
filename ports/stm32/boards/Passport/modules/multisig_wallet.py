@@ -575,7 +575,7 @@ class MultisigWallet:
     @classmethod
     def from_file(cls, config, name=None):
         from utils import spinner_task
-        from tasks import apply_passphrase_task
+        from tasks import apply_passphrase_task, delay_task
         # Given a simple text file, parse contents and create instance (unsaved).
         # format is:         label: value
         # where label is:
@@ -596,6 +596,7 @@ class MultisigWallet:
         passphrase = stash.bip39_passphrase
         if passphrase != '':
             await spinner_task('Temporarily Clearing Passphrase', apply_passphrase_task, args=[''])
+            await spinner_task('Checking Multisig Config', delay_task, args=[500, True])
 
         my_xfp = settings.get('xfp')
         deriv = None
