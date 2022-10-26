@@ -39,9 +39,10 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
                 try:
                     self.ms = await MultisigWallet.from_file(data)
                 except BaseException as e:
-                    self.error = e.args[0]
-                    if self.error is None:
+                    if e.args is None or len(e.args) == 0:
                         self.error = "Unknown Error"
+                    else:
+                        self.error = e.args[0]
                     self.goto(self.show_error)
                     return
                 # print('New MS: {}'.format(self.ms.serialize()))

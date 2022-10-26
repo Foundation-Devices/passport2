@@ -29,7 +29,7 @@ import trezorcrypto
 def disassemble_multisig_mn(redeem_script):
     # pull out just M and N from script. Simple, faster, no memory.
 
-    assert MAX_SIGNERS == 15
+    assert MAX_SIGNERS == 15, 'MAX_SIGNERS must be 15'
     assert redeem_script[-1] == OP_CHECKMULTISIG, 'need CHECKMULTISIG'
 
     M = redeem_script[0] - 80
@@ -61,19 +61,19 @@ def disassemble_multisig(redeem_script):
     pubkeys = []
     for idx in range(N):
         data, opcode = next(dis)
-        assert opcode is None and len(data) == 33, 'data'
+        assert opcode is None and len(data) == 33, 'Opcode with wrong data length'
         assert data[0] == 0x02 or data[0] == 0x03, 'Y val'
         pubkeys.append(data)
 
-    assert len(pubkeys) == N
+    assert len(pubkeys) == N, "Wrong pubkeys length"
 
     # next is N value
     ex_N, opcode = next(dis)
-    assert ex_N == N and opcode is None
+    assert ex_N == N and opcode is None, "Bad ex_N and opcode"
 
     # finally, the opcode: CHECKMULTISIG
     data, opcode = next(dis)
-    assert opcode == OP_CHECKMULTISIG
+    assert opcode == OP_CHECKMULTISIG, "Bad opcode"
 
     # must have reached end of script at this point
     try:
@@ -90,7 +90,7 @@ def make_redeem_script(M, nodes, subkey_idx):
     # take a list of BIP32 nodes, and derive Nth subkey (subkey_idx) and make
     # a standard M-of-N redeem script for that. Always applies BIP67 sorting.
     N = len(nodes)
-    assert 1 <= M <= N <= MAX_SIGNERS
+    assert 1 <= M <= N <= MAX_SIGNERS, 'M/N range'
 
     pubkeys = []
     for n in nodes:
@@ -130,10 +130,10 @@ class MultisigWallet:
         self.storage_idx = -1
 
         self.name = name[:MAX_MULTISIG_NAME_LEN]
-        assert len(m_of_n) == 2
+        assert len(m_of_n) == 2, "Bad m_of_n length"
         self.M, self.N = m_of_n
         self.chain_type = chain_type or 'BTC'
-        assert len(xpubs[0]) == 3
+        assert len(xpubs[0]) == 3, "Bad xpubs[0] length"
         self.xpubs = xpubs                  # list of (xfp(int), deriv, xpub(str))
         self.id = id                        # Unique id to associate multisig info with an account
         self.addr_fmt = addr_fmt            # address format for wallet
@@ -144,7 +144,7 @@ class MultisigWallet:
         for xfp, deriv, _ in self.xpubs:
             self.xfp_paths[xfp] = str_to_keypath(xfp, deriv)
 
-        assert len(self.xfp_paths) == self.N, 'dup XFP'         # not supported
+        assert len(self.xfp_paths) == self.N, 'Duplicate XFP'         # not supported
 
     @classmethod
     def render_addr_fmt(cls, addr_fmt):
@@ -517,7 +517,7 @@ class MultisigWallet:
                 xpub = self.xpubs[xp_idx][-1]
 
                 node = ch.deserialize_node(xpub, AF_P2SH)
-                assert node
+                assert node, "Missing node"
                 dp = node.depth()
 
                 # print("%s => deriv=%s dp=%d len(path)=%d path=%s" %
@@ -648,17 +648,17 @@ class MultisigWallet:
                 try:
                     # accepts: 2 of 3    2/3    2,3    2 3   etc
                     mat = ure.search(r'(\d+)\D*(\d+)', value)
-                    assert mat
+                    assert mat, "Missing mat"
                     M = int(mat.group(1))
                     N = int(mat.group(2))
-                    assert 1 <= M <= N <= MAX_SIGNERS
+                    assert 1 <= M <= N <= MAX_SIGNERS, "M/N range"
                 except BaseException:
                     raise AssertionError('Bad policy line, import aborted.')
 
             elif label == 'derivation':
                 # reveal the path derivation for following key(s)
                 try:
-                    assert value, 'blank'
+                    assert value, 'No value'
                     deriv = cleanup_deriv_path(value)
                 except BaseException as exc:
                     raise AssertionError('Bad derivation line: ' + str(exc) + ', import aborted.')
@@ -749,7 +749,8 @@ class MultisigWallet:
         # print('xpubs={}'.format(xpubs))
 
         # assert node.private_key() == None       # 'no privkeys plz'
-        assert chain.ctype == expect_chain      # 'wrong chain'
+        assert chain.ctype == expect_chain, \
+            "The imported chain type doesn't match passport's current chain."  # 'wrong chain'
 
         depth = node.depth()
 
@@ -761,7 +762,7 @@ class MultisigWallet:
                 # generally cannot check fingerprint values, but if we can, do so.
                 assert node.fingerprint() == xfp, 'xfp depth=1 wrong'
 
-        assert xfp, 'need fingerprint'          # happens if bare xpub given
+        assert xfp, 'Only an xpub was imported, a fingerprint (xfp) is needed.'          # happens if bare xpub given
 
         # In most cases, we cannot verify the derivation path because it's hardened
         # and we know none of the private keys involved.
@@ -770,12 +771,12 @@ class MultisigWallet:
             guess = keypath_to_str([node.child_num()], skip=0)
 
             if deriv:
-                assert guess == deriv, '%s != %s' % (guess, deriv)
+                assert guess == deriv, 'Guess %s != Deriv %s' % (guess, deriv)
             else:
                 deriv = guess           # reachable? doubt it
 
         assert deriv, 'empty deriv'         # or force to be 'm'?
-        assert deriv[0] == 'm'
+        assert deriv[0] == 'm', "deriv must start with 'm'"
 
         # path length of derivation given needs to match xpub's depth
         p_len = deriv.count('/')
@@ -861,7 +862,7 @@ class MultisigWallet:
         # build up an in-memory version of the wallet.
         #  - capture address format based on path used for my leg (if standards compliant)
 
-        assert N == len(xpubs_list)
+        assert N == len(xpubs_list), "N != len(xpubs_list)"
         assert 1 <= M <= N <= MAX_SIGNERS, 'M/N range'
         my_xfp = settings.get('xfp')
 
@@ -878,7 +879,7 @@ class MultisigWallet:
                 has_mine += 1
                 addr_fmt = cls.guess_addr_fmt(path)
 
-        assert has_mine == 1         # 'my key not included'
+        assert has_mine == 1, 'my key not included'
 
         name = 'PSBT-%d-of-%d' % (M, N)
         ms = cls(name, (M, N), xpubs, -1, chain_type=expect_chain, addr_fmt=addr_fmt or AF_P2SH)
@@ -897,7 +898,7 @@ class MultisigWallet:
         # - some cases we cannot check, so count those for a warning
         # Any issue here is a fraud attempt in some way, not innocent.
         # But it would not have tricked us and so the attack targets some other signer.
-        assert len(xpubs_list) == self.N
+        assert len(xpubs_list) == self.N, "bad len(xpubs_list)"
 
         for k, v in xpubs_list:
             xfp, *path = ustruct.unpack_from('<%dI' % (len(k) // 4), k, 0)
@@ -907,19 +908,20 @@ class MultisigWallet:
             tmp = []
             self.check_xpub(xfp, xpub, keypath_to_str(path, skip=0), self.chain_type, 0, tmp)
             (_, deriv, xpub_reserialized) = tmp[0]
-            assert deriv            # because given as arg
+            assert deriv, "missing deriv"            # because given as arg
 
             # find in our records.
             for (x_xfp, x_deriv, x_xpub) in self.xpubs:
                 if x_xfp != xfp:
                     continue
                 # found matching XFP
-                assert deriv == x_deriv
+                assert deriv == x_deriv, "deriv must match x_deriv"
 
                 assert xpub_reserialized == x_xpub, 'xpub wrong (xfp=%s)' % xfp2str(xfp)
                 break
             else:
-                assert False            # not reachable, since we picked wallet based on xfps
+                # not reachable, since we picked wallet based on xfps
+                assert False, "There should be xpubs"
 
     def get_deriv_paths(self):
         # List of unique derivation paths being used. Often length one.
