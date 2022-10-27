@@ -102,7 +102,7 @@ First, you need to build the `cosign` tool and copy it somewhere in your `PATH`:
     make
     cp x86/release/cosign ~/.local/bin   # You can run `echo $PATH` to see the list of possible places you can put this file
 
-If you don't already have an openssl key, generate a Pubkey using `tools/genkeys.sh`. This takes a key number as an argument.
+If you don't already have an openssl key, return to the repo root directory and generate a Pubkey using `tools/genkeys.sh`. This takes a key number as an argument.
 
     ./tools/genkeys.sh 1
 
