@@ -56,7 +56,7 @@ class EnvoySetupFlow(Flow):
 
     async def scv_flow(self):
         result = await ScvFlow(envoy=True).run()
-        if result is None:
+        if result is None or not result:
             # self.set_result(None, forget_state=True)
             self.back()
         elif result:
@@ -113,6 +113,8 @@ class EnvoySetupFlow(Flow):
         await self.ensure_logged_in()
 
         result = await InitialSeedSetupFlow().run()
+        if result is None:
+            self.back()
         if not result:
             # No going back() from here
             pass
