@@ -99,6 +99,19 @@ First, you need to build the `cosign` tool and copy it somewhere in your `PATH`:
     make
     cp x86/release/cosign ~/.local/bin   # You can run `echo $PATH` to see the list of possible places you can put this file
 
+If you don't already have an openssl key, generate a Pubkey using `tools/genkeys.sh`. This takes a key number as an argument.
+
+    ./tools/genkeys.sh 1
+
+Now, move the keys into `~/bin/keys/`, or look ahead a few steps for instructions on setting a custom `cosign_keypath`. Create the directory if it doesn't exist yet. If you already have keys here for another use, make sure not to overwrite them. Make sure not to commit these keys in the git repo.
+
+    mkdir ~/bin/keys
+    mv tools/1.pem ~/bin/keys/user.pem
+    mv tools/1-pub.bin ~/bin/keys/user-pub.bin
+    mv tools/1-pub.pem ~/bin/keys/user-pub.pem
+
+Next, save `user-pub.bin` to a microSD card, and upload it to the passport by inserting the microSD, going to the leftmost settings page, and selecting Advanced -> Developer Pubkey -> Install Pubkey, then selecting user-pub.bin.
+
 Next you need to sign the firmware and give it a version number.  Once signed, `cosign` will output a filename of the format `v2.0.3-passport.bin`, but with the version number
 replaced with whatever you specified.  Note that you need to tell `cosign` whether you are signing for a `mono` (Founder's Edition) Passport or a `color` (Batch 2 onward) Passport.
 
@@ -118,8 +131,6 @@ You can also print the contents of the firmware header with the following comman
     cosign -f build-Passport/firmware-signed-signed.bin -p -t color
 
 The signed firmware can be put onto a microSD card and installed on Passport.  You just need to upload the corresponding Developer Pubkey first.
-
-***TBD: Insert link to article on installing Developer Pubkey***
 
 #### Building the Bootloader
 To build the bootloader for a reproducibility check, go to the repo root folder:
