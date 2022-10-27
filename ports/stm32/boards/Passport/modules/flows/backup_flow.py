@@ -43,8 +43,8 @@ class BackupFlow(Flow):
         if result:
             self.goto(self.get_backup_code)
         else:
-            result = QuestionPage(text='Skip initial Backup?\n\n{}'.format(
-                recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry)
+            result = await QuestionPage(text='Skip initial Backup?\n\n{}'.format(
+                recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
             if result:
                 self.set_result(False)
             else:
