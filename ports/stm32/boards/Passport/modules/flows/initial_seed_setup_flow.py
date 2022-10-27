@@ -27,9 +27,11 @@ class InitialSeedSetupFlow(Flow):
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED,
             text='Next, let\'s create or restore a wallet seed.',
-            left_micron=None, right_micron=microns.Forward).show()
+            left_micron=microns.Back, right_micron=microns.Forward).show()
         if result:
             self.goto(self.show_seed_setup_menu)
+        else:
+            self.set_result(None)
 
     async def show_seed_setup_menu(self):
         from pages import ChooserPage
