@@ -33,7 +33,7 @@ typedef struct _keycode_map_t {
     char    ch;
 } keycode_map_t;
 
-#define PCB_VERSION 1
+// #define PCB_VERSION 1
 #if SCREEN_MODE_COLOR
 #if PCB_VERSION == 1
 STATIC keycode_map_t keycode_map[] = {
