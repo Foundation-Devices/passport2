@@ -15,6 +15,9 @@ In order to build the Passport firmware, you need to:
 * Install the dependencies
 * Run the build or sign command
 
+## Contributing
+Foundation requires commits to be signed with GPG keys in order to be merged. Follow [Github's guide to commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification) to get started.
+
 ### Get the Source Code
 The instructions below assume you are installing into your home folder at `~/passport2`.  You can choose
 to install to a different folder, and just update command paths appropriately.
