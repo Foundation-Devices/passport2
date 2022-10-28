@@ -21,7 +21,7 @@ class MainFlow(Flow):
             await LoginFlow().run()
 
         if not has_seed():
-            await InitialSeedSetupFlow().run()
+            await InitialSeedSetupFlow(allow_backtrack=False).run()
 
         if not common.settings.get('backup_quiz', False):
             await BackupFlow().run()

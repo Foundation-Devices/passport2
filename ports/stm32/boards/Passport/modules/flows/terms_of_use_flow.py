@@ -16,7 +16,7 @@ class TermsOfUseFlow(Flow):
         self.statusbar = {'title': 'TERMS OF USE', 'icon': lv.ICON_INFO}
         # Skip if already accepted
         if common.settings.get('terms_ok') == 1:
-            self.set_result(True)
+            self.goto(self.show_status)
 
     async def show_terms(self):
         from pages import AcceptTermsChooserPage
@@ -27,6 +27,12 @@ class TermsOfUseFlow(Flow):
             self.set_result(True)
         else:
             self.goto(self.show_error)
+
+    async def show_status(self):
+        from pages import InfoPage
+        result = await InfoPage(text="You have already accepted the terms of use.",
+                                left_micron=microns.Back, right_micron=microns.Checkmark).show()
+        self.set_result(result)
 
     async def show_error(self):
         from pages import ErrorPage, ShutdownPage

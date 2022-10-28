@@ -51,7 +51,7 @@ class ScvFlow(Flow):
         if result:
             self.goto(self.scan_qr_challenge)
         else:
-            self.set_result(None)
+            self.set_result(False)
 
     async def scan_qr_challenge(self):
         from utils import recolor
