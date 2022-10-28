@@ -13,9 +13,15 @@ from errors import Error
 import stash
 import foundation
 from utils import bytes_to_hex_str
+import common
 
 
 async def apply_passphrase_task(on_done, passphrase):
+    if stash.bip39_passphrase == '':
+        # This checks if the root_xfp has been generated and saved,
+        # If not, it's saved to settings for future use
+        common.settings.get('root_xfp')
+
     stash.bip39_passphrase = passphrase
 
     # Create a hash from the passphrase

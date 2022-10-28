@@ -222,6 +222,8 @@ class SensitiveValues:
 
         # Always store these volatile - Takes less than 1 second to recreate, and it will change whenever
         # a passphrase is entered, so no need to waste flash cycles on storing it.
+        if bip39_passphrase == '':
+            settings.set_volatile('root_xfp', xfp)
         settings.set_volatile('xfp', xfp)
         settings.set_volatile('xpub', xpub)
 
