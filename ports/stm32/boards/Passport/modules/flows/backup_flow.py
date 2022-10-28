@@ -36,8 +36,7 @@ class BackupFlow(Flow):
                     'We recommend writing down the Backup Code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
         if stash.bip39_passphrase != '':
-            msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.\n'
-                        'Please ensure you have a robust alternative backup of your passphrase.')
+            msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.')
 
         result = await InfoPage(
             icon=lv.LARGE_ICON_BACKUP,

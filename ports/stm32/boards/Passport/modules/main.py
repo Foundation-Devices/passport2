@@ -25,7 +25,6 @@ def go():
     import tasks
     import passport
     from utils import get_screen_brightness
-    import stash
 
     # Initialize the common objects
 
@@ -131,9 +130,6 @@ def go():
     except RuntimeError as e:
         # print("Secure Element Problem: %r" % e)
         pass
-
-    with stash.SensitiveValues() as sv:
-        sv.capture_xpub()
 
     from ui.ui import UI
     from screens import MainScreen
