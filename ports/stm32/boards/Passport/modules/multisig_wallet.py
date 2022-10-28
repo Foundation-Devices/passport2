@@ -595,8 +595,7 @@ class MultisigWallet:
         # Remove any applied passphrase, so xfp and xpubs will match
         passphrase = stash.bip39_passphrase
         if passphrase != '':
-            await spinner_task('Temporarily Clearing Passphrase', apply_passphrase_task, args=[''])
-            await spinner_task('Checking Multisig Config', delay_task, args=[500, True])
+            await spinner_task('Checking Multisig Config', apply_passphrase_task, args=[''])
 
         my_xfp = settings.get('xfp')
         deriv = None
@@ -720,7 +719,7 @@ class MultisigWallet:
         unique_id = b2a_hex(unique_id).decode('utf-8')
 
         if passphrase != '':
-            await spinner_task('Re-applying Passphrase', apply_passphrase_task, args=[passphrase])
+            await spinner_task('Checking Multisig Config', apply_passphrase_task, args=[passphrase])
 
         # done. have all the parts
         return cls(name, (M, N), xpubs, unique_id, addr_fmt=addr_fmt, chain_type=expect_chain, deriv=my_deriv)

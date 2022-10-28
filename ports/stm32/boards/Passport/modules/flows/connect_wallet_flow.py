@@ -449,7 +449,7 @@ class ConnectWalletFlow(Flow):
             ms = await MultisigWallet.from_file(self.multisig_import_data)
         except BaseException as e:
             if e.args is None or len(e.args) == 0:
-                self.error = "Unknown Error"
+                self.error = "Multisig Import Error"
             else:
                 self.error = e.args[0]
             self.goto(self.show_error)
