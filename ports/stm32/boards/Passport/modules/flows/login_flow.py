@@ -38,7 +38,7 @@ class LoginFlow(Flow):
     async def check_pin(self):
         (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin])
         if result:
-            common.settings.set_volatile('first_four_hash', sha256(self.pin[:4]))
+            common.settings.set_volatile('pin_prefix_hash', sha256(self.pin[:4]))
             self.set_result(True)
         else:
             # print('goto error!!!!')
