@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
-#ifdef LV_LVGL_H_INCLUDE_SIMPLE
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
 #include "lvgl.h"
 #else
 #include "lvgl/lvgl.h"
 #endif
 
+
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
+
 #ifndef LV_ATTRIBUTE_IMG_LARGE_ICON_SETUP_QR
 #define LV_ATTRIBUTE_IMG_LARGE_ICON_SETUP_QR
 #endif
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_LARGE_ICON_SETUP_QR uint8_t LARGE_ICON_SETUP_QR_map[] = {
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_LARGE_ICON_SETUP_QR uint8_t LARGE_ICON_SETUP_QR_map[] = {
   0xff, 0xff, 0xff, 0xff, 	/*Color of index 0*/
   0x00, 0x00, 0x00, 0xff, 	/*Color of index 1*/
 
@@ -176,6 +179,6 @@ const lv_img_dsc_t LARGE_ICON_SETUP_QR = {
   .header.reserved = 0,
   .header.w = 150,
   .header.h = 150,
-  .data_size = 2859,
+  .data_size = 2858,
   .data = LARGE_ICON_SETUP_QR_map,
 };

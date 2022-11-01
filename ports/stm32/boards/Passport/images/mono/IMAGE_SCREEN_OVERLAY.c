@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
-#ifdef LV_LVGL_H_INCLUDE_SIMPLE
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
 #include "lvgl.h"
 #else
 #include "lvgl/lvgl.h"
 #endif
 
+
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
+
 #ifndef LV_ATTRIBUTE_IMG_IMAGE_SCREEN_OVERLAY
 #define LV_ATTRIBUTE_IMG_IMAGE_SCREEN_OVERLAY
 #endif
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_IMAGE_SCREEN_OVERLAY uint8_t IMAGE_SCREEN_OVERLAY_map[] = {
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMAGE_SCREEN_OVERLAY uint8_t IMAGE_SCREEN_OVERLAY_map[] = {
   0xd6, 0xd6, 0xd6, 0x96, 	/*Color of index 0*/
   0x41, 0x41, 0x41, 0x7d, 	/*Color of index 1*/
 
@@ -344,6 +347,6 @@ const lv_img_dsc_t IMAGE_SCREEN_OVERLAY = {
   .header.reserved = 0,
   .header.w = 238,
   .header.h = 318,
-  .data_size = 9549,
+  .data_size = 9548,
   .data = IMAGE_SCREEN_OVERLAY_map,
 };
