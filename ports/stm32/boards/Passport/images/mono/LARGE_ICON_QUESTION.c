@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
-#ifdef LV_LVGL_H_INCLUDE_SIMPLE
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
 #include "lvgl.h"
 #else
 #include "lvgl/lvgl.h"
 #endif
 
+
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
+
 #ifndef LV_ATTRIBUTE_IMG_LARGE_ICON_QUESTION
 #define LV_ATTRIBUTE_IMG_LARGE_ICON_QUESTION
 #endif
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_LARGE_ICON_QUESTION uint8_t LARGE_ICON_QUESTION_map[] = {
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_LARGE_ICON_QUESTION uint8_t LARGE_ICON_QUESTION_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0xfe, 0xfe, 0xfe, 0xbf, 	/*Color of index 1*/
 
@@ -66,6 +69,6 @@ const lv_img_dsc_t LARGE_ICON_QUESTION = {
   .header.reserved = 0,
   .header.w = 40,
   .header.h = 40,
-  .data_size = 209,
+  .data_size = 208,
   .data = LARGE_ICON_QUESTION_map,
 };
