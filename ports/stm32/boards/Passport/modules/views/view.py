@@ -34,8 +34,6 @@ class View():
         if self.children is None:
             self.children = []
         self.children.append(child)
-        if self.is_mounted():
-            self.mount_children()
 
     def remove_child(self, child):
         if child in self.children:
