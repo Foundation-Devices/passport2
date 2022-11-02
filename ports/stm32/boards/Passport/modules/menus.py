@@ -205,11 +205,10 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow
-    from pages import ShowSecurityWordsSettingPage
+    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow, ShowSecurityWordsSettingFlow
 
     return [
-        {'icon': lv.ICON_SETTINGS, 'label': 'Security Words', 'page': ShowSecurityWordsSettingPage},
+        {'icon': lv.ICON_SETTINGS, 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
         {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
          'statusbar': {'title': 'SEED WORDS', 'icon': lv.ICON_SEED}},
         {'icon': lv.ICON_ONE_KEY, 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,

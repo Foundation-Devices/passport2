@@ -32,6 +32,7 @@ class PINEntryPage(Page):
                  security_words_message='Recognize these\nsecurity words?',
                  card_header=None,
                  statusbar=None,
+                 check_pin_prefix=False,
                  left_micron=microns.Back,
                  right_micron=microns.Checkmark):
         super().__init__(card_header=card_header,
@@ -43,6 +44,7 @@ class PINEntryPage(Page):
 
         self.title = title
         self.pin = pin
+        self.check_pin_prefix = check_pin_prefix
         self.confirm_security_words = confirm_security_words
         self.security_words_message = security_words_message
         self.security_words = []
@@ -252,17 +254,21 @@ class PINEntryPage(Page):
             self.input.set_pin(self.pin)
             self.input.set_mode(self.t9.mode)
 
-        if self.user_wants_to_see_security_words and self.show_security_words:
-            self.update_message(show_security_words=True, title=self.security_words_message)
-        elif pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
-            self.show_brick_warning()
-
     async def on_security_words(self, security_words, error):
+        from serializations import sha256
         # NOTE: Be aware that this is called from the context of another task
         if error is None:
             self.security_words = security_words
             self.show_security_words = True
             if self.show_security_words and self.user_wants_to_see_security_words:
+                new_pin_sha = sha256(self.pin)
+                true_pin_sha = common.settings.get('pin_prefix_hash')
+                if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
+                    self.security_words_message = ("Your PIN is incorrect.\n"
+                                                   "Try again.")
+                    self.update_message(show_security_words=False, title="Warning", message=self.security_words_message)
+                    return
+
                 self.update_message(show_security_words=True, title=self.security_words_message)
 
         if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
