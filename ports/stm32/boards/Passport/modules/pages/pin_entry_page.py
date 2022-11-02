@@ -254,11 +254,6 @@ class PINEntryPage(Page):
             self.input.set_pin(self.pin)
             self.input.set_mode(self.t9.mode)
 
-        if self.user_wants_to_see_security_words and self.show_security_words:
-            self.update_message(show_security_words=True, title=self.security_words_message)
-        elif pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
-            self.show_brick_warning()
-
     async def on_security_words(self, security_words, error):
         from serializations import sha256
         # NOTE: Be aware that this is called from the context of another task
@@ -269,11 +264,12 @@ class PINEntryPage(Page):
                 new_pin_sha = sha256(self.pin)
                 true_pin_sha = common.settings.get('pin_prefix_hash')
                 if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
-                    self.security_words_message = ("Your first four digits are wrong.\n"
-                                                   "These are not your security words.\n"
+                    self.security_words_message = ("Your PIN is incorrect.\n"
                                                    "Try again.")
+                    self.update_message(show_security_words=False, title="Warning", message=self.security_words_message)
+                    return
 
-            self.update_message(show_security_words=True, title=self.security_words_message)
+                self.update_message(show_security_words=True, title=self.security_words_message)
 
         if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()

@@ -24,7 +24,7 @@ class ShowSecurityWordsSettingFlow(Flow):
         (pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter PIN'},
             security_words_message='Remember these Security Words',
-            check_first_four=True,
+            check_pin_prefix=True,
             left_micron=microns.Back,
             right_micron=microns.Checkmark).show()
         if not is_done:
