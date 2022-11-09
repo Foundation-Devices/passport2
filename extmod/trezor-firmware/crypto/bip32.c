@@ -24,6 +24,10 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
+
+#include "py/objstr.h"
+#include "embed/extmod/trezorobj.h"
 
 #include "address.h"
 #include "aes/aes.h"
@@ -47,6 +51,8 @@
 #include "nem.h"
 #endif
 #include "memzero.h"
+
+#include "py/mphal.h"
 
 const curve_info ed25519_info = {
     .bip32_name = ED25519_SEED_NAME,
@@ -179,14 +185,20 @@ int hdnode_from_seed(const uint8_t *seed, int seed_len, const char *curve,
 }
 
 uint32_t hdnode_fingerprint(HDNode *node) {
+  printf("fp 0 %lu\n", mp_hal_ticks_ms());
   uint8_t digest[32] = {0};
+  printf("fp 1 %lu\n", mp_hal_ticks_ms());
   uint32_t fingerprint = 0;
 
   hdnode_fill_public_key(node);
+  printf("fp 2 %lu\n", mp_hal_ticks_ms());
   hasher_Raw(node->curve->hasher_pubkey, node->public_key, 33, digest);
+  printf("fp 3 %lu\n", mp_hal_ticks_ms());
   fingerprint = ((uint32_t)digest[0] << 24) + (digest[1] << 16) +
                 (digest[2] << 8) + digest[3];
+  printf("fp 4 %lu\n", mp_hal_ticks_ms());
   memzero(digest, sizeof(digest));
+  printf("fp 5 %lu\n", mp_hal_ticks_ms());
   return fingerprint;
 }
 
@@ -461,40 +473,62 @@ int hdnode_get_address(HDNode *node, uint32_t version, char *addr,
 }
 
 int hdnode_fill_public_key(HDNode *node) {
+  printf("pk 0 %lu\n", mp_hal_ticks_ms());
   if (node->public_key[0] != 0) return 0;
 
 #if USE_BIP32_25519_CURVES
+  printf("pk 0 %lu\n", mp_hal_ticks_ms());
   if (node->curve->params) {
+    printf("pk 1 %lu\n", mp_hal_ticks_ms());
+    //This function is taking 80ms
     if (ecdsa_get_public_key33(node->curve->params, node->private_key,
                                node->public_key) != 0) {
+      printf("pk 2 %lu\n", mp_hal_ticks_ms());
       return 1;
     }
+    printf("pk 3 %lu\n", mp_hal_ticks_ms());
   } else {
+    printf("pk 4 %lu\n", mp_hal_ticks_ms());
     node->public_key[0] = 1;
     if (node->curve == &ed25519_info) {
+      printf("pk 5 %lu\n", mp_hal_ticks_ms());
       ed25519_publickey(node->private_key, node->public_key + 1);
     } else if (node->curve == &ed25519_sha3_info) {
+      printf("pk 6 %lu\n", mp_hal_ticks_ms());
       ed25519_publickey_sha3(node->private_key, node->public_key + 1);
 #if USE_KECCAK
+      printf("pk 7 %lu\n", mp_hal_ticks_ms());
     } else if (node->curve == &ed25519_keccak_info) {
+      printf("pk 8 %lu\n", mp_hal_ticks_ms());
       ed25519_publickey_keccak(node->private_key, node->public_key + 1);
 #endif
+      printf("pk 9 %lu\n", mp_hal_ticks_ms());
     } else if (node->curve == &curve25519_info) {
+      printf("pk 10 %lu\n", mp_hal_ticks_ms());
       curve25519_scalarmult_basepoint(node->public_key + 1, node->private_key);
+      printf("pk 11 %lu\n", mp_hal_ticks_ms());
 #if USE_CARDANO
     } else if (node->curve == &ed25519_cardano_info) {
+      printf("pk 12 %lu\n", mp_hal_ticks_ms());
       ed25519_publickey_ext(node->private_key, node->private_key_extension,
                             node->public_key + 1);
+      printf("pk 13 %lu\n", mp_hal_ticks_ms());
 #endif
     }
+    printf("pk 14 %lu\n", mp_hal_ticks_ms());
   }
+  printf("pk 15 %lu\n", mp_hal_ticks_ms());
 #else
+  printf("pk 16 %lu\n", mp_hal_ticks_ms());
 
   if (ecdsa_get_public_key33(node->curve->params, node->private_key,
                              node->public_key) != 0) {
+    printf("pk 17 %lu\n", mp_hal_ticks_ms());
     return 1;
   }
+  printf("pk 18 %lu\n", mp_hal_ticks_ms());
 #endif
+  printf("pk 19 %lu\n", mp_hal_ticks_ms());
   return 0;
 }
 

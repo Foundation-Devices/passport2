@@ -66,6 +66,7 @@ class VerifyAddressFlow(Flow):
             self.goto(self.scan_address)
 
     async def scan_address(self):
+        print("VerifyAddressFlow scan_address")
         import chains
         from pages import ErrorPage, ScanQRPage
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
@@ -105,6 +106,7 @@ class VerifyAddressFlow(Flow):
         self.goto(self.search_for_address)
 
     async def search_for_address(self):
+        print("search for address")
         from tasks import search_for_address_task
         from utils import get_prev_address_range, get_next_address_range, spinner_task
 
