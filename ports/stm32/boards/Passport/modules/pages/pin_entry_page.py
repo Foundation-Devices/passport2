@@ -47,6 +47,7 @@ class PINEntryPage(Page):
         self.security_words_message = security_words_message
         self.security_words = []
 
+        # TODO: this should have a different name to avoid confusion with update_message(show_security_words)
         self.show_security_words = False
         self.security_container = None
         self.message_container = None
@@ -282,10 +283,8 @@ class PINEntryPage(Page):
                 # Prevent user from backspacing to index all security words
                 self.disable_backspace = True
             else:
-                self.show_security_words = False
                 self.disable_backspace = False
-            # TODO: is this redundant with line 281 covering the True case?
-            self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
+                self.update_message(show_security_words=False, title=self.security_words_message)
 
             # If user goes back below the minimum, then we need to show security words again
             if len(prefix) < NUM_DIGITS_FOR_SECURITY_WORDS:
