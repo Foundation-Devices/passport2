@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include "py/mphal.h"
 
 #include "address.h"
 #include "base58.h"
@@ -536,6 +538,7 @@ int point_multiply(const ecdsa_curve *curve, const bignum256 *k,
 // returns 0 on success
 int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
                     curve_point *res) {
+  printf("scalar multiply A %lu\n", mp_hal_ticks_ms());
   if (!bn_is_less(k, &curve->order)) {
     return 1;
   }
@@ -627,6 +630,7 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
 
 int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
                     curve_point *res) {
+  printf("scalar multiply B %lu\n", mp_hal_ticks_ms());
   return point_multiply(curve, k, &curve->G, res);
 }
 
@@ -787,21 +791,32 @@ int ecdsa_get_public_key33(const ecdsa_curve *curve, const uint8_t *priv_key,
   curve_point R = {0};
   bignum256 k = {0};
 
+  printf("ec 0 %lu\n", mp_hal_ticks_ms());
   bn_read_be(priv_key, &k);
+  printf("ec 1 %lu\n", mp_hal_ticks_ms());
   if (bn_is_zero(&k) || !bn_is_less(&k, &curve->order)) {
+    printf("ec 2 %lu\n", mp_hal_ticks_ms());
     // Invalid private key.
     memzero(pub_key, 33);
+    printf("ec 3 %lu\n", mp_hal_ticks_ms());
     return -1;
   }
+  printf("ec 4 %lu\n", mp_hal_ticks_ms());
 
   // compute k*G
   if (scalar_multiply(curve, &k, &R) != 0) {
+    printf("ec 5 %lu\n", mp_hal_ticks_ms());
     memzero(&k, sizeof(k));
+    printf("ec 6 %lu\n", mp_hal_ticks_ms());
     return 1;
   }
+  printf("ec 7 %lu\n", mp_hal_ticks_ms());
   pub_key[0] = 0x02 | (R.y.val[0] & 0x01);
+  printf("ec 8 %lu\n", mp_hal_ticks_ms());
   bn_write_be(&R.x, pub_key + 1);
+  printf("ec 9 %lu\n", mp_hal_ticks_ms());
   memzero(&R, sizeof(R));
+  printf("ec 10 %lu\n", mp_hal_ticks_ms());
   memzero(&k, sizeof(k));
   return 0;
 }
