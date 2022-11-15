@@ -23,6 +23,9 @@
 
 #include "rand.h"
 
+#include <stdio.h>
+#include "py/mphal.h"
+
 #ifndef RAND_PLATFORM_INDEPENDENT
 
 #pragma message( \
@@ -44,6 +47,7 @@ void random_reseed(const uint32_t value) { seed = value; }
 uint32_t random32(void) {
   // Linear congruential generator from Numerical Recipes
   // https://en.wikipedia.org/wiki/Linear_congruential_generator
+  printf("this is it lol %lu\n", mp_hal_ticks_ms());
   seed = 1664525 * seed + 1013904223;
   return seed;
 }
