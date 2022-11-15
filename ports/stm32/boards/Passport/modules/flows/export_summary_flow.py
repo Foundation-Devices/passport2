@@ -28,7 +28,6 @@ class ExportSummaryFlow(Flow):
             self.set_result(False)
 
     async def do_export(self):
-        # TODO: should this be done similar to "with CardSlot() as Card"
         if not _try_microsd():
             result = await InsertMicroSDPage().show()
             if not result:
