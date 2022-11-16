@@ -18,8 +18,8 @@
  */
 
 #include "py/objstr.h"
+
 #include "embed/extmod/trezorobj.h"
-#include "py/mphal.h"
 #include "hdnode.h"
 
 #include "bip32.h"
@@ -147,17 +147,13 @@ STATIC mp_obj_t mod_trezorcrypto_HDNode_make_new(const mp_obj_type_t *type,
 ///     """
 STATIC mp_obj_t mod_trezorcrypto_HDNode_derive(size_t n_args,
                                                const mp_obj_t *args) {
-  printf("derive 0 %lu\n", mp_hal_ticks_ms());
   mp_obj_HDNode_t *o = MP_OBJ_TO_PTR(args[0]);
   uint32_t i = trezor_obj_get_uint(args[1]);
-  printf("derive 1 %lu\n", mp_hal_ticks_ms());
   uint32_t fp = hdnode_fingerprint(&o->hdnode);
-  printf("derive 2 %lu\n", mp_hal_ticks_ms());
   bool public = n_args > 2 && args[2] == mp_const_true;
 
   int res = 0;
   if (public) {
-    printf("derive 3 %lu\n", mp_hal_ticks_ms());
     res = hdnode_public_ckd(&o->hdnode, i);
   } else {
     if (0 ==
@@ -166,24 +162,15 @@ STATIC mp_obj_t mod_trezorcrypto_HDNode_derive(size_t n_args,
             "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
             32)) {
-      printf("derive 4 %lu\n", mp_hal_ticks_ms());
       memzero(&o->hdnode, sizeof(o->hdnode));
-      printf("derive 5 %lu\n", mp_hal_ticks_ms());
       mp_raise_ValueError(MP_ERROR_TEXT("Failed to derive, private key not set"));
-      printf("derive 6 %lu\n", mp_hal_ticks_ms());
     }
-    printf("derive 7 %lu\n", mp_hal_ticks_ms());
     res = hdnode_private_ckd(&o->hdnode, i);
-    printf("derive 8 %lu\n", mp_hal_ticks_ms());
   }
-  printf("derive 9 %lu\n", mp_hal_ticks_ms());
   if (!res) {
-    printf("derive 10 %lu\n", mp_hal_ticks_ms());
     memzero(&o->hdnode, sizeof(o->hdnode));
-    printf("derive 11 %lu\n", mp_hal_ticks_ms());
     mp_raise_ValueError(MP_ERROR_TEXT("Failed to derive"));
   }
-  printf("derive 12 %lu\n", mp_hal_ticks_ms());
   o->fingerprint = fp;
 
   return mp_const_none;

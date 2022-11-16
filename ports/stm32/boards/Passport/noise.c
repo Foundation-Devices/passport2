@@ -20,9 +20,6 @@
 
 #include "stm32h7xx_hal.h"
 
-#include <stdio.h>
-#include "py/mphal.h"
-
 static unsigned int _users = 0;
 
 void noise_enable() {
@@ -42,73 +39,52 @@ void noise_disable() {
 
 bool noise_get_random_uint16(uint16_t* result) {
     HAL_StatusTypeDef ret;
-    printf("ru 0 %lu\n", mp_hal_ticks_ms());
     uint32_t          noise1 = 0;
     uint32_t          noise2 = 0;
     uint16_t          r      = 0;
 
     for (int i = 0; i < 4; i++) {
-        printf("ru 1 %lu\n", mp_hal_ticks_ms());
         r = r << 4;
 
-        // TODO: there it is
         HAL_Delay(1);
-        printf("ru 2 %lu\n", mp_hal_ticks_ms());
 
         ret = adc_read_noise_inputs(&noise1, &noise2);
-        printf("ru 3 %lu\n", mp_hal_ticks_ms());
         if (ret < 0) {
-            printf("ru 4 %lu\n", mp_hal_ticks_ms());
             return false;
         }
 
-        printf("ru 5 %lu\n", mp_hal_ticks_ms());
         r ^= noise1 ^ noise2;
     }
-    printf("ru 6 %lu\n", mp_hal_ticks_ms());
     *result = r;
     return true;
 }
 
 bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
 // Need to be fast for this
-    printf("rb 0 %lu\n", mp_hal_ticks_ms());
 #ifndef FACTORY_TEST
-    printf("rb 1 %lu\n", mp_hal_ticks_ms());
     frequency_turbo(true);
 #endif
 
     // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
-    printf("rb 2 %lu\n", mp_hal_ticks_ms());
     if (buf_len < 4) {
-        printf("rb 3 %lu\n", mp_hal_ticks_ms());
         return false;
     }
 
     // printf("sources = 0x%02x  buf_len=%d\n", sources, buf_len);
-    printf("rb 4 %lu\n", mp_hal_ticks_ms());
     if (!(sources & NOISE_AVALANCHE_SOURCE) && !(sources & NOISE_MCU_RNG_SOURCE) && !(sources & NOISE_SE_RNG_SOURCE)) {
-        printf("rb 5 %lu\n", mp_hal_ticks_ms());
         // printf("Bad sources, so picking Avalanche!\n");
         // Ensure we always use at least one high entropy source even if caller made a mistake.
         // If you just want als value, you can read it separately.
         sources |= NOISE_AVALANCHE_SOURCE;
     }
-    printf("rb 6 %lu\n", mp_hal_ticks_ms());
 
     if (sources & NOISE_AVALANCHE_SOURCE) {
-        printf("rb 7 %lu\n", mp_hal_ticks_ms());
         uint8_t* pbuf8 = (uint8_t*)buf;
         for (int i = 0; i < buf_len;) {
-            printf("rb 8 %lu\n", mp_hal_ticks_ms());
             uint8_t sample[2];
-            // TODO: this takes 5ms
             bool    result = noise_get_random_uint16((uint16_t*)sample);
-            printf("rb 9 %lu\n", mp_hal_ticks_ms());
             if (!result) {
-                printf("rb 10 %lu\n", mp_hal_ticks_ms());
 #ifndef FACTORY_TEST
-                printf("rb 11 %lu\n", mp_hal_ticks_ms());
                 frequency_turbo(false);
 #endif
                 // printf("failed to get Avalanche sample!\n");
@@ -116,83 +92,58 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
             }
 
             // printf("AVALANCHE SAMPLE: 0x%02x%02x\n", sample[0], sample[1]);
-            printf("rb 12 %lu\n", mp_hal_ticks_ms());
             if (i < buf_len) {
-                printf("rb 13 %lu\n", mp_hal_ticks_ms());
                 pbuf8[i] = sample[0];
                 i++;
             }
-            printf("rb 14 %lu\n", mp_hal_ticks_ms());
             if (i < buf_len) {
-                printf("rb 15 %lu\n", mp_hal_ticks_ms());
                 pbuf8[i] = sample[1];
                 i++;
             }
-            printf("rb 16 %lu\n", mp_hal_ticks_ms());
         }
-        printf("rb 17 %lu\n", mp_hal_ticks_ms());
     }
-    printf("rb 18 %lu\n", mp_hal_ticks_ms());
 
 #ifndef FACTORY_TEST
-    printf("rb 19 %lu\n", mp_hal_ticks_ms());
     // MCU RNG
     if (sources & NOISE_MCU_RNG_SOURCE) {
-        printf("rb 20 %lu\n", mp_hal_ticks_ms());
         // printf("Using MCU source\n");
         uint32_t* pbuf32 = (uint32_t*)buf;
 
         // NOTE: We don't sample and mixin additional entropy into the final 1-3 bytes if buffer size
         //       is not a multiple of 4 bytes.
-        printf("rb 21 %lu\n", mp_hal_ticks_ms());
         for (int i = 0; i < buf_len / 4; i++) {
-            printf("rb 22 %lu\n", mp_hal_ticks_ms());
             uint32_t sample = rng_sample();
-            printf("rb 23 %lu\n", mp_hal_ticks_ms());
             // printf("MCU SAMPLE: 0x%08lx\n", sample);
             // XOR in the sample
             *(pbuf32 + i) ^= sample;
         }
-        printf("rb 24 %lu\n", mp_hal_ticks_ms());
     }
-    printf("rb 25 %lu\n", mp_hal_ticks_ms());
 
     // Secure Element RNG
     if (sources & NOISE_SE_RNG_SOURCE) {
-        printf("rb 26 %lu\n", mp_hal_ticks_ms());
         uint8_t* pbuf8     = (uint8_t*)buf;
         uint8_t* pbuf8_end = pbuf8 + buf_len;
         uint8_t  num_in[20], sample[32];
-        printf("rb 27 %lu\n", mp_hal_ticks_ms());
         memset(num_in, 0, 20);
 
         for (int i = 0; i < buf_len / 32; i++) {
-            printf("rb 28 %lu\n", mp_hal_ticks_ms());
             int rc = se_pick_nonce(num_in, sample);
-            printf("rb 29 %lu\n", mp_hal_ticks_ms());
             if (rc < 0) {
-                printf("rb 30 %lu\n", mp_hal_ticks_ms());
                 se_show_error();
 #ifndef FACTORY_TEST
-                printf("rb 31 %lu\n", mp_hal_ticks_ms());
                 frequency_turbo(false);
 #endif
-                printf("rb 32 %lu\n", mp_hal_ticks_ms());
                 return false;
             }
-            printf("rb 33 %lu\n", mp_hal_ticks_ms());
 
             // uint32_t* s = (uint32_t*)sample;
             // printf("SE SAMPLE: 0x%08lx %08lx %08lx %08lx\n", *s, *(s+1), *(s+2), *(s+3));
 
             // Mixin the sample values - don't overflow output buffer
             xor_mixin(pbuf8, sample, MIN(pbuf8_end - pbuf8, 32));
-            printf("rb 34 %lu\n", mp_hal_ticks_ms());
             pbuf8 += 32;
         }
-        printf("rb 35 %lu\n", mp_hal_ticks_ms());
     }
-    printf("rb 36 %lu\n", mp_hal_ticks_ms());
 
     // printf("1 buf: ");
     // uint8_t* pbuf8 = (uint8_t*)buf_info.buf;
@@ -203,9 +154,7 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
 
     // print_hex_buf("Final buf: ", buf_info.buf, buf_info.len);
     frequency_turbo(false);
-    printf("rb 37 %lu\n", mp_hal_ticks_ms());
 #endif
-    printf("rb 38 %lu\n", mp_hal_ticks_ms());
 
     return true;
 }
@@ -217,19 +166,14 @@ void random_reseed(const uint32_t value) {
 }
 
 uint32_t random32(void) {
-    printf("rng 0 %lu\n", mp_hal_ticks_ms());
     bool     ret;
     uint32_t tmp = 0;
     (void)ret;
     noise_enable();
-    printf("rng 1 %lu\n", mp_hal_ticks_ms());
     ret = noise_get_random_bytes(NOISE_AVALANCHE_SOURCE, &tmp, sizeof(tmp));
-    printf("rng 2 %lu\n", mp_hal_ticks_ms());
     noise_disable();
-    printf("rng 3 %lu\n", mp_hal_ticks_ms());
 #ifndef FACTORY_TEST
     assert(ret);
-    printf("rng 4 %lu\n", mp_hal_ticks_ms());
 #endif
     return tmp;
 }

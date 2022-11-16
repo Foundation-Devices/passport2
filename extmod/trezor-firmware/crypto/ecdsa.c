@@ -26,8 +26,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include "py/mphal.h"
 
 #include "address.h"
 #include "base58.h"
@@ -173,41 +171,30 @@ typedef struct jacobian_curve_point {
 
 // generate random K for signing/side-channel noise
 static void generate_k_random(bignum256 *k, const bignum256 *prime) {
-  printf("gk 0 %lu\n", mp_hal_ticks_ms());
   do {
-    printf("gk 1 %lu\n", mp_hal_ticks_ms());
     int i = 0;
     for (i = 0; i < 8; i++) {
-      printf("gk 2 %lu\n", mp_hal_ticks_ms());
       k->val[i] = random32() & ((1u << BN_BITS_PER_LIMB) - 1);
     }
-    printf("gk 3 %lu\n", mp_hal_ticks_ms());
     k->val[8] = random32() & ((1u << BN_BITS_LAST_LIMB) - 1);
-    printf("gk 4 %lu\n", mp_hal_ticks_ms());
     // check that k is in range and not zero.
   } while (bn_is_zero(k) || !bn_is_less(k, prime));
-  printf("gk 5 %lu\n", mp_hal_ticks_ms());
 }
 
 void curve_to_jacobian(const curve_point *p, jacobian_curve_point *jp,
                        const bignum256 *prime) {
   // randomize z coordinate
-  printf("cj 0 %lu\n", mp_hal_ticks_ms());
   generate_k_random(&jp->z, prime);
-  printf("cj 1 %lu\n", mp_hal_ticks_ms());
 
   jp->x = jp->z;
   bn_multiply(&jp->z, &jp->x, prime);
-  printf("cj 2 %lu\n", mp_hal_ticks_ms());
   // x = z^2
   jp->y = jp->x;
   bn_multiply(&jp->z, &jp->y, prime);
-  printf("cj 3 %lu\n", mp_hal_ticks_ms());
   // y = z^3
 
   bn_multiply(&p->x, &jp->x, prime);
   bn_multiply(&p->y, &jp->y, prime);
-  printf("cj 4 %lu\n", mp_hal_ticks_ms());
 }
 
 void jacobian_to_curve(const jacobian_curve_point *jp, curve_point *p,
@@ -549,12 +536,9 @@ int point_multiply(const ecdsa_curve *curve, const bignum256 *k,
 // returns 0 on success
 int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
                     curve_point *res) {
-  printf("sm 0 %lu\n", mp_hal_ticks_ms());
   if (!bn_is_less(k, &curve->order)) {
-    printf("sm 1 %lu\n", mp_hal_ticks_ms());
     return 1;
   }
-  printf("sm 2 %lu\n", mp_hal_ticks_ms());
 
   int i = {0}, j = {0};
   static CONFIDENTIAL bignum256 a;
@@ -562,7 +546,6 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
   uint32_t lowbits = 0;
   static CONFIDENTIAL jacobian_curve_point jres;
   const bignum256 *prime = &curve->prime;
-  printf("sm 3 %lu\n", mp_hal_ticks_ms());
 
   // is_even = 0xffffffff if k is even, 0 otherwise.
 
@@ -570,28 +553,21 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
   // make number odd: subtract curve->order if even
   uint32_t tmp = 1;
   uint32_t is_non_zero = 0;
-  printf("sm 4 %lu\n", mp_hal_ticks_ms());
   for (j = 0; j < 8; j++) {
-    printf("sm 5 %lu\n", mp_hal_ticks_ms());
     is_non_zero |= k->val[j];
     tmp += (BN_BASE - 1) + k->val[j] - (curve->order.val[j] & is_even);
     a.val[j] = tmp & (BN_BASE - 1);
     tmp >>= BN_BITS_PER_LIMB;
-    printf("sm 6 %lu\n", mp_hal_ticks_ms());
   }
   is_non_zero |= k->val[j];
   a.val[j] = tmp + 0xffffff + k->val[j] - (curve->order.val[j] & is_even);
   assert((a.val[0] & 1) != 0);
-  printf("sm 7 %lu\n", mp_hal_ticks_ms());
 
   // special case 0*G:  just return zero. We don't care about constant time.
   if (!is_non_zero) {
-    printf("sm 8 %lu\n", mp_hal_ticks_ms());
     point_set_infinity(res);
-    printf("sm 9 %lu\n", mp_hal_ticks_ms());
     return 0;
   }
-  printf("sm 10 %lu\n", mp_hal_ticks_ms());
 
   // Now a = k + 2^256 (mod curve->order) and a is odd.
   //
@@ -616,21 +592,15 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
   lowbits = a.val[0] & ((1 << 5) - 1);
   lowbits ^= (lowbits >> 4) - 1;
   lowbits &= 15;
-  printf("sm 11 %lu\n", mp_hal_ticks_ms());
   curve_to_jacobian(&curve->cp[0][lowbits >> 1], &jres, prime);
-  printf("sm 12 %lu\n", mp_hal_ticks_ms());
   for (i = 1; i < 64; i++) {
-    printf("sm 13 %lu\n", mp_hal_ticks_ms());
     // invariant res = sign(a[i-1]) sum_{j=0..i-1} (a[j] * 16^j * G)
 
     // shift a by 4 places.
     for (j = 0; j < 8; j++) {
-      // printf("sm 14 %lu\n", mp_hal_ticks_ms());
       a.val[j] =
           (a.val[j] >> 4) | ((a.val[j + 1] & 0xf) << (BN_BITS_PER_LIMB - 4));
-      // printf("sm 15 %lu\n", mp_hal_ticks_ms());
     }
-    printf("sm 16 %lu\n", mp_hal_ticks_ms());
     a.val[j] >>= 4;
     // a = old(a)>>(4*i)
     // a is even iff sign(a[i-1]) = -1
@@ -640,21 +610,15 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
     lowbits &= 15;
     // negate last result to make signs of this round and the
     // last round equal.
-    printf("sm 17 %lu\n", mp_hal_ticks_ms());
     bn_cnegate(~lowbits & 1, &jres.y, prime);
 
     // add odd factor
-    printf("sm 18 %lu\n", mp_hal_ticks_ms());
     point_jacobian_add(&curve->cp[i][lowbits >> 1], &jres, curve);
   }
-  printf("sm 19 %lu\n", mp_hal_ticks_ms());
   bn_cnegate(~(a.val[0] >> 4) & 1, &jres.y, prime);
-  printf("sm 20 %lu\n", mp_hal_ticks_ms());
   jacobian_to_curve(&jres, res, prime);
-  printf("sm 21 %lu\n", mp_hal_ticks_ms());
   memzero(&a, sizeof(a));
   memzero(&jres, sizeof(jres));
-  printf("sm 22 %lu\n", mp_hal_ticks_ms());
 
   return 0;
 }
@@ -663,7 +627,6 @@ int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
 
 int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
                     curve_point *res) {
-  printf("scalar multiply B %lu\n", mp_hal_ticks_ms());
   return point_multiply(curve, k, &curve->G, res);
 }
 
@@ -824,32 +787,21 @@ int ecdsa_get_public_key33(const ecdsa_curve *curve, const uint8_t *priv_key,
   curve_point R = {0};
   bignum256 k = {0};
 
-  printf("ec 0 %lu\n", mp_hal_ticks_ms());
   bn_read_be(priv_key, &k);
-  printf("ec 1 %lu\n", mp_hal_ticks_ms());
   if (bn_is_zero(&k) || !bn_is_less(&k, &curve->order)) {
-    printf("ec 2 %lu\n", mp_hal_ticks_ms());
     // Invalid private key.
     memzero(pub_key, 33);
-    printf("ec 3 %lu\n", mp_hal_ticks_ms());
     return -1;
   }
-  printf("ec 4 %lu\n", mp_hal_ticks_ms());
 
   // compute k*G
   if (scalar_multiply(curve, &k, &R) != 0) {
-    printf("ec 5 %lu\n", mp_hal_ticks_ms());
     memzero(&k, sizeof(k));
-    printf("ec 6 %lu\n", mp_hal_ticks_ms());
     return 1;
   }
-  printf("ec 7 %lu\n", mp_hal_ticks_ms());
   pub_key[0] = 0x02 | (R.y.val[0] & 0x01);
-  printf("ec 8 %lu\n", mp_hal_ticks_ms());
   bn_write_be(&R.x, pub_key + 1);
-  printf("ec 9 %lu\n", mp_hal_ticks_ms());
   memzero(&R, sizeof(R));
-  printf("ec 10 %lu\n", mp_hal_ticks_ms());
   memzero(&k, sizeof(k));
   return 0;
 }

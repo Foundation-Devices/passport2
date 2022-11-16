@@ -23,8 +23,6 @@ async def search_for_address_task(
 
     import stash
     from errors import Error
-    import utime
-    # TODO: look here for efficiency differences
 
     try:
         with stash.SensitiveValues() as sv:
@@ -47,18 +45,13 @@ async def search_for_address_task(
                     r = reversed(r)
 
                 for curr_idx in r:
-                    print("check 1: {}".format(utime.ticks_ms()))
                     addr_path = '{}/{}/{}'.format(path, is_change, curr_idx)  # Zero for non-change address
-                    print("check 2: {}".format(utime.ticks_ms()))
                     # print('Singlesig: addr_path={}'.format(addr_path))
                     node = sv.derive_path(addr_path)
-                    print("check 3: {}".format(utime.ticks_ms()))
                     curr_address = sv.chain.address(node, addr_type)
-                    print("check 4: {}".format(utime.ticks_ms()))
                     # print('           curr_idx={}: path={} addr_type={} curr_address = {}'.format(curr_idx, addr_path,
                     #       addr_type, curr_address))
                     if curr_address == address:
-                        print("check 5: {}".format(utime.ticks_ms()))
                         await on_done(curr_idx, addr_path, None)
                         return
 

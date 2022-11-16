@@ -21,7 +21,6 @@ import trezorcrypto
 import uctypes
 import gc
 from pincodes import SE_SECRET_LEN
-import utime
 
 
 def blank_object(item):
@@ -239,23 +238,17 @@ class SensitiveValues:
 
     def derive_path(self, path, master=None, register=True):
         # Given a string path, derive the related subkey
-        print("derive_path 1: {}".format(utime.ticks_ms()))
         rv = (master or self.node).clone()
-        print("derive_path 2: {}".format(utime.ticks_ms()))
 
         if register:
-            print("derive_path 3: {}".format(utime.ticks_ms()))
             self.register(rv)
 
-        print("derive_path 4: {}".format(utime.ticks_ms()))
         for i in path.split('/'):
-            print("derive_path 5: {}".format(utime.ticks_ms()))
             if i == 'm':
                 continue
             if not i:
                 continue      # trailing or duplicated slashes
 
-            print("derive_path 6: {}".format(utime.ticks_ms()))
             if i[-1] == "'":
                 assert len(i) >= 2, i
                 here = int(i[:-1])
@@ -265,10 +258,8 @@ class SensitiveValues:
                 here = int(i)
                 assert 0 <= here < 0x80000000, here
 
-            print("derive_path 7: {}".format(utime.ticks_ms()))
             rv.derive(here)
 
-        print("derive_path 8: {}".format(utime.ticks_ms()))
         return rv
 
 # EOF
