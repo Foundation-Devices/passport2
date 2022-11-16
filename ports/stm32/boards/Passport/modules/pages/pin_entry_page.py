@@ -5,7 +5,7 @@
 
 
 import lvgl as lv
-from styles.colors import BLACK, FD_BLUE, TEXT_GREY, WHITE, COPPER, PIN_ENTRY_MESSAGE_COLOR
+from styles.colors import BLACK, TEXT_GREY, WHITE, COPPER, PIN_ENTRY_MESSAGE_COLOR
 from pages import Page
 from tasks import get_security_words_task
 from utils import InputMode
