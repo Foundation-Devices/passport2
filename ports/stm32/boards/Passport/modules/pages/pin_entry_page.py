@@ -48,7 +48,7 @@ class PINEntryPage(Page):
         self.security_words = []
 
         # TODO: this should have a different name to avoid confusion with update_message(show_security_words)
-        self.show_security_words = False
+        self.displaying_security_words = False
         self.security_container = None
         self.message_container = None
         self.message_icon = None
@@ -202,8 +202,8 @@ class PINEntryPage(Page):
 
     def right_action(self, is_pressed):
         if not is_pressed:
-            if self.show_security_words:
-                self.show_security_words = False
+            if self.displaying_security_words:
+                self.displaying_security_words = False
                 self.security_words = []
                 self.update_message(show_security_words=False, title=self.security_words_message)
 
@@ -243,7 +243,7 @@ class PINEntryPage(Page):
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
 
-        if not self.show_security_words:
+        if not self.displaying_security_words:
             self.t9.on_key(key)
             self.pin = self.t9.get_text()
             self.input.set_pin(self.pin)
@@ -255,7 +255,7 @@ class PINEntryPage(Page):
         # TODO: error not handled
         if error is None:
             self.security_words = security_words
-            self.show_security_words = True
+            self.displaying_security_words = True
             new_pin_sha = sha256(self.pin)
             true_pin_sha = common.settings.get('pin_prefix_hash')
             if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
@@ -266,7 +266,7 @@ class PINEntryPage(Page):
 
             self.update_message(show_security_words=True, title=self.security_words_message)
 
-        if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+        if not self.displaying_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()
 
     def on_ready(self, prefix):
