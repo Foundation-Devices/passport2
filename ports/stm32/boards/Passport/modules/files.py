@@ -36,7 +36,7 @@ def _try_microsd(bad_fs_ok=False):
         st = os.statvfs(sd_root)
         return True
     except OSError:
-        pass
+        return False
 
     try:
         sd.power(1)
