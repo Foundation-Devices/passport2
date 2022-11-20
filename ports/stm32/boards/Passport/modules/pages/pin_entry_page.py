@@ -5,7 +5,7 @@
 
 
 import lvgl as lv
-from styles.colors import BLACK, FD_BLUE, TEXT_GREY, WHITE, COPPER
+from styles.colors import BLACK, TEXT_GREY, WHITE, COPPER, PIN_ENTRY_MESSAGE_COLOR
 from pages import Page
 from tasks import get_security_words_task
 from utils import InputMode
@@ -105,7 +105,8 @@ class PINEntryPage(Page):
                                 message=message, color=COPPER)
             self.brick_warning_shown = True
 
-    def update_message(self, show_security_words=False, title=None, icon=None, message=None, color=FD_BLUE):
+    def update_message(self, show_security_words=False, title=None, icon=None,
+                       message=None, color=PIN_ENTRY_MESSAGE_COLOR):
         # Avoid updating if showing brick warning again
         if not show_security_words and self.brick_warning_shown:
             return
