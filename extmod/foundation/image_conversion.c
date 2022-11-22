@@ -75,19 +75,29 @@ void convert_rgb565_to_grayscale(uint8_t *rgb565,
 // TODO: We need to rotate for the color case of the first dev board
 #ifdef SCREEN_MODE_MONO
     // Intentionally using width with y and height with x since image sensor is rotated vs. grayscale buffer
-    for (uint32_t y = 0; y < gray_hor_res; y++)
-    {
-        uint32_t y_offset = y * gray_ver_res;
-        // printf("y=%u  y_offset=%u\n", y, y_offset);
-        for (uint32_t x = 0; x < gray_ver_res; x++)
-        {
-            uint16_t pixel = rgb565[y_offset + x];
-            uint16_t gray = (pixel & 0xF800) >> 8;
+    for (uint32_t y = 0; y < gray_hor_res; y++) {
+        uint32_t line = y * (gray_ver_res * sizeof(uint16_t));
+        for (uint32_t x = 0; x < gray_ver_res; x++) {
+            uint32_t index = line + (x * sizeof(uint16_t));
+#ifdef PASSPORT_SIMULATOR
+            /* The passport simulator RGB565 camera data isn't byte-swapped */
+            uint16_t pixel = rgb565[index + 1] << 8 | rgb565[index];
+#else
+            uint16_t pixel = rgb565[index] << 8 | rgb565[index + 1];
+#endif
+
+            // Use approximate values for calculating luminance values assuming
+            // a ITU-R color space.
+            //
+            // The values are first converted into RGB888 for the calculation.
+            uint32_t r = ((uint32_t)(pixel & 0xF800) >> 11) << 3;
+            uint32_t g = ((uint32_t)(pixel & 0x07E0) >> 5) << 2;
+            uint32_t b = ((uint32_t)(pixel & 0x001F) >> 0) << 3;
 
             // Rotate coordinates for grayscale image and set pixel
             uint32_t dest_y = gray_ver_res - x;
             uint32_t dest_x = y;
-            grayscale[dest_y * gray_hor_res + dest_x] = gray;
+            grayscale[dest_y * gray_hor_res + dest_x] = (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8);
         }
     }
 #endif
