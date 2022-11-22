@@ -58,6 +58,8 @@ STATIC mp_obj_t mod_foundation_convert_rgb565_to_grayscale(size_t n_args, const 
         return mp_const_none;
     }
 
+    printf("hor: %lu, ver: %lu, configured hor: %lu, ver: %lu, total: %lu\n", hor_res, ver_res, CONFIG_QUIRC_QR_MAX_HOR_RES, CONFIG_QUIRC_QR_MAX_VER_RES, CONFIG_QUIRC_QR_MAX_HOR_RES * CONFIG_QUIRC_QR_MAX_VER_RES);
+
     convert_rgb565_to_grayscale(rgb565_info.buf, grayscale_info.buf, hor_res, ver_res);
     return mp_const_none;
 }
