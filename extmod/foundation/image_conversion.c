@@ -69,47 +69,9 @@ void convert_rgb565_to_grayscale(uint8_t *rgb565,
                                  uint32_t gray_hor_res,
                                  uint32_t gray_ver_res)
 {
-    printf("gray_hor_res=%lu gray_ver_res=%lu\n", gray_hor_res, gray_ver_res);
+    // printf("gray_hor_res=%lu gray_ver_res=%lu\n", gray_hor_res, gray_ver_res);
     // printf("rgb565=%08x grayscale=%08x\n", (void*)rgb565, (void*)grayscale);
 
-// TODO: We need to rotate for the color case of the first dev board
-#ifdef SCREEN_MODE_MONO
-    // Intentionally using width with y and height with x since image sensor is rotated vs. grayscale buffer
-    for (uint32_t y = 0; y < gray_hor_res; y++) {
-        uint32_t line = y * (gray_ver_res * sizeof(uint16_t));
-        for (uint32_t x = 0; x < gray_ver_res; x++) {
-            uint32_t index = line + (x * sizeof(uint16_t));
-            // TODO: may be going out of bounds here:
-#ifdef PASSPORT_SIMULATOR
-            /* The passport simulator RGB565 camera data isn't byte-swapped */
-            uint16_t pixel = rgb565[index + 1] << 8 | rgb565[index];
-#else
-            uint16_t pixel = rgb565[index] << 8 | rgb565[index + 1];
-#endif
-
-            // Use approximate values for calculating luminance values assuming
-            // a ITU-R color space.
-            //
-            // The values are first converted into RGB888 for the calculation.
-            uint32_t r = ((uint32_t)(pixel & 0xF800) >> 11) << 3;
-            uint32_t g = ((uint32_t)(pixel & 0x07E0) >> 5) << 2;
-            uint32_t b = ((uint32_t)(pixel & 0x001F) >> 0) << 3;
-
-            // Rotate coordinates for grayscale image and set pixel
-            // uint32_t dest_y = gray_ver_res - x;
-            // uint32_t dest_x = y;
-            // uint32_t dest = (gray_ver_res - x) * gray_hor_res + y;
-            // uint8_t gray = (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8);
-            //TODO: always crashing when assigning to grayscale
-            //grayscale[(gray_ver_res - x) * gray_hor_res + y] = (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8);
-            grayscale[(gray_ver_res - x) * gray_hor_res + y] = 1;
-            //printf("dest_x: %lu, dest_y: %lu\n", dest_x, dest_y);
-            //printf("gray: %u\n", (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8));
-        }
-    }
-#endif
-
-#ifdef SCREEN_MODE_COLOR
     for (uint32_t y = 0; y < gray_ver_res; y++) {
         uint32_t line = y * (gray_hor_res * sizeof(uint16_t));
         for (uint32_t x = 0; x < gray_hor_res; x++) {
@@ -131,5 +93,4 @@ void convert_rgb565_to_grayscale(uint8_t *rgb565,
             grayscale[y * gray_hor_res + x] = (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8);
         }
     }
-#endif
 }
