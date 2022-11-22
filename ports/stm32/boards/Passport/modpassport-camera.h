@@ -70,7 +70,6 @@ STATIC mp_obj_t mod_passport_camera_snapshot(void) {
 #ifdef SCREEN_MODE_COLOR
     // SAFETY: framebuffer_camera() is valid as camera_snapshot() checks
     // that the address is not NULL.
-    // TODO: what happens here?
     swizzle_u16(framebuffer_camera(), CAMERA_HOR_RES, CAMERA_VER_RES);
 #endif  // SCREEN_MODE_COLOR
 
@@ -161,7 +160,6 @@ STATIC const mp_obj_module_t mod_passport_camera_module = {
 
 #ifdef SCREEN_MODE_COLOR
 STATIC void swizzle_u16(uint16_t* buffer, int w, int h) {
-    //TODO: this might be causing some of the slowdown in color
     uint16_t* end = buffer + (w * h);
 
     while (buffer < end) {
