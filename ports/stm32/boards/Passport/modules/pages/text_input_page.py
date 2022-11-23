@@ -99,6 +99,7 @@ class TextInputPage(Page):
             if self.symbol_picker is not None:
                 self.symbol_picker.detach()
                 self.symbol_picker.unmount()
+                self.remove_child(self.symbol_picker)
                 self.symbol_picker = None
 
             if self.is_showing_symbols:
