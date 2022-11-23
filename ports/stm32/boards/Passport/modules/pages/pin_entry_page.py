@@ -28,7 +28,6 @@ class PINEntryPage(Page):
     def __init__(self,
                  title=None,
                  pin='',
-                 confirm_security_words=True,
                  security_words_message='Recognize these\nsecurity words?',
                  card_header=None,
                  statusbar=None,
@@ -45,11 +44,11 @@ class PINEntryPage(Page):
         self.title = title
         self.pin = pin
         self.check_pin_prefix = check_pin_prefix
-        self.confirm_security_words = confirm_security_words
         self.security_words_message = security_words_message
         self.security_words = []
 
-        self.show_security_words = False
+        # TODO: this should have a different name to avoid confusion with update_message(show_security_words)
+        self.displaying_security_words = False
         self.security_container = None
         self.message_container = None
         self.message_icon = None
@@ -88,12 +87,8 @@ class PINEntryPage(Page):
         self.input.set_width(lv.pct(100))
         self.add_child(self.input)
 
-        show_security_words = self.show_security_words and self.user_wants_to_see_security_words
-        if show_security_words:
-            self.update_message(show_security_words, title=self.security_words_message)
-        else:
-            if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
-                self.show_brick_warning()
+        if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+            self.show_brick_warning()
 
     def show_brick_warning(self):
         if not self.brick_warning_shown:
@@ -208,8 +203,8 @@ class PINEntryPage(Page):
 
     def right_action(self, is_pressed):
         if not is_pressed:
-            if self.show_security_words and self.user_wants_to_see_security_words:
-                self.show_security_words = False
+            if self.displaying_security_words:
+                self.displaying_security_words = False
                 self.security_words = []
                 self.update_message(show_security_words=False, title=self.security_words_message)
 
@@ -249,7 +244,7 @@ class PINEntryPage(Page):
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
 
-        if not self.show_security_words:
+        if not self.displaying_security_words:
             self.t9.on_key(key)
             self.pin = self.t9.get_text()
             self.input.set_pin(self.pin)
@@ -258,21 +253,21 @@ class PINEntryPage(Page):
     async def on_security_words(self, security_words, error):
         from serializations import sha256
         # NOTE: Be aware that this is called from the context of another task
+        # TODO: error not handled
         if error is None:
             self.security_words = security_words
-            self.show_security_words = True
-            if self.show_security_words and self.user_wants_to_see_security_words:
-                new_pin_sha = sha256(self.pin)
-                true_pin_sha = common.settings.get('pin_prefix_hash')
-                if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
-                    self.security_words_message = ("Your PIN is incorrect.\n"
-                                                   "Try again.")
-                    self.update_message(show_security_words=False, title="Warning", message=self.security_words_message)
-                    return
+            self.displaying_security_words = True
+            new_pin_sha = sha256(self.pin)
+            true_pin_sha = common.settings.get('pin_prefix_hash')
+            if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
+                self.security_words_message = ("Your PIN is incorrect.\n"
+                                               "Try again.")
+                self.update_message(show_security_words=False, title="Warning", message=self.security_words_message)
+                return
 
-                self.update_message(show_security_words=True, title=self.security_words_message)
+            self.update_message(show_security_words=True, title=self.security_words_message)
 
-        if not self.show_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
+        if not self.displaying_security_words and pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()
 
     def on_ready(self, prefix):
@@ -289,9 +284,8 @@ class PINEntryPage(Page):
                 # Prevent user from backspacing to index all security words
                 self.disable_backspace = True
             else:
-                self.show_security_words = False
                 self.disable_backspace = False
-            self.update_message(show_security_words=self.show_security_words, title=self.security_words_message)
+                self.update_message(show_security_words=False, title=self.security_words_message)
 
             # If user goes back below the minimum, then we need to show security words again
             if len(prefix) < NUM_DIGITS_FOR_SECURITY_WORDS:
