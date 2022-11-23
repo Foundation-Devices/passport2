@@ -23,6 +23,7 @@ async def search_for_address_task(
 
     import stash
     from errors import Error
+    from uasyncio import sleep_ms
 
     try:
         with stash.SensitiveValues() as sv:
@@ -54,6 +55,7 @@ async def search_for_address_task(
                     if curr_address == address:
                         await on_done(curr_idx, addr_path, None)
                         return
+                    await sleep_ms(1)
 
         await on_done(-1, None, Error.ADDRESS_NOT_FOUND)
     except Exception as e:
