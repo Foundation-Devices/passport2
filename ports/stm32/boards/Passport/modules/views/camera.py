@@ -104,7 +104,7 @@ class Camera(View):
                 'data': self._framebuffer,
             })
             self.lvgl_root.set_src(self.img_dsc)
-            if not passport.IS_COLOR:
+            if not passport.IS_COLOR and not passport.IS_SIMULATOR:
                 self.lvgl_root.set_pivot(self.content_width // 2, self.content_height // 2)
                 self.lvgl_root.set_angle(900)
         else:
