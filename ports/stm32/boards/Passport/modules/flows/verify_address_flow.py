@@ -17,7 +17,7 @@ import microns
 
 RECEIVE_ADDR = 0
 CHANGE_ADDR = 1
-NUM_TO_CHECK = 10
+NUM_TO_CHECK = 50
 
 
 class VerifyAddressFlow(Flow):

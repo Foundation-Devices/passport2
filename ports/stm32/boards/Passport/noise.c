@@ -170,7 +170,7 @@ uint32_t random32(void) {
     uint32_t tmp = 0;
     (void)ret;
     noise_enable();
-    ret = noise_get_random_bytes(NOISE_AVALANCHE_SOURCE, &tmp, sizeof(tmp));
+    ret = noise_get_random_bytes(NOISE_MCU_RNG_SOURCE, &tmp, sizeof(tmp));
     noise_disable();
 #ifndef FACTORY_TEST
     assert(ret);
@@ -191,7 +191,7 @@ void random_buffer(uint8_t* buf, size_t len) {
     }
 
     noise_enable();
-    ret = noise_get_random_bytes(NOISE_AVALANCHE_SOURCE, buf, len);
+    ret = noise_get_random_bytes(NOISE_MCU_RNG_SOURCE, buf, len);
     noise_disable();
 #ifndef FACTORY_TEST
     assert(ret);
