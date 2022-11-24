@@ -33,7 +33,11 @@ class CasaHealthCheckFlow(Flow):
                 self.set_result(False)
             else:
                 # print('result.data={}'.format(result.data))
-                lines = result.data.decode('utf-8').split('\n')
+                try:
+                    lines = result.data.decode('utf-8').split('\n')
+                except Exception as e:
+                    await ErrorPage('Health check format is invalid.').show()
+                    return
                 if len(lines) != 2:
                     await ErrorPage('Health check format is invalid.').show()
                     self.set_result(False)
