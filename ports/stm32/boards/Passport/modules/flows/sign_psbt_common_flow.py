@@ -13,7 +13,7 @@ import lvgl as lv
 from flows import Flow
 import microns
 from pages.chooser_page import ChooserPage
-from styles.colors import FD_BLUE_HEX, BLACK_HEX
+from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 from utils import spinner_task, recolor
 
@@ -74,7 +74,7 @@ class SignPsbtCommonFlow(Flow):
 
             if first:
                 # All outputs are change, so no amount is being "sent" to another wallet
-                outputs.write('\n{}\nNone'.format(recolor(FD_BLUE_HEX, 'Amount')))
+                outputs.write('\n{}\nNone'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Amount')))
 
             # print('total_out={} total_in={}
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
@@ -183,9 +183,9 @@ class SignPsbtCommonFlow(Flow):
         dest = self.chain.render_address(o.scriptPubKey)
 
         return '\n{}\n{}\n\n{}\n{}'.format(
-            recolor(FD_BLUE_HEX, 'Amount'),
+            recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
             val,
-            recolor(FD_BLUE_HEX, 'Destination'),
+            recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
             dest)
 
     def render_change_text(self):
@@ -195,7 +195,7 @@ class SignPsbtCommonFlow(Flow):
         # - we don't really expect all users to verify these outputs, but just in case.
         # - show the total amount, and list addresses
         with uio.StringIO() as msg:
-            msg.write('\n{}'.format(recolor(FD_BLUE_HEX, 'Change Amount')))
+            msg.write('\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount')))
             total = 0
             addrs = []
             # print('len(outputs)={}'.format(len(self.psbt.outputs)))
@@ -216,9 +216,9 @@ class SignPsbtCommonFlow(Flow):
             msg.write('\n%s\n' % total_val)
 
             if len(addrs) == 1:
-                msg.write('\n{}\n{}\n'.format(recolor(FD_BLUE_HEX, 'Change Address'), addrs[0]))
+                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'), addrs[0]))
             else:
-                msg.write('\n{}\n'.format(recolor(FD_BLUE_HEX, 'Change Addresses')))
+                msg.write('\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Addresses')))
                 for a in addrs:
                     msg.write('%s\n\n' % a)
 
@@ -240,14 +240,14 @@ class SignPsbtCommonFlow(Flow):
             fee = self.psbt.calculate_fee()
             if fee is not None:
                 amount, units = self.chain.render_value(fee)
-                msg.write('\n{}\n{} {} '.format(recolor(FD_BLUE_HEX, 'Network Fee'), amount, units))
+                msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
 
             # # NEW: show where all the change outputs are going
             # self.render_change_text(msg)
             # gc.collect()
 
             if self.psbt.warnings and len(self.psbt.warnings) > 0:
-                msg.write('\n\n{}'.format(recolor(FD_BLUE_HEX, 'Warnings')))
+                msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
                 for label, m in self.psbt.warnings:
                     msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
 
