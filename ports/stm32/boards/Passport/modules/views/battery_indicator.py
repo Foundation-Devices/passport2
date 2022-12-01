@@ -6,7 +6,7 @@
 
 import lvgl as lv
 from views import View, Icon
-from styles.colors import FD_BLUE, WHITE, TEXT_GREY
+from styles.colors import BATTERY_FILL_COLOR, WHITE, TEXT_GREY
 from styles import Stylize, LocalStyle
 
 LEFT_MARGIN = 2
@@ -37,7 +37,7 @@ class BatteryIndicator(View):
         self.fill.set_height(FILL_HEIGHT)
         self.fill.set_pos(LEFT_MARGIN, TOP_MARGIN)
         with Stylize(self.fill) as default:
-            default.bg_color(FD_BLUE)
+            default.bg_color(BATTERY_FILL_COLOR)
 
         self.update_fill()
 
