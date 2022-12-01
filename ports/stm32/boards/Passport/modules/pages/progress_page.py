@@ -4,7 +4,6 @@
 # spinner_page.py
 
 from pages import StatusPage
-from styles.colors import FD_BLUE
 import microns
 
 
@@ -12,7 +11,6 @@ class ProgressPage(StatusPage):
     def __init__(
             self,
             text=None,
-            color=FD_BLUE,
             interactive=False,
             card_header=None,
             statusbar=None,
@@ -21,7 +19,6 @@ class ProgressPage(StatusPage):
         super().__init__(
             text=text,
             show_progress=True,
-            progress_color=color,
             interactive=interactive,
             card_header=card_header,
             statusbar=statusbar,

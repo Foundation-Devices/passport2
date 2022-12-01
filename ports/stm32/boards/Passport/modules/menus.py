@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from utils import has_seed
-from pages import ColorPickerPage
+# from pages import ColorPickerPage
 
 
 def manage_account_menu():

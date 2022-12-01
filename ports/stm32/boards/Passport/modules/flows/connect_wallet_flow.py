@@ -14,18 +14,15 @@ from pages import (
     QuestionPage,
     ShowQRPage,
     SigTypeChooserPage,
-    StatusPage,
     SuccessPage,
     SWWalletChooserPage)
 from tasks import (
     create_wallet_export_task,
     generate_addresses_task,
-    save_multisig_wallet_task,
     write_data_to_file_task)
 from wallets.utils import (
     get_deriv_path_from_address_and_acct,
     get_addr_type_from_address,
-    get_deriv_path_from_address_and_acct,
     get_deriv_path_from_addr_type_and_acct,
     get_addr_type_from_deriv,
     derive_address)
