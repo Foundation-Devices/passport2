@@ -9,6 +9,7 @@ from pages import InfoPage, ErrorPage, LongTextPage, QuestionPage
 from flows import Flow
 from tasks import get_seed_words_task
 from utils import spinner_task
+import stash
 
 
 class ViewSeedWordsFlow(Flow):
@@ -40,6 +41,8 @@ class ViewSeedWordsFlow(Flow):
         if error is None and words is not None:
             from pages import SeedWordsListPage
             result = await SeedWordsListPage(words=words).show()
+            if stash.bip39_passphrase != '':
+                await InfoPage(text='Passphrase: {}'.format(stash.bip39_passphrase)).show()
             self.set_result(result)
         else:
             await ErrorPage(text='Unable to retrieve seed: {}'.format(error)).show()

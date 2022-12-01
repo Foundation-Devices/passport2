@@ -18,7 +18,6 @@ class AboutFlow(Flow):
     async def about_page(self):
         from common import settings, system
         from utils import has_seed
-        import stash
 
         serial = system.get_serial_number()
         my_xfp = settings.get('xfp', 0)
@@ -43,12 +42,6 @@ class AboutFlow(Flow):
                 xpub=xpub if xpub is not None else '<No Seed Yet>')
         else:
             msg = ''
-
-        if len(stash.bip39_passphrase) > 0:
-            msg += '\n{passphrase_title}\n{passphrase}\n'.format(
-                passphrase_title=recolor(HIGHLIGHT_TEXT_HEX, 'Active Passphrase'),
-                passphrase=stash.bip39_passphrase
-            )
 
         msg += '''
 {serial_title}
