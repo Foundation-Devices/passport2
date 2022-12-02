@@ -83,21 +83,15 @@ static camera_reg_t _camera_reg_init[] = {
     {0x1a, 0xf6},
 
     //===Zoom===
-    {0xc8, 0x01},
-    {0xc9, 0xe0},  // ISP input hsize (480)
+    {0xc8, 0x02},
+    {0xc9, 0x80},  // ISP input hsize (640)
     {0xca, 0x01},
     {0xcb, 0xe0},  // ISP input vsize (480)
 
-    //===No zoom===
-    // { 0xc8, 0x01 },
-    // { 0xc9, 0xe0 }, // ISP input hsize (480)
-    // { 0xca, 0x01 },
-    // { 0xcb, 0xe0 }, // ISP input vsize (480)
-
     {0xcc, 0x01},
-    {0xcd, 0x5E},  // ISP output hsize (350)
+    {0xcd, 0xA0},  // ISP output hsize (416)
     {0xce, 0x01},
-    {0xcf, 0x5E},  // ISP output vsize (350)
+    {0xcf, 0x38},  // ISP output vsize (312)
 
     //===Position===
     {0x17, 0x69},  // h
