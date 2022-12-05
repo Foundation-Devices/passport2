@@ -13,7 +13,7 @@ class MainFlow(Flow):
     async def start(self):
         import common
         from utils import start_task, is_logged_in, has_seed
-        from flows import SelectSetupModeFlow, LoginFlow, InitialSeedSetupFlow, BackupFlow
+        from flows import SelectSetupModeFlow, LoginFlow, InitialSeedSetupFlow
 
         await SelectSetupModeFlow().run()
 
@@ -22,9 +22,6 @@ class MainFlow(Flow):
 
         if not has_seed():
             await InitialSeedSetupFlow(allow_backtrack=False).run()
-
-        if not common.settings.get('backup_quiz', False):
-            await BackupFlow().run()
 
         # Create initial cards by calling ui.update_cards()
         common.ui.update_cards(is_init=True)
