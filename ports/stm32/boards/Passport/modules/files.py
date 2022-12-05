@@ -10,7 +10,7 @@ import pyb
 import os
 import sys
 import utime
-from uerrno import ENOENT
+from uerrno import ENODEV, ENOENT
 
 
 def _try_microsd(bad_fs_ok=False):
@@ -35,8 +35,11 @@ def _try_microsd(bad_fs_ok=False):
         # already mounted and ready?
         st = os.statvfs(sd_root)
         return True
-    except OSError:
-        return False
+    except OSError as exc:
+        # ENODEV in this case means that the SD card is not mounted, but
+        # present.
+        if exc.args[0] != ENODEV:
+            return False
 
     try:
         sd.power(1)
