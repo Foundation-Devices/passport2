@@ -39,6 +39,7 @@ async def search_for_address_task(
                         # NOTE: Paths are the full paths of the addresses of each signer
                         await on_done(curr_idx, paths, None)
                         return
+                    await sleep_ms(1)
 
             else:
                 r = range(start_address_idx, start_address_idx + max_to_check)
