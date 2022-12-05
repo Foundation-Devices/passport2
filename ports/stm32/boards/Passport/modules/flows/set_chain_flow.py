@@ -6,7 +6,6 @@
 import lvgl as lv
 from flows import Flow
 from pages import ChainSettingPage, ErrorPage
-from styles.colors import FD_BLUE
 
 
 class SetChainFlow(Flow):

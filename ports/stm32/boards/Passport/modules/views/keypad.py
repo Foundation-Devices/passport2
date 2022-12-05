@@ -3,7 +3,7 @@
 #
 
 import lvgl as lv
-from styles.colors import FD_BLUE, TEXT_GREY, VERY_LIGHT_GREY, FD_BLUE, WHITE
+from styles.colors import FD_BLUE, TEXT_GREY, VERY_LIGHT_GREY, WHITE
 from styles.local_style import LocalStyle
 from styles.style import Stylize
 from .view import View

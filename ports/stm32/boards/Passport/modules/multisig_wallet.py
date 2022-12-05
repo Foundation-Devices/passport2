@@ -12,7 +12,6 @@
 
 import stash
 import chains
-from styles.colors import COPPER_HEX, FD_BLUE_HEX
 import ustruct
 import ure
 import tcc
