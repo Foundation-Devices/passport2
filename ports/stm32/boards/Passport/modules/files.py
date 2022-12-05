@@ -6,6 +6,8 @@
 #
 # files.py - microSD and related functions.
 #
+
+import passport
 import pyb
 import os
 import sys
@@ -14,7 +16,6 @@ from uerrno import ENODEV, ENOENT
 
 
 def _try_microsd(bad_fs_ok=False):
-    import passport
     from common import system
 
     sd_root = system.get_sd_root()
@@ -238,7 +239,8 @@ def securely_blank_file(full_path):
                 assert fd.seek(0, 1) >= size
 
             # probably pointless, but why not:
-            os.sync()
+            if not passport.IS_SIMULATOR:
+                os.sync()
 
         except OSError as exc:
             # missing file is okay
