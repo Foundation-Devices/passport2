@@ -359,6 +359,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/sw_wallets.py',
         'wallets/utils.py',
         'wallets/vault.py',
-        'wallets/wasabi.py'))
+        'wallets/wasabi.py',
+        'wallets/keeper.py'))
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

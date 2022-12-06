@@ -14,6 +14,7 @@ from .electrum import ElectrumWallet
 from .envoy import EnvoyWallet
 # from .fullynoded import FullyNodedWallet
 # from .gordian import GordianWallet
+from .keeper import KeeperWallet
 # from .lily import LilyWallet
 from .nunchuk import NunchukWallet
 from .simple_bitcoin_wallet import SimpleBitcoinWallet
@@ -34,6 +35,7 @@ supported_software_wallets = [
     ElectrumWallet,
     # FullyNodedWallet,
     # GordianWallet,
+    KeeperWallet,
     # LilyWallet,
     NunchukWallet,
     SimpleBitcoinWallet,
