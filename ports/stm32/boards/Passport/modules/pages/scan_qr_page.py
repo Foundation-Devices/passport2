@@ -60,7 +60,7 @@ class ScanQRPage(Page):
             # works properly.
             self.camera.set_width(180)
             self.camera.set_height(180)
-        self.camera.set_y(-11)
+        self.camera.set_y(-22)
         self.set_scroll_dir(dir=lv.DIR.NONE)
         with Stylize(self.camera) as default:
             default.align(lv.ALIGN.CENTER)
