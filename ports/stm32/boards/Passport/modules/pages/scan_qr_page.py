@@ -47,9 +47,14 @@ class ScanQRPage(Page):
         #   invalid values for it's content width.
         #   MOVE THIS CODE SO IT'S CALLED THE FIRST TIME IN update().
         #   THAT WAY, THE lv.pct(100) sizes will work properly.
+        #
+        #   This size also matches a 6:5 aspect ratio. If the camera resolution
+        #   is changed this needs to be updated as well. Also applies in the
+        #   lv.pct case. The height needs to be set according to the aspect
+        #   ratio and the max width.
         if passport.IS_COLOR:
             self.camera.set_width(212)
-            self.camera.set_height(200)
+            self.camera.set_height(176)
         else:
             # Camera needs to be a square on Founders Edition so that the rotation
             # works properly.

@@ -310,7 +310,7 @@ class CameraSimulator:
         # print("w={} h={} c={}".format(w, h, c))
 
         # Crop the image
-        new_width = 640
+        new_width = 576
         new_height = 480
         half_excess_width = (w - new_width) // 2
         half_excess_height = (h - new_height) // 2
@@ -322,8 +322,8 @@ class CameraSimulator:
         h, w, c = cropped_img.shape
         # print("cropped_img: w={} h={} c={}".format(w, h, c))
 
-        cam_width = 416
-        cam_height = 312
+        cam_width = 396
+        cam_height = 330
         resized = cv2.resize(
             cropped_img, (cam_width, cam_height), interpolation=cv2.INTER_CUBIC)
         h, w, c = resized.shape
