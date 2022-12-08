@@ -19,8 +19,8 @@
 #endif
 
 // Camera framebuffer size.
-#define CAMERA_HOR_RES (416U)
-#define CAMERA_VER_RES (312U)
+#define CAMERA_HOR_RES (396U)
+#define CAMERA_VER_RES (330U)
 #define CAMERA_FRAMEBUFFER_PIXELS (CAMERA_HOR_RES * CAMERA_VER_RES)
 #define CAMERA_FRAMEBUFFER_SIZE (CAMERA_FRAMEBUFFER_PIXELS * sizeof(uint16_t))
 

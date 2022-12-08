@@ -76,7 +76,7 @@ static camera_reg_t _camera_reg_init[] = {
 
     // The Vfirst flag set by the line below is not documented.
     // Adding or removing this has no noticeable effect for us.
-    {0xC2, 0x02},
+    // {0xC2, 0x02},
 
     //===Resolution===
     {0x18, 0xa4},
@@ -84,14 +84,14 @@ static camera_reg_t _camera_reg_init[] = {
 
     //===Zoom===
     {0xc8, 0x02},
-    {0xc9, 0x80},  // ISP input hsize (640)
+    {0xc9, 0x40},  // ISP input hsize (576)
     {0xca, 0x01},
     {0xcb, 0xe0},  // ISP input vsize (480)
 
     {0xcc, 0x01},
-    {0xcd, 0xA0},  // ISP output hsize (416)
+    {0xcd, 0x8c},  // ISP output hsize (396)
     {0xce, 0x01},
-    {0xcf, 0x38},  // ISP output vsize (312)
+    {0xcf, 0x4a},  // ISP output vsize (330)
 
     //===Position===
     {0x17, 0x69},  // h
@@ -181,7 +181,7 @@ static camera_reg_t _camera_reg_init[] = {
     {0x51, 0x80},
 
     {0x14, 0x29},
-    {0x13, 0xf7},
+    {0x13, 0xe7},
     {0x11, 0x40},  // Changed from 0 - we use an external oscillator
 
     //===Saturation===
@@ -191,9 +191,9 @@ static camera_reg_t _camera_reg_init[] = {
     // { 0xD2, 0x00 },
 
     // 1.25x
-    {0xD8, 0x50},
-    {0xD9, 0x50},
-    {0xD2, 0x02},
+    // {0xD8, 0x50},
+    // {0xD9, 0x50},
+    // {0xD2, 0x02},
 
     // 1.5x
     // { 0xD8, 0x60 },
