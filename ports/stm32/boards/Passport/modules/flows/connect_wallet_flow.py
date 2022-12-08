@@ -268,7 +268,9 @@ class ConnectWalletFlow(Flow):
                   self.addr_type,
                   self.acct_num,
                   self.is_multisig(),
-                  self.sig_type.get('legacy', False)])
+                  self.sig_type.get('legacy', False),
+                  # Export mode
+                  'qr'])
 
         qr_type = self.export_mode['qr_type']
 
@@ -322,7 +324,9 @@ class ConnectWalletFlow(Flow):
                   self.addr_type,
                   self.acct_num,
                   self.is_multisig(),
-                  self.sig_type.get('legacy', False)])
+                  self.sig_type.get('legacy', False),
+                  # Export mode
+                  'microsd'])
 
         data_hash = bytearray(32)
         foundation.sha256(data, data_hash)
@@ -363,8 +367,8 @@ class ConnectWalletFlow(Flow):
                 if self.is_skip_address_verification_enabled():
                     if self.is_force_multisig_policy_enabled():
                         result = await InfoPage(
-                            text='For compatibility with {}, Passport will set your Multisig Policy ' +
-                                 'to Skip Verification.'.format(self.sw_wallet['label']))
+                            text='For compatibility with {}, '.format(self.sw_wallet['label']) +
+                                 'Passport will set your Multisig Policy to Skip Verification.').show()
                         if not result:
                             if not self.back():
                                 self.set_result(False)
