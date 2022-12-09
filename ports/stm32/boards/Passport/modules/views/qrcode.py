@@ -8,8 +8,6 @@ from passport import sram4
 from styles.colors import WHITE, BLACK
 from .view import View
 
-MAX_QR_VERSION = 13
-
 # Capacity in bytes for LOW ECC and alphanumeric
 alphanumeric_capacity_by_version = [
     0,
@@ -74,7 +72,7 @@ class QRCode(View):
 
     def get_version_for_data(self, encoded_data):
         enc_len = len(encoded_data)
-        for i in range(1, MAX_QR_VERSION + 1):
+        for i in range(1, sram4.MAX_QR_VERSION + 1):
             if alphanumeric_capacity_by_version[i] >= enc_len:
                 return i
         raise QRCodeException()

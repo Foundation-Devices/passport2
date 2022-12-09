@@ -16,7 +16,7 @@
  *
  * @note Keep in sync with modfoundation.c QRCode class.
  */
-#define PASSPORT_MAX_QR_VERSION (24)
+#define PASSPORT_MAX_QR_VERSION (13)
 
 /**
  * @brief Attribute used to allocate a static variable in the
