@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
+// SPDX-License-Identifier: ISC
+//
 /* quirc -- QR-code recognition library
  * Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
  *
@@ -23,17 +26,7 @@
 extern "C" {
 #endif
 
-struct quirc_flood_fill_vars {
-	int y;
-	int right;
-	int left_up;
-	int left_down;
-};
-
 struct quirc;
-
-#define QUIRC_MAX(a, b) ((a) > (b) ? (a) : (b))
-#define QUIRC_VARS_NUMOF(h) QUIRC_MAX(1, (((h) * 2) / 3))
 
 /* Obtain the library version string. */
 const char *quirc_version(void);
@@ -51,7 +44,7 @@ struct quirc *quirc_new(void);
  *
  * Note that QUIRC_PIXEL_ALIAS_IMAGE must be true (1) to us this constructor.
  */
-int quirc_init(struct quirc* q, int w, int h, uint8_t* image, struct quirc_flood_fill_vars* vars, size_t num_vars);
+int quirc_init(struct quirc *q, int w, int h, uint8_t *image);
 
 /* Destroy a QR-code recognizer. */
 void quirc_destroy(struct quirc *q);
@@ -98,9 +91,7 @@ typedef enum {
 const char *quirc_strerror(quirc_decode_error_t err);
 
 /* Limits on the maximum size of QR-codes and their content. */
-#define QUIRC_MAX_VERSION	40
-#define QUIRC_MAX_GRID_SIZE	(QUIRC_MAX_VERSION * 4 + 17)
-#define QUIRC_MAX_BITMAP	(((QUIRC_MAX_GRID_SIZE * QUIRC_MAX_GRID_SIZE) + 7) / 8)
+#define QUIRC_MAX_BITMAP	3917
 #define QUIRC_MAX_PAYLOAD	8896
 
 /* QR-code ECC types. */
@@ -187,9 +178,6 @@ void quirc_extract(const struct quirc *q, int index,
 /* Decode a QR-code, returning the payload data. */
 quirc_decode_error_t quirc_decode(const struct quirc_code *code,
 				  struct quirc_data *data);
-
-/* Flip a QR-code according to optional mirror feature of ISO 18004:2015 */
-void quirc_flip(struct quirc_code *code);
 
 #ifdef __cplusplus
 }

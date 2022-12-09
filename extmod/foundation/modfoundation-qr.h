@@ -20,8 +20,6 @@
 #define CONFIG_QUIRC_QR_MAX_VER_RES (330)
 #endif
 
-#define CONFIG_QUIRC_FLOOD_FILL_VARS (QUIRC_VARS_NUMOF(CONFIG_QUIRC_QR_MAX_VER_RES))
-
 #ifndef CONFIG_QR_DEBUG
 #define CONFIG_QR_DEBUG 0
 #endif
@@ -36,12 +34,10 @@
     } while (0)
 #endif
 
-typedef struct quirc_flood_fill_vars quirc_flood_fill_vars_t;
 typedef struct quirc quirc_t;
 typedef struct quirc_code quirc_code_t;
 typedef struct quirc_data quirc_data_t;
 
-static quirc_flood_fill_vars_t _flood_fill_vars[CONFIG_QUIRC_FLOOD_FILL_VARS];
 static quirc_t                 _quirc;
 static quirc_code_t            _code;
 static quirc_data_t            _data;
@@ -60,7 +56,7 @@ STATIC mp_obj_t mod_foundation_qr_init(mp_obj_t hor_res_obj, mp_obj_t ver_res_ob
                           CONFIG_QUIRC_QR_MAX_HOR_RES, CONFIG_QUIRC_QR_MAX_VER_RES);
     }
 
-    if (quirc_init(&_quirc, hor_res, ver_res, _framebuffer, _flood_fill_vars, CONFIG_QUIRC_FLOOD_FILL_VARS) < 0) {
+    if (quirc_init(&_quirc, hor_res, ver_res, _framebuffer) < 0) {
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Invalid buffer size for this decoder"));
         return mp_const_none;
     }
