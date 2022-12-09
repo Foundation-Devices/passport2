@@ -12,7 +12,7 @@ from utils import InputMode
 from views import Label, Icon
 from constants import MENU_ITEM_CORNER_RADIUS, MAX_PIN_LEN
 
-SIDE_WIDTH = const(18)
+_SIDE_WIDTH = const(18)
 
 
 class PINInput(View):
@@ -32,7 +32,7 @@ class PINInput(View):
             default.pad_col(4)
 
         self.mode_view = View(lv.FLEX_FLOW.COLUMN)
-        self.mode_view.set_size(SIDE_WIDTH, lv.pct(100))
+        self.mode_view.set_size(_SIDE_WIDTH, lv.pct(100))
         with Stylize(self.mode_view) as default:
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
@@ -48,7 +48,7 @@ class PINInput(View):
             default.pad_col(3)
 
         self.filler = View(flex_flow=lv.FLEX_FLOW.COLUMN)
-        self.filler.set_width(SIDE_WIDTH)
+        self.filler.set_width(_SIDE_WIDTH)
         self.filler.set_height(lv.pct(100))
 
         self.set_children([self.mode_view, self.pin_container, self.filler])

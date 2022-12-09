@@ -12,7 +12,7 @@ from serializations import sha256
 import microns
 import common
 
-BRICK_WARNING_NUM_ATTEMPTS = const(5)
+_BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 
 class LoginFlow(Flow):
@@ -57,7 +57,7 @@ class LoginFlow(Flow):
         else:
             attempt_msg = 'You have {} attempts left'.format(pa.attempts_left)
 
-        if pa.attempts_left <= BRICK_WARNING_NUM_ATTEMPTS:
+        if pa.attempts_left <= _BRICK_WARNING_NUM_ATTEMPTS:
             brick_warning = ' before Passport is permanently disabled'
         else:
             brick_warning = ''

@@ -3,6 +3,8 @@
 #
 # __init__.py
 
-FONT_SMALL = 0
-FONT_NORMAL = 1
-FONT_TITLE = 2
+from micropython import const
+
+FONT_SMALL = const(0)
+FONT_NORMAL = const(1)
+FONT_TITLE = const(2)

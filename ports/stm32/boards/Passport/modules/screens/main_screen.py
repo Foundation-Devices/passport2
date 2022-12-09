@@ -5,6 +5,7 @@
 #                  the StatusBar and CardNav components.
 
 import lvgl as lv
+from micropython import const
 from styles.colors import CARD_BG_GREY, BLACK
 from views import View
 import passport
@@ -12,11 +13,6 @@ import common
 
 
 class MainScreen(View):
-    MARGIN_LEFT = 10
-    MARGIN_RIGHT = 10
-    MARGIN_TOP = 10
-    MARGIN_BOTTOM = 10
-
     def __init__(self):
         import lvgl as lv
         from views import StatusBar, CardNav

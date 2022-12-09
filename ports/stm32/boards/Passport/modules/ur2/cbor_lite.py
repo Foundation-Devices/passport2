@@ -11,55 +11,57 @@
 # COPYRIGHT.md file in the top-level folder of the CBOR-lite software
 # distribution.
 
+from micropython import const
+
 
 def bit_length(n):
     return len(bin(abs(n))) - 2
 
 
-Flag_None = 0
-Flag_Require_Minimal_Encoding = 1
+Flag_None = const(0)
+Flag_Require_Minimal_Encoding = const(1)
 
-Tag_Major_unsignedInteger = 0
-Tag_Major_negativeInteger = 1 << 5
-Tag_Major_byteString = 2 << 5
-Tag_Major_textString = 3 << 5
-Tag_Major_array = 4 << 5
-Tag_Major_map = 5 << 5
-Tag_Major_semantic = 6 << 5
-Tag_Major_floatingPoint = 7 << 5
-Tag_Major_simple = 7 << 5
-Tag_Major_mask = 0xe0
+Tag_Major_unsignedInteger = const(0)
+Tag_Major_negativeInteger = const(1 << 5)
+Tag_Major_byteString = const(2 << 5)
+Tag_Major_textString = const(3 << 5)
+Tag_Major_array = const(4 << 5)
+Tag_Major_map = const(5 << 5)
+Tag_Major_semantic = const(6 << 5)
+Tag_Major_floatingPoint = const(7 << 5)
+Tag_Major_simple = const(7 << 5)
+Tag_Major_mask = const(0xe0)
 
-Tag_Minor_length1 = 24
-Tag_Minor_length2 = 25
-Tag_Minor_length4 = 26
-Tag_Minor_length8 = 27
+Tag_Minor_length1 = const(24)
+Tag_Minor_length2 = const(25)
+Tag_Minor_length4 = const(26)
+Tag_Minor_length8 = const(27)
 
-Tag_Minor_false = 20
-Tag_Minor_true = 21
-Tag_Minor_null = 22
-Tag_Minor_undefined = 23
-Tag_Minor_half_float = 25
-Tag_Minor_singleFloat = 26
-Tag_Minor_doubleFloat = 27
+Tag_Minor_false = const(20)
+Tag_Minor_true = const(21)
+Tag_Minor_null = const(22)
+Tag_Minor_undefined = const(23)
+Tag_Minor_half_float = const(25)
+Tag_Minor_singleFloat = const(26)
+Tag_Minor_doubleFloat = const(27)
 
-Tag_Minor_dateTime = 0
-Tag_Minor_epochDateTime = 1
-Tag_Minor_positiveBignum = 2
-Tag_Minor_negativeBignum = 3
-Tag_Minor_decimalFraction = 4
-Tag_Minor_bigFloat = 5
-Tag_Minor_convertBase64Url = 21
-Tag_Minor_convertBase64 = 22
-Tag_Minor_convertBase16 = 23
-Tag_Minor_cborEncodedData = 24
-Tag_Minor_uri = 32
-Tag_Minor_base64Url = 33
-Tag_Minor_base64 = 34
-Tag_Minor_regex = 35
-Tag_Minor_mimeMessage = 36
-Tag_Minor_embeddedJSON = 262
-Tag_Minor_selfDescribeCbor = 55799
+Tag_Minor_dateTime = const(0)
+Tag_Minor_epochDateTime = const(1)
+Tag_Minor_positiveBignum = const(2)
+Tag_Minor_negativeBignum = const(3)
+Tag_Minor_decimalFraction = const(4)
+Tag_Minor_bigFloat = const(5)
+Tag_Minor_convertBase64Url = const(21)
+Tag_Minor_convertBase64 = const(22)
+Tag_Minor_convertBase16 = const(23)
+Tag_Minor_cborEncodedData = const(24)
+Tag_Minor_uri = const(32)
+Tag_Minor_base64Url = const(33)
+Tag_Minor_base64 = const(34)
+Tag_Minor_regex = const(35)
+Tag_Minor_mimeMessage = const(36)
+Tag_Minor_embeddedJSON = const(262)
+Tag_Minor_selfDescribeCbor = const(55799)
 Tag_Minor_mask = 0x1f
 Tag_Undefined = Tag_Major_semantic + Tag_Minor_undefined
 

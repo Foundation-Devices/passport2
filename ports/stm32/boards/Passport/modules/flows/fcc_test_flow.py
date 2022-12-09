@@ -16,9 +16,8 @@ import common
 from uasyncio import sleep_ms
 from errors import Error
 
-CAMERA_DISPLAY_DURATION_SECS = 5 * 1000
-FILE_COPY_REPEAT_COUNT = 10
-FILE_SIZE_TO_CREATE = 250 * 1024
+_CAMERA_DISPLAY_DURATION_SECS = const(5 * 1000)
+_FILE_SIZE_TO_CREATE = const(250 * 1024)
 
 
 class FCCTestFlow(Flow):
@@ -27,7 +26,7 @@ class FCCTestFlow(Flow):
         super().__init__(initial_state=self.show_camera, name='FccTestFlow')
 
     async def show_camera(self):
-        result = await ScanQRPage().show(auto_close_timeout=CAMERA_DISPLAY_DURATION_SECS)
+        result = await ScanQRPage().show(auto_close_timeout=_CAMERA_DISPLAY_DURATION_SECS)
         if result is not None:
             # User used a button to back out
             self.set_result(False)
@@ -46,7 +45,7 @@ class FCCTestFlow(Flow):
         self.copy_files_task = start_task(
             fcc_copy_files_task(
                 CardSlot.get_file_path('fcc-file-copy-test.bin')[0],
-                file_size=FILE_SIZE_TO_CREATE,
+                file_size=_FILE_SIZE_TO_CREATE,
                 set_progress=self.long_text_page.set_progress,
                 set_message=self.long_text_page.set_message,
                 on_done=self.on_done))

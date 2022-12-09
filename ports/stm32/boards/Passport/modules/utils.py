@@ -930,10 +930,6 @@ def get_next_address_range(range, max_size):
     return ((high, high + max_size), max_size)
 
 
-RECEIVE_ADDR = 0
-CHANGE_ADDR = 1
-
-
 def is_valid_btc_address(address):
     # Strip prefix if present
     if address[0:8].lower() == 'bitcoin:':
