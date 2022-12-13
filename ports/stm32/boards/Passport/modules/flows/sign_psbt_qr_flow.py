@@ -27,6 +27,7 @@ class SignPsbtQRFlow(Flow):
                 await ErrorPage(text='Unable to scan QR code.'.show())
                 self.set_result(False)
             else:
+                print("result.data: {}".format(result.data))
                 self.raw_psbt = result.data
                 self.qr_type = result.qr_type
                 self.goto(self.copy_to_flash)

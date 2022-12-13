@@ -110,7 +110,12 @@ class ScanQRPage(Page):
 
     def complete(self, qr_decoder):
         qr_type = qr_decoder.get_data_format()
-        self.set_result(QRScanResult(data=qr_decoder.decode(decode_cbor_bytes=self.decode_cbor_bytes), qr_type=qr_type))
+        result = QRScanResult(data=qr_decoder.decode(decode_cbor_bytes=self.decode_cbor_bytes), qr_type=qr_type)
+        print("complete: {}, {}, {}".format(result.data, result.error, result.qr_type))
+        if result.data is None:
+            self.set_result(None)
+        else:
+            self.set_result(result)
 
     def progress(self, qr_decoder):
         # print('Updating progress label...')
