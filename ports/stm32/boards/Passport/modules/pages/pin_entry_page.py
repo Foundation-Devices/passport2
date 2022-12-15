@@ -90,6 +90,8 @@ class PINEntryPage(Page):
         if pa.attempts_left <= NUM_ATTEMPTS_LEFT_BRICK_WARNING:
             self.show_brick_warning()
 
+        self.arrows = [lv.KEY.UP, lv.KEY.DOWN, lv.KEY.RIGHT, lv.KEY.LEFT]
+
     def show_brick_warning(self):
         if not self.brick_warning_shown:
             if pa.attempts_left == 1:
@@ -242,6 +244,9 @@ class PINEntryPage(Page):
 
         # Disable backspace if viewing the security words
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
+            return
+
+        if key in self.arrows:
             return
 
         if not self.displaying_security_words:
