@@ -37,6 +37,10 @@ SECTIONS
     /* D2 SRAM section, generally used for DMA, it's slower than the DTCM and the
        AXI SRAM but faster than those two for DMA on D2 peripherals. Has to be
        manually turned on in the RCC */
+    .dtcm (NOLOAD) : {
+        KEEP(*(.dtcm))
+    } >DTCM
+
     .ram_d2 (NOLOAD) : {
         KEEP(*(.dma_buffers))
     } >RAM_D2

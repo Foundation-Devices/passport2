@@ -43,6 +43,7 @@ def verify_checksum(hrp, data, version):
 
 
 def create_checksum(hrp, data, bech32_version):
+    # TODO: avoid extending lists, which causes fragmentation, possibly use static buf
     if hrp is not None:
         values = hrp_expand(hrp)
         values.extend(data)

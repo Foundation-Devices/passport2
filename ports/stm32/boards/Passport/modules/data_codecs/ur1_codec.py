@@ -52,6 +52,7 @@ class UR1Decoder(DataDecoder):
         from common import system
         try:
             # system.show_busy_bar()
+            # TODO: memory allocation fails here
             encoded_data = decode_ur(self.workloads.workloads)
             # system.hide_busy_bar()
             # print('UR1: encoded_data={}'.format(encoded_data))

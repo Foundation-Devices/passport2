@@ -125,6 +125,7 @@ def extract_single_workload(workload):
 class Workloads:
     def __init__(self):
         self.num_workloads = None
+        # TODO: this should be in a new memory area
         self.workloads = None
 
     def add(self, workload):

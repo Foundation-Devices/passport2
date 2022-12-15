@@ -99,7 +99,9 @@ STATIC mp_obj_t mod_foundation_qr_scan(void) {
     DEBUG("Data: %s\n", _data.payload);
 
     vstr_t vstr;
+    // TODO: this calls malloc, would be better to use a static buffer
     vstr_init(&vstr, _data.payload_len + 1);
+    // vstr_init_fixed_buf(&vstr, _data.payload_len + 1, buf);
     vstr_add_strn(&vstr, (const char*)_data.payload, _data.payload_len);  // Can append to vstr if necessary
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);

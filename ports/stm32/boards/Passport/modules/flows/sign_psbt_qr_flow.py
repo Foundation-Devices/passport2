@@ -27,7 +27,6 @@ class SignPsbtQRFlow(Flow):
                 await ErrorPage(text='Unable to scan QR code.'.show())
                 self.set_result(False)
             else:
-                print("result.data: {}".format(result.data))
                 self.raw_psbt = result.data
                 self.qr_type = result.qr_type
                 self.goto(self.copy_to_flash)
@@ -56,6 +55,8 @@ class SignPsbtQRFlow(Flow):
             self.set_result(False)
             return
 
+        # TODO: need to make sure PSBT is collected here
+        # del self.psbt
         gc.collect()  # Try to avoid excessive fragmentation
 
         # PSBT was copied to external flash
@@ -81,11 +82,13 @@ class SignPsbtQRFlow(Flow):
         import microns
 
         # Copy signed txn into a bytearray and show the data as a UR
+        # TODO: this could be a static buffer
         signed_bytes = None
         with BytesIO() as bfd:
             with self.output_encoder(bfd) as fd:
                 # Always serialize back to PSBT for QR codes
                 self.psbt.serialize(fd)
+                # TODO: Collect self.psbt if possible here
                 bfd.seek(0)
                 signed_bytes = bfd.read()
                 # print('len(signed_bytes)={}'.format(len(signed_bytes)))
