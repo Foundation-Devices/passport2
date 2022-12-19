@@ -101,7 +101,6 @@ class MicronBar(View):
                     with Stylize(icon) as default:
                         default.img_recolor(color)
 
-                    # TODO: I bet this is why the memory leak is more severe on FE
                     page_dot = icon
                     if passport.IS_COLOR:
                         page_dot = icon

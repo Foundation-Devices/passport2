@@ -63,7 +63,7 @@ class StatusBar(View):
     def update_icon(self):
         if self.is_mounted():
             self.icon_view.unmount()
-            del self.children[0]
+            self.remove_child(self.icon_view)
 
         if self.icon is None:
             icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
@@ -82,7 +82,6 @@ class StatusBar(View):
                 default.align(lv.ALIGN.CENTER)
 
             self.icon_view.add_child(icon_view)
-            self.add_child(self.icon_view)
 
         self.insert_child(0, self.icon_view)
 
@@ -93,7 +92,7 @@ class StatusBar(View):
     def update_title(self):
         if self.is_mounted():
             self.title_view.unmount()
-            del self.children[1]
+            self.remove_child(self.title_view)
 
         self.title_view = BoldLabel(text=self.title, color=self.fg_color, center=True)
         with Stylize(self.title_view) as default:
