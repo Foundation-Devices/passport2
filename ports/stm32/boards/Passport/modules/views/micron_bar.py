@@ -101,6 +101,8 @@ class MicronBar(View):
                     with Stylize(icon) as default:
                         default.img_recolor(color)
 
+                    # TODO: I bet this is why the memory leak is more severe on FE
+                    page_dot = icon
                     if passport.IS_COLOR:
                         page_dot = icon
                     else:
@@ -119,8 +121,6 @@ class MicronBar(View):
                         if i == self.active_card_idx:
                             indicator = Icon(icon=lv.ICON_PAGE_INDICATOR, color=WHITE)
                             page_dot.add_child(indicator)
-
-                    self.add_child(page_dot)
 
                     # print('page_dot={}'.format(page_dot))
                     self.page_dots_container.add_child(page_dot)

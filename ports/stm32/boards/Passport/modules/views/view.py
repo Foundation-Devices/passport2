@@ -29,6 +29,9 @@ class View():
         if self.is_mounted():
             self.mount_children()
 
+    def len_children(self, label):
+        print("len_children at {}: {}".format(label, len(self.children)))
+
     def add_child(self, child):
         '''Append a child to the list of children.'''
         if self.children is None:

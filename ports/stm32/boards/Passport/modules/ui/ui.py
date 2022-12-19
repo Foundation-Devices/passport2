@@ -397,6 +397,8 @@ class UI():
         self.set_screen_bg_color(bg_color)
 
     def next_card(self):
+        from utils import mem_info
+        mem_info("next_card")
         num_cards = len(self.card_descs)
 
         if num_cards == 1:
@@ -407,13 +409,17 @@ class UI():
         elif self.active_card_idx == num_cards - 1:
             self.active_card_idx = 0
         new_card_desc = self.card_descs[self.active_card_idx]
+        # TODO: memory leak is here
         self.active_screen.card_nav.push_card(new_card_desc, self.active_card_idx)
+        # self.active_screen.card_nav.replace_card(new_card_desc)
 
         self.update_screen_info(new_card_desc)
 
         self.start_card_task(new_card_desc=new_card_desc)
 
     def prev_card(self):
+        from utils import mem_info
+        mem_info("prev_card")
         num_cards = len(self.card_descs)
 
         if num_cards == 1:
@@ -424,7 +430,9 @@ class UI():
         elif self.active_card_idx == 0:
             self.active_card_idx = num_cards - 1
         new_card_desc = self.card_descs[self.active_card_idx]
+        # TODO: memory leak is here
         self.active_screen.card_nav.pop_card(new_card_desc, self.active_card_idx)
+        # self.active_screen.card_nav.replace_card(new_card_desc)
 
         self.update_screen_info(new_card_desc)
 
