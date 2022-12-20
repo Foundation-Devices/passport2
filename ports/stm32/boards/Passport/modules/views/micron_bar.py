@@ -120,8 +120,6 @@ class MicronBar(View):
                             indicator = Icon(icon=lv.ICON_PAGE_INDICATOR, color=WHITE)
                             page_dot.add_child(indicator)
 
-                    self.add_child(page_dot)
-
                     # print('page_dot={}'.format(page_dot))
                     self.page_dots_container.add_child(page_dot)
 
