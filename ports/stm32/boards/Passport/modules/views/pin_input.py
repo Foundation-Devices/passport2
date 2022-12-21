@@ -100,7 +100,7 @@ class PINInput(View):
         self.update_pin()
 
     def set_pin(self, pin):
-        if len(pin) >= len(self.pin):
+        if len(pin) > len(self.pin):
             self.show_last_char = True
             if self.timer is not None:
                 self.timer._del()
