@@ -62,7 +62,7 @@ Tag_Minor_regex = const(35)
 Tag_Minor_mimeMessage = const(36)
 Tag_Minor_embeddedJSON = const(262)
 Tag_Minor_selfDescribeCbor = const(55799)
-Tag_Minor_mask = 0x1f
+Tag_Minor_mask = const(0x1f)
 Tag_Undefined = Tag_Major_semantic + Tag_Minor_undefined
 
 
