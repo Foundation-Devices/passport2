@@ -8,7 +8,7 @@ from styles.style import Stylize
 from views import View, Icon
 from styles.colors import MEDIUM_GREY
 
-_PRESS_Y_OFFSET = 3
+_PRESS_Y_OFFSET = const(3)
 
 
 class IconButton(View):
