@@ -4,7 +4,7 @@
 # sign_psbt_microsd_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow
-from pages import InsertMicroSDPage, QuestionPage, SuccessPage
+from pages import InsertMicroSDPage, QuestionPage, LongTextPage
 
 
 def is_psbt(filename):
@@ -162,6 +162,10 @@ class SignPsbtMicroSDFlow(Flow):
                 # fall thru to try again
 
     async def show_success(self):
+        # TODO: should a long success page class be made?
+        import microns
+        from lvgl import LARGE_ICON_SUCCESS
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
         msg = "Updated PSBT is:\n\n%s" % self.out_fn
         if self.out2_fn:
             msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.out2_fn
@@ -169,5 +173,7 @@ class SignPsbtMicroSDFlow(Flow):
             if self.txid:
                 msg += '\n\nFinal TXID:\n' + self.txid
 
-        await SuccessPage(msg).show()
+        await LongTextPage(text=msg, centered=True, left_micron=None,
+                           right_micron=microns.Checkmark, icon=LARGE_ICON_SUCCESS,
+                           icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
         self.set_result(self.psbt)
