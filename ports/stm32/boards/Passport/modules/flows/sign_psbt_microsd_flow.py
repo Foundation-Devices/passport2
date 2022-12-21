@@ -162,7 +162,6 @@ class SignPsbtMicroSDFlow(Flow):
                 # fall thru to try again
 
     async def show_success(self):
-        # TODO: should a long success page class be made?
         import microns
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
