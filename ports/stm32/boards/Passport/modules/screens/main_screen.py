@@ -5,7 +5,6 @@
 #                  the StatusBar and CardNav components.
 
 import lvgl as lv
-from micropython import const
 from styles.colors import CARD_BG_GREY, BLACK
 from views import View
 import passport
