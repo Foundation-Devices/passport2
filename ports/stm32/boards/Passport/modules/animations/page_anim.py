@@ -4,10 +4,11 @@
 # page_anim.py
 
 import lvgl as lv
+from micropython import const
 from .prop_cb import anim_obj_prop, anim_x_cb, anim_opa_cb
 from .constants import DEFAULT_ANIM_SPEED
 
-ANIM_MOVE_DISTANCE = 100
+ANIM_MOVE_DISTANCE = const(100)
 
 
 def push_page(old_page_widget, new_page_widget, done_cb=None, duration_ms=DEFAULT_ANIM_SPEED):

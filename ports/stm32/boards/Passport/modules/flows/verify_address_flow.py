@@ -15,9 +15,9 @@ from common import ui
 import microns
 
 
-RECEIVE_ADDR = 0
-CHANGE_ADDR = 1
-NUM_TO_CHECK = 50
+_RECEIVE_ADDR = const(0)
+_CHANGE_ADDR = const(1)
+_NUM_TO_CHECK = const(50)
 
 
 class VerifyAddressFlow(Flow):
@@ -99,8 +99,8 @@ class VerifyAddressFlow(Flow):
 
         # Setup initial ranges
         a = [get_next_addr(self.acct_num, self.addr_type, False), get_next_addr(self.acct_num, self.addr_type, True)]
-        self.low_range = [(a[RECEIVE_ADDR], a[RECEIVE_ADDR]), (a[CHANGE_ADDR], a[CHANGE_ADDR])]
-        self.high_range = [(a[RECEIVE_ADDR], a[RECEIVE_ADDR]), (a[CHANGE_ADDR], a[CHANGE_ADDR])]
+        self.low_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
+        self.high_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
 
         self.goto(self.search_for_address)
 
@@ -111,9 +111,9 @@ class VerifyAddressFlow(Flow):
         # Try next batch of addresses
         for is_change in range(0, 2):
             self.low_range[is_change], self.low_size[is_change] = get_prev_address_range(self.low_range[is_change],
-                                                                                         NUM_TO_CHECK // 2)
+                                                                                         _NUM_TO_CHECK // 2)
             self.high_range[is_change], self.high_size[is_change] = get_next_address_range(
-                self.high_range[is_change], NUM_TO_CHECK - self.low_size[is_change])
+                self.high_range[is_change], _NUM_TO_CHECK - self.low_size[is_change])
 
         addr_idx = -1
         is_change = 0

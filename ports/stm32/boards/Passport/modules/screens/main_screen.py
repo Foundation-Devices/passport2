@@ -12,11 +12,6 @@ import common
 
 
 class MainScreen(View):
-    MARGIN_LEFT = 10
-    MARGIN_RIGHT = 10
-    MARGIN_TOP = 10
-    MARGIN_BOTTOM = 10
-
     def __init__(self):
         import lvgl as lv
         from views import StatusBar, CardNav

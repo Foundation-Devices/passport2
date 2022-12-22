@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-MAX_QR_VERSION = 24
+MAX_QR_VERSION = 13
 
 
 def _qr_get_module_size_for_version(version):

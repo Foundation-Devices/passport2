@@ -12,7 +12,7 @@ from views import Icon, TextArea
 from styles.colors import TEXT_INPUT_BG, TEXT_INPUT_ICON
 from constants import MENU_ITEM_CORNER_RADIUS
 
-SIDE_WIDTH = const(18)
+_SIDE_WIDTH = const(18)
 
 
 class TextInput(View):
@@ -33,7 +33,7 @@ class TextInput(View):
             default.clip_corner(True)
 
         self.mode_view = View(lv.FLEX_FLOW.COLUMN)
-        self.mode_view.set_size(SIDE_WIDTH, lv.pct(100))
+        self.mode_view.set_size(_SIDE_WIDTH, lv.pct(100))
         with Stylize(self.mode_view) as default:
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
@@ -42,7 +42,7 @@ class TextInput(View):
         self.mode_view.add_child(self.mode_icon)
 
         self.filler = View(flex_flow=lv.FLEX_FLOW.COLUMN)
-        self.filler.set_width(SIDE_WIDTH)
+        self.filler.set_width(_SIDE_WIDTH)
         self.filler.set_height(lv.pct(100))
 
         self.text_area = TextArea(text=self.text, one_line=self.one_line)

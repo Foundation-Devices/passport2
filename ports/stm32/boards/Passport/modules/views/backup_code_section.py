@@ -5,6 +5,7 @@
 
 
 import lvgl as lv
+from micropython import const
 from styles.colors import (
     BACKUP_CODE_SECTION_OUTLINE,
     BACKUP_CODE_DIGIT,
@@ -18,20 +19,20 @@ from styles import Stylize
 from views import Label
 import passport
 
-NUM_DIGITS = 4
-HEIGHT = 30
+_NUM_DIGITS = const(4)
+_HEIGHT = const(30)
 
 
 class BackupCodeSection(View):
 
-    def __init__(self, digits=[None] * NUM_DIGITS, editable=True, focused_idx=None):
+    def __init__(self, digits=[None] * _NUM_DIGITS, editable=True, focused_idx=None):
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
         self.digits = digits
         self.digits_labels = []
         self.editable = editable
         self.focused_idx = focused_idx
 
-        self.set_size(lv.pct(100), HEIGHT)
+        self.set_size(lv.pct(100), _HEIGHT)
 
         with Stylize(self) as default:
             default.flex_fill()
@@ -42,7 +43,7 @@ class BackupCodeSection(View):
             focus.bg_color(BACKUP_CODE_SECTION_BG)
             focus.outline(width=2, color=BACKUP_CODE_SECTION_OUTLINE)
 
-        for col in range(NUM_DIGITS):
+        for col in range(_NUM_DIGITS):
             container = View()
             container.set_height(lv.pct(100))
             container.set_no_scroll()
@@ -113,7 +114,7 @@ class BackupCodeSection(View):
     def set_digits(self, digits):
         self.digits = digits
         if self.is_mounted():
-            for col in range(NUM_DIGITS):
+            for col in range(_NUM_DIGITS):
                 self.children[col].children[0].set_text(str(self.digits[col]) if self.digits[col] is not None else ' ')
 
     def focus(self, focused_idx):

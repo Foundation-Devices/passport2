@@ -9,9 +9,10 @@ from styles.style import Stylize
 from views import View, Label
 import microns
 from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
+from micropython import const
 import common
 
-NUM_COLUMNS = 2
+_NUM_COLUMNS = const(2)
 
 
 class SeedWordsListPage(Page):
@@ -74,14 +75,14 @@ class SeedWordsListPage(Page):
             self.container.set_children([])
 
         # Make a four-column layout
-        number_views = [None] * NUM_COLUMNS
-        word_views = [None] * NUM_COLUMNS
+        number_views = [None] * _NUM_COLUMNS
+        word_views = [None] * _NUM_COLUMNS
 
         words_per_page = len(self.words) // self.num_pages
 
-        words_per_column = words_per_page // NUM_COLUMNS
+        words_per_column = words_per_page // _NUM_COLUMNS
         word_idx = self.page_idx * words_per_page
-        for col in range(NUM_COLUMNS):
+        for col in range(_NUM_COLUMNS):
             number_views[col] = View(flex_flow=lv.FLEX_FLOW.COLUMN)
 
             number_views[col].set_size(20, lv.pct(100))
