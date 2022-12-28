@@ -20,7 +20,7 @@ class TextInputPage(Page):
                  title=None,
                  initial_text='',
                  initial_mode=InputMode.UPPER_ALPHA,
-                 max_length=None,
+                 max_length=1000,
                  numeric_only=False,
                  max_value=2_147_483_646,
                  card_header=None,
