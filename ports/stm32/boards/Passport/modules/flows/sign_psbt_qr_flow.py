@@ -59,9 +59,14 @@ class SignPsbtQRFlow(Flow):
 
     async def common_flow(self):
         from flows import SignPsbtCommonFlow
+        from tasks import clear_psbt_from_external_flash_task
+        from utils import spinner_task
+        from public_constants import TXN_INPUT_OFFSET
 
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
+        await spinner_task('Clearing transaction from flash', clear_psbt_from_external_flash_task,
+                           args=[None, self.psbt_len, TXN_INPUT_OFFSET])
         if result is None:
             self.set_result(False)
         else:
