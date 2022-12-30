@@ -16,6 +16,7 @@ from .charge_monitor_task import charge_monitor_task
 from .copy_firmware_to_spi_flash_task import copy_firmware_to_spi_flash_task
 from .copy_psbt_file_to_external_flash_task import copy_psbt_file_to_external_flash_task
 from .copy_psbt_to_external_flash_task import copy_psbt_to_external_flash_task
+from .clear_psbt_from_external_flash_task import clear_psbt_from_external_flash_task
 from .create_wallet_export_task import create_wallet_export_task
 from .delete_account_task import delete_account_task
 from .delay_task import delay_task
