@@ -140,7 +140,7 @@ def set_gen1_constants():
     # Display constants
     # TODO: Can we reference Display.HEIGHT here instead of 303?
     STATUSBAR_HEIGHT = 40
-    CARD_PAD_BOTTOM = 28
+    CARD_PAD_BOTTOM = 26
     CARD_PAD_LEFT = 4
     CARD_PAD_RIGHT = 4
     OUTER_CORNER_RADIUS = 16

@@ -165,7 +165,12 @@ static void _lcd_rounder(lv_disp_drv_t* disp_drv, lv_area_t* area) {
     // The Sharp display only allows writing whole lines, so expand the rectangle to cover the
     // full width of the screen.
     area->x1 = 0;
-    area->x2 = 229;
+    area->x2 = LCD_HOR_RES - 1;
+
+    // LVGL sometimes miscalculates the update region by 1 pixel on the bottom, so we expand the region
+    // It's possible we might expand it more than once when coalescing multiple regions, but this is not
+    // going to affect performance in a noticeable way.
+    area->y2 = MIN(area->y2 + 1, LCD_VER_RES - 1);
 }
 
 uint8_t byte_lookup_table[] = {
