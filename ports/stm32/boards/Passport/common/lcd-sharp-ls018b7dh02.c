@@ -224,6 +224,51 @@ void lcd_update_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* da
     HAL_SPI_Transmit(lcd.spi, (uint8_t*)&screen.lines[y], sizeof(ScreenLine) * h, 1000);
 }
 
+#define VIEWFINDER_WIDTH 180
+#define VIEWFINDER_HEIGHT 180
+#define VIEWFINDER_Y_START 52
+
+// A very hard-coded function to resize the grayscale camera image to the viewfinder size, and convert from
+// grayscle to mono as quickly as possible.
+static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_t gray_hor_res, uint32_t gray_ver_res) {
+    float    scale    = (float)gray_ver_res / (float)VIEWFINDER_HEIGHT;
+    uint32_t x_offset = (SCREEN_WIDTH - VIEWFINDER_WIDTH) / 2;
+
+    // printf("hor_res=%lu ver_res=%lu scale=%f\n", gray_hor_res, gray_ver_res, (double)scale);
+    // printf("x_offset=%lu\n", x_offset);
+
+    for (uint32_t y = 0; y < VIEWFINDER_HEIGHT; y++) {
+        for (uint32_t x = 0; x < VIEWFINDER_WIDTH; x++) {
+            uint32_t offset = ((uint32_t)((float)(x)*scale) * (uint32_t)gray_hor_res) + (uint32_t)((float)(y)*scale);
+            uint8_t  gray   = grayscale[offset];
+
+            // Mask the value in it
+            uint32_t flipped_x   = VIEWFINDER_WIDTH - x;
+            uint32_t mono_offset = (x_offset + flipped_x) >> 3;
+            uint8_t  bit         = (x_offset + flipped_x) % 8;
+            uint8_t* p_byte      = &screen.lines[y + VIEWFINDER_Y_START].pixels[mono_offset];
+            if (gray > 64) {
+                // Set the bit
+                *p_byte |= 1 << (7 - bit);
+            } else {
+                // Clear the bit
+                *p_byte &= ~(1 << (7 - bit));
+            }
+        }
+    }
+}
+
+// Given a full grayscale camera image buffer, resize it to fit in a
+void lcd_update_viewfinder(uint8_t* grayscale, uint16_t gray_hor_res, uint16_t gray_ver_res) {
+    // Grayscale buffer is 396*330 pixels, and we need to scale down to 180x180 size of the viewfiender,
+    // and position it at the right place on the display, then write the corresponding lines.
+    _lcd_resize_and_render_viewfinder_direct(grayscale, gray_hor_res, gray_ver_res);
+
+    // Send the lines of the viewfinder to the display
+    HAL_SPI_Transmit(lcd.spi, (uint8_t*)&screen.lines[VIEWFINDER_Y_START], sizeof(ScreenLine) * VIEWFINDER_HEIGHT,
+                     1000);
+}
+
 void lcd_draw_image(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* image) {
     for (uint32_t cy = 0; cy < h; cy++) {
         for (uint32_t cx = 0; cx < w; cx++) {

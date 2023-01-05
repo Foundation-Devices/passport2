@@ -72,9 +72,14 @@ class Camera(View):
         # full access to the buffer.
         self.hook()
 
-        # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
-        camera.resize(self.content_width, self.content_height)
-        self.lvgl_root.invalidate()
+        if passport.IS_COLOR or passport.IS_SIMULATOR:
+            # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
+            camera.resize(self.content_width, self.content_height)
+            self.lvgl_root.invalidate()
+        else:  # MONO device
+            # Update the viewfinder using the grayscale image in the QR framebuffer
+            import passport_lv
+            passport_lv.lcd.update_viewfinder_direct(qr.framebuffer, self.HOR_RES, self.VER_RES)
 
     def enable(self):
         """Enable the camera"""
