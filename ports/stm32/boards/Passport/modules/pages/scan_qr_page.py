@@ -70,7 +70,10 @@ class ScanQRPage(Page):
         self.progress_label = Label(text=progress_text(0), color=TEXT_GREY)
         with Stylize(self.progress_label) as default:
             default.align(lv.ALIGN.BOTTOM_MID)
-            default.pad(bottom=8)
+            if passport.IS_COLOR:
+                default.pad(bottom=8)
+            else:
+                default.pad(bottom=2)
         self.set_children([self.camera, self.progress_label])
 
     def attach(self, group):
