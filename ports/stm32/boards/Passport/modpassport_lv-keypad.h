@@ -268,7 +268,7 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     }
 
     if (from_keypad) {
-        if (is_pressed && key_time - key_filter[key_index].release_time < 50) {
+        if (is_pressed && key_time - key_filter[key_index].release_time < 20) {
             key_filter[key_index].eat_next_release = true;
             return;
         }
