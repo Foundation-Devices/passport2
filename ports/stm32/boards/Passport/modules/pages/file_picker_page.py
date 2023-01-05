@@ -12,7 +12,7 @@ from pages import Page
 from views import FileItem, View
 from micropython import const
 
-MAX_FILE_DISPLAY = const(30)
+MAX_FILE_DISPLAY = const(15)
 
 
 class FilePickerPage(Page):
