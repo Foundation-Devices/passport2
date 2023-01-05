@@ -9,6 +9,7 @@ from tasks import apply_passphrase_task
 from utils import spinner_task
 from errors import Error
 from translations import t, T
+from constants import MAX_PASSPHRASE_LENGTH
 
 
 class ApplyPassphraseFlow(Flow):
@@ -24,7 +25,8 @@ class ApplyPassphraseFlow(Flow):
 
     async def enter_passphrase(self):
         self.passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'},
-                                              initial_text=self.passphrase).show()
+                                              initial_text=self.passphrase,
+                                              max_length=MAX_PASSPHRASE_LENGTH).show()
         if self.passphrase is not None:
             self.goto(self.apply_passphrase)
         else:
