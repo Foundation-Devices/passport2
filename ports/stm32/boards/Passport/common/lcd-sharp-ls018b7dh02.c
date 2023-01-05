@@ -224,18 +224,27 @@ void lcd_update_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* da
     HAL_SPI_Transmit(lcd.spi, (uint8_t*)&screen.lines[y], sizeof(ScreenLine) * h, 1000);
 }
 
-#define VIEWFINDER_WIDTH 180
-#define VIEWFINDER_HEIGHT 180
-#define VIEWFINDER_Y_START 52
+#define VIEWFINDER_WIDTH 188
+#define VIEWFINDER_HEIGHT 188
+#define VIEWFINDER_Y_START 49
+#define VIEWFINDER_X_OFFSET (SCREEN_WIDTH - VIEWFINDER_WIDTH) / 2
+
+// Force the specified pixel to white
+static void _lcd_set_pixel(uint32_t x, uint32_t y) {
+    uint32_t mono_offset = x >> 3;
+    uint8_t  bit         = x % 8;
+    uint8_t* p_byte      = &screen.lines[y].pixels[mono_offset];
+
+    // Set the bit
+    *p_byte |= 1 << (7 - bit);
+}
 
 // A very hard-coded function to resize the grayscale camera image to the viewfinder size, and convert from
 // grayscle to mono as quickly as possible.
 static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_t gray_hor_res, uint32_t gray_ver_res) {
-    float    scale    = (float)gray_ver_res / (float)VIEWFINDER_HEIGHT;
-    uint32_t x_offset = (SCREEN_WIDTH - VIEWFINDER_WIDTH) / 2;
+    float scale = (float)gray_ver_res / (float)VIEWFINDER_HEIGHT;
 
     // printf("hor_res=%lu ver_res=%lu scale=%f\n", gray_hor_res, gray_ver_res, (double)scale);
-    // printf("x_offset=%lu\n", x_offset);
 
     for (uint32_t y = 0; y < VIEWFINDER_HEIGHT; y++) {
         for (uint32_t x = 0; x < VIEWFINDER_WIDTH; x++) {
@@ -244,9 +253,10 @@ static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_
 
             // Mask the value in it
             uint32_t flipped_x   = VIEWFINDER_WIDTH - x;
-            uint32_t mono_offset = (x_offset + flipped_x) >> 3;
-            uint8_t  bit         = (x_offset + flipped_x) % 8;
-            uint8_t* p_byte      = &screen.lines[y + VIEWFINDER_Y_START].pixels[mono_offset];
+            uint32_t mono_offset = (VIEWFINDER_X_OFFSET + flipped_x) >> 3;
+            uint8_t  bit         = (VIEWFINDER_X_OFFSET + flipped_x) % 8;
+            uint8_t* p_byte      = &screen.lines[VIEWFINDER_Y_START + y].pixels[mono_offset];
+
             if (gray > 64) {
                 // Set the bit
                 *p_byte |= 1 << (7 - bit);
@@ -254,6 +264,25 @@ static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_
                 // Clear the bit
                 *p_byte &= ~(1 << (7 - bit));
             }
+        }
+    }
+
+    // Force the corners to be white to "round" the viewfinder
+    uint32_t corner_lines[] = {8, 6, 5, 3, 3, 2, 1, 1};
+    uint32_t num_lines      = sizeof(corner_lines) / sizeof(uint32_t);
+    for (uint32_t x = 0; x < num_lines; x++) {
+        for (uint32_t y = 0; y < corner_lines[x]; y++) {
+            // Upper-left
+            _lcd_set_pixel(VIEWFINDER_X_OFFSET + x, VIEWFINDER_Y_START + y);
+
+            // Upper-right
+            _lcd_set_pixel(VIEWFINDER_X_OFFSET + VIEWFINDER_WIDTH - x, VIEWFINDER_Y_START + y);
+
+            // Lower-left
+            _lcd_set_pixel(VIEWFINDER_X_OFFSET + x, VIEWFINDER_Y_START + VIEWFINDER_HEIGHT - y);
+
+            // Lower-right
+            _lcd_set_pixel(VIEWFINDER_X_OFFSET + VIEWFINDER_WIDTH - x, VIEWFINDER_Y_START + VIEWFINDER_HEIGHT - y);
         }
     }
 }
