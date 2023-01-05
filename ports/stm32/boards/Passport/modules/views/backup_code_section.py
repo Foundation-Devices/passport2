@@ -100,8 +100,11 @@ class BackupCodeSection(View):
         if self.focused_idx is not None:
             with LocalStyle(self.children[self.focused_idx]) as next:
                 next.radius(4)
-                next.border_side(lv.BORDER_SIDE.NONE)
-                next.bg_opaque()
+                if not passport.IS_COLOR:
+                    next.border_side(lv.BORDER_SIDE.NONE)
+                    next.bg_opaque()
+                else:
+                    next.border_color(DIGIT_BORDER_COLOR_FOCUSED)
 
             with LocalStyle(self.digits_labels[self.focused_idx]) as next_label:
                 next_label.text_color(BACKUP_CODE_DIGIT_FOCUSED)
