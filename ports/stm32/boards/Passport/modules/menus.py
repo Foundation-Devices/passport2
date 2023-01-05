@@ -236,48 +236,45 @@ def advanced_menu():
     ]
 
 
-# def developer_menu():
-#     from flows import (
-#         ScvFlow,
-#         LoginFlow,
-#         NewSeedFlow,
-#         SetInitialPINFlow,
-#         # DeveloperFunctionsFlow,
-#         # ResetPINFlow,
-#         SpinDelayFlow
-#     )
-#     from pages import BatteryPage, StatusPage, ShowQRPage
-#     from data_codecs.qr_type import QRType
-#     from foundation import ur
-#
-#     return [
-#         {'icon': lv.ICON_BATTERY, 'label': 'Battery', 'page': BatteryPage},
-#         {'icon': lv.ICON_RETRY, 'label': 'Spin!!!', 'flow': SpinDelayFlow, 'args': {'delay_ms': 10000}},
-#         {'icon': lv.ICON_SCAN_QR, 'label': 'Show Setup QR', 'page': StatusPage, 'args': {
-#             'text': 'Scan the QR code above with Envoy.', 'icon': lv.LARGE_ICON_SETUP_QR}, 'card_header': {}},
-#         {'icon': lv.ICON_SCAN_QR, 'label': 'Show Test UR', 'page': ShowQRPage, 'args': {
-#             'qr_type': QRType.UR2, 'qr_data': ur.new_bytes('test data' * 10)}},
-#         {'icon': lv.ICON_SHIELD, 'label': 'Supply Chain', 'flow': ScvFlow},
-#         {'icon': lv.ICON_ONE_KEY, 'label': 'Login', 'flow': LoginFlow},
-#         {'icon': lv.ICON_SEED, 'label': 'New Seed', 'flow': NewSeedFlow, 'args': {'refresh_cards_when_done': True}},
-#         {'icon': lv.ICON_ONE_KEY, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
-#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Reset PIN', 'flow': ResetPINFlow},
-#         # {'icon': lv.ICON_ERASE, 'label': 'Factory Reset',
-#         #     'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
-#         # {'icon': lv.ICON_SETTINGS, 'label': 'Dump Settings',
-#         #     'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'dump_settings'}},
-#         # {'icon': lv.ICON_SETTINGS, 'label': 'I\'m Busy!', 'page': LongTextPage,
-#         #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
-#         # {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
-#         # {'icon': lv.ICON_ABOUT, 'label': 'Color Picker', 'page': ColorPickerPage},
-#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Enter PIN', 'page': PINEntryPage,
-#         #  'args': {'title': 'Enter Initial PIN'}},
-#         # {'icon': lv.ICON_FOLDER, 'label': 'Rename Account', 'page': TextInputPage,
-#         #     'args': {'card_header': {'title': 'Rename Account', 'icon': lv.ICON_ABOUT, 'right_text': '!!',
-#         #              'bg_color': RED, 'fg_color': FD_BLUE}}},
-#         # {'icon': lv.ICON_SEED, 'label': 'Enter Seed', 'page': PredictiveTextInputPage},
-#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Enter Backup Code', 'page': BackupCodePage},
-#     ]
+def developer_menu():
+    from flows import (
+        ScvFlow,
+        LoginFlow,
+        NewSeedFlow,
+        SetInitialPINFlow,
+        DeveloperFunctionsFlow,
+        SpinDelayFlow
+    )
+    from pages import BatteryPage, StatusPage, ShowQRPage
+    from data_codecs.qr_type import QRType
+
+    return [
+        {'icon': lv.ICON_BATTERY, 'label': 'Battery', 'page': BatteryPage},
+        {'icon': lv.ICON_ERASE, 'label': 'Factory Reset',
+            'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
+        {'icon': lv.ICON_RETRY, 'label': 'Spin!!!', 'flow': SpinDelayFlow, 'args': {'delay_ms': 10000}},
+        {'icon': lv.ICON_SETTINGS, 'label': 'Dump Settings',
+            'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'dump_settings'}},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Show Setup QR', 'page': StatusPage, 'args': {
+            'text': 'Scan the QR code above with Envoy.', 'icon': lv.LARGE_ICON_SETUP_QR}, 'card_header': {}},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Show Test UR', 'page': ShowQRPage, 'args': {
+            'qr_type': QRType.UR2, 'qr_data': ur.new_bytes('test data' * 10)}},
+        {'icon': lv.ICON_SHIELD, 'label': 'Supply Chain', 'flow': ScvFlow},
+        {'icon': lv.ICON_ONE_KEY, 'label': 'Login', 'flow': LoginFlow},
+        {'icon': lv.ICON_SEED, 'label': 'New Seed', 'flow': NewSeedFlow, 'args': {'refresh_cards_when_done': True}},
+        {'icon': lv.ICON_ONE_KEY, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
+        # {'icon': lv.ICON_SETTINGS, 'label': 'I\'m Busy!', 'page': LongTextPage,
+        #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
+        # {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
+        # {'icon': lv.ICON_ABOUT, 'label': 'Color Picker', 'page': ColorPickerPage},
+        # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter PIN', 'page': PINEntryPage,
+        #  'args': {'title': 'Enter Initial PIN'}},
+        # {'icon': lv.ICON_FOLDER, 'label': 'Rename Account', 'page': TextInputPage,
+        #     'args': {'card_header': {'title': 'Rename Account', 'icon': lv.ICON_ABOUT, 'right_text': '!!',
+        #              'bg_color': RED, 'fg_color': FD_BLUE}}},
+        # {'icon': lv.ICON_SEED, 'label': 'Enter Seed', 'page': PredictiveTextInputPage},
+        # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter Backup Code', 'page': BackupCodePage},
+    ]
 
 def extensions_menu():
     from extensions.extensions import supported_extensions_menu
@@ -294,5 +291,5 @@ def settings_menu():
         {'icon': lv.ICON_BITCOIN, 'label': 'Bitcoin', 'submenu': bitcoin_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_ADVANCED, 'label': 'Advanced', 'submenu': advanced_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_EXTENSIONS, 'label': 'Extensions', 'submenu': extensions_menu},
-        # {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_logged_in},
     ]
