@@ -24,7 +24,7 @@ class SignPsbtQRFlow(Flow):
             # Got a scan result (aka QRScanResult): good data or error
             if result.error is not None:
                 # Unable to scan QR code - show error?
-                await ErrorPage(text='Unable to scan QR code.'.show())
+                await ErrorPage(text='Unable to scan QR code.').show()
                 self.set_result(False)
             else:
                 self.raw_psbt = result.data
