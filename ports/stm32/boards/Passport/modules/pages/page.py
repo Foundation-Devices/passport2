@@ -80,7 +80,7 @@ class Page(View):
             self.set_result(None)
 
     # This only pushes the page to the screen without polling
-    def display(self, auto_close_timeout=None):
+    async def display(self, auto_close_timeout=None):
         from common import ui
 
         if ui.get_active_page() is None:
@@ -118,7 +118,7 @@ class Page(View):
             common.ui.set_card_header(**self.prev_card_header, force_all=True)
 
     async def show(self, auto_close_timeout=None):
-        self.display(auto_close_timeout)
+        await self.display(auto_close_timeout)
 
         g = self.poll_for_done()
         while True:

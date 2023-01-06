@@ -10,6 +10,9 @@ from styles.colors import TEXT_GREY
 from styles import Stylize
 from pages import Page
 from views import FileItem, View
+from micropython import const
+
+MAX_FILE_DISPLAY = const(15)
 
 
 class FilePickerPage(Page):
@@ -48,12 +51,22 @@ class FilePickerPage(Page):
             scrollbar.pad(right=0)
 
         # Add the file items to the scroll container
-        for index in range(len(self.files)):
+        num_files = min(MAX_FILE_DISPLAY, len(self.files))
+        for index in range(num_files):
             filename, _full_path, is_folder = self.files[index]
             self.scroll_container.add_child(
                 FileItem(filename=filename, is_folder=is_folder))
 
         self.add_child(self.scroll_container)
+
+    async def display(self, auto_close_timeout=None):
+        from pages import ErrorPage
+
+        if len(self.files) > MAX_FILE_DISPLAY:
+            await ErrorPage(text="Unable to display all files. Displaying the first "
+                            "{} files alphabetically.".format(MAX_FILE_DISPLAY)).show()
+
+        await super().display()
 
     def attach(self, group):
         super().attach(group)
