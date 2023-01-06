@@ -573,6 +573,8 @@ class MultisigWallet:
 
     @classmethod
     def from_file(cls, config, name=None):
+        from utils import spinner_task
+        from tasks import apply_passphrase_task, delay_task
         # Given a simple text file, parse contents and create instance (unsaved).
         # format is:         label: value
         # where label is:
@@ -709,6 +711,11 @@ class MultisigWallet:
         unique_id = bytearray(8)
         noise.random_bytes(unique_id, noise.MCU)
         unique_id = b2a_hex(unique_id).decode('utf-8')
+
+        # TODO: why does this band-aid "multisig object is not iterable" error?
+        passphrase = stash.bip39_passphrase
+        if passphrase != '':
+            await spinner_task('Checking Multisig Config', apply_passphrase_task, args=[passphrase])
 
         # done. have all the parts
         return cls(name, (M, N), xpubs, unique_id, addr_fmt=addr_fmt, chain_type=expect_chain, deriv=my_deriv)
