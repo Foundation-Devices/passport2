@@ -9,7 +9,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## 2.0.5
 - Added changelog PASS1-581
-- Reverted backup code page cursor color to previous look #PASS1-591
+- Reduced keypad double click cooldown to 20 ms PASS1-509
+- Reverted multisig import to only check against the current XFP PASS1-587
+- Reverted backup code page cursor color to previous look PASS1-591
 - Limited number of files on the file picker page PASS1-584
 - Fixed passphrase and account header text color PASS1-582
 - Raised passphrase character limit to 1000 PASS1-519
