@@ -13,6 +13,7 @@ from t9 import T9
 from keys import KEY_1
 import microns
 import passport
+from constants import MAX_TEXT_INPUT_LENGTH
 
 
 class TextInputPage(Page):
@@ -20,7 +21,7 @@ class TextInputPage(Page):
                  title=None,
                  initial_text='',
                  initial_mode=InputMode.UPPER_ALPHA,
-                 max_length=64,
+                 max_length=MAX_TEXT_INPUT_LENGTH,
                  numeric_only=False,
                  max_value=2_147_483_646,
                  card_header=None,

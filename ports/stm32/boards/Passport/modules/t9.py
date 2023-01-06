@@ -6,6 +6,7 @@
 import lvgl as lv
 from keys import *
 from utils import InputMode
+from constants import MAX_TEXT_INPUT_LENGTH
 
 
 class T9:
@@ -47,7 +48,8 @@ class T9:
     }
 
     def __init__(self, text='', cursor_pos=None, mode=InputMode.NUMERIC, numeric_only=False, input_delay=1000,
-                 max_length=64, on_ready=None, allow_cursor_keys=True, allow_backspace=True, max_value=2_147_483_646):
+                 max_length=MAX_TEXT_INPUT_LENGTH, on_ready=None, allow_cursor_keys=True,
+                 allow_backspace=True, max_value=2_147_483_646):
         self.text = [ch for ch in text]
         self.cursor_pos = cursor_pos if cursor_pos is not None else len(self.text)
         self.numeric_only = numeric_only
