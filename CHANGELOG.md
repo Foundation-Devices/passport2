@@ -5,10 +5,14 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
-- Added changelog PASS1-581
 - Cleared flash after signing transactions PASS1-345
 
 ## 2.0.5
+- Added changelog PASS1-581
+- Reverted backup code page cursor color to previous look #PASS1-591
+- Limited number of files on the file picker page PASS1-584
+- Fixed passphrase and account header text color PASS1-582
+- Raised passphrase character limit to 1000 PASS1-519
 - Fixed sign via microsd success page PASS1-545
 - Fixed up/down keys on pin entry page PASS1-573
 - Fixed UI memory leaks PASS1-572
