@@ -9,6 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## 2.0.5
 - Added changelog (PASS1-581)
+- Reverted some changes to multisig imports (PASS1-504)
 - Reduced keypad double click cooldown to 20 ms (PASS1-509)
 - Reverted multisig import to only check against the current XFP (PASS1-587)
 - Reverted backup code page cursor color to previous look (PASS1-591)
