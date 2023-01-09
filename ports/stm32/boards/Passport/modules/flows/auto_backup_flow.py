@@ -58,7 +58,7 @@ class AutoBackupFlow(Flow):
             args=[None, self.backup_code])
         if error is None:
             from pages import SuccessPage
-            await SuccessPage(text='AutoBackup Complete!').show()
+            await SuccessPage(text='AutoBackup Complete!').show(auto_close_timeout=MSG_CLOSE_TIMEOUT)
             self.set_result(True)
         elif error is Error.MICROSD_CARD_MISSING:
             if self.offer:
