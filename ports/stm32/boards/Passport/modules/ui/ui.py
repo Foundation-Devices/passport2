@@ -232,8 +232,7 @@ class UI():
         elif is_new_account:
             # User added a new account, which is done from the last card, so
             # let's ensure we are still on the last page.
-            # # TODO: possibly may want to jump to the new page instead
-            new_card_idx = len(accounts) + 1
+            new_card_idx = self.active_card_idx + 1
         elif stay_on_same_card:
             new_card_idx = self.active_card_idx
 

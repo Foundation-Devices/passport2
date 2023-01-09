@@ -5,9 +5,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
-- Cleared flash after signing transactions (PASS1-345
 
 ## 2.0.5
+- Ensured "New Account" UI returns to the "More" menu (PASS1-582)
 - Added changelog (PASS1-581)
 - Reverted some changes to multisig imports (PASS1-504)
 - Reduced keypad double click cooldown to 20 ms (PASS1-509)
