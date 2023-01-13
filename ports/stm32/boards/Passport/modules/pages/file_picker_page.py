@@ -11,8 +11,9 @@ from styles import Stylize
 from pages import Page
 from views import FileItem, View
 from micropython import const
+import passport
 
-MAX_FILE_DISPLAY = const(15)
+MAX_FILE_DISPLAY = const(15) if passport.IS_COLOR else const(10)
 
 
 class FilePickerPage(Page):
