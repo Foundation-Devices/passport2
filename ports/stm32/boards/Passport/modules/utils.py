@@ -1101,6 +1101,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     :return: None
     """
     from files import CardMissingError
+    from pages import ErrorPage
 
     sd_card_change = False
     prev_sd_card_cb = None
@@ -1120,7 +1121,14 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
     CardSlot.set_sd_card_change_cb(sd_card_cb)
 
-    await page.display()
+    try:
+        await page.display()
+    except Exception as e:
+        page.unmount()
+        restore_sd_cb()
+        on_result(None)
+        await ErrorPage(text='Unable to display page.').show()
+        return
 
     g = page.poll_for_done()
     while True:
