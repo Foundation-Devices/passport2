@@ -18,12 +18,6 @@ from flows import (
     MagicScanValidateAddressFlow)
 
 
-class QRType:
-    QR = 0      # Standard QR code with no additional encoding
-    UR1 = 1     # UR 1.0 pre-standard from Blockchain Commons
-    UR2 = 2     # UR 2.0 standard from Blockchain Commons
-
-
 samplers = [
     {'name': 'psbt', 'sampler': PsbtTxnSampler, 'flow': MagicScanSignPsbtFlow},
     {'name': 'multisig', 'sampler': MultisigConfigSampler, 'flow': MagicScanImportMultisigFlow},
