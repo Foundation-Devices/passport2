@@ -254,6 +254,12 @@ class ExtSettings:
             self.current.pop(kn, None)
             self.changed()
 
+    def remove_regex(self, pattern):
+        import re
+        matches = [k for k in self.current if re.search(pattern, k)]
+        for k in matches:
+            self.remove(k)
+
     def clear(self):
         # print('clear() called!')
         # could be just:
