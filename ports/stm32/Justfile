@@ -283,21 +283,25 @@ hash filepath:
     #!/usr/bin/env bash
     set -e
     filename=`basename {{filepath}}`
+    directory=`dirname {{filepath}}`
+    release_name=${filename::-13}
 
     # SHA256
     sha=`shasum -b -a 256 {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
-    echo -e "\n\`SHA256: $sha\`"
-    echo -e "\`(shasum -b -a 256 $filename)\`\n"
+    echo "$sha" > ${directory}/${release_name}-sha256
 
     # MD5
     md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
-    echo "\`MD5: $md5\`"
-    echo -e "\`(md5 $filename or mdsum $filename)\`\n"
+    md5=${md5::-1}
+    echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
     build_hash=`cosign -t color -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
-    echo -e "\`Build Hash: $build_hash\`"
-    echo -e "\`(Developers Only)\`\n"
+    echo "$build_hash" > ${directory}/${release_name}-build-hash
+
+    echo -e "## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n"
+    echo -e "SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum v2.0.5-passport.bin\` or \`md5sum v2.0.5-passport.bin\`\n"
+    echo -e "### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
 
 # Format the project's .py files under boards/Passport/modules
 fmt-py:
