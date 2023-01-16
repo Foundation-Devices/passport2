@@ -9,6 +9,8 @@ import passport
 from foundation import qr
 from passport import camera
 from views import View
+from styles import Stylize
+from styles.colors import WHITE
 from data_codecs.qr_factory import get_qr_decoder_for_data
 
 
@@ -42,8 +44,16 @@ class Camera(View):
         self.content_height = None
         self.img_dsc = None
 
+        if not passport.IS_COLOR and not passport.IS_SIMULATOR:
+            with Stylize(self) as default:
+                default.bg_color(WHITE)
+                default.border_width(0)
+
     def create_lvgl_root(self, lvgl_parent):  # noqa
-        return lv.img(lvgl_parent)
+        if passport.IS_COLOR or passport.IS_SIMULATOR:
+            return lv.img(lvgl_parent)
+        else:
+            return lv.obj(lvgl_parent)
 
     def hook(self):
         pass
@@ -72,9 +82,14 @@ class Camera(View):
         # full access to the buffer.
         self.hook()
 
-        # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
-        camera.resize(self.content_width, self.content_height)
-        self.lvgl_root.invalidate()
+        if passport.IS_COLOR or passport.IS_SIMULATOR:
+            # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
+            camera.resize(self.content_width, self.content_height)
+            self.lvgl_root.invalidate()
+        else:  # MONO device
+            # Update the viewfinder using the grayscale image in the QR framebuffer
+            import passport_lv
+            passport_lv.lcd.update_viewfinder_direct(qr.framebuffer, self.HOR_RES, self.VER_RES)
 
     def enable(self):
         """Enable the camera"""
@@ -92,7 +107,13 @@ class Camera(View):
             # complete area). The pixel format of the camera is the same one as the
             # LVGL format.
             self._framebuffer = camera.framebuffer()
+
+            # Nothing else to do on device since viewfinder is hard-wired at the lower level
+            if not passport.IS_COLOR and not passport.IS_SIMULATOR:
+                return
+
             self.lvgl_root.refr_size()
+
             self.content_width = min(self.content_width, self.HOR_RES)
             self.content_height = min(self.content_height, self.VER_RES)
             self.img_dsc = lv.img_dsc_t({
@@ -104,9 +125,6 @@ class Camera(View):
                 'data': self._framebuffer,
             })
             self.lvgl_root.set_src(self.img_dsc)
-            if not passport.IS_COLOR and not passport.IS_SIMULATOR:
-                self.lvgl_root.set_pivot(self.content_width // 2, self.content_height // 2)
-                self.lvgl_root.set_angle(900)
         else:
             self.content_width = None
             self.content_height = None

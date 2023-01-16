@@ -89,11 +89,10 @@ void framebuffer_init() {
 #endif  // SCREEN_MODE_MONO
 
     lv_disp_drv_init(disp_drv);
-    disp_drv->hor_res     = LCD_HOR_RES;
-    disp_drv->ver_res     = LCD_VER_RES;
-    disp_drv->draw_buf    = draw_buf;
-    disp_drv->flush_cb    = _lcd_flush;
-    disp_drv->direct_mode = 1;
+    disp_drv->hor_res  = LCD_HOR_RES;
+    disp_drv->ver_res  = LCD_VER_RES;
+    disp_drv->draw_buf = draw_buf;
+    disp_drv->flush_cb = _lcd_flush;
 #ifdef SCREEN_MODE_COLOR
     memcpy(&_small_lcd_disp_drv, &_big_lcd_disp_drv, sizeof(lv_disp_drv_t));
     _small_lcd_disp_drv.draw_buf    = &_small_lcd_draw_buf;
@@ -161,12 +160,28 @@ static void _lcd_flush(lv_disp_drv_t* disp_drv, const lv_area_t* area, lv_color_
 }
 
 #ifdef SCREEN_MODE_MONO
+
 static void _lcd_rounder(lv_disp_drv_t* disp_drv, lv_area_t* area) {
+    // The Sharp display only allows writing whole lines, so expand the rectangle to cover the
+    // full width of the screen.
     area->x1 = 0;
-    area->x2 = 229;
-    area->y1 = 0;
-    area->y2 = 302;
+    area->x2 = LCD_HOR_RES - 1;
+
+    // LVGL sometimes miscalculates the update region by 1 pixel on the bottom, so we expand the region
+    // It's possible we might expand it more than once when coalescing multiple regions, but this is not
+    // going to affect performance in a noticeable way.
+    area->y2 = MIN(area->y2 + 1, LCD_VER_RES - 1);
 }
+
+uint8_t byte_lookup_table[] = {
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1,
+    128, 64, 32, 16, 8, 4};
 
 static void _lcd_set_px(lv_disp_drv_t* disp_drv,
                         uint8_t*       buf,
@@ -177,10 +192,12 @@ static void _lcd_set_px(lv_disp_drv_t* disp_drv,
                         lv_opa_t       opa) {
     buf += 30 * y;
     buf += x >> 3;
-    if (lv_color_brightness(color) > 128) {
-        (*buf) |= (1 << (7 - (x & 0x07)));
+    uint8_t byte_value = byte_lookup_table[x];
+
+    if (lv_color_brightness(color) > 96) {
+        (*buf) |= byte_value;
     } else {
-        (*buf) &= ~(1 << (7 - (x & 0x07)));
+        (*buf) &= ~byte_value;
     }
 }
 #endif  // SCREEN_MODE_MONO

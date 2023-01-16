@@ -58,9 +58,13 @@ class ScanQRPage(Page):
         else:
             # Camera needs to be a square on Founders Edition so that the rotation
             # works properly.
-            self.camera.set_width(180)
-            self.camera.set_height(180)
-        self.camera.set_y(-22)
+            self.camera.set_width(188)
+            self.camera.set_height(188)
+
+        if passport.IS_COLOR:
+            self.camera.set_y(-22)
+        else:
+            self.camera.set_y(-12)
         self.set_scroll_dir(dir=lv.DIR.NONE)
         with Stylize(self.camera) as default:
             default.align(lv.ALIGN.CENTER)
@@ -70,7 +74,12 @@ class ScanQRPage(Page):
         self.progress_label = Label(text=progress_text(0), color=TEXT_GREY)
         with Stylize(self.progress_label) as default:
             default.align(lv.ALIGN.BOTTOM_MID)
-            default.pad(bottom=8)
+            if passport.IS_COLOR:
+                default.pad(bottom=8)
+            else:
+                # self.progress_label.set_y(0)
+                default.pad(bottom=0)
+
         self.set_children([self.camera, self.progress_label])
 
     def attach(self, group):
