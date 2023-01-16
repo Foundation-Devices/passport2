@@ -59,9 +59,12 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
 
     async def do_import(self):
         from flows import ImportMultisigWalletFlow
+        from pages import SuccessPage
 
         # Show the wallet to the user for import
         result = await ImportMultisigWalletFlow(self.ms).run()
+        if result:
+            await SuccessPage(text='Multisig config imported').show()
         self.set_result(result)
 
     async def show_error(self):
