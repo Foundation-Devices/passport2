@@ -270,6 +270,25 @@ class UI():
                         extension['card']['icon'] = None
                     card_descs.append(extension['card'])
 
+            # BIP 85 Page
+            if common.settings.get('ext.bip85.enabled', False):
+                bip85_card = {
+                    'right_icon': lv.ICON_SETTINGS,
+                    'header_color': LIGHT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
+                    'statusbar': {'title': 'Extension', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
+                    'title': "BIP 85",
+                    'page_micron': microns.PageDot,
+                    'bg_color': BITCOIN_ORANGE,
+                    'flow': MenuFlow,
+                    'args': {'menu': bip85_menu, 'is_top_level': True},
+                    'account': None
+                }
+                if len(stash.bip39_passphrase) > 0:
+                    bip85_card['icon'] = lv.ICON_PASSPHRASE
+
+                card_descs.append(bip85_card)
+
             more_card = {
                 'statusbar': {'title': 'MORE', 'icon': lv.ICON_ADD_ACCOUNT, 'fg_color': WHITE},
                 'page_micron': microns.PagePlus,
