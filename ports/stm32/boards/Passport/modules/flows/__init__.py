@@ -30,6 +30,7 @@ from .developer_functions_flow import *
 from .erase_passport_flow import *
 from .export_summary_flow import *
 # from .fcc_test_flow import *
+from .select_file_flow import *
 from .file_picker_flow import *
 from .format_microsd_flow import *
 from .import_multisig_wallet_flow import *
