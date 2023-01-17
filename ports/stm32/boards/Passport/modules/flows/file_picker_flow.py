@@ -164,12 +164,13 @@ class FilePickerFlow(Flow):
                                     subsubfiles = get_file_list(path=path, include_folders=True)
                                     if len(subsubfiles) == 0:
                                         delete_file(path)
+                                        subfiles.remove(f)
                                     else:
-                                        subfiles.append(subsubfiles)
+                                        subfiles.extend(subsubfiles)
                                 else:
                                     delete_file(path)
-                                subfiles.remove(f)
-
+                                    subfiles.remove(f)
+                        delete_file(full_path)
                         return True
 
                     if is_folder:
