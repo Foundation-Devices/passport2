@@ -53,6 +53,7 @@ class FilePickerPage(Page):
 
         # Add the file items to the scroll container
         num_files = min(MAX_FILE_DISPLAY, len(self.files))
+        self.scroll_container.add_child(FileItem(filename="Create", is_create=True))
         for index in range(num_files):
             filename, _full_path, is_folder = self.files[index]
             self.scroll_container.add_child(
@@ -116,7 +117,11 @@ class FilePickerPage(Page):
         if not is_pressed:
             try:
                 selected_option_idx = self.get_focused_item_index()
-                selected_file = self.files[selected_option_idx]
+                if selected_option_idx == 0:
+                    # Return blank so picker flow can create a file
+                    selected_file = ('', '', False)
+                else:
+                    selected_file = self.files[selected_option_idx - 1]
                 # print('Selected file: {}'.format(selected_file))
                 self.set_result(selected_file)
             except Exception as e:

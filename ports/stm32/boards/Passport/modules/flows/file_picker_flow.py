@@ -7,11 +7,12 @@ import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
 from flows import Flow, SelectFileFlow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage
+from pages import FilePickerPage, StatusPage, InsertMicroSDPage, TextInputPage
 from styles.colors import COPPER
 import microns
 import common
-from utils import get_file_list
+from utils import get_file_list, create_file
+from uasyncio import sleep_ms
 
 
 class FilePickerFlow(Flow):
@@ -26,6 +27,7 @@ class FilePickerFlow(Flow):
         self.enable_parent_nav = enable_parent_nav
         self.suffix = suffix
         self.filter_fn = filter_fn
+        self.active_path = initial_path
 
     async def show_file_picker(self):
         from utils import show_page_with_sd_card
@@ -34,9 +36,9 @@ class FilePickerFlow(Flow):
             # Get list of files/folders at the current path
             try:
                 active_idx = len(self.paths) - 1
-                active_path = self.paths[active_idx]
+                self.active_path = self.paths[active_idx]
                 files = get_file_list(
-                    active_path,
+                    self.active_path,
                     include_folders=self.show_folders,
                     include_parent=self.enable_parent_nav,
                     suffix=self.suffix,
@@ -53,106 +55,76 @@ class FilePickerFlow(Flow):
                 self.goto(self.show_insert_microsd_error)
                 return
 
-            is_root = active_path == CardSlot.get_sd_root()
+            is_root = self.active_path == CardSlot.get_sd_root()
             if is_root:
                 title = 'microSD'
                 icon = lv.ICON_MICROSD
             else:
-                leaf_folder_name = active_path.split('/')[-1]
+                leaf_folder_name = self.active_path.split('/')[-1]
                 title = leaf_folder_name
                 icon = lv.ICON_FOLDER
 
-            if len(files) == 0:
-                status_page = StatusPage(
-                    text='No files found',
-                    card_header={'title': title, 'icon': icon},
-                    icon=lv.LARGE_ICON_ERROR,
-                    icon_color=COPPER,
-                    left_micron=microns.Back,
-                    right_micron=None,  # No retry micron because the SD card contents can't magically change
-                )
+            file_picker_page = FilePickerPage(
+                files=files,
+                card_header={'title': title, 'icon': icon}
+            )
 
-                def on_sd_card_change(sd_card_present):
-                    if sd_card_present:
-                        return True  # This will cause a refresh
-                    else:
-                        self.reset_paths()
-                        status_page.set_result(None)
-                        self.goto(self.show_insert_microsd_error)
-                        return False
-
-                result = None
-
-                async def on_result(res):
-                    nonlocal result
-                    result = res
+            def on_sd_card_change(sd_card_present):
+                if not sd_card_present:
+                    self.reset_paths()
+                    self.goto(self.show_insert_microsd_error)
                     return True
 
-                def on_exception(exception):
-                    self.handle_fatal_error(exception)
-                    return True
+            finished = False
 
-                await show_page_with_sd_card(status_page, on_sd_card_change, on_result, on_exception)
+            async def on_result(res):
+                nonlocal finished
 
-                if result is False:
-                    # When error message is dismissed, only quit the flow entirely if
-                    # there's no way back up to a previous level
+                # No file selected - go back to previous page
+                if res is None:
+                    common.page_transition_dir = TRANSITION_DIR_POP
                     if len(self.paths) <= 1:
                         self.set_result(None)
-                        return
+                        finished = True
                     else:
-                        # Go back up a level and refresh the flow
+                        # Go back up a level
                         self.paths.pop(-1)
-                        continue
-            else:
-                file_picker_page = FilePickerPage(
-                    files=files,
-                    card_header={'title': title, 'icon': icon}
-                )
+                    return True
 
-                def on_sd_card_change(sd_card_present):
-                    if not sd_card_present:
-                        self.reset_paths()
-                        self.goto(self.show_insert_microsd_error)
+                _filename, full_path, is_folder = res
+
+                if _filename == '':
+                    options = [{'label': 'File', 'value': False},
+                               {'label': 'Folder', 'value': True}]
+                    is_folder = await ChooserPage(options=options).show()
+                    if is_folder is None:
                         return True
+                    _filename = await TextInputPage(card_header={'title': 'Enter File Name'}).show()
+                    if _filename is None:
+                        return True
+                    full_path = self.active_path + '/' + _filename
+                    create_file(full_path, is_folder)
+                    return True
 
-                finished = False
-
-                async def on_result(res):
-                    nonlocal finished
-
-                    # No file selected - go back to previous page
-                    if res is None:
+                result = await SelectFileFlow(_filename, full_path, is_folder).run()
+                if result is not None:
+                    if is_folder:
+                        common.page_transition_dir = TRANSITION_DIR_PUSH
+                        self.paths.append(full_path)
+                    else:
                         common.page_transition_dir = TRANSITION_DIR_POP
-                        if len(self.paths) <= 1:
-                            self.set_result(None)
-                            finished = True
-                        else:
-                            # Go back up a level
-                            self.paths.pop(-1)
-                        return True
+                        self.set_result(result)
+                        finished = True
+                return True
 
-                    _filename, full_path, is_folder = res
-                    result = await SelectFileFlow(_filename, full_path, is_folder).run()
-                    if result is not None:
-                        if is_folder:
-                            common.page_transition_dir = TRANSITION_DIR_PUSH
-                            self.paths.append(full_path)
-                        else:
-                            common.page_transition_dir = TRANSITION_DIR_POP
-                            self.set_result(result)
-                            finished = True
+            def on_exception(exception):
+                self.handle_fatal_error(exception)
+                return True
 
-                    return True
+            await show_page_with_sd_card(file_picker_page, on_sd_card_change, on_result, on_exception)
 
-                def on_exception(exception):
-                    self.handle_fatal_error(exception)
-                    return True
-
-                await show_page_with_sd_card(file_picker_page, on_sd_card_change, on_result, on_exception)
-
-                if finished:
-                    return
+            if finished:
+                return
 
     async def show_insert_microsd_error(self):
         result = await InsertMicroSDPage().show()

@@ -13,11 +13,12 @@ from constants import MENU_ITEM_CORNER_RADIUS
 
 
 class FileItem(View):
-    def __init__(self, filename='', is_folder=False):
+    def __init__(self, filename='', is_folder=False, is_create=False):
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
         self.filename = filename
         self.is_folder = is_folder
+        self.is_create = is_create
 
         # Default style
         with Stylize(self) as default:
@@ -38,7 +39,10 @@ class FileItem(View):
             focus.img_recolor(FOCUSED_LIST_ITEM_TEXT)
 
         # Icon
-        self.icon_view = Icon(icon=lv.ICON_FOLDER if self.is_folder else lv.ICON_FILE)
+        if self.is_create:
+            self.icon_view = Icon(icon=lv.ICON_PLUS)
+        else:
+            self.icon_view = Icon(icon=lv.ICON_FOLDER if self.is_folder else lv.ICON_FILE)
 
         # Filename
         self.filename_view = Label(text=self.filename)

@@ -297,6 +297,23 @@ def delete_file(path):
             uos.remove(path)
 
 
+def create_file(path, is_folder=False):
+    with CardSlot() as card:
+        if path is None:
+            return
+
+        # Ensure path is build properly
+        if not path.startswith(card.get_sd_root()):
+            # print('ERROR: The path for get_file_list() must start with "{}"'.format(card.get_sd_root()))
+            return
+        if not (file_exists(path) or folder_exists(path)):
+            if is_folder:
+                uos.mkdir(path)
+            else:
+                with open(path, 'w') as fd:
+                    fd.write('')
+
+
 class InputMode():
     UPPER_ALPHA = 0
     LOWER_ALPHA = 1
