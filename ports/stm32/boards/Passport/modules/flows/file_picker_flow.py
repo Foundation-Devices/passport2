@@ -7,12 +7,9 @@ import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
 from flows import Flow, SelectFileFlow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage, TextInputPage, ChooserPage
-from styles.colors import COPPER
-import microns
+from pages import FilePickerPage, InsertMicroSDPage
 import common
-from utils import get_file_list, create_file
-from uasyncio import sleep_ms
+from utils import get_file_list
 
 
 class FilePickerFlow(Flow):
@@ -92,21 +89,7 @@ class FilePickerFlow(Flow):
                     return True
 
                 _filename, full_path, is_folder = res
-
-                if _filename == '':
-                    options = [{'label': 'File', 'value': False},
-                               {'label': 'Folder', 'value': True}]
-                    is_folder = await ChooserPage(options=options).show()
-                    if is_folder is None:
-                        return True
-                    _filename = await TextInputPage(card_header={'title': 'Enter File Name'}).show()
-                    if _filename is None:
-                        return True
-                    full_path = self.active_path + '/' + _filename
-                    create_file(full_path, is_folder)
-                    return True
-
-                result = await SelectFileFlow(_filename, full_path, is_folder).run()
+                result = await SelectFileFlow(self.active_path, _filename, full_path, is_folder).run()
                 if result is not None:
                     if is_folder:
                         common.page_transition_dir = TRANSITION_DIR_PUSH

@@ -7,12 +7,49 @@ from flows import Flow
 
 
 class SelectFileFlow(Flow):
-    def __init__(self, file_name, full_path, is_folder):
+    def __init__(self, active_path, file_name, full_path, is_folder):
+        self.active_path = active_path
         self.file_name = file_name
         self.full_path = full_path
         self.is_folder = is_folder
         self.error = None
-        super().__init__(initial_state=self.choose_action, name='SelectFileFlow')
+        super().__init__(initial_state=self.create, name='SelectFileFlow')
+
+    async def create(self):
+        from pages import ChooserPage
+        if len(self.file_name) != 0:
+            self.goto(self.choose_action)
+            return
+
+        options = [{'label': 'File', 'value': False},
+                   {'label': 'Folder', 'value': True}]
+        self.is_folder = await ChooserPage(options=options).show()
+
+        if self.is_folder is None:
+            self.set_result(None)
+            return
+
+        self.goto(self.name_file)
+
+    async def name_file(self):
+        from pages import TextInputPage
+        from utils import create_file
+        self.file_name = await TextInputPage(card_header={'title': 'Enter File Name'}).show()
+        if self.file_name is None:
+            self.set_result(None)
+            return
+
+        self.full_path = self.active_path + '/' + self.file_name
+        try:
+            create_file(self.full_path, self.is_folder)
+        except Exception as e:
+            if e.args is None or len(e.args) == 0:
+                self.error = "File Creation Error"
+            else:
+                self.error = e.args[0]
+            self.goto(self.show_error)
+            return
+        self.set_result(None)
 
     async def choose_action(self):
         from pages import ChooserPage
@@ -50,3 +87,9 @@ class SelectFileFlow(Flow):
             await spinner_task(text="Deleting folder and all its files.",
                                task=delete_directory_task, args=[self.full_path])
         self.set_result(None)
+
+    async def show_error(self):
+        from pages import ErrorPage
+        await ErrorPage(text=self.error).show()
+        self.error = None
+        self.reset(self.name_file)
