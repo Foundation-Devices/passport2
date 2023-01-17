@@ -20,6 +20,12 @@ class ExportBIP85QRFlow(Flow):
                                          max_length=10,
                                          left_micron=microns.Back,
                                          right_micron=microns.Checkmark).show()
+        if self.index is not None:
+            if len(self.index) == 0:
+                return  # Try again
+        else:
+            self.set_result(False)
+            return
         (seed, error) = await spinner_task(text='Generating Seed', task=bip85_seed_task, args=[self.index])
         if error is None:
             self.seed = seed
@@ -37,8 +43,6 @@ class ExportBIP85QRFlow(Flow):
         from pages import ShowQRPage
         from utils import B2A
         import microns
-        hex_seed = B2A(self.seed)
-        print(hex_seed)
         await ShowQRPage(qr_data=B2A(self.seed), right_micron=microns.Checkmark).show()
         self.set_result(True)
 
