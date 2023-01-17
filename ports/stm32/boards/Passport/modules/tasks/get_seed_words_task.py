@@ -22,3 +22,11 @@ async def get_seed_words_task(on_done):
         # print('get_seed_words_task(): Exception: {}'.format(e))
         # Unable to read seed!
         await on_done(None, None, '{}'.format(e))
+
+
+async def get_words_from_seed_task(on_done, seed):
+    try:
+        words = trezorcrypto.bip39.from_data(seed).split(' ')
+        await on_done(words, None)
+    except Exception as e:
+        await one_done(None, '{}'.format(e))

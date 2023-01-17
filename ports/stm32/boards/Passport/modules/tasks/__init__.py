@@ -9,6 +9,7 @@ if passport.HAS_FUEL_GAUGE:
 
 from .apply_passphrase_task import apply_passphrase_task
 from .auto_shutdown_task import auto_shutdown_task
+from .bip85_seed_task import bip85_seed_task
 from .calculate_file_sha256_task import calculate_file_sha256_task
 from .card_task import card_task
 from .change_pin_task import change_pin_task
@@ -28,7 +29,7 @@ from .format_microsd_task import format_microsd_task
 # from .fcc_copy_files_task import fcc_copy_files_task
 from .generate_addresses_task import generate_addresses_task
 from .get_security_words_task import get_security_words_task
-from .get_seed_words_task import get_seed_words_task
+from .get_seed_words_task import *
 from .get_backup_code_task import get_backup_code_task
 from .login_task import login_task
 from .lvgl_task import lvgl_task
