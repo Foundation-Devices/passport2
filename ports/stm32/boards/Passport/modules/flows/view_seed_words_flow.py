@@ -7,19 +7,24 @@ import lvgl as lv
 import microns
 from pages import InfoPage, ErrorPage, LongTextPage, QuestionPage
 from flows import Flow
-from tasks import get_seed_words_task
+from tasks import get_seed_words_task, get_words_from_seed_task
 from utils import spinner_task
 import stash
 
 
 class ViewSeedWordsFlow(Flow):
-    def __init__(self):
+    def __init__(self, bip85_seed=None, bip85_index=None):
+        self.bip85_seed = bip85_seed
+        self.bip85_index = bip85_index
         super().__init__(initial_state=self.show_intro, name='ViewSeedWordsFlow')
 
     async def show_intro(self):
+        if self.bip85_seed:
+            text = 'Passport is about to display your BIP 85 seed at index {}.'.format(self.bip85_index)
+        else:
+            text = 'Passport is about to display your seed words and, if defined, your passphrase.'
         result = await InfoPage(
-            icon=lv.LARGE_ICON_SEED,
-            text='Passport is about to display your seed words and, if defined, your passphrase.',
+            icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=microns.Back, right_micron=microns.Forward).show()
 
         if result:
@@ -36,8 +41,11 @@ class ViewSeedWordsFlow(Flow):
             self.set_result(False)
 
     async def show_seed_words(self):
-
-        (words, passphrase, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
+        if self.bip85_seed:
+            (words, error) = await spinner_task(text='Generating Words', task=get_words_from_seed_task,
+                                                args=[self.bip85_seed])
+        else:
+            (words, passphrase, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
         if error is None and words is not None:
             from pages import SeedWordsListPage
             result = await SeedWordsListPage(words=words).show()

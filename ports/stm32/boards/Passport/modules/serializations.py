@@ -41,6 +41,10 @@ def sha256(s):
     return trezorcrypto.sha256(s).digest()
 
 
+def sha512(s):
+    return trezorcrypto.sha512(s).digest()
+
+
 def ripemd160(s):
     return trezorcrypto.ripemd160(s).digest()
 
