@@ -6,12 +6,12 @@
 import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
-from flows import Flow
+from flows import Flow, SelectFileFlow
 from pages import FilePickerPage, StatusPage, InsertMicroSDPage, ChooserPage, QuestionPage
 from styles.colors import COPPER
 import microns
 import common
-from utils import get_file_list, delete_file
+from utils import get_file_list
 from uasyncio import sleep_ms
 
 
@@ -134,54 +134,15 @@ class FilePickerFlow(Flow):
                         return True
 
                     _filename, full_path, is_folder = res
-
-                    options = [{'label': 'Navigate' if is_folder else 'Select', 'value': 0},
-                               {'label': 'Delete', 'value': 1}]
-
-                    selection = await ChooserPage(options=options).show()
-
-                    if selection is None:
-                        return True
-
-                    if selection == 1:  # delete
-                        if not is_folder:
-                            delete_file(full_path)
-                            return True
-
-                        subfiles = get_file_list(path=full_path, include_folders=True)
-                        if len(subfiles) == 0:
-                            delete_file(full_path)
-                            return True
-
-                        confirm = await QuestionPage(text="Delete folder and all its files?").show()
-                        if not confirm:
-                            return True
-
-                        while len(subfiles) != 0:
-                            for f in subfiles:
-                                (name, path, folder) = f
-                                if folder:
-                                    subsubfiles = get_file_list(path=path, include_folders=True)
-                                    if len(subsubfiles) == 0:
-                                        delete_file(path)
-                                        subfiles.remove(f)
-                                    else:
-                                        subfiles.extend(subsubfiles)
-                                else:
-                                    delete_file(path)
-                                    subfiles.remove(f)
-                        delete_file(full_path)
-                        return True
-
-                    if is_folder:
-                        common.page_transition_dir = TRANSITION_DIR_PUSH
-                        self.paths.append(full_path)
-                        return True
-
-                    # User chose this file
-                    common.page_transition_dir = TRANSITION_DIR_POP
-                    self.set_result(res)
-                    finished = True
+                    result = await SelectFileFlow(_filename, full_path, is_folder).run()
+                    if result is not None:
+                        if is_folder:
+                            common.page_transition_dir = TRANSITION_DIR_PUSH
+                            self.paths.append(full_path)
+                        else:
+                            common.page_transition_dir = TRANSITION_DIR_POP
+                            self.set_result(result)
+                            finished = True
 
                     return True
 
