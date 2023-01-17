@@ -32,6 +32,7 @@ from .erase_passport_flow import *
 from .export_multisig_microsd_flow import *
 from .export_multisig_qr_flow import *
 from .export_summary_flow import *
+from .export_bip85_qr_flow import *
 # from .fcc_test_flow import *
 from .selected_file_flow import *
 from .file_picker_flow import *

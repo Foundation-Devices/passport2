@@ -74,6 +74,15 @@ def postmix_menu():
     ]
 
 
+def bip85_menu():
+    from flows import ExportBIP85QRFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Generate BIP85 QR', 'flow': ExportBIP85QRFlow,
+         'statusbar': {'title': 'EXPORT'}},
+    ]
+
+
 def plus_menu():
     from utils import is_passphrase_active
     from flows import NewAccountFlow, ApplyPassphraseFlow
