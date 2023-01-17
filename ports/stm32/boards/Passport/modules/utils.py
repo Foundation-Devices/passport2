@@ -279,6 +279,23 @@ def get_file_list(path=None, include_folders=False, include_parent=False, suffix
     return file_list
 
 
+def delete_file(path):
+    with CardSlot() as card:
+        if path is None:
+            return
+
+        # Ensure path is build properly
+        if not path.startswith(card.get_sd_root()):
+            # print('ERROR: The path for get_file_list() must start with "{}"'.format(card.get_sd_root()))
+            return
+
+        if folder_exists(path):
+            uos.rmdir(path)
+
+        if file_exists(path):
+            uos.remove(path)
+
+
 class InputMode():
     UPPER_ALPHA = 0
     LOWER_ALPHA = 1
@@ -1126,7 +1143,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     except Exception as e:
         page.unmount()
         restore_sd_cb()
-        on_result(None)
+        await on_result(None)
         await ErrorPage(text='Unable to display page.').show()
         return
 
@@ -1154,7 +1171,8 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
         except StopIteration as result:
             result = result.value
 
-            if on_result(result):
+            success = await on_result(result)
+            if success:
                 page.restore_statusbar_and_card_header()
                 restore_sd_cb()
                 return

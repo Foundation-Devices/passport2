@@ -7,11 +7,11 @@ import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
 from flows import Flow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage
+from pages import FilePickerPage, StatusPage, InsertMicroSDPage, ChooserPage
 from styles.colors import COPPER
 import microns
 import common
-from utils import get_file_list
+from utils import get_file_list, delete_file
 from uasyncio import sleep_ms
 
 
@@ -131,14 +131,26 @@ class FilePickerFlow(Flow):
                         else:
                             # Go back up a level
                             self.paths.pop(-1)
-
                         return True
 
                     _filename, full_path, is_folder = res
+
+                    options = [{'label': 'Navigate' if is_folder else 'Select', 'value': 0},
+                               {'label': 'Delete', 'value': 1}]
+
+                    selection = await ChooserPage(text=None,
+                                                  options=options,
+                                                  initial_value=options[0].get('value'),
+                                                  left_micron=microns.Back).show()
+
+                    if selection == 1:
+                        delete_file(full_path)
+                        print("deleting {}".format(full_path))
+                        return True
+
                     if is_folder:
                         common.page_transition_dir = TRANSITION_DIR_PUSH
                         self.paths.append(full_path)
-
                         return True
 
                     # User chose this file
