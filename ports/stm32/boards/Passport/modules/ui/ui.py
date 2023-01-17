@@ -276,7 +276,7 @@ class UI():
                     'right_icon': lv.ICON_SETTINGS,
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
-                    'statusbar': {'title': 'Extension', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
+                    'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
                     'title': "BIP 85",
                     'page_micron': microns.PageDot,
                     'bg_color': BITCOIN_ORANGE,
