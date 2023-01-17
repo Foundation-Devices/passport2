@@ -7,7 +7,7 @@ import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
 from flows import Flow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage, ChooserPage
+from pages import FilePickerPage, StatusPage, InsertMicroSDPage, ChooserPage, QuestionPage
 from styles.colors import COPPER
 import microns
 import common
@@ -84,7 +84,7 @@ class FilePickerFlow(Flow):
 
                 result = None
 
-                def on_result(res):
+                async def on_result(res):
                     nonlocal result
                     result = res
                     return True
@@ -119,7 +119,7 @@ class FilePickerFlow(Flow):
 
                 finished = False
 
-                def on_result(res):
+                async def on_result(res):
                     nonlocal finished
 
                     # No file selected - go back to previous page
@@ -138,14 +138,38 @@ class FilePickerFlow(Flow):
                     options = [{'label': 'Navigate' if is_folder else 'Select', 'value': 0},
                                {'label': 'Delete', 'value': 1}]
 
-                    selection = await ChooserPage(text=None,
-                                                  options=options,
-                                                  initial_value=options[0].get('value'),
-                                                  left_micron=microns.Back).show()
+                    selection = await ChooserPage(options=options).show()
 
-                    if selection == 1:
-                        delete_file(full_path)
-                        print("deleting {}".format(full_path))
+                    if selection is None:
+                        return True
+
+                    if selection == 1:  # delete
+                        if not is_folder:
+                            delete_file(full_path)
+                            return True
+
+                        subfiles = get_file_list(path=full_path, include_folders=True)
+                        if len(subfiles) == 0:
+                            delete_file(full_path)
+                            return True
+
+                        confirm = await QuestionPage(text="Delete folder and all its files?").show()
+                        if not confirm:
+                            return True
+
+                        while len(subfiles) != 0:
+                            for f in subfiles:
+                                (name, path, folder) = f
+                                if folder:
+                                    subsubfiles = get_file_list(path=path, include_folders=True)
+                                    if len(subsubfiles) == 0:
+                                        delete_file(path)
+                                    else:
+                                        subfiles.append(subsubfiles)
+                                else:
+                                    delete_file(path)
+                                subfiles.remove(f)
+
                         return True
 
                     if is_folder:
