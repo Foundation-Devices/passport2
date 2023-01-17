@@ -235,7 +235,8 @@ def handle_fatal_error(exc):
             sys.print_exception(exc2)
 
 
-def get_file_list(path=None, include_folders=False, include_parent=False, suffix=None, filter_fn=None):
+def get_file_list(path=None, include_folders=False, include_parent=False,
+                  suffix=None, filter_fn=None, show_hidden=True):
     file_list = []
 
     with CardSlot() as card:
@@ -265,7 +266,7 @@ def get_file_list(path=None, include_folders=False, include_parent=False, suffix
                 continue
 
             # Skip "hidden" files that start with "."
-            if filename[0] == '.':
+            if filename[0] == '.' and not show_hidden:
                 continue
 
             # Apply file filter, if given (only to files -- folder are included by default)
