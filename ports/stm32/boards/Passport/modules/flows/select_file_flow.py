@@ -31,7 +31,7 @@ class SelectFileFlow(Flow):
 
     async def delete_selected_file(self):
         from tasks import delete_directory_task
-        from utils import get_file_list, delete_file
+        from utils import get_file_list, delete_file, spinner_task
         if not self.is_folder:
             delete_file(self.full_path)
             self.set_result(None)

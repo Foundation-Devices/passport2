@@ -3,11 +3,13 @@
 #
 # delete_directory_task.py - Task to delete a directory recursively
 
-from utils import get_file_list, delete_file
-
 
 async def delete_directory_task(on_done, full_path):
+    from utils import get_file_list, delete_file
+    from uasyncio import sleep_ms
+
     subfiles = get_file_list(path=full_path, include_folders=True)
+
     while len(subfiles) != 0:
         for f in subfiles:
             (name, path, folder) = f
@@ -21,5 +23,8 @@ async def delete_directory_task(on_done, full_path):
             else:
                 delete_file(path)
                 subfiles.remove(f)
+
+            await sleep_ms(1)
+
     delete_file(full_path)
     await on_done(None)
