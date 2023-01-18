@@ -4,7 +4,6 @@
 # select_file_flow.py - Decide what to do with a selected file
 
 from flows import Flow
-from pages import ChooserPage, QuestionPage
 
 
 class SelectFileFlow(Flow):
@@ -12,9 +11,11 @@ class SelectFileFlow(Flow):
         self.file_name = file_name
         self.full_path = full_path
         self.is_folder = is_folder
+        self.error = None
         super().__init__(initial_state=self.choose_action, name='SelectFileFlow')
 
     async def choose_action(self):
+        from pages import ChooserPage
         options = [{'label': 'Navigate' if self.is_folder else 'Select', 'value': 0},
                    {'label': 'Delete', 'value': 1}]
 
@@ -30,6 +31,7 @@ class SelectFileFlow(Flow):
             self.set_result((self.file_name, self.full_path, self.is_folder))
 
     async def delete_selected_file(self):
+        from pages import QuestionPage
         from tasks import delete_directory_task
         from utils import get_file_list, delete_file, spinner_task
         if not self.is_folder:
