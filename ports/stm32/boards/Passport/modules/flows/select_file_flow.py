@@ -34,6 +34,7 @@ class SelectFileFlow(Flow):
     async def name_file(self):
         from pages import TextInputPage
         from utils import create_file
+        # TODO: fix error handling of files with '/' in the name
         self.file_name = await TextInputPage(card_header={'title': 'Enter File Name'}).show()
         if self.file_name is None:
             self.set_result(None)
