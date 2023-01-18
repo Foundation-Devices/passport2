@@ -7,12 +7,11 @@ import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
 from flows import Flow, SelectFileFlow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage, ChooserPage, QuestionPage
+from pages import FilePickerPage, StatusPage, InsertMicroSDPage
 from styles.colors import COPPER
 import microns
 import common
 from utils import get_file_list
-from uasyncio import sleep_ms
 
 
 class FilePickerFlow(Flow):
