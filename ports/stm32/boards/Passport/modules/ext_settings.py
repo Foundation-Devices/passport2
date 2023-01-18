@@ -256,7 +256,8 @@ class ExtSettings:
 
     def remove_regex(self, pattern):
         import re
-        matches = [k for k in self.current if re.search(pattern, k)]
+        pattern = re.compile(pattern)
+        matches = [k for k in self.current if pattern.search(k)]
         for k in matches:
             self.remove(k)
 
