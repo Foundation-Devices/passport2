@@ -32,7 +32,7 @@ class ExportBIP85QRFlow(Flow):
         options = [{'label': '24 words', 'value': 24},
                    {'label': '18 words', 'value': 18},
                    {'label': '12 words', 'value': 12}]
-        self.num_words = await ChooserPage(text='Number of Words', options=options).show()
+        self.num_words = await ChooserPage(card_header={'title': 'Number of Words'}, options=options).show()
         if self.num_words is None:
             self.set_result(False)
             return
@@ -41,7 +41,9 @@ class ExportBIP85QRFlow(Flow):
     async def generate_seed(self):
         from utils import spinner_task
         from tasks import bip85_seed_task
-        (self.seed, self.error) = await spinner_task(text='Generating Seed', task=bip85_seed_task, args=[self.num_words, self.index])
+        (self.seed, self.error) = await spinner_task(text='Generating Seed',
+                                                     task=bip85_seed_task,
+                                                     args=[self.num_words, self.index])
         if self.error is None:
             self.goto(self.show_seed_words)
         else:
