@@ -8,30 +8,43 @@ from flows import Flow
 
 class ExportBIP85QRFlow(Flow):
     def __init__(self):
+        self.index = None
+        self.num_words = None
         super().__init__(initial_state=self.enter_index, name="ExportBIP85QRFlow")
 
     async def enter_index(self):
-        from pages import TextInputPage, ShowQRPage
-        from tasks import bip85_seed_task
-        from utils import spinner_task
+        from pages import TextInputPage
         import microns
         self.index = await TextInputPage(card_header={'title': 'Seed Number'}, numeric_only=True,
                                          initial_text='',
                                          max_length=10,
                                          left_micron=microns.Back,
                                          right_micron=microns.Checkmark).show()
-        if self.index is not None:
-            if len(self.index) == 0:
-                return  # Try again
-        else:
+        if self.index is None:
             self.set_result(False)
             return
-        (seed, error) = await spinner_task(text='Generating Seed', task=bip85_seed_task, args=[self.index])
-        if error is None:
-            self.seed = seed
+        if len(self.index) == 0:
+            return  # Try again
+        self.goto(self.choose_num_words)
+
+    async def choose_num_words(self):
+        from pages import ChooserPage
+        options = [{'label': '24 words', 'value': 24},
+                   {'label': '18 words', 'value': 18},
+                   {'label': '12 words', 'value': 12}]
+        self.num_words = await ChooserPage(text='Number of Words', options=options).show()
+        if self.num_words is None:
+            self.set_result(False)
+            return
+        self.goto(self.generate_seed)
+
+    async def generate_seed(self):
+        from utils import spinner_task
+        from tasks import bip85_seed_task
+        (self.seed, self.error) = await spinner_task(text='Generating Seed', task=bip85_seed_task, args=[self.num_words, self.index])
+        if self.error is None:
             self.goto(self.show_seed_words)
         else:
-            self.error = error
             self.goto(self.show_error)
 
     async def show_seed_words(self):
