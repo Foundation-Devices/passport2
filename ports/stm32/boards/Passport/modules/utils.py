@@ -236,7 +236,7 @@ def handle_fatal_error(exc):
 
 
 def get_file_list(path=None, include_folders=False, include_parent=False,
-                  suffix=None, filter_fn=None, show_hidden=True):
+                  suffix=None, filter_fn=None, show_hidden=False):
     file_list = []
 
     with CardSlot() as card:
