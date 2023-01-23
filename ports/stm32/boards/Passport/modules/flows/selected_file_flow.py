@@ -6,7 +6,7 @@
 from flows import Flow
 
 
-class SelectFileFlow(Flow):
+class SelectedFileFlow(Flow):
     def __init__(self, file_name, full_path, is_folder):
         self.file_name = file_name
         self.full_path = full_path

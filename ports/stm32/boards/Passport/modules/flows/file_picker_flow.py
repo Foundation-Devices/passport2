@@ -6,7 +6,7 @@
 import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
-from flows import Flow, SelectFileFlow
+from flows import Flow, SelectedFileFlow
 from pages import FilePickerPage, StatusPage, InsertMicroSDPage
 from styles.colors import COPPER
 import microns
@@ -133,7 +133,7 @@ class FilePickerFlow(Flow):
                         return True
 
                     _filename, full_path, is_folder = res
-                    result = await SelectFileFlow(_filename, full_path, is_folder).run()
+                    result = await SelectedFileFlow(_filename, full_path, is_folder).run()
                     if result is not None:
                         if is_folder:
                             common.page_transition_dir = TRANSITION_DIR_PUSH
