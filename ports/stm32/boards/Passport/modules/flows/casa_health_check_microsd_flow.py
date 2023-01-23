@@ -4,10 +4,6 @@
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
 from flows import Flow
-from pages import ErrorPage, SuccessPage
-from utils import validate_sign_text, spinner_task
-from tasks import sign_text_file_task
-from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 
 def is_health_check(filename):
@@ -95,7 +91,6 @@ class CasaHealthCheckMicrosdFlow(Flow):
             self.goto(self.show_card_missing)
             return
         else:
-            print(self.signed_message)
             # Attempt to write-out the transaction
             try:
                 with open(out_full, 'w') as fd:
