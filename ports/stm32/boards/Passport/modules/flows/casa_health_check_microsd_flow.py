@@ -11,7 +11,7 @@ from tasks import sign_text_file_task
 from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 
-class CasaHealthCheckFlow(Flow):
+class CasaHealthCheckMicrosdFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.scan_qr, name='SignPsbtQRFlow')
         self.psbt = None

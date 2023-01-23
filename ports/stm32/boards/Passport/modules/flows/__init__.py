@@ -22,7 +22,8 @@ from .about_flow import *
 from .apply_passphrase_flow import *
 from .auto_backup_flow import *
 from .backup_flow import *
-from .casa_health_check_flow import *
+from .casa_health_check_qr_flow import *
+from .casa_health_check_microsd_flow import *
 from .change_pin_flow import *
 from .delete_account_flow import *
 from .delete_multisig_flow import *
