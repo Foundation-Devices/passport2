@@ -4,10 +4,6 @@
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
 from flows import Flow
-from pages import ErrorPage
-from utils import validate_sign_text, spinner_task
-from tasks import sign_text_file_task
-from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 
 class CasaHealthCheckCommonFlow(Flow):
@@ -18,6 +14,8 @@ class CasaHealthCheckCommonFlow(Flow):
         self.subpath = None
 
     async def validate_lines(self):
+        from pages import ErrorPage
+        from utils import validate_sign_text
         if len(self.lines) != 2:
             await ErrorPage('Health check format is invalid.').show()
             self.set_result(None)
@@ -40,6 +38,10 @@ class CasaHealthCheckCommonFlow(Flow):
         self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
+        from pages import ErrorPage
+        from tasks import sign_text_file_task
+        from utils import spinner_task
+        from public_constants import AF_CLASSIC
         (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
                                                          args=[self.text, self.subpath, AF_CLASSIC])
         if error is None:
@@ -54,6 +56,7 @@ class CasaHealthCheckCommonFlow(Flow):
 
     async def format_signature(self):
         from ubinascii import b2a_base64
+        from public_constants import RFC_SIGNATURE_TEMPLATE
 
         sig = b2a_base64(self.signature).decode('ascii').strip()
 
