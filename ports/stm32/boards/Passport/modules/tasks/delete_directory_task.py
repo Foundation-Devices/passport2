@@ -8,13 +8,13 @@ async def delete_directory_task(on_done, full_path):
     from utils import get_file_list, delete_file
     from uasyncio import sleep_ms
 
-    subfiles = get_file_list(path=full_path, include_folders=True)
+    subfiles = get_file_list(path=full_path, include_folders=True, show_hidden=True)
 
     while len(subfiles) != 0:
         for f in subfiles:
             (name, path, folder) = f
             if folder:
-                subsubfiles = get_file_list(path=path, include_folders=True)
+                subsubfiles = get_file_list(path=path, include_folders=True, show_hidden=True)
                 if len(subsubfiles) == 0:
                     delete_file(path)
                     subfiles.remove(f)
