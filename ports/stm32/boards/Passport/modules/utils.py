@@ -1240,12 +1240,10 @@ def set_screen_brightness(value):
         common.settings.set('screen_brightness', value)
 
 
-async def clear_psbt_flash(psbt_len):
+async def clear_psbt_flash():
     from utils import spinner_task
     from tasks import clear_psbt_from_external_flash_task
-    from public_constants import TXN_INPUT_OFFSET
 
-    await spinner_task('Clearing transaction from flash', clear_psbt_from_external_flash_task,
-                       args=[None, psbt_len, TXN_INPUT_OFFSET])
+    await spinner_task('Clearing transaction from flash', clear_psbt_from_external_flash_task)
 
 # EOF

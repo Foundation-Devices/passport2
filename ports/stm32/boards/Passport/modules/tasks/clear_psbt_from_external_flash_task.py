@@ -9,13 +9,14 @@
 #
 # clear_psbt_from_external_flash_task.py - Task to clear a psbt from external flash after signing for security purposes
 
-from public_constants import MAX_TXN_LEN
+from constants import PSBT_MAX_SIZE
+from public_constants import TXN_INPUT_OFFSET
 
 
-async def clear_psbt_from_external_flash_task(on_done, on_progress, psbt_len, offset):
+async def clear_psbt_from_external_flash_task(on_done):
     from sffile import SFFile
 
-    with SFFile(offset, max_size=psbt_len) as out:
+    with SFFile(start=TXN_INPUT_OFFSET, max_size=PSBT_MAX_SIZE) as out:
         # blank flash
         await out.erase()
     await on_done()
