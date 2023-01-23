@@ -13,8 +13,8 @@ from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 class CasaHealthCheckQRFlow(Flow):
     def __init__(self):
-        super().__init__(initial_state=self.scan_qr, name='SignPsbtQRFlow')
-        self.psbt = None
+        super().__init__(initial_state=self.scan_qr, name='CasaHealthCheckQRFlow')
+        self.lines = None
 
     async def scan_qr(self):
         from pages import ScanQRPage, ErrorPage
@@ -34,7 +34,7 @@ class CasaHealthCheckQRFlow(Flow):
             else:
                 # print('result.data={}'.format(result.data))
                 try:
-                    lines = result.data.decode('utf-8').split('\n')
+                    self.lines = result.data.decode('utf-8').split('\n')
                 except Exception as e:
                     await ErrorPage('Health check format is invalid.').show()
                     return
