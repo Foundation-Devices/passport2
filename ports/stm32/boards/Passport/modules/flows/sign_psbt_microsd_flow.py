@@ -71,7 +71,7 @@ class SignPsbtMicroSDFlow(Flow):
             copy_psbt_file_to_external_flash_task,
             args=[None, self.file_path, TXN_INPUT_OFFSET])
         if error is not None:
-            await clear_psbt_flash(self.psbt_len)
+            await clear_psbt_flash()
             await ErrorPage(text='Invalid PSBT (copying microSD)').show()
             self.set_result(False)
             return
@@ -88,7 +88,7 @@ class SignPsbtMicroSDFlow(Flow):
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
         if result is None:
-            await clear_psbt_flash(self.psbt_len)
+            await clear_psbt_flash()
             self.set_result(False)
         else:
             self.psbt = result
@@ -101,7 +101,7 @@ class SignPsbtMicroSDFlow(Flow):
         if not result:
             result = QuestionPage(text='Cancel signing this transaction?').show()
             if result:
-                await clear_psbt_flash(self.psbt_len)
+                await clear_psbt_flash()
                 self.set_result(None)
 
         self.goto(self.write_signed_transaction)
@@ -159,7 +159,7 @@ class SignPsbtMicroSDFlow(Flow):
                                 self.txid = self.psbt.finalize(fd)
 
                     securely_blank_file(self.file_path)
-                    await clear_psbt_flash(self.psbt_len)
+                    await clear_psbt_flash()
 
                 # Success and done!
                 self.goto(self.show_success)
@@ -167,7 +167,7 @@ class SignPsbtMicroSDFlow(Flow):
 
             except OSError as exc:
                 # If this ever changes to not fall through, clear the flash
-                # await clear_psbt_flash(self.psbt_len)
+                # await clear_psbt_flash()
                 result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
                 # sys.print_exception(exc)
                 # fall thru to try again
