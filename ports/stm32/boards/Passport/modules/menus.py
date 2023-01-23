@@ -34,8 +34,19 @@ def account_menu():
     ]
 
 
+def health_check_submenu():
+    from flows import CasaHealthCheckQRFlow, CasaHealthCheckMicrosdFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': CasaHealthCheckQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': CasaHealthCheckMicrosdFlow,
+         'statusbar': {'title': 'SIGN'}},
+    ]
+
+
 def casa_menu():
-    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
 
     return [
         {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
@@ -43,7 +54,7 @@ def casa_menu():
         {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
+        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'submenu': health_check_submenu},
         {'icon': lv.ICON_CONNECT, 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
     ]
