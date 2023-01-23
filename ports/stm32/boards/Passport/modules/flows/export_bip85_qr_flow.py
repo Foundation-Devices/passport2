@@ -30,7 +30,6 @@ class ExportBIP85QRFlow(Flow):
     async def choose_num_words(self):
         from pages import ChooserPage
         options = [{'label': '24 words', 'value': 24},
-                   {'label': '18 words', 'value': 18},
                    {'label': '12 words', 'value': 12}]
         self.num_words = await ChooserPage(card_header={'title': 'Number of Words'}, options=options).show()
         if self.num_words is None:
