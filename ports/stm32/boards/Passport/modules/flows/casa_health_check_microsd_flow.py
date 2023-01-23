@@ -1,93 +1,122 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
 from flows import Flow
 from pages import ErrorPage, SuccessPage
-from pages.show_qr_page import ShowQRPage
 from utils import validate_sign_text, spinner_task
 from tasks import sign_text_file_task
 from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 
+def is_health_check(filename):
+    from files import CardSlot
+
+    # print('filenmame={}'.format(filename))
+    if '-signed' in filename.lower():
+        return False
+
+    if '-hc' in filename.lower():
+        return True
+    return False
+
+
 class CasaHealthCheckMicrosdFlow(Flow):
     def __init__(self):
-        super().__init__(initial_state=self.scan_qr, name='SignPsbtQRFlow')
-        self.psbt = None
+        super().__init__(initial_state=self.choose_file, name='CasaHealthCheckMicrosdFlow')
+        self.file_path = None
+        self.lines = None
+        self.signed_message = None
 
-    async def scan_qr(self):
-        from pages import ScanQRPage, ErrorPage
-        import microns
+    async def choose_file(self):
+        from flows import FilePickerFlow
+        from files import CardSlot
 
-        result = await ScanQRPage(right_micron=microns.Checkmark, decode_cbor_bytes=True).show()
+        root_path = CardSlot.get_sd_root()
 
+        result = await FilePickerFlow(
+            initial_path=root_path, show_folders=True, filter_fn=is_health_check).run()
         if result is None:
-            # User canceled the scan
-            self.set_result(False)
-        else:
-            # Got a scan result (aka QRScanResult): good data or error
-            if result.error is not None:
-                # Unable to scan QR code - show error?
-                await ErrorPage(text='Unable to scan QR code.'.show())
-                self.set_result(False)
-            else:
-                # print('result.data={}'.format(result.data))
-                try:
-                    lines = result.data.decode('utf-8').split('\n')
-                except Exception as e:
-                    await ErrorPage('Health check format is invalid.').show()
-                    return
-                if len(lines) != 2:
-                    await ErrorPage('Health check format is invalid.').show()
-                    self.set_result(False)
-                    return
-
-                # Common function to validate the message
-                self.text = lines[0]
-                self.subpath = lines[1]
-                # print('text={}'.format(self.text))
-                # print('subpath={}'.format(self.subpath))
-
-                # Validate
-                (subpath, error) = validate_sign_text(self.text, self.subpath)
-                if error is not None:
-                    await ErrorPage(text=error).show()
-                    self.set_result(False)
-                    return
-
-                self.subpath = subpath
-
-                self.qr_type = result.qr_type
-                self.goto(self.sign_health_check)
-
-    async def sign_health_check(self):
-        (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
-                                                         args=[self.text, self.subpath, AF_CLASSIC])
-        if error is None:
-            self.signature = signature
-            self.address = address
-            self.goto(self.show_signed_message, save_curr=False)
-        else:
-            await ErrorPage(text='Error while signing file: {}'.format(error)).show()
             self.set_result(False)
             return
 
-    async def show_signed_message(self):
-        from ubinascii import b2a_base64
-        from data_codecs.qr_type import QRType
+        _filename, full_path, is_folder = result
+        if not is_folder:
+            self.file_path = full_path
+            self.goto(self.parse_message)
 
-        sig = b2a_base64(self.signature).decode('ascii').strip()
+    async def parse_message(self):
+        from files import CardSlot
+        from pages import ErrorPage
 
-        signed_message = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
+        with open(self.file_path, 'r') as fd:
+            try:
+                self.lines = fd.read().split('\n')
+            except Exception as e:
+                await ErrorPage(text='Health check format is invalid.').show()
+                self.set_result(False)
+                return
+        self.goto(self.common_flow)
 
-        result = await ShowQRPage(
-            qr_type=QRType.UR2,
-            qr_args={'prefix': 'bytes'},
-            qr_data=signed_message,
-            caption='Signed Health Check'
-        ).show()
-        if not result:
-            self.back()
+    async def common_flow(self):
+        from flows import CasaHealthCheckCommonFlow
+
+        self.signed_message = await CasaHealthCheckCommonFlow(self.lines).run()
+        if self.signed_message is None:
+            self.set_result(False)
+            return
+        self.goto(self.write_signed_file)
+
+    async def write_signed_file(self):
+        from files import CardSlot, CardMissingError
+        from pages import ErrorPage
+
+        orig_path, basename = self.file_path.rsplit('/', 1)
+        orig_path += '/'
+        base = basename.rsplit('.', 1)[0]
+        self.out_fn = None
+
+        # Add -signed to end. We won't offer to sign again.
+        target_fname = base + '-signed.txt'
+
+        for path in [orig_path, None]:
+            try:
+                with CardSlot() as card:
+                    out_full, self.out_fn = card.pick_filename(
+                        target_fname, path)
+                    if out_full:
+                        break
+            except CardMissingError:
+                self.goto(self.show_card_missing)
+                return
+
+        if not self.out_fn:
+            self.goto(self.show_card_missing)
+            return
         else:
-            self.set_result(True)
+            print(self.signed_message)
+            # Attempt to write-out the transaction
+            try:
+                with open(out_full, 'w') as fd:
+                    fd.write(self.signed_message)
+            except OSError as exc:
+                result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
+                # sys.print_exception(exc)
+                # fall thru to try again
+
+            # Success and done!
+            self.goto(self.show_success)
+            return
+
+    async def show_success(self):
+        import microns
+        from lvgl import LARGE_ICON_SUCCESS
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+        from pages import LongTextPage
+        msg = "Updated Health Check is:\n\n%s" % self.out_fn
+
+        await LongTextPage(text=msg, centered=True, left_micron=None,
+                           right_micron=microns.Checkmark, icon=LARGE_ICON_SUCCESS,
+                           icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
+        self.set_result(True)
