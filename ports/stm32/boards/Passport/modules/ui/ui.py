@@ -273,7 +273,7 @@ class UI():
             # BIP 85 Page
             if common.settings.get('ext.bip85.enabled', False):
                 bip85_card = {
-                    'right_icon': lv.ICON_SETTINGS,
+                    'right_icon': lv.ICON_BITCOIN,
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
