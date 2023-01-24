@@ -42,7 +42,7 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_seed_words(self):
         if self.bip85_seed:
-            (words, error) = await spinner_task(text='Generating Words', task=get_words_from_seed_task,
+            (words, error) = await spinner_task(text='Retrieving Seed', task=get_words_from_seed_task,
                                                 args=[self.bip85_seed])
         else:
             (words, passphrase, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
