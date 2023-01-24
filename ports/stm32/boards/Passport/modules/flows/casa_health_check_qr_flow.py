@@ -38,14 +38,14 @@ class CasaHealthCheckQRFlow(Flow):
                 except Exception as e:
                     await ErrorPage('Health check format is invalid.').show()
                     return
-                if len(lines) != 2:
+                if len(self.lines) != 2:
                     await ErrorPage('Health check format is invalid.').show()
                     self.set_result(False)
                     return
 
                 # Common function to validate the message
-                self.text = lines[0]
-                self.subpath = lines[1]
+                self.text = self.lines[0]
+                self.subpath = self.lines[1]
                 # print('text={}'.format(self.text))
                 # print('subpath={}'.format(self.subpath))
 
