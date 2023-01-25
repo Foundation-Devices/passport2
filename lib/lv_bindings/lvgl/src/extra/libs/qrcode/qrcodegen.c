@@ -125,23 +125,22 @@ static const int PENALTY_N4 = 10;
 /*---- High-level QR Code encoding functions ----*/
 
 // Public function - see documentation comment in header file.
-bool qrcodegen_encodeText(const char *text, uint8_t tempBuffer[], uint8_t qrcode[],
+bool qrcodegen_encodeText(const char *text, size_t textLen, uint8_t tempBuffer[], uint8_t qrcode[],
 		enum qrcodegen_Ecc ecl, int minVersion, int maxVersion, enum qrcodegen_Mask mask, bool boostEcl) {
 	
-	size_t textLen = strlen(text);
 	if (textLen == 0)
 		return qrcodegen_encodeSegmentsAdvanced(NULL, 0, ecl, minVersion, maxVersion, mask, boostEcl, tempBuffer, qrcode);
 	size_t bufLen = qrcodegen_BUFFER_LEN_FOR_VERSION(maxVersion);
 	
 	struct qrcodegen_Segment seg;
-	if (qrcodegen_isNumeric(text)) {
+	if (qrcodegen_isNumeric(text, textLen)) {
 		if (qrcodegen_calcSegmentBufferSize(qrcodegen_Mode_NUMERIC, textLen) > bufLen)
 			goto fail;
-		seg = qrcodegen_makeNumeric(text, tempBuffer);
-	} else if (qrcodegen_isAlphanumeric(text)) {
+		seg = qrcodegen_makeNumeric(text, textLen, tempBuffer);
+	} else if (qrcodegen_isAlphanumeric(text, textLen)) {
 		if (qrcodegen_calcSegmentBufferSize(qrcodegen_Mode_ALPHANUMERIC, textLen) > bufLen)
 			goto fail;
-		seg = qrcodegen_makeAlphanumeric(text, tempBuffer);
+		seg = qrcodegen_makeAlphanumeric(text, textLen, tempBuffer);
 	} else {
 		if (textLen > bufLen)
 			goto fail;
@@ -794,22 +793,29 @@ static bool getBit(int x, int i) {
 /*---- Segment handling ----*/
 
 // Public function - see documentation comment in header file.
-bool qrcodegen_isAlphanumeric(const char *text) {
+bool qrcodegen_isAlphanumeric(const char *text, size_t textLen) {
 	assert(text != NULL);
-	for (; *text != '\0'; text++) {
+	while (textLen) {
 		if (strchr(ALPHANUMERIC_CHARSET, *text) == NULL)
 			return false;
+
+		text++;
+		textLen--;
 	}
+
 	return true;
 }
 
 
 // Public function - see documentation comment in header file.
-bool qrcodegen_isNumeric(const char *text) {
+bool qrcodegen_isNumeric(const char *text, size_t textLen) {
 	assert(text != NULL);
-	for (; *text != '\0'; text++) {
+	while (textLen) {
 		if (*text < '0' || *text > '9')
 			return false;
+
+		text++;
+		textLen--;
 	}
 	return true;
 }
@@ -875,10 +881,9 @@ struct qrcodegen_Segment qrcodegen_makeBytes(const uint8_t data[], size_t len, u
 
 
 // Public function - see documentation comment in header file.
-struct qrcodegen_Segment qrcodegen_makeNumeric(const char *digits, uint8_t buf[]) {
+struct qrcodegen_Segment qrcodegen_makeNumeric(const char *digits, size_t len, uint8_t buf[]) {
 	assert(digits != NULL);
 	struct qrcodegen_Segment result;
-	size_t len = strlen(digits);
 	result.mode = qrcodegen_Mode_NUMERIC;
 	int bitLen = calcSegmentBitLength(result.mode, len);
 	assert(bitLen != -1);
@@ -889,7 +894,7 @@ struct qrcodegen_Segment qrcodegen_makeNumeric(const char *digits, uint8_t buf[]
 	
 	unsigned int accumData = 0;
 	int accumCount = 0;
-	for (; *digits != '\0'; digits++) {
+	while (len) {
 		char c = *digits;
 		assert('0' <= c && c <= '9');
 		accumData = accumData * 10 + (unsigned int)(c - '0');
@@ -899,7 +904,10 @@ struct qrcodegen_Segment qrcodegen_makeNumeric(const char *digits, uint8_t buf[]
 			accumData = 0;
 			accumCount = 0;
 		}
+		digits++;
+		len--;
 	}
+
 	if (accumCount > 0)  // 1 or 2 digits remaining
 		appendBitsToBuffer(accumData, accumCount * 3 + 1, buf, &result.bitLength);
 	assert(result.bitLength == bitLen);
@@ -909,10 +917,9 @@ struct qrcodegen_Segment qrcodegen_makeNumeric(const char *digits, uint8_t buf[]
 
 
 // Public function - see documentation comment in header file.
-struct qrcodegen_Segment qrcodegen_makeAlphanumeric(const char *text, uint8_t buf[]) {
+struct qrcodegen_Segment qrcodegen_makeAlphanumeric(const char *text, size_t len, uint8_t buf[]) {
 	assert(text != NULL);
 	struct qrcodegen_Segment result;
-	size_t len = strlen(text);
 	result.mode = qrcodegen_Mode_ALPHANUMERIC;
 	int bitLen = calcSegmentBitLength(result.mode, len);
 	assert(bitLen != -1);
@@ -923,7 +930,7 @@ struct qrcodegen_Segment qrcodegen_makeAlphanumeric(const char *text, uint8_t bu
 	
 	unsigned int accumData = 0;
 	int accumCount = 0;
-	for (; *text != '\0'; text++) {
+	while (len) {
 		const char *temp = strchr(ALPHANUMERIC_CHARSET, *text);
 		assert(temp != NULL);
 		accumData = accumData * 45 + (unsigned int)(temp - ALPHANUMERIC_CHARSET);
@@ -933,7 +940,11 @@ struct qrcodegen_Segment qrcodegen_makeAlphanumeric(const char *text, uint8_t bu
 			accumData = 0;
 			accumCount = 0;
 		}
+
+		text++;
+		len--;
 	}
+
 	if (accumCount > 0)  // 1 character remaining
 		appendBitsToBuffer(accumData, 6, buf, &result.bitLength);
 	assert(result.bitLength == bitLen);
@@ -1009,10 +1020,10 @@ static int numCharCountBits(enum qrcodegen_Mode mode, int version) {
 	}
 }
 
-int qrcodegen_getMinFitVersion(enum qrcodegen_Ecc ecl, size_t dataLen)
+int qrcodegen_getMinFitVersion(enum qrcodegen_Ecc ecl, enum qrcodegen_Mode mode, size_t dataLen)
 {
 	struct qrcodegen_Segment seg;
-	seg.mode = qrcodegen_Mode_BYTE;
+	seg.mode = mode;
 	seg.bitLength = calcSegmentBitLength(seg.mode, dataLen);
 	seg.numChars = (int)dataLen;
 
