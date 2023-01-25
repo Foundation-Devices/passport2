@@ -272,7 +272,7 @@ def get_file_list(path=None, include_folders=False, include_parent=False, suffix
             if not is_folder and filter_fn is not None and not filter_fn(filename):
                 continue
 
-            full_path = path + '/' + filename
+            full_path = "{}/{}".format(path, filename)
 
             file_list.append((filename, full_path, is_folder))
 
@@ -557,9 +557,9 @@ def cleanup_deriv_path(bin_path, allow_star=False):
             ip = int(p, 10)
         except Exception:
             ip = -1
-        assert 0 <= ip < 0x80000000 and p == str(ip), "bad component: " + p
+        assert 0 <= ip < 0x80000000 and p == str(ip), "bad component: {}".format(p)
 
-    return 'm/' + '/'.join(parts)
+    return 'm/{}'.format('/'.join(parts))
 
 
 def keypath_to_str(bin_path, prefix='m/', skip=1):
