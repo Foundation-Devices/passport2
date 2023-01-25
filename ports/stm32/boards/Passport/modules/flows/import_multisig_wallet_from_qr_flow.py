@@ -24,6 +24,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
         data = result.data
         if isinstance(data, (bytes, bytearray)):
             data = data.decode('utf-8')
+            print(data)
 
         try:
             self.ms = await MultisigWallet.from_file(data)
