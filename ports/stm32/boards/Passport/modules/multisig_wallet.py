@@ -720,6 +720,19 @@ class MultisigWallet:
         # done. have all the parts
         return cls(name, (M, N), xpubs, unique_id, addr_fmt=addr_fmt, chain_type=expect_chain, deriv=my_deriv)
 
+    def to_file(self):
+        from public_constants import MULTISIG_EXPORT_TEMPLATE, MULTISIG_DERIV_TEMPLATE
+        file_string = MULTISIG_EXPORT_TEMPLATE.format(self.name,
+                                                      self.M,
+                                                      self.N,
+                                                      self.render_addr_fmt(self.addr_fmt))
+
+        for xfp, deriv, xpub in self.xpubs:
+            file_string += MULTISIG_DERIV_TEMPLATE.format(deriv, xfp2str(xfp), xpub)
+
+        print(file_string)
+        return file_string
+
     @classmethod
     def check_xpub(cls, xfp, xpub, deriv, expect_chain, my_xfp, xpubs):
         # Shared code: consider an xpub for inclusion into a wallet, if ok, append

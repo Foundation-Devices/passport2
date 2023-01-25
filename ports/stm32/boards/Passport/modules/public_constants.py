@@ -103,5 +103,17 @@ RFC_SIGNATURE_TEMPLATE = '''\
 -----END {blockchain} SIGNED MESSAGE-----
 '''
 
+MULTISIG_EXPORT_TEMPLATE = '''\
+Name: {}
+Policy: {} of {}
+Format: {}
+'''
+
+MULTISIG_DERIV_TEMPLATE = '''\
+
+Derivation: {}
+{}: {}
+'''
+
 
 # EOF
