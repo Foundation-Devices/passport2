@@ -37,7 +37,7 @@ extern "C" {
         void *modules_buf;
         int32_t max_version;
         int32_t last_version;
-        uint8_t data_and_tmp[650];
+        uint8_t tmp[LV_QRCODE_MODULES_BUF_SIZE(40)];
     } lv_qrcode_t;
 
     /**********************
