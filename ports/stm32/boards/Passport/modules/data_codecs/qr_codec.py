@@ -45,12 +45,6 @@ class QREncoder(DataEncoder):
     def __init__(self, _args):
         self.data = None
 
-    # def get_num_supported_sizes(self):
-    #     return 1
-
-    def get_max_len(self, index):
-        return 300
-
     def encode(self, data, is_binary=False, max_fragment_len=None):
         self.data = data
 
