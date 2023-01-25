@@ -71,15 +71,6 @@ class UR1Encoder(DataEncoder):
     def __init__(self, _args):
         self.parts = []
         self.next_index = 0
-        self.qr_sizes = [500, 200, 60]
-
-    # def get_num_supported_sizes(self):
-    #     return len(self.qr_sizes)
-
-    def get_max_len(self, index):
-        if index < 0 or index >= len(self.qr_sizes):
-            return 0
-        return self.qr_sizes[index]
 
     # Encode the given data
     def encode(self, data, is_binary=False, max_fragment_len=500):

@@ -13,12 +13,6 @@ class DataEncoder:
     def __init__(self):
         pass
 
-    def get_num_supported_sizes(self):
-        return 1
-
-    def get_max_len(self, index):
-        return 0
-
     def encode(self, data, is_binary=False, max_fragment_len=None):
         pass
 

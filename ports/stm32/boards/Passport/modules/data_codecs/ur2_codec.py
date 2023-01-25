@@ -74,20 +74,11 @@ class UR2Decoder(DataDecoder):
 class UR2Encoder(DataEncoder):
     def __init__(self, args):
         self.ur_encoder = None
-        self.qr_sizes = [140, 70, 25]
         self.type = None
         if isinstance(args, dict):
             self.prefix = args['prefix'] or 'bytes'
         else:
             self.prefix = 'bytes'
-
-    # def get_num_supported_sizes(self):
-    #     return len(self.qr_sizes)
-
-    def get_max_len(self, index):
-        if index < 0 or index >= len(self.qr_sizes):
-            return 0
-        return self.qr_sizes[index]
 
     # Encode the given data
     def encode(self, data, is_binary=False, max_fragment_len=200):
@@ -101,6 +92,22 @@ class UR2Encoder(DataEncoder):
         else:
             ur_obj = data
 
+        # CBOR length of a UR2 part. Excluding the data itself on bytes which
+        # must be of the resulting `max_fragment_len`.
+        #
+        # 85                                      # array(5)
+        #    1A FFFFFFFF                          # unsigned(0xFFFFFFFF)
+        #    1B FFFFFFFFFFFFFFFF                  # unsigned(0xFFFFFFFFFFFFFFFF)
+        #    1B FFFFFFFFFFFFFFFF                  # unsigned(0xFFFFFFFFFFFFFFFF)
+        #    1A FFFFFFFF                          # unsigned(0xFFFFFFFF)
+        #    5B FFFFFFFFFFFFFFFF                  # bytes(0xFFFFFFFFFFFFFFFF)
+        max_fragment_cbor = 1 + 5 + 9 + 9 + 5 + 2
+
+        # "ur:" + prefix + "/99-999/" + max-fragment-cbor + CRC
+        reserved_len = 3 + len(self.prefix) + len("/99-9999/") + max_fragment_cbor + (4 * 2)
+
+        # Divide in half the maximum fragment length as each byteword encoded byte takes two characters.
+        max_fragment_len = (max_fragment_len - reserved_len) // 2
         self.ur_encoder = UREncoder(ur_obj, max_fragment_len)
 
     # UR2.0's next_part() returns the initial pieces split into max_fragment_len bytes, but then switches over to
