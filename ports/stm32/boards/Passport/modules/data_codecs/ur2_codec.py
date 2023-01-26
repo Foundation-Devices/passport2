@@ -67,7 +67,7 @@ class UR2Decoder(DataDecoder):
             # print('CBOR decode error: {}'.format(e))
             return None
 
-    def get_data_format(self):
+    def qr_type(self):
         return QRType.UR2
 
 
