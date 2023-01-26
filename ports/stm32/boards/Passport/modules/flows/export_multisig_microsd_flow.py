@@ -65,3 +65,4 @@ class ExportMultisigMicrosdFlow(Flow):
     async def show_success(self):
         from pages import SuccessPage
         await SuccessPage(text='Saved multisig config as {}.'.format(self.file_path)).show()
+        self.set_result(True)
