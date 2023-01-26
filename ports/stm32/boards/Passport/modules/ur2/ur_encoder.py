@@ -21,9 +21,6 @@ class UREncoder:
         body = Bytewords.encode(Bytewords_Style_minimal, ur.cbor)
         return UREncoder.encode_ur([ur.type, body])
 
-    def last_part_indexes(self):
-        return self.fountain_encoder.last_part_indexes()
-
     # `True` if the minimal number of parts to transmit the message have been
     # generated. Parts generated when this is `true` will be fountain codes
     # containing various mixes of the part data.

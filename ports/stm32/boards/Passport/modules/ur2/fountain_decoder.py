@@ -43,7 +43,6 @@ class FountainDecoder:
     # FountainDecoder
     def __init__(self):
         self.received_part_indexes = set()
-        self.last_part_indexes = None
         self.processed_parts_count = 0
         self.result = None
         self.expected_part_indexes = None
@@ -95,7 +94,6 @@ class FountainDecoder:
 
         # Add this part to the queue
         p = FountainDecoder.Part.from_encoder_part(encoder_part)
-        self.last_part_indexes = p.indexes
         self.enqueue(p)
 
         # Process the queue until we're done or the queue is empty
