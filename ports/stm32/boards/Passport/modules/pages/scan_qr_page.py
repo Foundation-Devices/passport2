@@ -139,3 +139,6 @@ class QRScanResult:
         self.data = data
         self.error = error
         self.qr_type = qr_type
+
+    def is_failure(self):
+        self.error is not None

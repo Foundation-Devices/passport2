@@ -27,7 +27,7 @@ class FCCTestFlow(Flow):
 
     async def show_camera(self):
         result = await ScanQRPage().show(auto_close_timeout=_CAMERA_DISPLAY_DURATION_SECS)
-        if result is not None:
+        if result is None:
             # User used a button to back out
             self.set_result(False)
             return
