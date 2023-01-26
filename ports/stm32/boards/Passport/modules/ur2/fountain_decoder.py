@@ -9,11 +9,7 @@ from .utils import join_lists, join_bytes, crc32_int, xor_with, take_first
 from utils import bytes_to_hex_str
 
 
-class InvalidPart(Exception):
-    pass
-
-
-class InvalidChecksum(Exception):
+class FountainError(Exception):
     pass
 
 
@@ -58,21 +54,10 @@ class FountainDecoder:
             return 0
         return len(self.expected_part_indexes)
 
-    def is_success(self):
-        result = self.result
-        return result if not isinstance(result, Exception) else False
-
-    def is_failure(self):
-        result = self.result
-        return result if isinstance(result, Exception) else False
-
     def is_complete(self):
         return self.result is not None
 
-    def result_message(self):
-        return self.result
-
-    def result_error(self):
+    def result(self):
         return self.result
 
     def estimated_percent_complete(self):
@@ -90,7 +75,7 @@ class FountainDecoder:
 
         # Don't continue if this part doesn't validate
         if not self.validate_part(encoder_part):
-            return False
+            raise FountainError('Invalid part')
 
         # Add this part to the queue
         p = FountainDecoder.Part.from_encoder_part(encoder_part)
@@ -194,8 +179,7 @@ class FountainDecoder:
                 result = bytes(message)
                 self.result = result
             else:
-                self.result = InvalidChecksum()
-
+                raise FountainError('Invalid part checksum')
         else:
             # Reduce all the mixed parts by this part
             self.reduce_mixed_by(p)
