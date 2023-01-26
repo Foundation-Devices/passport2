@@ -125,9 +125,6 @@ class FountainEncoder:
 
         return fragments
 
-    def last_part_indexes(self):
-        return self.last_part_indexes
-
     def seq_len(self):
         return len(self.fragments)
 
