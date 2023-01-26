@@ -25,9 +25,6 @@ class QRDecoder(DataDecoder):
     def is_complete(self):
         return self.data is not None
 
-    def get_error(self):
-        return None
-
     def decode(self, **kwargs):
         return self.data
 
