@@ -8,11 +8,10 @@ from flows import Flow
 
 class SelectedFileFlow(Flow):
     def __init__(self, file_name, full_path, is_folder):
+        super().__init__(initial_state=self.choose_action, name='SelectFileFlow')
         self.file_name = file_name
         self.full_path = full_path
         self.is_folder = is_folder
-        self.error = None
-        super().__init__(initial_state=self.choose_action, name='SelectFileFlow')
 
     async def choose_action(self):
         from pages import ChooserPage
@@ -31,22 +30,7 @@ class SelectedFileFlow(Flow):
             self.set_result((self.file_name, self.full_path, self.is_folder))
 
     async def delete_selected_file(self):
-        from pages import QuestionPage
-        from tasks import delete_directory_task
-        from utils import get_file_list, delete_file, spinner_task
+        from utils import delete_file
         if not self.is_folder:
             delete_file(self.full_path)
-            self.set_result(None)
-            return
-
-        subfiles = get_file_list(path=self.full_path, include_folders=True)
-        if len(subfiles) == 0:
-            delete_file(self.full_path)
-            self.set_result(None)
-            return
-
-        confirm = await QuestionPage(text="Delete folder and all its files?").show()
-        if confirm:
-            await spinner_task(text="Deleting folder and all its files.",
-                               task=delete_directory_task, args=[self.full_path])
         self.set_result(None)

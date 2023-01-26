@@ -133,15 +133,15 @@ class FilePickerFlow(Flow):
                         return True
 
                     _filename, full_path, is_folder = res
+                    if is_folder:
+                        common.page_transition_dir = TRANSITION_DIR_PUSH
+                        self.paths.append(full_path)
+                        return True
                     result = await SelectedFileFlow(_filename, full_path, is_folder).run()
                     if result is not None:
-                        if is_folder:
-                            common.page_transition_dir = TRANSITION_DIR_PUSH
-                            self.paths.append(full_path)
-                        else:
-                            common.page_transition_dir = TRANSITION_DIR_POP
-                            self.set_result(result)
-                            finished = True
+                        common.page_transition_dir = TRANSITION_DIR_POP
+                        self.set_result(result)
+                        finished = True
 
                     return True
 
