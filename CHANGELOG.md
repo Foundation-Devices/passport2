@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Head
 - Perform more accurate calculation of scan progress. (PASS1-553)
+- Report to the user when the data contained in a QR code is not a PSBT. (PASS1-553)
 
 ## 2.0.5
 - Ensured "New Account" UI returns to the "More" menu (PASS1-582)
