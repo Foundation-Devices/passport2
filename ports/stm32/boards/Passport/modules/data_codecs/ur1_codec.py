@@ -45,9 +45,6 @@ class UR1Decoder(DataDecoder):
     def get_error(self):
         return self.error
 
-    def get_ur_prefix(self):
-        return 'bytes'  # TODO: Get the type from the UR1 decoder
-
     def decode(self, **kwargs):
         from common import system
         try:
