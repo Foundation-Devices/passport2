@@ -74,10 +74,14 @@ class VerifyAddressFlow(Flow):
         result = await ScanQRPage(
             left_micron=microns.Back,
             right_micron=None).show()
-        if result is None or result.error is not None:
-            # User canceled the scan or bad QR code
+
+        if result is None:
             if not self.back():
                 self.set_result(False)
+                return
+        elif result.is_failure():
+            await ErrorPage(text='Unable to scan QR code.').show()
+            self.set_result(False)
             return
 
         # print('result={}'.format(result))

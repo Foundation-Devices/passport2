@@ -17,8 +17,12 @@ class ImportMultisigWalletFromQRFlow(Flow):
         from multisig_wallet import MultisigWallet
 
         result = await ScanQRPage(decode_cbor_bytes=True).show()
-        if result is None or result.error is not None:
+        if result is None:
             self.set_result(False)
+            return
+        elif result.is_failure():
+            self.set_result(False)
+            await ErrorPage(text='Unable to scan QR code.').show()
             return
 
         data = result.data
