@@ -55,6 +55,7 @@ class SignPsbtMicroSDFlow(Flow):
         from public_constants import TXN_INPUT_OFFSET
         from tasks import copy_psbt_file_to_external_flash_task
         from utils import clear_psbt_flash
+        from errors import Error
 
         # TODO: I think this is always a bytes object -- can probably remove this check
         # The data can be a string or may already be a bytes object
@@ -72,7 +73,10 @@ class SignPsbtMicroSDFlow(Flow):
             args=[None, self.file_path, TXN_INPUT_OFFSET])
         if error is not None:
             await clear_psbt_flash()
-            await ErrorPage(text='Invalid PSBT (copying microSD)').show()
+            if error == Error.PSBT_TOO_LARGE:
+                await ErrorPage(text='PSBT too large').show()
+            else:
+                await ErrorPage(text='Invalid PSBT (copying microSD)').show()
             self.set_result(False)
             return
 

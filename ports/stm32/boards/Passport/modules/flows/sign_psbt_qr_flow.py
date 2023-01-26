@@ -38,6 +38,7 @@ class SignPsbtQRFlow(Flow):
         from pages import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
         from utils import clear_psbt_flash
+        from errors import Error
 
         # TODO: I think this is always a bytes object -- can probably remove this check
         # The data can be a string or may already be a bytes object
@@ -53,7 +54,10 @@ class SignPsbtQRFlow(Flow):
             'Parsing transaction', copy_psbt_to_external_flash_task, args=[None, self.raw_psbt, TXN_INPUT_OFFSET])
         if error is not None:
             await clear_psbt_flash()
-            await ErrorPage(text='Invalid PSBT (copying QR)').show()
+            if error == Error.PSBT_TOO_LARGE:
+                await ErrorPage(text='PSBT too large').show()
+            else:
+                await ErrorPage(text='Invalid PSBT (copying QR)').show()
             self.set_result(False)
             return
 
