@@ -7,6 +7,10 @@
 #
 
 
+class DecodeError(Exception):
+    pass
+
+
 # Collects data segments, indicates when the data is complete, and decodes it to a common
 # format for the specified data category
 class DataDecoder:
@@ -17,11 +21,8 @@ class DataDecoder:
     def add_data(self, data):
         pass
 
-    def received_parts(self):
+    def estimated_percent_complete(self):
         return 0
-
-    def total_parts(self):
-        return 1
 
     def is_complete(self):
         return False

@@ -36,8 +36,8 @@ class UR1Decoder(DataDecoder):
     def received_parts(self):
         return self._received_parts
 
-    def total_parts(self):
-        return self._total_parts
+    def estimated_percent_complete(self):
+        return int((self._received_parts * 100) / self._total_parts)
 
     def is_complete(self):
         return self.workloads.is_complete()

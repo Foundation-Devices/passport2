@@ -167,25 +167,16 @@ class CameraQRScanner(Camera):
 
         super().update()
 
-        # print('update')
-
-        # Do not scan anything if we are completed decoding.
+        # Do not scan anything if decoding is complete.
         if self.qr_decoder is not None:
             if self.qr_decoder.is_complete():
                 return
 
-        # print('decoding')
-
         # Find QR codes in the QR framebuffer, and return early if no data found.
         data = qr.scan()
-
         if data is None:
-            # print('None')
             return
 
-        # print('============================================================')
-        # print('data {}'.format(data))
-        # print('============================================================')
 
         try:
             if self.qr_decoder is None:
@@ -209,3 +200,9 @@ class CameraQRScanner(Camera):
         except Exception as e:  # noqa
             # print('Exception in CameraQRScanner: {}'.format(e))
             pass
+
+    def estimated_percent_complete(self):
+        """Returns an integer from 0-100 representing the estimated percentage of completion"""
+        if self.qr_decoder is None:
+            return 0
+        return self.qr_decoder.estimated_percent_complete()
