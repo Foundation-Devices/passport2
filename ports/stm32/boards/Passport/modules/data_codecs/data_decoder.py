@@ -36,10 +36,10 @@ class DataDecoder:
     def decode(self):
         pass
 
-    # Return what type of data this is:
-    # - Multisig Quorum info
-    # - Spending transaction
-    # - Wallet seed
+    # Return what type of QR this is:
+    #
+    # - Normal QR.
+    # - UR2.
     # - etc.
-    def get_data_format(self):
+    def qr_type(self):
         pass

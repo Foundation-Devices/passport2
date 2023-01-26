@@ -37,7 +37,7 @@ class QRDecoder(DataDecoder):
     def decode(self, **kwargs):
         return self.data
 
-    def get_data_format(self):
+    def qr_type(self):
         return QRType.QR
 
 

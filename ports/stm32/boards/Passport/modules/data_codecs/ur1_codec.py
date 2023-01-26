@@ -63,7 +63,7 @@ class UR1Decoder(DataDecoder):
             # print('UR1Decoder.decode() ERROR: {}'.format(e))
             return None
 
-    def get_data_format(self):
+    def qr_type(self):
         return QRType.UR1
 
 
