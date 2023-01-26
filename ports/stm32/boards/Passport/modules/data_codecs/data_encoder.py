@@ -18,7 +18,3 @@ class DataEncoder:
 
     def next_part(self):
         return None
-
-    # Return any error message if decoding or adding data failed for some reason
-    def get_error(self):
-        return None

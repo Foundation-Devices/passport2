@@ -51,9 +51,6 @@ class QREncoder(DataEncoder):
     def next_part(self):
         return self.data
 
-    def get_error(self):
-        return None
-
 
 class QRSampler(DataSampler):
     # Any data can be accepted
