@@ -72,7 +72,6 @@ class Camera(View):
         if self.content_width is None or self.content_height is None:
             self.enable()
             if self.content_width is None or self.content_height is None:
-                print('Not enabled')
                 return
 
         # Take the camera image.

@@ -15,7 +15,6 @@ import passport
 
 def progress_text(p):
     label = 'Scanning...' if p == 0 else '{}%'.format(p)
-    # print('label={}'.format(label))
     return label
 
 
@@ -122,7 +121,6 @@ class ScanQRPage(Page):
                                      qr_type=qr_decoder.qr_type()))
 
     def progress(self, qr_decoder):
-        # print('Updating progress label...')
         n = qr_decoder.received_parts()
         m = qr_decoder.total_parts()
         p = int((n * 100) / m)
