@@ -9,68 +9,59 @@ from flows import Flow
 class ExportMultisigMicrosdFlow(Flow):
     def __init__(self, context=None):
         from multisig_wallet import MultisigWallet
-        super().__init__(initial_state=self.choose_wallet_file, name='ExportMultisigMicrosdFlow')
+        super().__init__(initial_state=self.create_file, name='ExportMultisigMicrosdFlow')
 
         self.storage_idx = context
         self.ms = MultisigWallet.get_by_idx(self.storage_idx)
+        self.ms_text = self.ms.to_file()
+        self.fname = None
 
-    async def choose_wallet_file(self):
-        from flows import FilePickerFlow
-        from files import CardSlot
-        from pages import InsertMicroSDPage, ErrorPage
-        from tasks import read_file_task
-        from utils import spinner_task
-        from errors import Error
-        from multisig_wallet import MultisigWallet
-
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(initial_path=root_path, show_folders=True).run()
-        if result is None:
-            self.set_result(False)
-            return
-
-        _filename, full_path, is_folder = result
-        if not is_folder:
-            result = await spinner_task(
-                'Reading File',
-                read_file_task,
-                args=[full_path])
-            (data, error) = result
-            if error is None:
-                try:
-                    self.ms = await MultisigWallet.from_file(data)
-                except BaseException as e:
-                    if e.args is None or len(e.args) == 0:
-                        self.error = "Multisig Import Error"
-                    else:
-                        self.error = e.args[0]
-                    self.goto(self.show_error)
-                    return
-                # print('New MS: {}'.format(self.ms.serialize()))
-
-                self.goto(self.do_import)
-            elif error is Error.MICROSD_CARD_MISSING:
-                result = await InsertMicroSDPage().show()
-                if not result:
-                    self.set_result(False)
-                    return
-            elif error is Error.FILE_WRITE_ERROR:
-                await ErrorPage(text='Unable to read multisig config file from microSD card.').show()
-                self.set_result(False)
-
-    async def do_import(self):
-        from flows import ImportMultisigWalletFlow
-        from pages import SuccessPage
-
-        # Show the wallet to the user for import
-        result = await ImportMultisigWalletFlow(self.ms).run()
-        if result:
-            await SuccessPage(text='Multisig config imported').show()
-        self.set_result(result)
-
-    async def show_error(self):
+    async def create_file(self):
+        from files import CardSlot, CardMissingError
         from pages import ErrorPage
-        await ErrorPage(text=self.error).show()
-        self.error = None
-        self.reset(self.choose_wallet_file)
+        from utils import file_exists
+
+        multisig_num = 1
+
+        while True:
+            try:
+                with CardSlot() as card:
+                    path = card.get_sd_root()
+                    # Make a unique filename
+                    while True:
+                        self.file_path = '{}/{}-multisig-{}.txt'.format(path,
+                                                                        self.ms.name,
+                                                                        multisig_num)
+                        self.file_path = self.file_path.replace(' ', '_')
+                        # Ensure filename doesn't already exist
+                        if not file_exists(self.file_path):
+                            break
+
+                        # Ooops...that exists, so increment and try again
+                        multisig_num += 1
+
+                    # Do actual write
+                    with open(self.file_path, 'w') as fd:
+                        fd.write(self.ms_text)
+                self.goto(self.show_success)
+                return
+
+            except CardMissingError:
+                self.goto(self.show_insert_microsd_error)
+                return
+            except Exception as e:
+                self.error = e.args[0]
+                await ErrorPage(text=self.error).show()
+                self.set_result(False)
+                return
+
+    async def show_insert_microsd_error(self):
+        result = await InsertMicroSDPage().show()
+        if not result:
+            self.set_result(False)
+        else:
+            self.goto(self.create_file)
+
+    async def show_success(self):
+        from pages import SuccessPage
+        await SuccessPage(text='Saved multisig config as {}.'.format(self.file_path)).show()

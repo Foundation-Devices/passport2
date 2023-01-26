@@ -730,7 +730,6 @@ class MultisigWallet:
         for xfp, deriv, xpub in self.xpubs:
             file_string += MULTISIG_DERIV_TEMPLATE.format(deriv, xfp2str(xfp), xpub)
 
-        print(file_string)
         return file_string
 
     @classmethod
