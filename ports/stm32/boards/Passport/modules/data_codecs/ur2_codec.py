@@ -34,11 +34,8 @@ class UR2Decoder(DataDecoder):
         except Exception as e:
             return False
 
-    def received_parts(self):
-        return len(self.decoder.received_part_indexes())
-
-    def total_parts(self):
-        return self.decoder.expected_part_count()
+    def estimated_percent_complete(self):
+        return self.decoder.estimated_percent_complete()
 
     def is_complete(self):
         return self.decoder.is_complete()

@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Perform more accurate calculation of scan progress. (PASS1-553)
 
 ## 2.0.6
 - Fixed alphanumeric pin entry timing (PASS1-655)
