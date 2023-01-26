@@ -115,9 +115,6 @@ class UR2Encoder(DataEncoder):
     def next_part(self):
         return self.ur_encoder.next_part()
 
-    # Return any error message if decoding or adding data failed for some reason
-    def get_error(self):
-        return None
 
 
 class UR2Sampler(DataSampler):

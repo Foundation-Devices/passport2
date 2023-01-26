@@ -96,9 +96,6 @@ class UR1Encoder(DataEncoder):
         # print('UR1: part={}'.format(to_str(part)))
         return part.upper()
 
-    # Return any error info
-    def get_error(self):
-        return None
 
 
 class UR1Sampler(DataSampler):
