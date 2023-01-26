@@ -26,9 +26,8 @@ class CasaHealthCheckQRFlow(Flow):
             # User canceled the scan
             self.set_result(False)
         else:
-            # Got a scan result (aka QRScanResult): good data or error
-            if result.error is not None:
-                # Unable to scan QR code - show error?
+            # Got a scan result (aka QRScanResult).
+            if result.is_failure():
                 await ErrorPage(text='Unable to scan QR code.'.show())
                 self.set_result(False)
             else:

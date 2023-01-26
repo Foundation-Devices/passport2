@@ -23,7 +23,7 @@ class TestCameraFlow(Flow):
             self.set_result(skip)
         else:
             # Got a scan result (aka QRScanResult): good data or error
-            if result.error is not None:
+            if result.is_failure():
                 # Unable to scan QR code - show error?
                 await ErrorPage(text='Unable to scan QR code.').show()
                 self.set_result(False)

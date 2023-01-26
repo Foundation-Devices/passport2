@@ -21,10 +21,10 @@ class SignPsbtQRFlow(Flow):
             # User canceled the scan
             self.set_result(False)
         else:
-            # Got a scan result (aka QRScanResult): good data or error
-            if result.error is not None:
+            # Got a scan result (aka QRScanResult).
+            if result.is_failure():
                 # Unable to scan QR code - show error?
-                await ErrorPage(text='Unable to scan QR code.').show()
+                await ErrorPage(text='Unable to scan QR code.\n\n{}'.format(result.error)).show()
                 self.set_result(False)
             else:
                 if isinstance(result.data, str):
