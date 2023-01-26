@@ -121,10 +121,7 @@ class ScanQRPage(Page):
                                      qr_type=qr_decoder.qr_type()))
 
     def progress(self, qr_decoder):
-        n = qr_decoder.received_parts()
-        m = qr_decoder.total_parts()
-        p = int((n * 100) / m)
-        self.progress_label.set_text(progress_text(p))
+        self.progress_label.set_text(progress_text(self.camera.estimated_percent_complete()))
 
     def error(self, error):
         self.set_result(QRScanResult(error=error))
