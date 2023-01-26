@@ -32,7 +32,6 @@ class UR2Decoder(DataDecoder):
         try:
             return self.decoder.receive_part(data)
         except Exception as e:
-            # print('EXCEPTION: {}'.format(e))
             return False
 
     def received_parts(self):
@@ -54,14 +53,12 @@ class UR2Decoder(DataDecoder):
         try:
             message = self.decoder.result_message()
             if decode_cbor_bytes:
-                # print('UR2: message={}'.format(message.cbor))
                 cbor_decoder = CBORDecoder(message.cbor)
                 (message, length) = cbor_decoder.decodeBytes()
 
             return message
         except Exception as e:
             self.error = '{}'.format(e)
-            # print('CBOR decode error: {}'.format(e))
             return None
 
     def qr_type(self):
@@ -111,7 +108,6 @@ class UR2Encoder(DataEncoder):
     # an infinite series of encodings that combine various pieces of the data in an attempt to fill in any holes missed.
     def next_part(self):
         return self.ur_encoder.next_part()
-
 
 
 class UR2Sampler(DataSampler):

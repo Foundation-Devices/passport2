@@ -91,7 +91,6 @@ class FountainDecoder:
 
         # Don't continue if this part doesn't validate
         if not self.validate_part(encoder_part):
-            # print('INVALID PART!')
             return False
 
         # Add this part to the queue
@@ -103,11 +102,10 @@ class FountainDecoder:
         while not self.is_complete() and len(self.queued_parts) != 0:
             self.process_queue_item()
 
-        # # Keep track of how many parts we've processed
-        # # NOTE: We should only increment this if we haven't processed this part before
-        # print('encoder_part.seq_num={} .seq_len={} received_part_indexes={}'.format(encoder_part.seq_num,
-        #                                                                             encoder_part.seq_len,
-        #                                                                             self.received_part_indexes))
+        # Keep track of how many parts we've processed
+        #
+        # NOTE: We should only increment this if we haven't processed this part
+        # before.
         if encoder_part.seq_num - 1 not in self.received_part_indexes:
             self.processed_parts_count += 1
 
@@ -162,7 +160,7 @@ class FountainDecoder:
             new_data = xor_with(bytearray(a.data), b.data)
             return self.Part(new_indexes, new_data)
         else:
-            # `a` is not reducable by `b`, so return a
+            # `a` is not reducible by `b`, so return a
             return a
 
     def process_simple_part(self, p):
@@ -208,7 +206,6 @@ class FountainDecoder:
         # Don't process duplicate parts
         for r in self.mixed_parts.values():
             if r == p.indexes:
-                # print('Already processed/duplicate?')
                 return
 
         # Reduce this part by all the others
@@ -260,18 +257,13 @@ class FountainDecoder:
         s = [str(j) for j in i]
         return '[{}]'.format(', '.join(s))
 
-    def result_description(self):
-        if self.result is None:
-            return 'None'
-
-        if self.is_success():
-            return '{} bytes'.format(len(self.result))
-        elif self.is_failure():
-            return 'Exception: {}'.format(self.result)
-        else:
-            assert(False)
-
     # DEBUG CODE
+    #
+    # def result_description(self):
+    #     if self.result is None:
+    #         return 'None'
+    #
+    #     return '{} bytes'.format(len(self.result))
     #
     # def print_part(self, p):
     #     print('part indexes: {}'.format(self.indexes_to_string(p.indexes)))

@@ -79,10 +79,7 @@ class UR1Encoder(DataEncoder):
 
         if not is_binary:
             data = hexlify(data)
-            # print('UR1: hex data={}'.format(data))
             data = data.decode('utf8')
-
-        # print('UR1: data={}'.format(data))
 
         self.parts = encode_ur(data, fragment_capacity=max_fragment_len)
 
@@ -90,9 +87,7 @@ class UR1Encoder(DataEncoder):
         from utils import to_str
         part = self.parts[self.next_index]
         self.next_index = (self.next_index + 1) % len(self.parts)
-        # print('UR1: part={}'.format(to_str(part)))
         return part.upper()
-
 
 
 class UR1Sampler(DataSampler):
