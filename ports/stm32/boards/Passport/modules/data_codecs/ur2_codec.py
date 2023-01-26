@@ -9,11 +9,11 @@ import math
 import re
 
 from .data_encoder import DataEncoder
-from .data_decoder import DataDecoder
+from .data_decoder import DataDecoder, DecodeError
 from .data_sampler import DataSampler
 from .qr_type import QRType
 
-from ur2.ur_decoder import URDecoder
+from ur2.ur_decoder import URDecoder, URError
 from ur2.ur_encoder import UREncoder
 
 from ur2.cbor_lite import CBORDecoder
@@ -24,15 +24,14 @@ from ur2.ur import UR
 
 class UR2Decoder(DataDecoder):
     def __init__(self):
-        self.error = None
         self.decoder = URDecoder()
 
     # Decode the given data into the expected format
     def add_data(self, data):
         try:
             return self.decoder.receive_part(data)
-        except Exception as e:
-            return False
+        except URError as exc:
+            raise DecodeError from exc
 
     def estimated_percent_complete(self):
         return self.decoder.estimated_percent_complete()
@@ -40,23 +39,13 @@ class UR2Decoder(DataDecoder):
     def is_complete(self):
         return self.decoder.is_complete()
 
-    def get_error(self):
-        if self.decoder.is_failure():
-            return self.decoder.result_error()
-        else:
-            return None
-
     def decode(self, decode_cbor_bytes=False):
-        try:
-            message = self.decoder.result_message()
-            if decode_cbor_bytes:
-                cbor_decoder = CBORDecoder(message.cbor)
-                (message, length) = cbor_decoder.decodeBytes()
+        message = self.decoder.result()
+        if decode_cbor_bytes:
+            cbor_decoder = CBORDecoder(message.cbor)
+            (message, length) = cbor_decoder.decodeBytes()
 
-            return message
-        except Exception as e:
-            self.error = '{}'.format(e)
-            return None
+        return message
 
     def qr_type(self):
         return QRType.UR2
