@@ -35,7 +35,7 @@ async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, 
             fd.seek(0)
 
             if psbt_len > MAX_TXN_LEN:
-                await on_done(0, None, Error.PSBT_INVALID)
+                await on_done(0, None, Error.PSBT_TOO_LARGE)
                 return
 
             # determine encoding used, although we prefer binary
