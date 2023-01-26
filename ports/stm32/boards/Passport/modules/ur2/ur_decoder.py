@@ -147,9 +147,6 @@ class URDecoder:
             # print('ur_decoder.receive_part() err={}'.format(err))
             return False
 
-    def expected_type(self):
-        return self._expected_type
-
     def expected_part_count(self):
         return self.fountain_decoder.expected_part_count()
 

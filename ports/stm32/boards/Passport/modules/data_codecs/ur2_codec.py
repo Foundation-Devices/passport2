@@ -50,9 +50,6 @@ class UR2Decoder(DataDecoder):
         else:
             return None
 
-    def get_ur_prefix(self):
-        return self.decoder.expected_type()
-
     def decode(self, decode_cbor_bytes=False):
         try:
             message = self.decoder.result_message()

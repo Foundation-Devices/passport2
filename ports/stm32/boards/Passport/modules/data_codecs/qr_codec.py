@@ -31,9 +31,6 @@ class QRDecoder(DataDecoder):
     def get_error(self):
         return None
 
-    def get_ur_prefix(self):
-        return None
-
     def decode(self, **kwargs):
         return self.data
 

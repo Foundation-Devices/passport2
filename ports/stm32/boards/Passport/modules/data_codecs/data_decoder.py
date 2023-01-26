@@ -26,13 +26,6 @@ class DataDecoder:
     def is_complete(self):
         return False
 
-    # Return any error message if decoding or adding data failed for some reason
-    def get_error(self):
-        return None
-
-    def get_ur_prefix(self):
-        return None
-
     def decode(self):
         pass
 
