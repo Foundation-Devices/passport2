@@ -14,6 +14,10 @@
 from micropython import const
 
 
+class CBORError(Exception):
+    pass
+
+
 def bit_length(n):
     return len(bin(abs(n))) - 2
 
@@ -120,7 +124,7 @@ class CBOREncoder:
             self.encodeTagAndAdditional(tag, value)
 
         else:
-            raise Exception(
+            raise CBORError(
                 "Unsupported byte length of {} for value in encodeTagAndValue()".format(length))
 
         encoded_size = 1 + length
@@ -188,7 +192,7 @@ class CBORDecoder:
 
     def decodeTagAndAdditional(self, flags=Flag_None):
         if self.pos == len(self.buf):
-            raise Exception("Not enough input")
+            raise CBORError("Not enough input")
         octet = self.buf[self.pos]
         self.pos += 1
         tag = octet & Tag_Major_mask
@@ -199,7 +203,7 @@ class CBORDecoder:
         end = len(self.buf)
 
         if self.pos == end:
-            raise Exception("Not enough input")
+            raise CBORError("Not enough input")
 
         (tag, additional, length) = self.decodeTagAndAdditional(flags)
         if additional < Tag_Minor_length1:
@@ -209,66 +213,66 @@ class CBORDecoder:
         value = 0
         if additional == Tag_Minor_length8:
             if end - self.pos < 8:
-                raise Exception("Not enough input")
+                raise CBORError("Not enough input")
             for shift in [56, 48, 40, 32, 24, 16, 8, 0]:
                 value |= self.buf[self.pos] << shift
                 self.pos += 1
             if ((flags & Flag_Require_Minimal_Encoding) and value == 0):
-                raise Exception("Encoding not minimal")
+                raise CBORError("Encoding not minimal")
             return (tag, value, self.pos)
         elif additional == Tag_Minor_length4:
             if end - self.pos < 4:
-                raise Exception("Not enough input")
+                raise CBORError("Not enough input")
             for shift in [24, 16, 8, 0]:
                 value |= self.buf[self.pos] << shift
                 self.pos += 1
             if ((flags & Flag_Require_Minimal_Encoding) and value == 0):
-                raise Exception("Encoding not minimal")
+                raise CBORError("Encoding not minimal")
             return (tag, value, self.pos)
         elif additional == Tag_Minor_length2:
             if end - self.pos < 2:
-                raise Exception("Not enough input")
+                raise CBORError("Not enough input")
             for shift in [8, 0]:
                 value |= self.buf[self.pos] << shift
                 self.pos += 1
             if ((flags & Flag_Require_Minimal_Encoding) and value == 0):
-                raise Exception("Encoding not minimal")
+                raise CBORError("Encoding not minimal")
             return (tag, value, self.pos)
         elif additional == Tag_Minor_length1:
             if end - self.pos < 1:
-                raise Exception("Not enough input")
+                raise CBORError("Not enough input")
             value |= self.buf[self.pos]
             self.pos += 1
             if ((flags & Flag_Require_Minimal_Encoding) and value == 0):
-                raise Exception("Encoding not minimal")
+                raise CBORError("Encoding not minimal")
             return (tag, value, self.pos)
 
-        raise Exception("Bad additional value")
+        raise CBORError("Bad additional value")
 
     def decodeTagSemantic(self, flags=Flag_None):
         (tag, value, length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_semantic:
-            raise Exception("Expected Tag_Major_semantic, but found {}".format(tag))
+            raise CBORError("Expected Tag_Major_semantic, but found {}".format(tag))
         return (value, length)
 
     def decodeUndefined(self, flags=Flag_None):
         (tag, value, length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_semantic:
-            raise Exception("Expected Tag_Major_semantic ({}), but found {}".format(
+            raise CBORError("Expected Tag_Major_semantic ({}), but found {}".format(
                 Tag_Major_semantic, tag))
         return (value, length)
 
     def decodeUnsigned(self, flags=Flag_None):
         (tag, value, length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_unsignedInteger:
-            raise Exception("Expected Tag_Major_unsignedInteger ({}), but found {}".format(
+            raise CBORError("Expected Tag_Major_unsignedInteger ({}), but found {}".format(
                 Tag_Major_unsignedInteger, tag))
         return (value, length)
 
     def decodeNegative(self, flags=Flag_None):
         (tag, value, length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_negativeInteger:
-            raise Exception(
+            raise CBORError(
                 "Expected Tag_Major_negativeInteger, but found {}".format(tag))
         return (value, length)
 
@@ -287,18 +291,18 @@ class CBORDecoder:
                 return (True, length)
             elif value == Tag_Minor_false:
                 return (False, length)
-            raise Exception("Not a Boolean")
-        raise Exception("Not Simple/Boolean")
+            raise CBORError("Not a Boolean")
+        raise CBORError("Not Simple/Boolean")
 
     def decodeBytes(self, flags=Flag_None):
         # First value is the length of the bytes that follow
         (tag, byte_length, size_length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_byteString:
-            raise Exception("Not a byteString")
+            raise CBORError("Not a byteString")
 
         end = len(self.buf)
         if end - self.pos < byte_length:
-            raise Exception("Not enough input")
+            raise CBORError("Not enough input")
 
         value = bytes(self.buf[self.pos: self.pos + byte_length])
         self.pos += byte_length
@@ -307,18 +311,18 @@ class CBORDecoder:
     def decodeEncodedBytesPrefix(self, flags=Flag_None):
         (tag, value, length1) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_semantic or value != Tag_Minor_cborEncodedData:
-            raise Exception("Not CBOR Encoded Data")
+            raise CBORError("Not CBOR Encoded Data")
 
         (tag, value, length2) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_byteString:
-            raise Exception("Not byteString")
+            raise CBORError("Not byteString")
 
         return (tag, value, length1 + length2)
 
     def decodeEncodedBytes(self, flags=Flag_None):
         (tag, minor_tag, tag_length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_semantic or minor_tag != Tag_Minor_cborEncodedData:
-            raise Exception("Not CBOR Encoded Data")
+            raise CBORError("Not CBOR Encoded Data")
 
         (value, length) = self.decodeBytes(flags)
         return (value, tag_length + length)
@@ -327,11 +331,11 @@ class CBORDecoder:
         # First value is the length of the bytes that follow
         (tag, byte_length, size_length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_textString:
-            raise Exception("Not a textString")
+            raise CBORError("Not a textString")
 
         end = len(self.buf)
         if end - self.pos < byte_length:
-            raise Exception("Not enough input")
+            raise CBORError("Not enough input")
 
         value = bytes(self.buf[self.pos: self.pos + byte_length])
         self.pos += byte_length
@@ -341,12 +345,12 @@ class CBORDecoder:
         (tag, value, length) = self.decodeTagAndValue(flags)
 
         if tag != Tag_Major_array:
-            raise Exception(
+            raise CBORError(
                 "Expected Tag_Major_array, but found {}".format(tag))
         return (value, length)
 
     def decodeMapSize(self, flags=Flag_None):
         (tag, value, length) = self.decodeTagAndValue(flags)
         if tag != Tag_Major_map:
-            raise Exception("Expected Tag_Major_map, but found {}".format(tag))
+            raise CBORError("Expected Tag_Major_map, but found {}".format(tag))
         return (value, length)

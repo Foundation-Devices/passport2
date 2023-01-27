@@ -106,7 +106,12 @@ class URDecoder:
 
         # Parse the sequence component and the fragment, and make sure they agree.
         (seq_num, seq_len) = URDecoder.parse_sequence_component(seq)
-        cbor = Bytewords.decode(Bytewords_Style_minimal, fragment)
+
+        try:
+            cbor = Bytewords.decode(Bytewords_Style_minimal, fragment)
+        except ValueError as exc:
+            raise URError from exc
+
         part = FountainEncoderPart.from_cbor(cbor)
         if seq_num != part.seq_num or seq_len != part.seq_len:
             raise URError('sequence numbers mismatch')
@@ -115,7 +120,7 @@ class URDecoder:
         try:
             self.fountain_decoder.receive_part(part)
             if self.fountain_decoder.is_complete():
-                self.result = UR(type, self.fountain_decoder.result_message())
+                self.result = UR(type, self.fountain_decoder.result)
         except FountainError as exc:
             raise URError('failed to receive part') from exc
 
@@ -126,6 +131,3 @@ class URDecoder:
 
     def is_complete(self):
         return self.result is not None
-
-    def result(self):
-        return self.result
