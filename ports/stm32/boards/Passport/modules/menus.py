@@ -38,9 +38,9 @@ def health_check_submenu():
     from flows import CasaHealthCheckQRFlow, CasaHealthCheckMicrosdFlow
 
     return [
-        {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': CasaHealthCheckQRFlow,
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Check with QR Code', 'flow': CasaHealthCheckQRFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': CasaHealthCheckMicrosdFlow,
+        {'icon': lv.ICON_MICROSD, 'label': 'Check with microSD', 'flow': CasaHealthCheckMicrosdFlow,
          'statusbar': {'title': 'SIGN'}},
     ]
 
