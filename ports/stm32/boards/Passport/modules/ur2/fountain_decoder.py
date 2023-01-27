@@ -57,12 +57,9 @@ class FountainDecoder:
     def is_complete(self):
         return self.result is not None
 
-    def result(self):
-        return self.result
-
     def estimated_percent_complete(self):
         if self.is_complete():
-            return 1
+            return 100
         if self.expected_part_indexes is None:
             return 0
         estimated_input_parts = self.expected_part_count() * 1.75
