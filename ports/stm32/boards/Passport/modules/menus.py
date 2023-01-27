@@ -150,10 +150,13 @@ def microsd_menu():
 
 
 def multisig_item_menu():
-    from flows import RenameMultisigFlow, DeleteMultisigFlow, ViewMultisigDetailsFlow
+    from flows import (RenameMultisigFlow, DeleteMultisigFlow, ViewMultisigDetailsFlow,
+                       ExportMultisigQRFlow, ExportMultisigMicrosdFlow)
 
     return [
         {'icon': lv.ICON_TWO_KEYS, 'label': 'View Details', 'flow': ViewMultisigDetailsFlow},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Export via QR', 'flow': ExportMultisigQRFlow},
+        {'icon': lv.ICON_MICROSD, 'label': 'Export via SD', 'flow': ExportMultisigMicrosdFlow},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow},
     ]
