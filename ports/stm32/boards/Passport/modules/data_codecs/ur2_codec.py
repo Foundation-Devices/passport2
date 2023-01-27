@@ -16,8 +16,7 @@ from .qr_type import QRType
 from ur2.ur_decoder import URDecoder, URError
 from ur2.ur_encoder import UREncoder
 
-from ur2.cbor_lite import CBORDecoder
-from ur2.cbor_lite import CBOREncoder
+from ur2.cbor_lite import CBORDecoder, CBOREncoder, CBORError
 
 from ur2.ur import UR
 
@@ -40,10 +39,13 @@ class UR2Decoder(DataDecoder):
         return self.decoder.is_complete()
 
     def decode(self, decode_cbor_bytes=False):
-        message = self.decoder.result()
+        message = self.decoder.result
         if decode_cbor_bytes:
-            cbor_decoder = CBORDecoder(message.cbor)
-            (message, length) = cbor_decoder.decodeBytes()
+            try:
+                cbor_decoder = CBORDecoder(message.cbor)
+                (message, length) = cbor_decoder.decodeBytes()
+            except CBORError as exc:
+                raise DecodeError from exc
 
         return message
 

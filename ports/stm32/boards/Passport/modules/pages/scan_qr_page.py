@@ -114,8 +114,7 @@ class ScanQRPage(Page):
 
                     self.set_result(QRScanResult(data=data, qr_type=qr_type))
             except DecodeError as exc:
-                message = DecodeError.args[0]
-                self.set_result(QRScanResult(error='Scan Failed: {}'.format(message)))
+                self.set_result(QRScanResult(error=exc))
 
     # Just return None.
     def left_action(self, is_pressed):
@@ -142,4 +141,4 @@ class QRScanResult:
         self.qr_type = qr_type
 
     def is_failure(self):
-        self.error is not None
+        return self.error is not None
