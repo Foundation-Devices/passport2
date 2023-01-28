@@ -11,10 +11,10 @@ from tasks import sign_text_file_task
 from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
 
 
-class CasaHealthCheckFlow(Flow):
+class CasaHealthCheckQRFlow(Flow):
     def __init__(self):
-        super().__init__(initial_state=self.scan_qr, name='SignPsbtQRFlow')
-        self.psbt = None
+        super().__init__(initial_state=self.scan_qr, name='CasaHealthCheckQRFlow')
+        self.lines = None
 
     async def scan_qr(self):
         from pages import ScanQRPage, ErrorPage
@@ -34,18 +34,18 @@ class CasaHealthCheckFlow(Flow):
             else:
                 # print('result.data={}'.format(result.data))
                 try:
-                    lines = result.data.decode('utf-8').split('\n')
+                    self.lines = result.data.decode('utf-8').split('\n')
                 except Exception as e:
                     await ErrorPage('Health check format is invalid.').show()
                     return
-                if len(lines) != 2:
+                if len(self.lines) != 2:
                     await ErrorPage('Health check format is invalid.').show()
                     self.set_result(False)
                     return
 
                 # Common function to validate the message
-                self.text = lines[0]
-                self.subpath = lines[1]
+                self.text = self.lines[0]
+                self.subpath = self.lines[1]
                 # print('text={}'.format(self.text))
                 # print('subpath={}'.format(self.subpath))
 
