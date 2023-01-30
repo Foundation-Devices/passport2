@@ -7,15 +7,16 @@ from flows import Flow
 
 
 class SelectedFileFlow(Flow):
-    def __init__(self, file_name, full_path, is_folder):
+    def __init__(self, file_name, full_path, is_folder, select_text):
         super().__init__(initial_state=self.choose_action, name='SelectFileFlow')
         self.file_name = file_name
         self.full_path = full_path
         self.is_folder = is_folder
+        self.select_text = select_text
 
     async def choose_action(self):
         from pages import ChooserPage
-        options = [{'label': 'Navigate' if self.is_folder else 'Select', 'value': 0},
+        options = [{'label': 'Navigate' if self.is_folder else self.select_text, 'value': 0},
                    {'label': 'Delete', 'value': 1}]
 
         selection = await ChooserPage(options=options).show()
