@@ -31,6 +31,15 @@ class SelectedFileFlow(Flow):
 
     async def delete_selected_file(self):
         from utils import delete_file
+        from pages import QuestionPage
+
+        confirmation_text = 'Are you sure you want to delete {}?'.format(self.file_name)
+        confirmation = await QuestionPage(text=confirmation_text).show()
+
+        if not confirmation:
+            self.set_result(None)
+            return
+
         if not self.is_folder:
             delete_file(self.full_path)
         self.set_result(None)
