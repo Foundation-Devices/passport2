@@ -1166,12 +1166,16 @@ class psbtObject(psbtProxy):
 
         if sending_to_self:
             self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
-
-        if fee > total_non_change_out:
-            self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
-        elif per_fee >= 5:
-            self.warnings.append(('Big Fee', 'Network fee is more than '
-                                  '5%% of total non-change value (%.1f%%).' % per_fee))
+            per_fee = (fee / self.total_value_out) * 100
+            if per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
+        else:
+            if fee > total_non_change_out:
+                self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
+            elif per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
 
         # Enforce policy related to change outputs
         self.consider_dangerous_change(self.my_xfp)
