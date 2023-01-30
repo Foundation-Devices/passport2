@@ -17,7 +17,7 @@ from utils import get_file_list
 class FilePickerFlow(Flow):
     def __init__(
             self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
-            filter_fn=None):
+            filter_fn=None, select_text="Select"):
         super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
             initial_path))
         self.initial_path = initial_path
@@ -26,6 +26,7 @@ class FilePickerFlow(Flow):
         self.enable_parent_nav = enable_parent_nav
         self.suffix = suffix
         self.filter_fn = filter_fn
+        self.select_text = select_text
 
     async def show_file_picker(self):
         from utils import show_page_with_sd_card
@@ -137,7 +138,7 @@ class FilePickerFlow(Flow):
                         common.page_transition_dir = TRANSITION_DIR_PUSH
                         self.paths.append(full_path)
                         return True
-                    result = await SelectedFileFlow(_filename, full_path, is_folder).run()
+                    result = await SelectedFileFlow(_filename, full_path, is_folder, self.select_text).run()
                     if result is not None:
                         common.page_transition_dir = TRANSITION_DIR_POP
                         self.set_result(result)
