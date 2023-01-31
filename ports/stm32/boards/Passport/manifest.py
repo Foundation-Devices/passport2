@@ -368,4 +368,10 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/wasabi.py',
         'wallets/keeper.py'))
 
+# Extensions
+freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
+       ('extensions/extensions.py',
+        'extensions/casa_extension.py',
+        'extensions/postmix_extension.py'))
+
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

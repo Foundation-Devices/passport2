@@ -279,19 +279,20 @@ def advanced_menu():
 #         # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter Backup Code', 'page': BackupCodePage},
 #     ]
 
-
 def extensions_menu():
     from utils import is_extension_enabled, toggle_extension_enabled
-    # from pages import ColorPickerPage
-    return [
-        # {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
-        {'icon': lv.ICON_CASA, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
-         'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
-        {'icon': lv.ICON_SPIRAL, 'label': 'Postmix', 'action': lambda item: toggle_extension_enabled('postmix'),
-         'is_toggle': True, 'value': lambda: is_extension_enabled('postmix')},
-        # {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
-        #  'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
-    ]
+    from extensions.extensions import supported_extensions
+
+    result = []
+
+    for extension in supported_extensions:
+        result.append({'icon': extension['icon'],
+                       'label': extension['label'],
+                       'action': extension['toggle'],
+                       'is_toggle': True,
+                       'value': extension['check']})
+
+    return result
 
 
 def settings_menu():
