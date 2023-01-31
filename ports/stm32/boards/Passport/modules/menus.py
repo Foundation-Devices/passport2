@@ -280,7 +280,6 @@ def advanced_menu():
 #     ]
 
 def extensions_menu():
-    from utils import is_extension_enabled, toggle_extension_enabled
     from extensions.extensions import supported_extensions
 
     result = []
