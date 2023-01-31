@@ -5,7 +5,6 @@
 
 import lvgl as lv
 import common
-from styles.colors import RED
 
 
 def get_account_bg(account):
@@ -198,10 +197,10 @@ class UI():
             self, is_delete_account=False, stay_on_same_card=False, is_new_account=False, is_init=False):
         from flows import MenuFlow
         from utils import get_accounts, has_seed
-        from menus import account_menu, casa_menu, plus_menu, postmix_menu
+        from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
         from constants import MAX_ACCOUNTS
-        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
+        from styles.colors import DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
         self.update_cards_pending = False
