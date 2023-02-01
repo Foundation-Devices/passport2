@@ -73,8 +73,6 @@ class SignPsbtCommonFlow(Flow):
                 outputs.write(self.render_output(tx_out))
 
             if first:
-                # All outputs are change, so no amount is being "sent" to another wallet
-                # outputs.write('\n{}\nNone'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Amount')))
                 # All outputs are change, but we want to show the amount of the self-send
                 first = True
                 for idx, tx_out in self.psbt.output_iter():
