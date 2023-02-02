@@ -79,7 +79,7 @@ class SignPsbtCommonFlow(Flow):
                     outp = self.psbt.outputs[idx]
 
                     if first:
-                        frist = False
+                        first = False
                     else:
                         outputs.write('\n')
 
