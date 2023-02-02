@@ -942,7 +942,7 @@ class MultisigWallet:
 
         return derivs, dsum
 
-    def format_overview(self):
+    def format_overview(self, importing=True):
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX, COPPER_HEX
 
@@ -973,16 +973,20 @@ class MultisigWallet:
 {} This new wallet is similar to an existing wallet, but will NOT replace it. Consider deleting previous \
 wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.join(diff_items)
             is_dup = True
-        elif num_dups:
+        elif importing and num_dups:
             msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.'
             is_dup = True
+        elif not importing:
+            msg = ''
         else:
             msg = 'Create new multisig wallet?'
 
         derivs, dsum = self.get_deriv_paths()
 
-        msg += '''\n
-{name_title}
+        if importing:
+            msg += '\n\n'
+
+        msg += '''{name_title}
 {name}
 
 {policy_title} {M} of {N}
