@@ -71,34 +71,23 @@ genrst/
 ######################
 .DS_Store
 
-
-
-
-ports/stm32/boards/Passport/tools/add-secrets/x86/release/
-
-ports/stm32/secrets*
-
+# Passport
+######################
+ports/stm32/boards/Passport/tools/add-secrets/x86
+ports/stm32/boards/Passport/bootloader/dev-secrets/
 ports/stm32/boards/Passport/bootloader/version_info.c
-
 ports/stm32/boards/Passport/bootloader/secrets*
-
-*.pem
-.vscode
-
+ports/stm32/ditto/ditto-component-library.json
+ports/stm32/ditto/index.js
+ports/stm32/ditto/Envoy \+ PP Clean Start.json
+ports/stm32/secrets*
 ports/unix/passport-mpy
-
-simulator/work/microsd/backups/
-
-simulator/snapshots/
-
-*.gif
 
 simulator/ENV/
 simulator/work/
-ports/stm32/ditto/ditto-component-library.json
+simulator/work/microsd/backups/
+simulator/snapshots/
 
-ports/stm32/ditto/index.js
-
-ports/stm32/ditto/Envoy \+ PP Clean Start.json
-
-ports/stm32/boards/Passport/bootloader/dev-secrets/
+*.gif
+*.pem
+.vscode
