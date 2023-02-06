@@ -65,12 +65,12 @@ class URDecoder:
     def parse_sequence_component(str):
         comps = str.split('-')
         if len(comps) != 2:
-            raise URError('invalid sequence component')
+            raise URError('Invalid sequence component')
         seq_num = int(comps[0])
         seq_len = int(comps[1])
         # print('seq_num={} seq_len={}'.format(seq_num, seq_len))
         if seq_num < 1 or seq_len < 1:
-            raise URError('invalid sequence numbers')
+            raise URError('Invalid sequence numbers')
         return (seq_num, seq_len)
 
     def validate_part(self, type):
@@ -114,7 +114,7 @@ class URDecoder:
 
         part = FountainEncoderPart.from_cbor(cbor)
         if seq_num != part.seq_num or seq_len != part.seq_len:
-            raise URError('sequence numbers mismatch')
+            raise URError('Sequence number mismatch')
 
         # Process the part
         try:
@@ -122,7 +122,7 @@ class URDecoder:
             if self.fountain_decoder.is_complete():
                 self.result = UR(type, self.fountain_decoder.result)
         except FountainError as exc:
-            raise URError('failed to receive part') from exc
+            raise URError('Invalid part data') from exc
 
         return True
 
