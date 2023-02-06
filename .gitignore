@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Compiled Sources
 ###################
 *.o
