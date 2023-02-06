@@ -9,65 +9,47 @@ import math
 import re
 
 from .data_encoder import DataEncoder
-from .data_decoder import DataDecoder
+from .data_decoder import DataDecoder, DecodeError
 from .data_sampler import DataSampler
 from .qr_type import QRType
 
-from ur2.ur_decoder import URDecoder
+from ur2.ur_decoder import URDecoder, URError
 from ur2.ur_encoder import UREncoder
 
-from ur2.cbor_lite import CBORDecoder
-from ur2.cbor_lite import CBOREncoder
+from ur2.cbor_lite import CBORDecoder, CBOREncoder, CBORError
 
 from ur2.ur import UR
 
 
 class UR2Decoder(DataDecoder):
     def __init__(self):
-        self.error = None
         self.decoder = URDecoder()
 
     # Decode the given data into the expected format
     def add_data(self, data):
         try:
             return self.decoder.receive_part(data)
-        except Exception as e:
-            # print('EXCEPTION: {}'.format(e))
-            return False
+        except URError as exc:
+            raise DecodeError from exc
 
-    def received_parts(self):
-        return len(self.decoder.received_part_indexes())
-
-    def total_parts(self):
-        return self.decoder.expected_part_count()
+    def estimated_percent_complete(self):
+        return self.decoder.estimated_percent_complete()
 
     def is_complete(self):
         return self.decoder.is_complete()
 
-    def get_error(self):
-        if self.decoder.is_failure():
-            return self.decoder.result_error()
-        else:
-            return None
-
-    def get_ur_prefix(self):
-        return self.decoder.expected_type()
-
     def decode(self, decode_cbor_bytes=False):
-        try:
-            message = self.decoder.result_message()
-            if decode_cbor_bytes:
-                # print('UR2: message={}'.format(message.cbor))
+        message = self.decoder.result
+        if decode_cbor_bytes:
+            try:
                 cbor_decoder = CBORDecoder(message.cbor)
                 (message, length) = cbor_decoder.decodeBytes()
+            except CBORError as exc:
+                raise DecodeError from exc
 
-            return message
-        except Exception as e:
-            self.error = '{}'.format(e)
-            # print('CBOR decode error: {}'.format(e))
-            return None
+        return message
 
-    def get_data_format(self):
+    def qr_type(self):
         return QRType.UR2
 
 
@@ -114,10 +96,6 @@ class UR2Encoder(DataEncoder):
     # an infinite series of encodings that combine various pieces of the data in an attempt to fill in any holes missed.
     def next_part(self):
         return self.ur_encoder.next_part()
-
-    # Return any error message if decoding or adding data failed for some reason
-    def get_error(self):
-        return None
 
 
 class UR2Sampler(DataSampler):

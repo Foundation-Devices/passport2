@@ -21,15 +21,19 @@ class SignPsbtQRFlow(Flow):
             # User canceled the scan
             self.set_result(False)
         else:
-            # Got a scan result (aka QRScanResult): good data or error
-            if result.error is not None:
+            # Got a scan result (aka QRScanResult).
+            if result.is_failure():
                 # Unable to scan QR code - show error?
-                await ErrorPage(text='Unable to scan QR code.').show()
+                await ErrorPage(text='Unable to scan QR code.\n\n{}'.format(result.error)).show()
                 self.set_result(False)
             else:
-                self.raw_psbt = result.data
-                self.qr_type = result.qr_type
-                self.goto(self.copy_to_flash)
+                if isinstance(result.data, str):
+                    await ErrorPage(text='The QR code does not contain a transaction.').show()
+                    self.set_result(False)
+                else:
+                    self.raw_psbt = result.data
+                    self.qr_type = result.qr_type
+                    self.goto(self.copy_to_flash)
 
     async def copy_to_flash(self):
         import gc
@@ -37,13 +41,6 @@ class SignPsbtQRFlow(Flow):
         from tasks import copy_psbt_to_external_flash_task
         from pages import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
-
-        # TODO: I think this is always a bytes object -- can probably remove this check
-        # The data can be a string or may already be a bytes object
-        # if isinstance(self.raw_psbt, bytes):
-        #     data_buf = self.raw_psbt
-        # else:
-        #     data_buf = bytes(self.raw_psbt, 'utf-8')
 
         gc.collect()  # Try to avoid excessive fragmentation
 

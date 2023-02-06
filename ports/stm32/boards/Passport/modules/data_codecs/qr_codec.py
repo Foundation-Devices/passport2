@@ -19,25 +19,16 @@ class QRDecoder(DataDecoder):
     def add_data(self, data):
         self.data = data
 
-    def received_parts(self):
-        return 0 if self.data is None else 1
-
-    def total_parts(self):
-        return 1
+    def estimated_percent_complete(self):
+        return 1 if self.data is not None else 0
 
     def is_complete(self):
         return self.data is not None
 
-    def get_error(self):
-        return None
-
-    def get_ur_prefix(self):
-        return None
-
     def decode(self, **kwargs):
         return self.data
 
-    def get_data_format(self):
+    def qr_type(self):
         return QRType.QR
 
 
@@ -50,9 +41,6 @@ class QREncoder(DataEncoder):
 
     def next_part(self):
         return self.data
-
-    def get_error(self):
-        return None
 
 
 class QRSampler(DataSampler):

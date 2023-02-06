@@ -6,28 +6,12 @@
 
 from .ur import UR
 from .fountain_encoder import FountainEncoder, Part as FountainEncoderPart
-from .fountain_decoder import FountainDecoder
+from .fountain_decoder import FountainDecoder, FountainError
 from .bytewords import *
 from .utils import drop_first, is_ur_type
 
 
-class InvalidScheme(Exception):
-    pass
-
-
-class InvalidType(Exception):
-    pass
-
-
-class InvalidPathLength(Exception):
-    pass
-
-
-class InvalidSequenceComponent(Exception):
-    pass
-
-
-class InvalidFragment(Exception):
+class URError(Exception):
     pass
 
 
@@ -41,7 +25,7 @@ class URDecoder:
     def decode(str):
         (type, components) = URDecoder.parse(str)
         if len(components) == 0:
-            raise InvalidPathLength()
+            raise URError('invalid path length')
 
         body = components[0]
         return URDecoder.decode_by_type(type, body)
@@ -58,7 +42,7 @@ class URDecoder:
 
         # Validate URI scheme
         if not lowered.startswith('ur:'):
-            raise InvalidScheme()
+            raise URError('Invalid scheme')
 
         path = drop_first(lowered, 3)
 
@@ -67,30 +51,27 @@ class URDecoder:
 
         # Make sure there are at least two path components
         if len(components) < 2:
-            raise InvalidPathLength()
+            raise URError('malformed UR path components')
 
         # Validate the type
         type = components[0]
         if not is_ur_type(type):
-            raise InvalidType()
+            raise URError('invalid UR type')
 
         comps = components[1:]  # Don't include the ur type
         return (type, comps)
 
     @staticmethod
     def parse_sequence_component(str):
-        try:
-            comps = str.split('-')
-            if len(comps) != 2:
-                raise InvalidSequenceComponent()
-            seq_num = int(comps[0])
-            seq_len = int(comps[1])
-            # print('seq_num={} seq_len={}'.format(seq_num, seq_len))
-            if seq_num < 1 or seq_len < 1:
-                raise InvalidSequenceComponent()
-            return (seq_num, seq_len)
-        except BaseException:
-            raise InvalidSequenceComponent()
+        comps = str.split('-')
+        if len(comps) != 2:
+            raise URError('Invalid sequence component')
+        seq_num = int(comps[0])
+        seq_len = int(comps[1])
+        # print('seq_num={} seq_len={}'.format(seq_num, seq_len))
+        if seq_num < 1 or seq_len < 1:
+            raise URError('Invalid sequence numbers')
+        return (seq_num, seq_len)
 
     def validate_part(self, type):
         if self._expected_type is None:
@@ -102,80 +83,51 @@ class URDecoder:
             return type == self._expected_type
 
     def receive_part(self, str):
-        try:
-            # Don't process the part if we're already done
-            if self.result is not None:
-                return False
-
-            # Don't continue if this part doesn't validate
-            (type, components) = URDecoder.parse(str)
-            if not self.validate_part(type):
-                return False
-
-            # If this is a single-part UR then we're done
-            if len(components) == 1:
-                body = components[0]
-                self.result = self.decode_by_type(type, body)
-                return True
-
-            # Multi-part URs must have two path components: seq/fragment
-            if len(components) != 2:
-                raise InvalidPathLength()
-            seq = components[0]
-            fragment = components[1]
-
-            # Parse the sequence component and the fragment, and make sure they agree.
-            (seq_num, seq_len) = URDecoder.parse_sequence_component(seq)
-            cbor = Bytewords.decode(Bytewords_Style_minimal, fragment)
-            part = FountainEncoderPart.from_cbor(cbor)
-            if seq_num != part.seq_num or seq_len != part.seq_len:
-                # print('seq num mismatch')
-                return False
-
-            # Process the part
-            if not self.fountain_decoder.receive_part(part):
-                # print('Error in foundation_decoder.receive_part(): part={}'.format(part))
-                return False
-
-            if self.fountain_decoder.is_success():
-                self.result = UR(type, self.fountain_decoder.result_message())
-            elif self.fountain_decoder.is_failure():
-                self.result = self.fountain_decoder.result_error()
-
-            return True
-        except Exception as err:
-            # print('ur_decoder.receive_part() err={}'.format(err))
+        # Don't process the part if we're already done
+        if self.result is not None:
             return False
 
-    def expected_type(self):
-        return self._expected_type
+        # Don't continue if this part doesn't validate
+        (type, components) = URDecoder.parse(str)
+        if not self.validate_part(type):
+            return False
 
-    def expected_part_count(self):
-        return self.fountain_decoder.expected_part_count()
+        # If this is a single-part UR then we're done
+        if len(components) == 1:
+            body = components[0]
+            self.result = self.decode_by_type(type, body)
+            return True
 
-    def received_part_indexes(self):
-        return self.fountain_decoder.received_part_indexes
+        # Multi-part URs must have two path components: seq/fragment
+        if len(components) != 2:
+            raise InvalidPathLength()
+        seq = components[0]
+        fragment = components[1]
 
-    def last_part_indexes(self):
-        return self.fountain_decoder.last_part_indexes
+        # Parse the sequence component and the fragment, and make sure they agree.
+        (seq_num, seq_len) = URDecoder.parse_sequence_component(seq)
 
-    def processed_parts_count(self):
-        return self.fountain_decoder.processed_parts_count
+        try:
+            cbor = Bytewords.decode(Bytewords_Style_minimal, fragment)
+        except ValueError as exc:
+            raise URError from exc
+
+        part = FountainEncoderPart.from_cbor(cbor)
+        if seq_num != part.seq_num or seq_len != part.seq_len:
+            raise URError('Sequence number mismatch')
+
+        # Process the part
+        try:
+            self.fountain_decoder.receive_part(part)
+            if self.fountain_decoder.is_complete():
+                self.result = UR(type, self.fountain_decoder.result)
+        except FountainError as exc:
+            raise URError('Invalid part data') from exc
+
+        return True
 
     def estimated_percent_complete(self):
         return self.fountain_decoder.estimated_percent_complete()
 
-    def is_success(self):
-        return self.result is not None and not isinstance(self.result, Exception)
-
-    def is_failure(self):
-        return self.result is not None and isinstance(self.result, Exception)
-
     def is_complete(self):
         return self.result is not None
-
-    def result_message(self):
-        return self.result
-
-    def result_error(self):
-        return self.result

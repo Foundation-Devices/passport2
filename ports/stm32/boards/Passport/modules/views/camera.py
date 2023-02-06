@@ -72,7 +72,6 @@ class Camera(View):
         if self.content_width is None or self.content_height is None:
             self.enable()
             if self.content_width is None or self.content_height is None:
-                print('Not enabled')
                 return
 
         # Take the camera image.
@@ -144,12 +143,9 @@ class Camera(View):
 class CameraQRScanner(Camera):
     """Camera QR code scanner and decoder"""
 
-    def __init__(self, result_cb=None, progress_cb=None, error_cb=None):
+    def __init__(self):
         super().__init__()
         self.qr_decoder = None
-        self.result_cb = result_cb
-        self.progress_cb = progress_cb
-        self.error_cb = error_cb
         qr.init(self.HOR_RES, self.VER_RES)
 
     def hook(self):
@@ -168,45 +164,32 @@ class CameraQRScanner(Camera):
 
         super().update()
 
-        # print('update')
-
-        # Do not scan anything if we are completed decoding.
+        # Do not scan anything if decoding is complete.
         if self.qr_decoder is not None:
             if self.qr_decoder.is_complete():
                 return
 
-        # print('decoding')
-
         # Find QR codes in the QR framebuffer, and return early if no data found.
         data = qr.scan()
-
         if data is None:
-            # print('None')
             return
 
-        # print('============================================================')
-        # print('data {}'.format(data))
-        # print('============================================================')
+        if self.qr_decoder is None:
+            self.qr_decoder = get_qr_decoder_for_data(data)
 
-        try:
-            if self.qr_decoder is None:
-                self.qr_decoder = get_qr_decoder_for_data(data)
+        self.qr_decoder.add_data(data)
 
-            self.qr_decoder.add_data(data)
+    def estimated_percent_complete(self):
+        """Returns an integer from 0-100 representing the estimated percentage of completion"""
 
-            error = self.qr_decoder.get_error()
-            if error is not None:
-                if callable(self.error_cb):
-                    self.error_cb(error)
-                return
+        if self.qr_decoder is None:
+            return 0
 
-            if self.qr_decoder.is_complete():
-                if callable(self.result_cb):
-                    self.result_cb(self.qr_decoder)
-                return
+        return self.qr_decoder.estimated_percent_complete()
 
-            if callable(self.progress_cb):
-                self.progress_cb(self.qr_decoder)
-        except Exception as e:  # noqa
-            # print('Exception in CameraQRScanner: {}'.format(e))
-            pass
+    def is_complete(self):
+        """Returns true if the scan is complete"""
+
+        if self.qr_decoder is not None:
+            return self.qr_decoder.is_complete()
+        return False
