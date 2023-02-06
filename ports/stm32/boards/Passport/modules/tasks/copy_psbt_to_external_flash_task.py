@@ -26,6 +26,10 @@ async def copy_psbt_to_external_flash_task(on_done, on_progress, data, offset):
         # See how long it is -- This version of seek returns the final offset
         psbt_len = len(data)
 
+        if psbt_len > MAX_TXN_LEN:
+            await on_done(0, None, Error.PSBT_TOO_LARGE)
+            return
+
         # determine encoding used, although we prefer binary
         taste = fd.read(10)
         fd.seek(0)

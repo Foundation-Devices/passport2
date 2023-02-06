@@ -41,6 +41,8 @@ class SignPsbtQRFlow(Flow):
         from tasks import copy_psbt_to_external_flash_task
         from pages import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
+        from utils import clear_psbt_flash
+        from errors import Error
 
         gc.collect()  # Try to avoid excessive fragmentation
 
@@ -48,7 +50,11 @@ class SignPsbtQRFlow(Flow):
         (self.psbt_len, self.output_encoder, error) = await spinner_task(
             'Parsing transaction', copy_psbt_to_external_flash_task, args=[None, self.raw_psbt, TXN_INPUT_OFFSET])
         if error is not None:
-            await ErrorPage(text='Invalid PSBT (copying QR)').show()
+            await clear_psbt_flash(self.psbt_len)
+            if error == Error.PSBT_TOO_LARGE:
+                await ErrorPage(text='PSBT too large').show()
+            else:
+                await ErrorPage(text='Invalid PSBT (copying QR)').show()
             self.set_result(False)
             return
 
@@ -59,9 +65,12 @@ class SignPsbtQRFlow(Flow):
 
     async def common_flow(self):
         from flows import SignPsbtCommonFlow
+        from utils import clear_psbt_flash
 
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
+        await clear_psbt_flash(self.psbt_len)
+
         if result is None:
             self.set_result(False)
         else:

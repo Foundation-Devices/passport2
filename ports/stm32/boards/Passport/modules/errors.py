@@ -23,4 +23,5 @@ Error = enum(
     'PSBT_INVALID',
     'SECURE_ELEMENT_ERROR',
     'USER_SETTINGS_FULL',
+    'PSBT_TOO_LARGE',
 )
