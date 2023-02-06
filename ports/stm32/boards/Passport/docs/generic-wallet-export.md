@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Export wallet file format (Generic JSON)
 
 Passport can export data intended for various desktop and mobile
