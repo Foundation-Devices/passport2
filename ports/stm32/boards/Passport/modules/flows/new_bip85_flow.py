@@ -1,22 +1,25 @@
-# SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# export_bip85_qr_flow.py - Export a BIP85 seed QR code
+# new_bip85_flow.py - Create a new BIP85 seed
 
 from flows import Flow
 
 
-class ExportBIP85QRFlow(Flow):
+class NewBIP85Flow(Flow):
     def __init__(self):
+        from utils import get_next_bip85_index
         self.index = None
         self.num_words = None
+        self.next_index = get_next_bip85_index()
+        self.seed_num = None
         super().__init__(initial_state=self.enter_index, name="ExportBIP85QRFlow")
 
     async def enter_index(self):
         from pages import TextInputPage
         import microns
         self.index = await TextInputPage(card_header={'title': 'Seed Number'}, numeric_only=True,
-                                         initial_text='',
+                                         initial_text='' if self.next_index is None else str(self.next_index),
                                          max_length=10,
                                          left_micron=microns.Back,
                                          right_micron=microns.Checkmark).show()
@@ -25,7 +28,33 @@ class ExportBIP85QRFlow(Flow):
             return
         if len(self.index) == 0:
             return  # Try again
-        self.goto(self.choose_num_words)
+        if self.index < self.next_index:
+            await ErrorPage("This seed number has been used before.").show()
+            return  # Try again
+        self.goto(self.enter_seed_name)
+
+    async def enter_account_name(self):
+        result = await TextInputPage(card_header={'title': 'Account Name'},
+                                     initial_text='' if self.account_name is None else self.account_name,
+                                     max_length=MAX_ACCOUNT_NAME_LEN,
+                                     left_micron=microns.Back,
+                                     right_micron=microns.Checkmark).show()
+        if result is not None:
+            if len(result) == 0:
+                # Just show the page again
+                return
+            self.account_name = result
+
+            # Check for existing account with this name
+            existing_account = get_account_by_name(self.account_name)
+            if existing_account is not None:
+                await ErrorPage(text='Account #{} already exists with the name "{}".'.format(
+                    existing_account.get('acct_num'), self.account_name)).show()
+                return
+
+            self.goto(self.save_account)
+        else:
+            self.back()
 
     async def choose_num_words(self):
         from pages import ChooserPage
@@ -40,13 +69,15 @@ class ExportBIP85QRFlow(Flow):
     async def generate_seed(self):
         from utils import spinner_task
         from tasks import bip85_seed_task
-        (self.seed, self.error) = await spinner_task(text='Generating Seed',
+        from pages import ErrorPage
+        (self.seed, error) = await spinner_task(text='Generating Seed',
                                                      task=bip85_seed_task,
                                                      args=[self.num_words, self.index])
         if self.error is None:
             self.goto(self.show_seed_words)
         else:
-            self.goto(self.show_error)
+            await ErrorPage(error).show()
+            self.set_result(False)
 
     async def show_seed_words(self):
         from flows import ViewSeedWordsFlow
@@ -59,8 +90,3 @@ class ExportBIP85QRFlow(Flow):
         import microns
         await ShowQRPage(qr_data=B2A(self.seed), right_micron=microns.Checkmark).show()
         self.set_result(True)
-
-    async def show_error(self):
-        from pages import ErrorPage
-        await ErrorPage(self.error).show()
-        self.set_result(False)
