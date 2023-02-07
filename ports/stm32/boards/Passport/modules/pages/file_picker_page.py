@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # file_picker_page.py - View to render a title and a list of files/folders.

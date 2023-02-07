@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # about_flow.py - About Passport, and regulatory info

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # set_initial_pin_flow.py - Change the user's PIN

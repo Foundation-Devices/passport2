@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sw_wallet_chooser_page.py - Chooser to select a specific softwre wallet to which to connect
