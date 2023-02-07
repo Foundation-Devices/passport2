@@ -74,15 +74,6 @@ def postmix_menu():
     ]
 
 
-def bip85_menu():
-    from flows import ExportBIP85QRFlow
-
-    return [
-        {'icon': lv.ICON_SCAN_QR, 'label': 'Generate BIP85 QR', 'flow': ExportBIP85QRFlow,
-         'statusbar': {'title': 'EXPORT'}},
-    ]
-
-
 def plus_menu():
     from utils import is_passphrase_active
     from flows import NewAccountFlow, ApplyPassphraseFlow
@@ -124,6 +115,17 @@ def backup_menu():
     ]
 
 
+def bip85_menu():
+    from flows import NewBIP85Flow
+
+    result = []
+
+    # TODO: list saved seeds and indices
+    result.append({'icon': lv.ICON_SEED, 'label': 'New Child Seed', 'flow': NewBIP85Flow})
+
+    return result
+
+
 def bitcoin_menu():
     from flows import SetChainFlow
     from pages import UnitsSettingPage
@@ -132,6 +134,7 @@ def bitcoin_menu():
     return [
         {'icon': lv.ICON_BITCOIN, 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
+        {'icon': lv.ICON_SEED, 'label': 'Child Seeds (BIP85)', 'submenu': bip85_menu},
         {'icon': lv.ICON_NETWORK, 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
     ]
