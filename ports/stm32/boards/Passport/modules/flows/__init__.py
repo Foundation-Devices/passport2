@@ -33,7 +33,6 @@ from .erase_passport_flow import *
 from .export_multisig_microsd_flow import *
 from .export_multisig_qr_flow import *
 from .export_summary_flow import *
-from .export_bip85_qr_flow import *
 # from .fcc_test_flow import *
 from .selected_file_flow import *
 from .file_picker_flow import *
@@ -44,6 +43,7 @@ from .import_multisig_wallet_from_qr_flow import *
 from .install_dev_pubkey_flow import *
 from .list_files_flow import *
 from .new_account_flow import *
+from .new_bip85_flow import *
 from .new_seed_flow import *
 from .connect_wallet_flow import *
 from .remove_dev_pubkey_flow import *
