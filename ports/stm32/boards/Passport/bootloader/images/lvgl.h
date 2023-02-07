@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2021 Lvgl Kft
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Stub file to use LVGL images on the bootloader.

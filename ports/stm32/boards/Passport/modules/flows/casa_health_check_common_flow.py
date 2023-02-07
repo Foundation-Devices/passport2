@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
