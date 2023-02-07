@@ -1,6 +1,6 @@
-# replacement for serial flash stuff, just enough to pass selftest
-#
-# see real deal at ../shared/sflash.py
+# SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-only
 
 from utils import file_exists
 
