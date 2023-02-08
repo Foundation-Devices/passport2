@@ -5,7 +5,6 @@
 
 import lvgl as lv
 from pages import StatusPage
-from styles.colors import FD_BLUE, FD_BLUE_HEX
 import microns
 
 
@@ -15,7 +14,6 @@ class BatteryPage(StatusPage):
         from common import ui
 
         super().__init__(
-            progress_color=FD_BLUE,
             show_progress=True,
             percent=ui.battery_level,
             card_header=card_header,

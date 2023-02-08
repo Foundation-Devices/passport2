@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from pages import StatusPage
-from styles.colors import FD_BLUE
+from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import microns
 
 
@@ -14,7 +14,7 @@ class QuestionPage(StatusPage):
         self,
         text=None,
         icon=lv.LARGE_ICON_QUESTION,
-        icon_color=FD_BLUE,
+        icon_color=DEFAULT_LARGE_ICON_COLOR,
         card_header=None,
         statusbar=None,
         left_micron=microns.Cancel,

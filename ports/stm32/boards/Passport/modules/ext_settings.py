@@ -211,7 +211,7 @@ class ExtSettings:
         else:
             # Special case for xfp and xpub -- make sure they exist and create if not
             if kn not in self.current:
-                if kn == 'xfp' or kn == 'xpub':
+                if kn == 'xfp' or kn == 'xpub' or kn == 'root_xfp':
                     try:
                         # Update xpub/xfp in settings after creating new wallet
                         import stash
@@ -243,6 +243,10 @@ class ExtSettings:
 
     def set_volatile(self, kn, v):
         self.overrides[kn] = v
+
+    def clear_volatile(self, kn):
+        if kn in self.overrides:
+            del self.overrides[kn]
 
     def remove(self, kn):
         # print('remove(\'{}\') called!'.format(kn))

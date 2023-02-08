@@ -6,11 +6,12 @@
 
 import lvgl as lv
 from views import View
-from styles.colors import FD_BLUE, FD_PALE_GREY
+from styles.colors import DEFAULT_SPINNER, SPINNER_BG
+import passport
 
 
 class Spinner(View):
-    def __init__(self, width=7, color=FD_BLUE):
+    def __init__(self, width=7, color=DEFAULT_SPINNER):
         super().__init__()
         self.arc_width = width
         self.arc_color = color
@@ -25,7 +26,7 @@ class Spinner(View):
         self.lvgl_root.set_style_arc_color(self.arc_color, lv.PART.INDICATOR)
         self.lvgl_root.set_style_arc_width(self.arc_width, lv.PART.INDICATOR)
 
-        self.lvgl_root.set_style_arc_color(FD_PALE_GREY, lv.PART.MAIN)
+        self.lvgl_root.set_style_arc_color(SPINNER_BG, lv.PART.MAIN)
         self.lvgl_root.set_style_arc_width(self.arc_width, lv.PART.MAIN)
 
         # Knob

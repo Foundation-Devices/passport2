@@ -8,7 +8,7 @@ from flows import Flow
 from pages import LongTextPage
 from utils import xfp2str, swab32, recolor
 import microns
-from styles.colors import FD_BLUE_HEX, TEXT_GREY
+from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
 
 
 class AboutFlow(Flow):
@@ -18,7 +18,6 @@ class AboutFlow(Flow):
     async def about_page(self):
         from common import settings, system
         from utils import has_seed
-        import stash
 
         serial = system.get_serial_number()
         my_xfp = settings.get('xfp', 0)
@@ -35,25 +34,19 @@ class AboutFlow(Flow):
 {xpub_title}
 {xpub}
 '''.format(
-                xfp_title=recolor(FD_BLUE_HEX, 'Master Fingerprint'),
+                xfp_title=recolor(HIGHLIGHT_TEXT_HEX, 'Master Fingerprint'),
                 xfp=xfp2str(my_xfp) if my_xfp else '<No Seed Yet>',
-                rev_xfp_title=recolor(FD_BLUE_HEX, 'Reversed Fingerprint'),
+                rev_xfp_title=recolor(HIGHLIGHT_TEXT_HEX, 'Reversed Fingerprint'),
                 rev_xfp=xfp2str(swab32(my_xfp)) if my_xfp else '<No Seed Yet>',
-                xpub_title=recolor(FD_BLUE_HEX, 'Master XPUB'),
+                xpub_title=recolor(HIGHLIGHT_TEXT_HEX, 'Master XPUB'),
                 xpub=xpub if xpub is not None else '<No Seed Yet>')
         else:
             msg = ''
 
-        if len(stash.bip39_passphrase) > 0:
-            msg += '\n{passphrase_title}\n{passphrase}\n'.format(
-                passphrase_title=recolor(FD_BLUE_HEX, 'Active Passphrase'),
-                passphrase=stash.bip39_passphrase
-            )
-
         msg += '''
 {serial_title}
 {serial}'''.format(
-            serial_title=recolor(FD_BLUE_HEX, 'Serial Number'),
+            serial_title=recolor(HIGHLIGHT_TEXT_HEX, 'Serial Number'),
             serial=serial)
 
         # print('msg={}'.format(msg))
@@ -72,7 +65,7 @@ class AboutFlow(Flow):
 
 Foundation Devices
 6 Liberty Square ##6018
-Boston, MA 02109 USA""".format(title=recolor(FD_BLUE_HEX, 'PASSPORT'))
+Boston, MA 02109 USA""".format(title=recolor(HIGHLIGHT_TEXT_HEX, 'PASSPORT'))
         await LongTextPage(
             text=msg,
             icon=lv.IMAGE_REGULATORY,

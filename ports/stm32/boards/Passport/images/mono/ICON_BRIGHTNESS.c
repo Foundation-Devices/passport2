@@ -1,0 +1,52 @@
+// SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+#include "lvgl.h"
+#else
+#include "lvgl/lvgl.h"
+#endif
+
+
+#ifndef LV_ATTRIBUTE_MEM_ALIGN
+#define LV_ATTRIBUTE_MEM_ALIGN
+#endif
+
+#ifndef LV_ATTRIBUTE_IMG_ICON_BRIGHTNESS
+#define LV_ATTRIBUTE_IMG_ICON_BRIGHTNESS
+#endif
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_ICON_BRIGHTNESS uint8_t ICON_BRIGHTNESS_map[] = {
+  0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
+  0xfe, 0xfe, 0xfe, 0x95, 	/*Color of index 1*/
+
+  0x00, 0xc0, 0x00, 
+  0x00, 0xc0, 0x00, 
+  0x30, 0xc3, 0x00, 
+  0x38, 0x07, 0x00, 
+  0x19, 0xe6, 0x00, 
+  0x07, 0xf8, 0x00, 
+  0x07, 0xf8, 0x00, 
+  0x0e, 0x1c, 0x00, 
+  0xee, 0x1d, 0xc0, 
+  0xee, 0x1d, 0xc0, 
+  0x0e, 0x1c, 0x00, 
+  0x07, 0xf8, 0x00, 
+  0x07, 0xf8, 0x00, 
+  0x19, 0xe6, 0x00, 
+  0x38, 0x07, 0x00, 
+  0x30, 0xc3, 0x00, 
+  0x00, 0xc0, 0x00, 
+  0x00, 0xc0, 0x00, 
+};
+
+const lv_img_dsc_t ICON_BRIGHTNESS = {
+  .header.cf = LV_IMG_CF_INDEXED_1BIT,
+  .header.always_zero = 0,
+  .header.reserved = 0,
+  .header.w = 18,
+  .header.h = 18,
+  .data_size = 62,
+  .data = ICON_BRIGHTNESS_map,
+};

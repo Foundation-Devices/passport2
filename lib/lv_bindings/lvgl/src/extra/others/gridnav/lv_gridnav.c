@@ -141,10 +141,13 @@ static void gridnav_event_cb(lv_event_t *e)
         // uint32_t key = lv_indev_get_key(lv_indev_get_act());
         uint32_t key = lv_event_get_key(e);
         bool key_forwarded = false;
+        bool ignore_horizontal_keys = dsc->ctrl & LV_GRIDNAV_CTRL_IGNORE_HORIZONTAL_KEYS;
         // FOUNDATION CHANGE ======================================================================
         lv_obj_t *guess = NULL;
 
-        if (key == LV_KEY_RIGHT)
+        // FOUNDATION CHANGE ======================================================================
+        if (key == LV_KEY_RIGHT && !ignore_horizontal_keys)
+        // FOUNDATION CHANGE ======================================================================
         {
             if ((dsc->ctrl & LV_GRIDNAV_CTRL_SCROLL_FIRST) && lv_obj_has_flag(dsc->focused_obj, LV_OBJ_FLAG_SCROLLABLE) &&
                 lv_obj_get_scroll_right(dsc->focused_obj) > 0)
@@ -172,7 +175,9 @@ static void gridnav_event_cb(lv_event_t *e)
                 }
             }
         }
-        else if (key == LV_KEY_LEFT)
+        // FOUNDATION CHANGE ======================================================================
+        else if (key == LV_KEY_LEFT && !ignore_horizontal_keys)
+        // FOUNDATION CHANGE ======================================================================
         {
             if ((dsc->ctrl & LV_GRIDNAV_CTRL_SCROLL_FIRST) && lv_obj_has_flag(dsc->focused_obj, LV_OBJ_FLAG_SCROLLABLE) &&
                 lv_obj_get_scroll_left(dsc->focused_obj) > 0)

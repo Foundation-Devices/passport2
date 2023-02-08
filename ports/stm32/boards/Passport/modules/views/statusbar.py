@@ -7,8 +7,9 @@
 import lvgl as lv
 from views import View, Icon, BoldLabel, BatteryIndicator
 from styles import Stylize
-from styles.colors import WHITE
-from constants import STATUS_BAR_HEIGHT
+from styles.colors import WHITE, BLACK
+from constants import STATUSBAR_HEIGHT
+import passport
 
 
 class StatusBar(View):
@@ -23,10 +24,19 @@ class StatusBar(View):
         self.icon_view = None
 
         with Stylize(self) as default:
-            default.pad(top=0, bottom=0, left=10, right=10)
+            # if not passport.IS_COLOR:
+            # default.bg_color(BLACK)
+
+            if passport.IS_COLOR:
+                top_pad = 0
+            else:
+                top_pad = 2
+
+            default.pad(top=top_pad, bottom=0, left=10, right=10)
+            default.pad_col(2)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.set_size(lv.pct(100), STATUS_BAR_HEIGHT)
+        self.set_size(lv.pct(100), STATUSBAR_HEIGHT)
         self.set_pos(0, 0)
         self.set_no_scroll()
 
@@ -35,18 +45,44 @@ class StatusBar(View):
         self.update_title()
 
         self.battery = BatteryIndicator()
+        if passport.IS_COLOR:
+            self.add_child(self.battery)
+        else:
+            self.battery_container = View(flex_flow=None)
+            self.battery_container.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
+            # self.battery_container.set_size(24, 24)
+            with Stylize(self.battery_container) as default:
+                default.bg_color(BLACK)
+                default.pad(left=2, right=2)
+                default.radius(4)
+                default.align(lv.ALIGN.CENTER)
 
-        self.add_child(self.battery)
+            self.battery_container.add_child(self.battery)
+            self.add_child(self.battery_container)
 
     def update_icon(self):
         if self.is_mounted():
             self.icon_view.unmount()
-            del self.children[0]
+            self.remove_child(self.icon_view)
 
         if self.icon is None:
-            self.icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
+            icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
         else:
-            self.icon_view = Icon(icon=self.icon, color=self.fg_color)
+            icon_view = Icon(icon=self.icon, color=self.fg_color)
+
+        if passport.IS_COLOR:
+            self.icon_view = icon_view
+        else:
+            self.icon_view = View(flex_flow=None)
+            self.icon_view.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
+            with Stylize(self.icon_view) as default:
+                default.bg_color(BLACK)
+                default.pad_all(2)
+                default.radius(4)
+                default.align(lv.ALIGN.CENTER)
+
+            self.icon_view.add_child(icon_view)
+
         self.insert_child(0, self.icon_view)
 
         if self.is_mounted():
@@ -56,7 +92,7 @@ class StatusBar(View):
     def update_title(self):
         if self.is_mounted():
             self.title_view.unmount()
-            del self.children[1]
+            self.remove_child(self.title_view)
 
         self.title_view = BoldLabel(text=self.title, color=self.fg_color, center=True)
         with Stylize(self.title_view) as default:
@@ -82,7 +118,7 @@ class StatusBar(View):
         self.update_icon()
 
     def set_fg_color(self, fg_color):
-        self.fg_color = fg_color
+        self.fg_color = WHITE
         self.battery.set_outline_color(self.fg_color)
         self.update_title()
         self.update_icon()

@@ -5,14 +5,15 @@
 
 
 import lvgl as lv
+from micropython import const
 from views import View, Icon
-from styles.colors import FD_BLUE, WHITE, TEXT_GREY
+from styles.colors import BATTERY_FILL_COLOR, WHITE, TEXT_GREY
 from styles import Stylize, LocalStyle
 
-LEFT_MARGIN = 2
-TOP_MARGIN = 5
-FILL_HEIGHT = 9
-FILL_MAX_WIDTH = 16
+_LEFT_MARGIN = const(2)
+_TOP_MARGIN = const(5)
+_FILL_HEIGHT = const(9)
+_FILL_MAX_WIDTH = const(16)
 
 
 class BatteryIndicator(View):
@@ -28,23 +29,23 @@ class BatteryIndicator(View):
             default.align(lv.ALIGN.CENTER)
 
         self.bg_fill = View()
-        self.bg_fill.set_size(FILL_MAX_WIDTH, FILL_HEIGHT)
-        self.bg_fill.set_pos(LEFT_MARGIN, TOP_MARGIN)
+        self.bg_fill.set_size(_FILL_MAX_WIDTH, _FILL_HEIGHT)
+        self.bg_fill.set_pos(_LEFT_MARGIN, _TOP_MARGIN)
         with Stylize(self.bg_fill) as default:
             default.bg_color(TEXT_GREY)
 
         self.fill = View()
-        self.fill.set_height(FILL_HEIGHT)
-        self.fill.set_pos(LEFT_MARGIN, TOP_MARGIN)
+        self.fill.set_height(_FILL_HEIGHT)
+        self.fill.set_pos(_LEFT_MARGIN, _TOP_MARGIN)
         with Stylize(self.fill) as default:
-            default.bg_color(FD_BLUE)
+            default.bg_color(BATTERY_FILL_COLOR)
 
         self.update_fill()
 
         self.set_children([self.bg_fill, self.fill, self.icon])
 
     def update_fill(self):
-        self.fill.set_width((self.percent * FILL_MAX_WIDTH) // 100)
+        self.fill.set_width((self.percent * _FILL_MAX_WIDTH) // 100)
 
     def update_icon(self):
         with LocalStyle(self.icon) as style:

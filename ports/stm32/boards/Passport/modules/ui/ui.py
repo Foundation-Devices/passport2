@@ -142,14 +142,14 @@ class UI():
         return self.set_card_header(title=None)
 
     def create_single_card(self, flow, card=None, args=None, add_settings=False):
-        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE, LIGHT_TEXT
         import microns
 
         # Add the leftmost settings card
         if card is None:
             card = {
                 'header_color': LIGHT_GREY,
-                'header_fg_color': TEXT_GREY,
+                'header_fg_color': LIGHT_TEXT,
                 'statusbar': {'title': 'PASSPORT', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
                 'page_micron': microns.PageDot,
                 'bg_color': TEXT_GREY,
@@ -178,11 +178,11 @@ class UI():
         from flows import MenuFlow
         from menus import settings_menu
         import microns
-        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import LIGHT_GREY, TEXT_GREY, WHITE, LIGHT_TEXT
 
         return {
             'header_color': LIGHT_GREY,
-            'header_fg_color': TEXT_GREY,
+            'header_fg_color': LIGHT_TEXT,
             'statusbar': {'title': 'SETTINGS', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
             'page_micron': microns.PageHome,
             'bg_color': TEXT_GREY,
@@ -200,7 +200,7 @@ class UI():
         from utils import get_accounts, has_seed
         from menus import account_menu, casa_menu, plus_menu, postmix_menu
         from constants import MAX_ACCOUNTS
-        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, TEXT_GREY, WHITE
+        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
         self.update_cards_pending = False
@@ -232,8 +232,7 @@ class UI():
         elif is_new_account:
             # User added a new account, which is done from the last card, so
             # let's ensure we are still on the last page.
-            # # TODO: possibly may want to jump to the new page instead
-            new_card_idx = len(accounts) + 1
+            new_card_idx = self.active_card_idx + 1
         elif stay_on_same_card:
             new_card_idx = self.active_card_idx
 
@@ -247,7 +246,7 @@ class UI():
                 account_card = {
                     'right_icon': lv.ICON_BITCOIN,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': get_account_fg(account)},
                     'title': account.get('name'),
                     'page_micron': microns.PageDot,
@@ -269,7 +268,7 @@ class UI():
                 casa_card = {
                     'right_icon': lv.ICON_CASA,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
                     'title': casa_account.get('name'),
                     'page_micron': microns.PageDot,
@@ -278,6 +277,9 @@ class UI():
                     'args': {'menu': casa_menu, 'is_top_level': True},
                     'account': casa_account
                 }
+                if len(stash.bip39_passphrase) > 0:
+                    casa_card['icon'] = lv.ICON_PASSPHRASE
+
                 card_descs.append(casa_card)
 
             # Postmix account for CoinJoin
@@ -286,7 +288,7 @@ class UI():
                 postmix_card = {
                     'right_icon': lv.ICON_SPIRAL,
                     'header_color': LIGHT_GREY,
-                    'header_fg_color': TEXT_GREY,
+                    'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
                     'title': postmix_account.get('name'),
                     'page_micron': microns.PageDot,
@@ -295,6 +297,9 @@ class UI():
                     'args': {'menu': postmix_menu, 'is_top_level': True},
                     'account': postmix_account
                 }
+                if len(stash.bip39_passphrase) > 0:
+                    postmix_card['icon'] = lv.ICON_PASSPHRASE
+
                 card_descs.append(postmix_card)
 
             more_card = {
@@ -392,24 +397,37 @@ class UI():
 
     def next_card(self):
         num_cards = len(self.card_descs)
+
+        if num_cards == 1:
+            return
+
         if self.active_card_idx < num_cards - 1:
             self.active_card_idx += 1
-            new_card_desc = self.card_descs[self.active_card_idx]
-            self.active_screen.card_nav.push_card(new_card_desc, self.active_card_idx)
+        elif self.active_card_idx == num_cards - 1:
+            self.active_card_idx = 0
+        new_card_desc = self.card_descs[self.active_card_idx]
+        self.active_screen.card_nav.push_card(new_card_desc, self.active_card_idx)
 
-            self.update_screen_info(new_card_desc)
+        self.update_screen_info(new_card_desc)
 
-            self.start_card_task(new_card_desc=new_card_desc)
+        self.start_card_task(new_card_desc=new_card_desc)
 
     def prev_card(self):
+        num_cards = len(self.card_descs)
+
+        if num_cards == 1:
+            return
+
         if self.active_card_idx > 0:
             self.active_card_idx -= 1
-            new_card_desc = self.card_descs[self.active_card_idx]
-            self.active_screen.card_nav.pop_card(new_card_desc, self.active_card_idx)
+        elif self.active_card_idx == 0:
+            self.active_card_idx = num_cards - 1
+        new_card_desc = self.card_descs[self.active_card_idx]
+        self.active_screen.card_nav.pop_card(new_card_desc, self.active_card_idx)
 
-            self.update_screen_info(new_card_desc)
+        self.update_screen_info(new_card_desc)
 
-            self.start_card_task(new_card_desc=new_card_desc)
+        self.start_card_task(new_card_desc=new_card_desc)
 
     # Mount and animate the given page so it replaces the current page with a "push" style
     def push_page(self, page):

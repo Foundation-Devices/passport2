@@ -10,6 +10,7 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.choose_wallet_file, name='ImportMultisigWalletFromMicroSDFlow')
         self.ms = None
+        self.error = None
 
     async def choose_wallet_file(self):
         from flows import FilePickerFlow
@@ -35,7 +36,15 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
                 args=[full_path])
             (data, error) = result
             if error is None:
-                self.ms = MultisigWallet.from_file(data)
+                try:
+                    self.ms = await MultisigWallet.from_file(data)
+                except BaseException as e:
+                    if e.args is None or len(e.args) == 0:
+                        self.error = "Multisig Import Error"
+                    else:
+                        self.error = e.args[0]
+                    self.goto(self.show_error)
+                    return
                 # print('New MS: {}'.format(self.ms.serialize()))
 
                 self.goto(self.do_import)
@@ -54,3 +63,9 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
         # Show the wallet to the user for import
         result = await ImportMultisigWalletFlow(self.ms).run()
         self.set_result(result)
+
+    async def show_error(self):
+        from pages import ErrorPage
+        await ErrorPage(text=self.error).show()
+        self.error = None
+        self.reset(self.choose_wallet_file)

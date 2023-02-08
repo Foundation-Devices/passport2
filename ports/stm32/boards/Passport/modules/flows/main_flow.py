@@ -21,7 +21,7 @@ class MainFlow(Flow):
             await LoginFlow().run()
 
         if not has_seed():
-            await InitialSeedSetupFlow().run()
+            await InitialSeedSetupFlow(allow_backtrack=False).run()
 
         # Create initial cards by calling ui.update_cards()
         common.ui.update_cards(is_init=True)

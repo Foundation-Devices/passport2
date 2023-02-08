@@ -144,6 +144,9 @@ class FoundationBaseTheme():
     def bg_transparent(self):
         self.style.set_bg_opa(0)
 
+    def bg_opaque(self):
+        self.style.set_bg_opa(255)
+
     def bg_opa(self, opa):
         self.style.set_bg_opa(opa)
 
@@ -160,12 +163,10 @@ class FoundationBaseTheme():
         self.style.set_opa_scale(opa_scale)
 
     def font(self, font=FONT_NORMAL):
-        if font == FONT_TITLE:
-            self.style.set_text_font(lv.font_montserrat_22)
-        elif font == FONT_NORMAL:
+        if passport.IS_COLOR:
             self.style.set_text_font(lv.font_montserrat_16)
         else:
-            self.style.set_text_font(lv.font_montserrat_16)  # Will we have a smaller size?
+            self.style.set_text_font(lv.font_montserrat_16_mono)
 
     def text_color(self, color):
         self.style.set_text_color(color)

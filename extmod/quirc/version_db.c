@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
+// SPDX-License-Identifier: ISC
+//
 /* quirc -- QR-code recognition library
  * Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
  *

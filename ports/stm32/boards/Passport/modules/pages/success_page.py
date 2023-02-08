@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from pages import StatusPage
-from styles.colors import FD_BLUE
+from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import microns
 
 
@@ -22,6 +22,6 @@ class SuccessPage(StatusPage):
             card_header=card_header,
             statusbar=statusbar,
             icon=lv.LARGE_ICON_SUCCESS,
-            icon_color=FD_BLUE,
+            icon_color=DEFAULT_LARGE_ICON_COLOR,
             left_micron=left_micron,
             right_micron=right_micron)

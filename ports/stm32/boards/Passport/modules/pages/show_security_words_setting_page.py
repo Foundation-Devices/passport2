@@ -21,5 +21,9 @@ class ShowSecurityWordsSettingPage(SettingPage):
             statusbar=statusbar,
             options=self.OPTIONS,
             setting_name='security_words',
-            default_value=self.OPTIONS[1].get('value')
+            default_value=self.OPTIONS[1].get('value'),
+            on_change=self.on_change
         )
+
+    def on_change(self, selected_value):
+        self.set_result(selected_value)

@@ -6,15 +6,16 @@
 #
 # files.py - microSD and related functions.
 #
+
+import passport
 import pyb
 import os
 import sys
 import utime
-from uerrno import ENOENT
+from uerrno import ENODEV, ENOENT
 
 
 def _try_microsd(bad_fs_ok=False):
-    import passport
     from common import system
 
     sd_root = system.get_sd_root()
@@ -35,8 +36,11 @@ def _try_microsd(bad_fs_ok=False):
         # already mounted and ready?
         st = os.statvfs(sd_root)
         return True
-    except OSError:
-        pass
+    except OSError as exc:
+        # ENODEV in this case means that the SD card is not mounted, but
+        # present.
+        if exc.args[0] != ENODEV:
+            return False
 
     try:
         sd.power(1)
@@ -235,7 +239,8 @@ def securely_blank_file(full_path):
                 assert fd.seek(0, 1) >= size
 
             # probably pointless, but why not:
-            os.sync()
+            if not passport.IS_SIMULATOR:
+                os.sync()
 
         except OSError as exc:
             # missing file is okay

@@ -23,6 +23,11 @@ STATIC mp_obj_t                         key_cb                  = mp_const_none;
 STATIC bool                             global_nav_keys_enabled = true;
 STATIC bool                             intercept_all_keys      = false;
 
+typedef struct _key_filter_t {
+    uint32_t release_time;
+    bool     eat_next_release;
+} key_filter_t;
+
 typedef struct _keycode_map_t {
     uint8_t keycode;
     char    ch;
@@ -70,14 +75,21 @@ STATIC keycode_map_t keycode_map[] = {
 #endif
 #define KEYCODE_MAP_NUMOF (sizeof(keycode_map) / sizeof(keycode_map_t))
 
+STATIC key_filter_t key_filter[KEYCODE_MAP_NUMOF];
+
 // Convert from keycode to character (e.g., 0123456789udlrxy*#)
-STATIC uint8_t keycode_to_char(uint8_t keycode) {
+STATIC uint8_t keycode_to_char(uint8_t keycode, int8_t * key_index) {
     for (int i = 0; i < KEYCODE_MAP_NUMOF; i++) {
         if (keycode_map[i].keycode == keycode) {
+            if (key_index) {
+                *key_index = i;
+            }
             return (uint8_t)keycode_map[i].ch;
         }
     }
-
+    if (key_index) {
+        *key_index = -1;
+    }
     return 0;
 }
 
@@ -121,10 +133,7 @@ STATIC mp_obj_t mod_passport_lv_Keypad_make_new(const mp_obj_type_t* type,
     mp_obj_Keypad_t* keypad = m_new_obj(mp_obj_Keypad_t);
     keypad->base.type       = &mod_passport_lv_Keypad_type;
 
-    extint_register((mp_obj_t)pin_B12, GPIO_MODE_IT_FALLING, GPIO_NOPULL,
-                    (mp_obj_t)&mod_passport_lv_Keypad_irq_callback_obj, true);
     keypad_init();
-    extint_enable(pin_B12->pin);
 
     return MP_OBJ_FROM_PTR(keypad);
 }
@@ -134,13 +143,17 @@ STATIC mp_obj_t mod_passport_lv_Keypad_make_new(const mp_obj_type_t* type,
 ///     """
 STATIC mp_obj_t mod_passport_lv_Keypad_get_keycode(mp_obj_t self) {
     uint8_t buf;
-    if (ring_buffer_dequeue(&buf) == 0) {
-        return mp_const_none;
+
+    // Try read from ring buffer first, then from keypad controller
+    if (!ring_buffer_dequeue(&buf)) {
+        if (!keypad_poll_key(&buf)) {
+            return mp_const_none;
+        }
     }
 
     uint8_t flag    = buf & 0x80;
     uint8_t keycode = buf & 0x7F;
-    uint8_t ch      = keycode_to_char(keycode);
+    uint8_t ch      = keycode_to_char(keycode, NULL);
     if (ch == 0) {
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Unknown key read"));
     }
@@ -232,12 +245,41 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     g_drv = drv;
 
     uint8_t keycode;
-    if (ring_buffer_dequeue(&keycode) == 0) {
+    bool from_keypad = false;
+    uint32_t key_time = 0;
+
+    // Try read from ring buffer first, then from keypad controller
+    if (!ring_buffer_dequeue(&keycode)) {
+        if (!keypad_poll_key(&keycode)) {
+            return;
+        } else {
+            //check to prevent accidental double taps, only if received from polling
+            from_keypad = true;
+            key_time = HAL_GetTick();
+        }
+    }
+
+    int8_t   key_index  = -1;
+    uint32_t key        = keycode_to_char(keycode & 0x7F, &key_index);
+    bool     is_pressed = (keycode & 0x80) == 0x80;
+
+    if (key_index == -1) {
         return;
     }
 
-    uint32_t key        = keycode_to_char(keycode & 0x7F);
-    bool     is_pressed = (keycode & 0x80) == 0x80;
+    if (from_keypad) {
+        if (is_pressed && key_time - key_filter[key_index].release_time < 20) {
+            key_filter[key_index].eat_next_release = true;
+            return;
+        }
+        if (!is_pressed) {
+            key_filter[key_index].release_time = key_time;
+            if (key_filter[key_index].eat_next_release) {
+                key_filter[key_index].eat_next_release = false;
+                return;
+            }
+        }
+    }
 
     // Remember this for repeat handling
     if (is_pressed && is_repeatable_key(key)) {
@@ -261,12 +303,6 @@ STATIC void mod_passport_lv_Keypad_read_cb(lv_indev_drv_t* drv, lv_indev_data_t*
     // printf("key=%lu is_pressed=%s\n", key, is_pressed ? "true" : "false");
 }
 DEFINE_PTR_OBJ(mod_passport_lv_Keypad_read_cb);
-
-STATIC mp_obj_t mod_passport_lv_Keypad_irq_callback(mp_obj_t line) {
-    keypad_ISR();
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_lv_Keypad_irq_callback_obj, mod_passport_lv_Keypad_irq_callback);
 
 /// def inject(self, ch, is_pressed):
 ///     """

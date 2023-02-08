@@ -14,18 +14,15 @@ from pages import (
     QuestionPage,
     ShowQRPage,
     SigTypeChooserPage,
-    StatusPage,
     SuccessPage,
     SWWalletChooserPage)
 from tasks import (
     create_wallet_export_task,
     generate_addresses_task,
-    save_multisig_wallet_task,
     write_data_to_file_task)
 from wallets.utils import (
     get_deriv_path_from_address_and_acct,
     get_addr_type_from_address,
-    get_deriv_path_from_address_and_acct,
     get_deriv_path_from_addr_type_and_acct,
     get_addr_type_from_deriv,
     derive_address)
@@ -102,6 +99,7 @@ class ConnectWalletFlow(Flow):
         self.next_addr = 0
         self.addr_type = None
         self.progress_made = False
+        self.error = None
 
         # We will use the defaults above for anything not restored below
         self.restore()
@@ -270,7 +268,9 @@ class ConnectWalletFlow(Flow):
                   self.addr_type,
                   self.acct_num,
                   self.is_multisig(),
-                  self.sig_type.get('legacy', False)])
+                  self.sig_type.get('legacy', False),
+                  # Export mode
+                  'qr'])
 
         qr_type = self.export_mode['qr_type']
 
@@ -296,9 +296,9 @@ class ConnectWalletFlow(Flow):
             # Only perform address validation if wallet does not prevent it
             if self.is_skip_address_verification_enabled():
                 if self.is_force_multisig_policy_enabled():
-                    result = await InfoPage(
-                        text='For compatibility with {}, Passport will set '.format(self.sw_wallet['label']) +
-                        'your Multisig Policy to Skip Verification.').show()
+                    info_text = "For compatibility with {}, Passport will set your " \
+                                "Multisig Policy to Skip Verification.".format(self.sw_wallet['label'])
+                    result = await InfoPage(text=info_text).show()
                     if not result:
                         if not self.back():
                             self.set_result(False)
@@ -324,7 +324,9 @@ class ConnectWalletFlow(Flow):
                   self.addr_type,
                   self.acct_num,
                   self.is_multisig(),
-                  self.sig_type.get('legacy', False)])
+                  self.sig_type.get('legacy', False),
+                  # Export mode
+                  'microsd'])
 
         data_hash = bytearray(32)
         foundation.sha256(data, data_hash)
@@ -364,9 +366,9 @@ class ConnectWalletFlow(Flow):
                 # Only perform address validation if wallet does not prevent it
                 if self.is_skip_address_verification_enabled():
                     if self.is_force_multisig_policy_enabled():
-                        result = await InfoPage(
-                            text='For compatibility with {}, Passport will set your Multisig Policy ' +
-                                 'to Skip Verification.'.format(self.sw_wallet['label']))
+                        info_text = "For compatibility with {}, Passport will set your " \
+                                    "Multisig Policy to Skip Verification.".format(self.sw_wallet['label'])
+                        result = await InfoPage(text=info_text).show()
                         if not result:
                             if not self.back():
                                 self.set_result(False)
@@ -444,7 +446,15 @@ class ConnectWalletFlow(Flow):
     async def do_multisig_config_import(self):
         from multisig_wallet import MultisigWallet
 
-        ms = MultisigWallet.from_file(self.multisig_import_data)
+        try:
+            ms = await MultisigWallet.from_file(self.multisig_import_data)
+        except BaseException as e:
+            if e.args is None or len(e.args) == 0:
+                self.error = "Multisig Import Error"
+            else:
+                self.error = e.args[0]
+            self.goto(self.show_error)
+            return
         # if ms is not None:
         #     print('New MS: {}'.format(ms.serialize()))
 
@@ -461,9 +471,9 @@ class ConnectWalletFlow(Flow):
         # Only perform address validation if wallet does not prevent it
         if self.is_skip_address_verification_enabled():
             if self.is_force_multisig_policy_enabled():
-                result = await InfoPage(
-                    text='For compatibility with {}, Passport will set your Multisig Policy ' +
-                    'to Skip Verification.'.format(self.sw_wallet['label']))
+                info_text = "For compatibility with {}, Passport will set your " \
+                            "Multisig Policy to Skip Verification.".format(self.sw_wallet['label'])
+                result = await InfoPage(text=info_text).show()
                 if not result:
                     if not self.back():
                         self.set_result(False)
@@ -567,6 +577,11 @@ class ConnectWalletFlow(Flow):
     async def complete(self):
         await SuccessPage(text='Connection Complete').show()
         self.set_result(True)
+
+    async def show_error(self):
+        await ErrorPage(text=self.error).show()
+        self.error = None
+        self.reset(self.choose_sig_type)
 
     # ===========================================================================================
     # Helper functions

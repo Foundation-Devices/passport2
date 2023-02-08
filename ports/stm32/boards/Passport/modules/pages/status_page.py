@@ -7,21 +7,25 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Arc, Label, View, Icon, Spinner
 from pages import Page
-from styles.colors import FD_BLUE, TEXT_GREY
+from styles.colors import DEFAULT_SPINNER, TEXT_GREY
 import microns
 import common
+import passport
 
 
 class StatusPage(Page):
     CENTER_SIZE = 100
 
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
-                 progress_color=FD_BLUE, centered=True, show_spinner=False, interactive=True,
-                 card_header=None, statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
+                 centered=True, show_spinner=False, interactive=True, card_header=None,
+                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
                          right_micron=right_micron)
+
+        if not passport.IS_COLOR:
+            self.CENTER_SIZE = 75
 
         self.text = text
         self.page_idx = 0
@@ -30,7 +34,6 @@ class StatusPage(Page):
 
         self.show_progress = show_progress
         self.percent = percent
-        self.progress_color = progress_color
 
         self.centered = centered
         self.show_spinner = show_spinner
@@ -81,7 +84,7 @@ class StatusPage(Page):
                     default.img_recolor(self.icon_color)
 
         elif self.show_progress:
-            self.center_content = Arc(start=0, end=0, color=FD_BLUE)
+            self.center_content = Arc(start=0, end=0, color=DEFAULT_SPINNER)
             self.center_content.set_size(self.CENTER_SIZE, self.CENTER_SIZE)
 
             self.progress_label = Label(text=self.get_percent_text(), color=TEXT_GREY)

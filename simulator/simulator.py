@@ -228,6 +228,7 @@ class OLEDSimulator:
 
     def snapshot(self):
         filename = time.strftime('../snapshots/snapshot-$j-%H:%M:%S.png')
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         with tempfile.NamedTemporaryFile() as tmp:
             sdl2.SDL_SaveBMP(self.sprite.surface, tmp.name.encode('ascii'))
             tmp.file.seek(0)
@@ -321,8 +322,8 @@ class CameraSimulator:
         h, w, c = cropped_img.shape
         # print("cropped_img: w={} h={} c={}".format(w, h, c))
 
-        cam_width = 350
-        cam_height = 350
+        cam_width = 396
+        cam_height = 330
         resized = cv2.resize(
             cropped_img, (cam_width, cam_height), interpolation=cv2.INTER_CUBIC)
         h, w, c = resized.shape
@@ -439,7 +440,14 @@ def start():
     # - pass in open fd numbers
     pass_fds = [oled_w, numpad_r, led_w, cam_cmd_w, cam_img_r]
 
+    # generate any necessary directories
+    directories = ['./work', './snapshots', './work/microsd']
+    for path in directories:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
     os.chdir('./work')
+
     # We use RAM for flash simulation, so make sure to allocate enough here.  3m seems good.
     passport_cmd = ['../../ports/unix/passport-mpy',
                     '-X', 'heapsize=30m',

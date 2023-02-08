@@ -4,5 +4,7 @@
 # constants.py
 #
 
-MAX_UINT32 = 0xffffffff
-MAX_UINT64 = 0xffffffffffffffff
+from micropython import const
+
+MAX_UINT32 = const(0xffffffff)
+MAX_UINT64 = const(0xffffffffffffffff)

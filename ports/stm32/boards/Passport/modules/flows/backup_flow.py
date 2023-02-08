@@ -9,7 +9,7 @@ from constants import TOTAL_BACKUP_CODE_DIGITS
 from errors import Error
 import microns
 from pages.question_page import QuestionPage
-from styles.colors import FD_BLUE_HEX
+from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class BackupFlow(Flow):
@@ -24,6 +24,7 @@ class BackupFlow(Flow):
     async def show_intro(self):
         from pages import InfoPage
         from utils import recolor
+        import stash
 
         if self.backup_quiz_passed:
             msgs = ['Passport is about to create an updated microSD backup.',
@@ -31,9 +32,11 @@ class BackupFlow(Flow):
         else:
             msgs = ['Passport is about to create your first encrypted microSD backup.',
                     'The next screen will show you the Backup Code that is {} to decrypt the backup.'.format(
-                        recolor(FD_BLUE_HEX, 'REQUIRED')),
+                        recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
                     'We recommend writing down the Backup Code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
+        if stash.bip39_passphrase != '':
+            msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.')
 
         result = await InfoPage(
             icon=lv.LARGE_ICON_BACKUP,
@@ -43,8 +46,8 @@ class BackupFlow(Flow):
         if result:
             self.goto(self.get_backup_code)
         else:
-            result = QuestionPage(text='Skip initial Backup?\n\n{}'.format(recolor(FD_BLUE_HEX, '(Not recommended)')),
-                                  left_micron=microns.Retry)
+            result = await QuestionPage(text='Skip initial Backup?\n\n{}'.format(
+                recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
             if result:
                 self.set_result(False)
             else:

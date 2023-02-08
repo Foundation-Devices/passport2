@@ -4,7 +4,7 @@
 # text_input_page.py
 
 import lvgl as lv
-from styles.colors import BLACK
+from styles.colors import NORMAL_TEXT
 from utils import InputMode
 from pages import Page
 from views import Label, TextInput, SymbolPicker
@@ -12,6 +12,8 @@ from styles import Stylize
 from t9 import T9
 from keys import KEY_1
 import microns
+import passport
+from constants import MAX_TEXT_INPUT_LENGTH
 
 
 class TextInputPage(Page):
@@ -19,7 +21,7 @@ class TextInputPage(Page):
                  title=None,
                  initial_text='',
                  initial_mode=InputMode.UPPER_ALPHA,
-                 max_length=64,
+                 max_length=MAX_TEXT_INPUT_LENGTH,
                  numeric_only=False,
                  max_value=2_147_483_646,
                  card_header=None,
@@ -45,12 +47,15 @@ class TextInputPage(Page):
                      numeric_only=self.numeric_only,
                      max_length=max_length)
 
+        self.set_no_scroll()
         with Stylize(self) as default:
             default.pad(left=0, right=0)
+            if not passport.IS_COLOR:
+                default.pad_row(4)
 
         # TODO: Replace with built-in Card Title?
         if self.title is not None:
-            self.title_view = Label(text=self.title, color=BLACK)
+            self.title_view = Label(text=self.title, color=NORMAL_TEXT)
             self.title_view.set_width(lv.pct(100))
             with Stylize(self.title_view) as default:
                 default.pad(top=20)
@@ -76,6 +81,9 @@ class TextInputPage(Page):
 
     def left_action(self, is_pressed):
         if not is_pressed:
+            if self.is_showing_symbols:
+                self.is_showing_symbols = False
+                self.update_symbol_picker()
             self.set_result(None)
 
     def attach(self, group):
@@ -95,6 +103,7 @@ class TextInputPage(Page):
             if self.symbol_picker is not None:
                 self.symbol_picker.detach()
                 self.symbol_picker.unmount()
+                self.remove_child(self.symbol_picker)
                 self.symbol_picker = None
 
             if self.is_showing_symbols:

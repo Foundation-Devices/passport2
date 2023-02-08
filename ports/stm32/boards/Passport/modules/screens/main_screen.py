@@ -4,16 +4,14 @@
 # main_screen.py - Main screen that shows the recolorable background image, and contains
 #                  the StatusBar and CardNav components.
 
+import lvgl as lv
 from styles.colors import CARD_BG_GREY, BLACK
 from views import View
+import passport
+import common
 
 
 class MainScreen(View):
-    MARGIN_LEFT = 10
-    MARGIN_RIGHT = 10
-    MARGIN_TOP = 10
-    MARGIN_BOTTOM = 10
-
     def __init__(self):
         import lvgl as lv
         from views import StatusBar, CardNav
@@ -24,10 +22,10 @@ class MainScreen(View):
         self.set_pos(0, 0)
         self.set_size(lv.pct(100), lv.pct(100))
         self.set_no_scroll()
-        self.bg_color = BLACK
 
+        self.bg_color = BLACK
         with Stylize(self) as default:
-            default.bg_color(BLACK)
+            default.bg_color(self.bg_color)
 
         w = Display.WIDTH
         h = Display.HEIGHT
@@ -39,12 +37,17 @@ class MainScreen(View):
         with Stylize(self.bg_container) as default:
             default.radius(8)
 
-        # Overlay
+        # Overlay texture
         self.overlay = View()
         self.overlay.set_pos(1, 1)
         self.overlay.set_size(w - 2, h - 2)
+
+        # The overlay doesn't change, so just set it once here
         with Stylize(self.overlay) as default:
-            default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
+            if passport.IS_COLOR:
+                default.bg_img(lv.IMAGE_SCREEN_OVERLAY)
+            else:
+                default.bg_img(lv.IMAGE_SCREEN_OVERLAY_6)
             default.radius(8)
 
         # Main content container
@@ -71,8 +74,46 @@ class MainScreen(View):
     def update_background(self):
         from styles.local_style import LocalStyle
 
-        with LocalStyle(self.bg_container) as style:
-            style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
+        if passport.IS_COLOR:
+            # Update the gradient only for the color screen
+            with LocalStyle(self.bg_container) as style:
+                style.bg_gradient(self.bg_color, CARD_BG_GREY, stop1=20, stop2=192)
+        else:
+            NUM_ACCOUNT_TEXTURES = 6
+
+            # Mono screen backgrounds use texture instead of color
+            acct = None
+            if common.ui is not None:
+                acct = common.ui.get_active_account()
+
+            if acct is not None:
+                idx = acct.get('acct_num') % NUM_ACCOUNT_TEXTURES
+            else:
+                # There is a final texture for other screens
+                idx = NUM_ACCOUNT_TEXTURES
+
+            overlay_name = 'IMAGE_SCREEN_OVERLAY_{}'.format(idx)
+            print('overlay_name={}'.format(overlay_name))
+            with LocalStyle(self.overlay) as default:
+                default.bg_img(getattr(lv, overlay_name))
+                default.radius(8)
+
+            # Mono screen backgrounds use texture instead of color
+            acct = None
+            if common.ui is not None:
+                acct = common.ui.get_active_account()
+
+            if acct is not None:
+                idx = acct.get('acct_num') % NUM_ACCOUNT_TEXTURES
+            else:
+                # There is a final texture for other screens
+                idx = NUM_ACCOUNT_TEXTURES
+
+            overlay_name = 'IMAGE_SCREEN_OVERLAY_{}'.format(idx)
+            print('overlay_name={}'.format(overlay_name))
+            with LocalStyle(self.overlay) as default:
+                default.bg_img(getattr(lv, overlay_name))
+                default.radius(8)
 
     def get_title(self):
         return self.statusbar.title

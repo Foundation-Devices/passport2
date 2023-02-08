@@ -125,6 +125,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/select_setup_mode_flow.py',
         'flows/set_chain_flow.py',
         'flows/set_initial_pin_flow.py',
+        'flows/show_security_words_setting_flow.py',
         'flows/sign_psbt_common_flow.py',
         'flows/sign_psbt_microsd_flow.py',
         'flows/sign_psbt_qr_flow.py',
@@ -358,6 +359,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/sw_wallets.py',
         'wallets/utils.py',
         'wallets/vault.py',
-        'wallets/wasabi.py'))
+        'wallets/wasabi.py',
+        'wallets/keeper.py'))
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

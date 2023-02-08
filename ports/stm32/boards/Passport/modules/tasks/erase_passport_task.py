@@ -30,6 +30,9 @@ async def erase_passport_task(on_done, full_reset):
         settings.remove('enable_passphrase')
         settings.remove('envoy_setup')
         settings.remove('manual_setup')
+        settings.remove('ext.casa.enabled')
+        settings.remove('ext.postmix.enabled')
+        settings.remove('next_addrs')
 
     await sleep_ms(1)
 

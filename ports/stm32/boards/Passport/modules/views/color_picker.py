@@ -4,13 +4,14 @@
 # color_picker.py -RGB color picker for RGB565 colors
 
 import lvgl as lv
+from micropython import const
 from styles import Stylize
 from styles.colors import BLACK, BLUE, GREEN, LIGHT_GREY, RED, WHITE
 from styles.local_style import LocalStyle
 from views import View, Label, Slider
 
-SLIDER_HEIGHT = 16
-SLIDER_WIDTH = 220
+_SLIDER_HEIGHT = const(16)
+_SLIDER_WIDTH = const(220)
 
 
 class ColorPicker(View):
@@ -47,8 +48,8 @@ class ColorPicker(View):
             on_change=self.on_red_change)
         with Stylize(self.red_slider) as default:
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
-            self.red_slider.set_height(SLIDER_HEIGHT)
-            self.red_slider.set_width(SLIDER_WIDTH)
+            self.red_slider.set_height(_SLIDER_HEIGHT)
+            self.red_slider.set_width(_SLIDER_WIDTH)
 
         self.green_slider = Slider(
             range=(0, 63),
@@ -57,8 +58,8 @@ class ColorPicker(View):
             on_change=self.on_green_change)
         with Stylize(self.green_slider) as default:
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
-            self.green_slider.set_height(SLIDER_HEIGHT)
-            self.green_slider.set_width(SLIDER_WIDTH)
+            self.green_slider.set_height(_SLIDER_HEIGHT)
+            self.green_slider.set_width(_SLIDER_WIDTH)
 
         self.blue_slider = Slider(
             range=(0, 31),
@@ -67,8 +68,8 @@ class ColorPicker(View):
             on_change=self.on_blue_change)
         with Stylize(self.blue_slider) as default:
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
-            self.blue_slider.set_height(SLIDER_HEIGHT)
-            self.blue_slider.set_width(SLIDER_WIDTH)
+            self.blue_slider.set_height(_SLIDER_HEIGHT)
+            self.blue_slider.set_width(_SLIDER_WIDTH)
         self.set_children([self.swatch, self.color_label, self.red_slider, self.green_slider, self.blue_slider])
 
     def attach(self, group):

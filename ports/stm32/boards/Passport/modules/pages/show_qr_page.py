@@ -13,6 +13,7 @@ from micropython import const
 from data_codecs.qr_type import QRType
 from data_codecs.qr_factory import make_qr_encoder
 from constants import CARD_BORDER_WIDTH
+from utils import get_screen_brightness
 
 _FRAME_TIME = const(300)
 
@@ -34,7 +35,8 @@ class ShowQRPage(Page):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
-                         right_micron=right_micron)
+                         right_micron=right_micron,
+                         extend_timeout=True)
         self.qr_type = qr_type
         self.qr_args = qr_args
         self.qr_data = qr_data
@@ -107,7 +109,7 @@ class ShowQRPage(Page):
 
         self.prev_part = None
 
-        self.prev_brightness = common.system.get_screen_brightness(100)
+        self.prev_brightness = get_screen_brightness(100)
 
         # We set the screen brightness to the level the user last left it at when on this page
         self.curr_brightness = common.settings.get('last_qr_brightness', self.prev_brightness)

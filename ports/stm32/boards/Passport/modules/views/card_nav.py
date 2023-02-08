@@ -4,12 +4,12 @@
 # card_nav.py - Top-level, card-based navigation.  Cards animate left/right as they are shown/hidden.
 
 
-from constants import (STATUS_BAR_HEIGHT, CARD_PAD_BOTTOM, CARD_PAD_LEFT, CARD_PAD_RIGHT,
+from constants import (STATUSBAR_HEIGHT, CARD_PAD_BOTTOM, CARD_PAD_LEFT, CARD_PAD_RIGHT,
                        MICRON_BAR_HEIGHT)
 import lvgl as lv
 import common
 from styles import Stylize
-from styles.colors import LIGHT_GREY, MEDIUM_GREY, BLACK, TEXT_GREY
+from styles.colors import CARD_HEADER_TEXT, LIGHT_GREY, BLACK, CARD_HEADER_TEXT
 from views import View, Card, MicronBar
 from animations import card_anim
 
@@ -52,12 +52,14 @@ class CardNav(View):
         super().detach()
 
     def set_card_pos(self, card, is_offscreen=False):
+        card_y = 0
+
         if is_offscreen:
-            card.set_pos(CARD_PAD_LEFT + common.display.WIDTH, 0)
+            card.set_pos(CARD_PAD_LEFT + common.display.WIDTH, card_y)
         else:
-            card.set_pos(CARD_PAD_LEFT, 0)
+            card.set_pos(CARD_PAD_LEFT, card_y)
         card.set_size(common.display.WIDTH - (CARD_PAD_LEFT + CARD_PAD_RIGHT), common.display.HEIGHT -
-                      (CARD_PAD_BOTTOM + STATUS_BAR_HEIGHT))
+                      (CARD_PAD_BOTTOM + STATUSBAR_HEIGHT + card_y))
 
     def set_cards(self, card_descs, active_idx=0):
         # TODO: Need to remove/unset/delete any Cards that were already here
@@ -90,7 +92,7 @@ class CardNav(View):
             right_text=new_card_desc.get('right_text'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         new_card.attach(self.group)
@@ -127,7 +129,7 @@ class CardNav(View):
             right_text=new_card_desc.get('right_text'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         new_card.attach(self.group)
@@ -163,7 +165,7 @@ class CardNav(View):
             initial_page=new_card_desc.get('initial_page'),
             bg_color=new_card_desc.get('bg_color', BLACK),
             header_color=new_card_desc.get('header_color', LIGHT_GREY),
-            header_fg_color=new_card_desc.get('header_fg_color', TEXT_GREY))
+            header_fg_color=new_card_desc.get('header_fg_color', CARD_HEADER_TEXT))
 
         new_card_widget = new_card.mount(self.lvgl_root)
         self.set_card_pos(new_card_widget)

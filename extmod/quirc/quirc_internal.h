@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
+// SPDX-License-Identifier: ISC
+//
 /* quirc -- QR-code recognition library
  * Copyright (C) 2010-2012 Daniel Beer <dlbeer@gmail.com>
  *
@@ -17,12 +20,7 @@
 #ifndef QUIRC_INTERNAL_H_
 #define QUIRC_INTERNAL_H_
 
-#include <assert.h>
-#include <stdlib.h>
-
 #include "quirc.h"
-
-#define QUIRC_ASSERT(a)	assert(a)
 
 #define QUIRC_PIXEL_WHITE	0
 #define QUIRC_PIXEL_BLACK	1
@@ -32,7 +30,7 @@
 #define QUIRC_MAX_REGIONS	254
 #endif
 #define QUIRC_MAX_CAPSTONES	32
-#define QUIRC_MAX_GRIDS		(QUIRC_MAX_CAPSTONES * 2)
+#define QUIRC_MAX_GRIDS		8
 
 #define QUIRC_PERSPECTIVE_PARAMS	8
 
@@ -73,6 +71,8 @@ struct quirc_grid {
 
 	/* Timing pattern endpoints */
 	struct quirc_point	tpep[3];
+	int			hscan;
+	int			vscan;
 
 	/* Grid size and perspective transform */
 	int			grid_size;
@@ -84,6 +84,7 @@ struct quirc {
 	quirc_pixel_t		*pixels;
 	int			w;
 	int			h;
+	int			need_to_free;
 
 	int			num_regions;
 	struct quirc_region	regions[QUIRC_MAX_REGIONS];
@@ -93,11 +94,6 @@ struct quirc {
 
 	int			num_grids;
 	struct quirc_grid	grids[QUIRC_MAX_GRIDS];
-
-	size_t      		num_flood_fill_vars;
-	struct quirc_flood_fill_vars *flood_fill_vars;
-
-	int			need_to_free;
 };
 
 /************************************************************************

@@ -14,8 +14,9 @@ import trezorcrypto
 from files import CardSlot, CardMissingError
 from utils import B2A, get_filesize
 from uasyncio import sleep_ms
-CHUNK_SIZE = 2048
 from errors import Error
+
+_CHUNK_SIZE = const(2048)
 
 
 async def calculate_file_sha256_task(file_path, on_progress, on_done):
@@ -25,14 +26,14 @@ async def calculate_file_sha256_task(file_path, on_progress, on_done):
         with CardSlot() as _card:
 
             size = get_filesize(file_path)
-            num_parts = math.ceil(size / CHUNK_SIZE)
+            num_parts = math.ceil(size / _CHUNK_SIZE)
 
             with open(file_path, 'rb') as fp:
                 part_num = 0
                 last_percent = -1
                 bytes_read = 0
                 while True:
-                    data = fp.read(CHUNK_SIZE)
+                    data = fp.read(_CHUNK_SIZE)
                     if not data:
                         if bytes_read == size:
                             break

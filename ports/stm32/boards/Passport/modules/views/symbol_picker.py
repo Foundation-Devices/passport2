@@ -7,8 +7,9 @@ import lvgl as lv
 from styles.style import Stylize
 from views import View
 from views import Label
-from styles.colors import FD_BLUE, LIGHT_GREY, TEXT_GREY
+from styles.colors import FD_BLUE, WHITE, LIGHT_GREY, NORMAL_TEXT, SYMBOL_PICKER_TEXT
 from constants import MENU_ITEM_CORNER_RADIUS
+import passport
 
 
 class SymbolPicker(View):
@@ -43,10 +44,21 @@ class SymbolPicker(View):
 
             for col in range(len(symbols)):
                 symbol = symbols[col]
-                label = Label(text=symbol, color=TEXT_GREY)
+                label = Label(text=symbol, color=SYMBOL_PICKER_TEXT, recolor=False)
+                if not passport.IS_COLOR:
+                    with Stylize(label) as default:
+                        default.pad_all(2)
+
                 label_row.add_child(label)
-                with Stylize(label, selector=lv.STATE.FOCUS_KEY) as focus:
-                    focus.text_color(FD_BLUE)
+                if passport.IS_COLOR:
+                    with Stylize(label, selector=lv.STATE.FOCUS_KEY) as focus:
+                        focus.text_color(FD_BLUE)
+                else:
+                    with Stylize(label, selector=lv.STATE.FOCUS_KEY) as focus:
+                        focus.pad_all(2)
+                        focus.radius(4)
+                        focus.text_color(NORMAL_TEXT)
+                        focus.bg_color(WHITE)
 
             self.add_child(label_row)
 

@@ -14,7 +14,7 @@ import common
 
 class Page(View):
     def __init__(self, card_header=None, statusbar=None, left_micron=None, right_micron=None,
-                 flex_flow=lv.FLEX_FLOW.COLUMN):
+                 flex_flow=lv.FLEX_FLOW.COLUMN, extend_timeout=False):
         super().__init__(flex_flow=flex_flow)
 
         self.card_header = card_header
@@ -23,6 +23,7 @@ class Page(View):
         self.prev_statusbar = None
         self.left_micron = left_micron
         self.right_micron = right_micron
+        self.extend_timeout = extend_timeout
 
         self.done = False
         self.result = None
@@ -43,10 +44,18 @@ class Page(View):
     def attach(self, group):
         common.keypad.set_active_page(self)
 
+        # If auto-shutdown is enabled, set its floor at 5 minutes while displaying the QR code
+        if self.extend_timeout:
+            five_minutes = 5 * 60
+            permanent_timeout = common.settings.get('shutdown_timeout', five_minutes)
+            if permanent_timeout > 0 and permanent_timeout < five_minutes:
+                common.settings.set_volatile('shutdown_timeout', five_minutes)
         super().attach(group)
 
     def detach(self):
         super().detach()
+        if self.extend_timeout:
+            common.settings.clear_volatile('shutdown_timeout')
         common.keypad.set_active_page(None)
 
     def left_action(self, is_pressed):
@@ -71,7 +80,7 @@ class Page(View):
             self.set_result(None)
 
     # This only pushes the page to the screen without polling
-    def display(self, auto_close_timeout=None):
+    async def display(self, auto_close_timeout=None):
         from common import ui
 
         if ui.get_active_page() is None:
@@ -109,7 +118,7 @@ class Page(View):
             common.ui.set_card_header(**self.prev_card_header, force_all=True)
 
     async def show(self, auto_close_timeout=None):
-        self.display(auto_close_timeout)
+        await self.display(auto_close_timeout)
 
         g = self.poll_for_done()
         while True:

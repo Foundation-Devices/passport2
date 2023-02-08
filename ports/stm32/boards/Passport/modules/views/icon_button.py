@@ -8,7 +8,7 @@ from styles.style import Stylize
 from views import View, Icon
 from styles.colors import MEDIUM_GREY
 
-PRESS_Y_OFFSET = 3
+_PRESS_Y_OFFSET = const(3)
 
 
 class IconButton(View):
@@ -19,10 +19,10 @@ class IconButton(View):
         self.pressed_color = self.color.color_darken(100)
         self.opa = opa
 
-        self.set_size(icon.header.w, icon.header.h + PRESS_Y_OFFSET)
+        self.set_size(icon.header.w, icon.header.h + _PRESS_Y_OFFSET)
 
         with Stylize(self, selector=lv.STATE.PRESSED) as pressed:
-            pressed.pad(top=PRESS_Y_OFFSET)
+            pressed.pad(top=_PRESS_Y_OFFSET)
 
         self.icon = Icon(icon=self.icon, color=color, opa=opa)
         with Stylize(self.icon, selector=lv.STATE.PRESSED) as pressed:

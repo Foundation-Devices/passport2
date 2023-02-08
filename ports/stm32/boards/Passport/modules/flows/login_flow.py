@@ -8,23 +8,27 @@ from flows import Flow
 from pages import PINEntryPage, ShutdownPage, ErrorPage
 from tasks import login_task
 from utils import spinner_task
+from serializations import sha256
 import microns
+import common
 
-BRICK_WARNING_NUM_ATTEMPTS = const(5)
+_BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 
 class LoginFlow(Flow):
     def __init__(self):
+        self.pin = ''
         super().__init__(initial_state=self.enter_pin, name='LoginFlow')
 
     async def enter_pin(self):
         try:
-            self.pin = await PINEntryPage(
+            (self.pin, is_done) = await PINEntryPage(
                 card_header={'title': 'Enter PIN'},
                 security_words_message='Recognize these Security Words?',
                 left_micron=microns.Shutdown,
-                right_micron=microns.Checkmark).show()
-            if self.pin is not None:
+                right_micron=microns.Checkmark,
+                pin=self.pin).show()
+            if is_done:
                 self.goto(self.check_pin)
             else:
                 await ShutdownPage().show()
@@ -34,6 +38,7 @@ class LoginFlow(Flow):
     async def check_pin(self):
         (result, _error) = await spinner_task('Validating PIN', login_task, args=[self.pin])
         if result:
+            common.settings.set_volatile('pin_prefix_hash', sha256(self.pin[:4]))
             self.set_result(True)
         else:
             # print('goto error!!!!')
@@ -52,7 +57,7 @@ class LoginFlow(Flow):
         else:
             attempt_msg = 'You have {} attempts left'.format(pa.attempts_left)
 
-        if pa.attempts_left <= BRICK_WARNING_NUM_ATTEMPTS:
+        if pa.attempts_left <= _BRICK_WARNING_NUM_ATTEMPTS:
             brick_warning = ' before Passport is permanently disabled'
         else:
             brick_warning = ''
@@ -62,7 +67,7 @@ class LoginFlow(Flow):
                                  left_micron=microns.Shutdown,
                                  right_micron=microns.Retry).show()
         if result:
-            self.pin = None
+            self.pin = ''
             self.goto(self.enter_pin)
         else:
             await ShutdownPage().show()

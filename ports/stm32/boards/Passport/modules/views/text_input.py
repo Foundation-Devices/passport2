@@ -9,10 +9,10 @@ from styles.style import Stylize
 from views import View
 from utils import InputMode
 from views import Icon, TextArea
-from styles.colors import LIGHT_GREY, FD_BLUE
+from styles.colors import TEXT_INPUT_BG, TEXT_INPUT_ICON
 from constants import MENU_ITEM_CORNER_RADIUS
 
-SIDE_WIDTH = const(18)
+_SIDE_WIDTH = const(18)
 
 
 class TextInput(View):
@@ -26,23 +26,23 @@ class TextInput(View):
 
         with Stylize(self) as default:
             default.radius(MENU_ITEM_CORNER_RADIUS)
-            default.bg_color(LIGHT_GREY)
+            default.bg_color(TEXT_INPUT_BG)
             default.no_pad()
             default.pad_col(2)
             default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
             default.clip_corner(True)
 
         self.mode_view = View(lv.FLEX_FLOW.COLUMN)
-        self.mode_view.set_size(SIDE_WIDTH, lv.pct(100))
+        self.mode_view.set_size(_SIDE_WIDTH, lv.pct(100))
         with Stylize(self.mode_view) as default:
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=FD_BLUE)
+        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=TEXT_INPUT_ICON)
         self.mode_view.add_child(self.mode_icon)
 
         self.filler = View(flex_flow=lv.FLEX_FLOW.COLUMN)
-        self.filler.set_width(SIDE_WIDTH)
+        self.filler.set_width(_SIDE_WIDTH)
         self.filler.set_height(lv.pct(100))
 
         self.text_area = TextArea(text=self.text, one_line=self.one_line)

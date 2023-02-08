@@ -4,14 +4,15 @@
 # get_backup_code_task.py - Task to get the backup code for the current device/wallet.
 
 import trezorcrypto
+from micropython import const
 
 # we make passwords with this number of words
-NUM_DECIMAL_DIGITS_IN_BACKUP_CODE = const(20)
+_NUM_DECIMAL_DIGITS_IN_BACKUP_CODE = const(20)
 
 # Number of digits to extract from each 32-bit value
-NUM_DECIMAL_DIGITS_PER_32_BIT_UINT = const(4)
+_NUM_DECIMAL_DIGITS_PER_32_BIT_UINT = const(4)
 
-NUM_ITERATIONS = (NUM_DECIMAL_DIGITS_IN_BACKUP_CODE / NUM_DECIMAL_DIGITS_PER_32_BIT_UINT)
+_NUM_ITERATIONS = const(_NUM_DECIMAL_DIGITS_IN_BACKUP_CODE // _NUM_DECIMAL_DIGITS_PER_32_BIT_UINT)
 
 
 def get_backup_code():
@@ -31,9 +32,9 @@ def get_backup_code():
     # print('backup_hash: {}'.format(bytes_to_hex_str(backup_hash)))
 
     backup_code = []
-    for i in range(NUM_ITERATIONS):
+    for i in range(_NUM_ITERATIONS):
         curr_value = int.from_bytes(backup_hash[i * 4:(i + 1) * 4], 'big')
-        for d in range(NUM_DECIMAL_DIGITS_PER_32_BIT_UINT):
+        for d in range(_NUM_DECIMAL_DIGITS_PER_32_BIT_UINT):
             digit = curr_value % 10
             curr_value = curr_value // 10
             backup_code.insert(0, digit)

@@ -32,7 +32,7 @@ async def save_backup_task(on_done, on_progress, backup_code):
     body = render_backup_contents().encode()
 
     backup_num = 1
-    xfp = xfp2str(settings.get('xfp')).lower()
+    xfp = xfp2str(settings.get('root_xfp')).lower()
     # print('XFP: {}'.format(xfp))
 
     gc.collect()

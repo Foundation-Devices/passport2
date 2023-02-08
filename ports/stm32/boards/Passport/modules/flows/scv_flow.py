@@ -7,8 +7,8 @@ import lvgl as lv
 from flows import Flow
 from pages import ScanQRPage, ShowQRPage, QRScanResult
 from pages.chooser_page import ChooserPage
-from styles.colors import FD_BLUE_HEX
-from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR, URException
+from styles.colors import HIGHLIGHT_TEXT_HEX
+from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR
 from data_codecs.qr_type import QRType
 from utils import a2b_hex
 from pincodes import PinAttempt
@@ -51,7 +51,7 @@ class ScvFlow(Flow):
         if result:
             self.goto(self.scan_qr_challenge)
         else:
-            self.set_result(None)
+            self.set_result(False)
 
     async def scan_qr_challenge(self):
         from utils import recolor
@@ -63,7 +63,7 @@ class ScvFlow(Flow):
             if self.envoy:
                 cancel = await QuestionPage(
                     text='Cancel Envoy Setup?\n\n{}'.format(
-                        recolor(FD_BLUE_HEX, '(Not recommended)'))
+                        recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
                 ).show()
                 if cancel:
                     self.set_result(None)
@@ -75,7 +75,7 @@ class ScvFlow(Flow):
                 else:
                     skip = await QuestionPage(
                         text='Skip Security Check?\n\n{}'.format(
-                            recolor(FD_BLUE_HEX, '(Not recommended)'))
+                            recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
                     ).show()
                     if skip:
                         common.settings.set('validated_ok', True)
@@ -87,11 +87,13 @@ class ScvFlow(Flow):
         # Scan succeeded -- verify its content
         if self.envoy:
             if not is_valid_envoy_qrcode(result):
-                await self.show_error('Security Check QR code is invalid (1).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "Make sure you're scanning an Envoy QR code."))
                 return
         else:
             if not is_valid_website_qrcode(result):
-                await self.show_error('Security Check QR code is invalid (2).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "There was an error scanning the QR code."))
                 return
 
         if self.envoy:
@@ -99,7 +101,8 @@ class ScvFlow(Flow):
             try:
                 crypto_request.decode()
             except:  # noqa
-                await self.show_error('Security Check QR code is invalid (3).')
+                await self.show_error("Security Check QR code is invalid.\n"
+                                      "The QR code could not be decoded.")
                 return
 
             self.uuid = crypto_request.uuid
@@ -109,7 +112,8 @@ class ScvFlow(Flow):
             try:
                 parts = result.data.split(' ')
                 if len(parts) != 2:
-                    await self.show_error('Security Check QR code is invalid (4).')
+                    await self.show_error(("Security Check QR code is invalid.\n"
+                                           "There's not enough information in the QR code."))
                     return
 
                 challenge = {
@@ -118,7 +122,8 @@ class ScvFlow(Flow):
                 }
                 # print('Manual: challenge={}'.format(challenge))
             except Exception as e:
-                await self.show_error('Security Check QR code is invalid (5).')
+                await self.show_error(("Security Check QR code is invalid.\n"
+                                       "Make sure you're scanning a manual setup QR code."))
                 return
 
         id_hash = bytearray(32)
@@ -145,7 +150,8 @@ class ScvFlow(Flow):
         from utils import recolor
 
         result = await InfoPage(
-            text='On Envoy, select {next}, and scan the following QR code.'.format(next=recolor(FD_BLUE_HEX, 'Next')),
+            text='On Envoy, select {next}, and scan the following QR code.'
+            .format(next=recolor(HIGHLIGHT_TEXT_HEX, 'Next')),
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if not result:
@@ -220,7 +226,7 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
 
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
-                recolor(FD_BLUE_HEX, '(Not recommended)'))
+                recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
         ).show()
         if skip:
             common.settings.set('validated_ok', True)

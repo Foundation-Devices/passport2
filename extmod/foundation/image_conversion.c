@@ -72,27 +72,6 @@ void convert_rgb565_to_grayscale(uint8_t *rgb565,
     // printf("gray_hor_res=%lu gray_ver_res=%lu\n", gray_hor_res, gray_ver_res);
     // printf("rgb565=%08x grayscale=%08x\n", (void*)rgb565, (void*)grayscale);
 
-// TODO: We need to rotate for the color case of the first dev board
-#ifdef SCREEN_MODE_MONO
-    // Intentionally using width with y and height with x since image sensor is rotated vs. grayscale buffer
-    for (uint32_t y = 0; y < gray_hor_res; y++)
-    {
-        uint32_t y_offset = y * gray_ver_res;
-        // printf("y=%u  y_offset=%u\n", y, y_offset);
-        for (uint32_t x = 0; x < gray_ver_res; x++)
-        {
-            uint16_t pixel = rgb565[y_offset + x];
-            uint16_t gray = (pixel & 0xF800) >> 8;
-
-            // Rotate coordinates for grayscale image and set pixel
-            uint32_t dest_y = gray_ver_res - x;
-            uint32_t dest_x = y;
-            grayscale[dest_y * gray_hor_res + dest_x] = gray;
-        }
-    }
-#endif
-
-#ifdef SCREEN_MODE_COLOR
     for (uint32_t y = 0; y < gray_ver_res; y++) {
         uint32_t line = y * (gray_hor_res * sizeof(uint16_t));
         for (uint32_t x = 0; x < gray_hor_res; x++) {
@@ -114,5 +93,4 @@ void convert_rgb565_to_grayscale(uint8_t *rgb565,
             grayscale[y * gray_hor_res + x] = (uint8_t)(((r * 39) + (g * 150) + (b * 29)) >> 8);
         }
     }
-#endif
 }

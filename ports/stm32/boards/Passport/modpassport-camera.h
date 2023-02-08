@@ -67,11 +67,21 @@ STATIC mp_obj_t mod_passport_camera_snapshot(void) {
         return mp_const_none;
     }
 
-#ifdef SCREEN_MODE_COLOR
     // SAFETY: framebuffer_camera() is valid as camera_snapshot() checks
     // that the address is not NULL.
-    swizzle_u16(framebuffer_camera(), CAMERA_HOR_RES, CAMERA_VER_RES);
+    uint16_t *framebuffer = framebuffer_camera();
+
+#ifdef SCREEN_MODE_COLOR
+    swizzle_u16(framebuffer, CAMERA_HOR_RES, CAMERA_VER_RES);
 #endif  // SCREEN_MODE_COLOR
+
+    // Remove vertical line from the camera.
+    for (int y = 0; y < CAMERA_VER_RES; y++) {
+        int line = y * CAMERA_HOR_RES;
+        framebuffer[line + 350] = framebuffer[line + 349];
+        framebuffer[line + 351] = framebuffer[line + 349];
+        framebuffer[line + 352] = framebuffer[line + 353];
+    }
 
     return mp_const_none;
 }

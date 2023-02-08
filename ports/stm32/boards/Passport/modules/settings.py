@@ -194,7 +194,7 @@ class Settings:
         else:
             # Special case for xfp and xpub -- make sure they exist and create if not
             if kn not in self.curr_dict:
-                if kn == 'xfp' or kn == 'xpub':
+                if kn == 'xfp' or kn == 'xpub' or kn == 'root_xfp':
                     try:
                         # Update xpub/xfp in settings after creating new wallet
                         import stash

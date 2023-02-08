@@ -31,11 +31,11 @@ from common import flash_cache
 
 # We have 8K of space per slot (and 16 slots in Gen 1.2)
 # Each entry is 35 bytes, so we can hold 234 entries.
-HISTORY_SAVED = const(234)
-HISTORY_MAX_MEM = const(234)
+_HISTORY_SAVED = const(234)
+_HISTORY_MAX_MEM = const(234)
 
 # length of hashed & encoded key only (base64(15 bytes) => 20)
-ENCKEY_LEN = const(20)
+_ENCKEY_LEN = const(20)
 
 
 class OutptValueCache:
@@ -100,8 +100,8 @@ class OutptValueCache:
 
         key = cls.encode_key(prevout)
         for v in cls.runtime_cache:
-            if v[0:ENCKEY_LEN] == key:
-                return cls.decode_value(prevout, v[ENCKEY_LEN:])
+            if v[0:_ENCKEY_LEN] == key:
+                return cls.decode_value(prevout, v[_ENCKEY_LEN:])
 
         return None
 
@@ -134,7 +134,7 @@ class OutptValueCache:
         # print('add to cache: prevout={} amount={}'.format(prevout, amount))
 
         # memory management: can't store very much, so trim as needed
-        depth = HISTORY_SAVED
+        depth = _HISTORY_SAVED
 
         # TODO: Revist this if we add address verification entries to the flash cache
         # if flash_cache.capacity > 0.8:
@@ -142,11 +142,11 @@ class OutptValueCache:
 
         # also limit in-memory use
         cls.load_cache()
-        if len(cls.runtime_cache) >= HISTORY_MAX_MEM:
+        if len(cls.runtime_cache) >= _HISTORY_MAX_MEM:
             del cls.runtime_cache[0]
 
         # save new addition
-        assert len(key) == ENCKEY_LEN
+        assert len(key) == _ENCKEY_LEN
         assert amount > 0
         entry = key + cls.encode_value(prevout, amount)
         cls.runtime_cache.append(entry)

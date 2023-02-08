@@ -10,6 +10,7 @@ from constants import MENU_ITEM_CORNER_RADIUS
 from views import CameraQRScanner, Label
 import microns
 import common
+import passport
 
 
 def progress_text(p):
@@ -31,7 +32,8 @@ class ScanQRPage(Page):
                          card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
-                         right_micron=right_micron)
+                         right_micron=right_micron,
+                         extend_timeout=True)
 
         # TODO: Temporary flag until we can cleanup the CBOR handling
         self.decode_cbor_bytes = decode_cbor_bytes
@@ -45,9 +47,20 @@ class ScanQRPage(Page):
         #   invalid values for it's content width.
         #   MOVE THIS CODE SO IT'S CALLED THE FIRST TIME IN update().
         #   THAT WAY, THE lv.pct(100) sizes will work properly.
-        self.camera.set_width(212)
-        self.camera.set_height(200)
-        self.camera.set_y(-11)
+        #
+        #   This size also matches a 6:5 aspect ratio. If the camera resolution
+        #   is changed this needs to be updated as well. Also applies in the
+        #   lv.pct case. The height needs to be set according to the aspect
+        #   ratio and the max width.
+        if passport.IS_COLOR:
+            self.camera.set_width(212)
+            self.camera.set_height(176)
+        else:
+            # Camera needs to be a square on Founders Edition so that the rotation
+            # works properly.
+            self.camera.set_width(180)
+            self.camera.set_height(180)
+        self.camera.set_y(-22)
         self.set_scroll_dir(dir=lv.DIR.NONE)
         with Stylize(self.camera) as default:
             default.align(lv.ALIGN.CENTER)
@@ -57,6 +70,7 @@ class ScanQRPage(Page):
         self.progress_label = Label(text=progress_text(0), color=TEXT_GREY)
         with Stylize(self.progress_label) as default:
             default.align(lv.ALIGN.BOTTOM_MID)
+            default.pad(bottom=8)
         self.set_children([self.camera, self.progress_label])
 
     def attach(self, group):

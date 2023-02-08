@@ -35,6 +35,10 @@ class View():
             self.children = []
         self.children.append(child)
 
+    def remove_child(self, child):
+        if child in self.children:
+            self.children.remove(child)
+
     def insert_child(self, index, child):
         '''Append a child to the list of children.'''
         if self.children is None:

@@ -13,7 +13,7 @@
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
 from files import CardSlot
-from styles.colors import FD_BLUE
+from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
 import uos
 import trezorcrypto
@@ -23,6 +23,7 @@ from ubinascii import unhexlify as a2b_hex
 from ubinascii import a2b_base64, b2a_base64
 from uasyncio import get_event_loop, sleep_ms
 import common
+import passport
 
 ENABLE_LOGGING = True
 
@@ -92,7 +93,7 @@ async def spinner_task(text, task, args=(), left_micron=None, right_micron=None,
     start_time = ticks_ms()
     if no_anim:
         spinner = StatusPage(text, left_micron=left_micron, right_micron=right_micron,
-                             icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=FD_BLUE)
+                             icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=DEFAULT_LARGE_ICON_COLOR)
     else:
         spinner = SpinnerPage(text, left_micron=left_micron, right_micron=right_micron)
 
@@ -929,10 +930,6 @@ def get_next_address_range(range, max_size):
     return ((high, high + max_size), max_size)
 
 
-RECEIVE_ADDR = 0
-CHANGE_ADDR = 1
-
-
 def is_valid_btc_address(address):
     # Strip prefix if present
     if address[0:8].lower() == 'bitcoin:':
@@ -1123,7 +1120,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
     CardSlot.set_sd_card_change_cb(sd_card_cb)
 
-    page.display()
+    await page.display()
 
     g = page.poll_for_done()
     while True:
@@ -1219,5 +1216,19 @@ def validate_sign_text(text, subpath):
             return (subpath, 'Second line, if included, must specify a subkey path.')
 
     return (subpath, None)
+
+
+def get_screen_brightness(default_value):
+    if passport.IS_COLOR:
+        return common.system.get_screen_brightness(default_value)
+    else:
+        return common.settings.get('screen_brightness', default_value)
+
+
+def set_screen_brightness(value):
+    if passport.IS_COLOR:
+        common.system.set_screen_brightness(value)
+    else:
+        common.settings.set('screen_brightness', value)
 
 # EOF
