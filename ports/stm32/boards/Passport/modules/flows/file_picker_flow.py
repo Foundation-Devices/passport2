@@ -34,7 +34,6 @@ class FilePickerFlow(Flow):
         self.select_text = select_text
         self.status_page = None
         self.empty_result = None
-        self.file_result = None
         self.finished = False
 
     def on_empty_sd_card_change(self, sd_card_present):
