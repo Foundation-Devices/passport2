@@ -280,18 +280,8 @@ def advanced_menu():
 #     ]
 
 def extensions_menu():
-    from extensions.extensions import supported_extensions
-
-    result = []
-
-    for extension in supported_extensions:
-        result.append({'icon': extension['icon'],
-                       'label': extension['label'],
-                       'action': extension['toggle'],
-                       'is_toggle': True,
-                       'value': extension['check']})
-
-    return result
+    from extensions.extensions import supported_extensions_menu
+    return supported_extensions_menu
 
 
 def settings_menu():

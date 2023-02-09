@@ -17,11 +17,14 @@ casa_account = {'name': 'Casa', 'acct_num': 0}
 icon = lv.ICON_CASA
 
 CasaExtension = {
-    'label': 'Casa',
     'name': name,
-    'toggle': lambda item: toggle_extension_enabled(name),
-    'check': lambda: is_extension_enabled(name),
-    'icon': icon,
+    'menu_item': {
+        'icon': icon,
+        'label': 'Casa',
+        'action': lambda item: toggle_extension_enabled(name),
+        'is_toggle': True,
+        'value': lambda: is_extension_enabled(name),
+    },
     'card': {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
