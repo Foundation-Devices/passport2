@@ -14,6 +14,11 @@ import common
 from utils import get_file_list
 
 
+def file_key(f):
+    (filename, _fullpath, is_folder) = f
+    return '{}::{}'.format('0' if is_folder else '1', filename.lower())
+
+
 class FilePickerFlow(Flow):
     def __init__(
             self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
@@ -27,6 +32,58 @@ class FilePickerFlow(Flow):
         self.suffix = suffix
         self.filter_fn = filter_fn
         self.select_text = select_text
+        self.status_page = None
+        self.empty_result = None
+        self.file_result = None
+        self.finished = False
+
+    def on_empty_sd_card_change(self, sd_card_present):
+        if sd_card_present:
+            return True  # This will cause a refresh
+        else:
+            self.reset_paths()
+            self.status_page.set_result(None)
+            self.goto(self.show_insert_microsd_error)
+            return False
+
+    async def on_empty_result(self, res):
+        self.empty_result = res
+        return True
+
+    def on_exception(self, exception):
+        self.handle_fatal_error(exception)
+        return True
+
+    def on_file_sd_card_change(self, sd_card_present):
+        if not sd_card_present:
+            self.reset_paths()
+            self.goto(self.show_insert_microsd_error)
+            return True
+
+    async def on_file_result(self, res):
+        # No file selected - go back to previous page
+        if res is None:
+            common.page_transition_dir = TRANSITION_DIR_POP
+            if len(self.paths) <= 1:
+                self.set_result(None)
+                self.finished = True
+            else:
+                # Go back up a level
+                self.paths.pop(-1)
+            return True
+
+        _filename, full_path, is_folder = res
+        if is_folder:
+            common.page_transition_dir = TRANSITION_DIR_PUSH
+            self.paths.append(full_path)
+            return True
+        result = await SelectedFileFlow(_filename, full_path, is_folder, self.select_text).run()
+        if result is not None:
+            common.page_transition_dir = TRANSITION_DIR_POP
+            self.set_result(result)
+            self.finished = True
+
+        return True
 
     async def show_file_picker(self):
         from utils import show_page_with_sd_card
@@ -42,10 +99,6 @@ class FilePickerFlow(Flow):
                     include_parent=self.enable_parent_nav,
                     suffix=self.suffix,
                     filter_fn=self.filter_fn)
-
-                def file_key(f):
-                    (filename, _fullpath, is_folder) = f
-                    return '{}::{}'.format('0' if is_folder else '1', filename.lower())
 
                 files = sorted(files, key=file_key)
 
@@ -64,7 +117,7 @@ class FilePickerFlow(Flow):
                 icon = lv.ICON_FOLDER
 
             if len(files) == 0:
-                status_page = StatusPage(
+                self.status_page = StatusPage(
                     text='No files found',
                     card_header={'title': title, 'icon': icon},
                     icon=lv.LARGE_ICON_ERROR,
@@ -73,29 +126,12 @@ class FilePickerFlow(Flow):
                     right_micron=None,  # No retry micron because the SD card contents can't magically change
                 )
 
-                def on_sd_card_change(sd_card_present):
-                    if sd_card_present:
-                        return True  # This will cause a refresh
-                    else:
-                        self.reset_paths()
-                        status_page.set_result(None)
-                        self.goto(self.show_insert_microsd_error)
-                        return False
+                await show_page_with_sd_card(self.status_page,
+                                             self.on_empty_sd_card_change,
+                                             self.on_empty_result,
+                                             self.on_exception)
 
-                result = None
-
-                async def on_result(res):
-                    nonlocal result
-                    result = res
-                    return True
-
-                def on_exception(exception):
-                    self.handle_fatal_error(exception)
-                    return True
-
-                await show_page_with_sd_card(status_page, on_sd_card_change, on_result, on_exception)
-
-                if result is False:
+                if self.empty_result is False:
                     # When error message is dismissed, only quit the flow entirely if
                     # there's no way back up to a previous level
                     if len(self.paths) <= 1:
@@ -111,48 +147,12 @@ class FilePickerFlow(Flow):
                     card_header={'title': title, 'icon': icon}
                 )
 
-                def on_sd_card_change(sd_card_present):
-                    if not sd_card_present:
-                        self.reset_paths()
-                        self.goto(self.show_insert_microsd_error)
-                        return True
+                await show_page_with_sd_card(file_picker_page,
+                                             self.on_file_sd_card_change,
+                                             self.on_file_result,
+                                             self.on_exception)
 
-                finished = False
-
-                async def on_result(res):
-                    nonlocal finished
-
-                    # No file selected - go back to previous page
-                    if res is None:
-                        common.page_transition_dir = TRANSITION_DIR_POP
-                        if len(self.paths) <= 1:
-                            self.set_result(None)
-                            finished = True
-                        else:
-                            # Go back up a level
-                            self.paths.pop(-1)
-                        return True
-
-                    _filename, full_path, is_folder = res
-                    if is_folder:
-                        common.page_transition_dir = TRANSITION_DIR_PUSH
-                        self.paths.append(full_path)
-                        return True
-                    result = await SelectedFileFlow(_filename, full_path, is_folder, self.select_text).run()
-                    if result is not None:
-                        common.page_transition_dir = TRANSITION_DIR_POP
-                        self.set_result(result)
-                        finished = True
-
-                    return True
-
-                def on_exception(exception):
-                    self.handle_fatal_error(exception)
-                    return True
-
-                await show_page_with_sd_card(file_picker_page, on_sd_card_change, on_result, on_exception)
-
-                if finished:
+                if self.finished:
                     return
 
     async def show_insert_microsd_error(self):
