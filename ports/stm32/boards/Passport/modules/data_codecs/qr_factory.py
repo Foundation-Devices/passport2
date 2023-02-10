@@ -25,21 +25,10 @@ def make_qr_encoder(qr_type, args):
     return None
 
 
-def make_qr_decoder(qr_type):
-    for entry in qrs:
-        if entry['type'] == qr_type:
-            return entry['decoder']()
-    return None
+def make_qr_decoder_from_data(data):
+    """Given a data sample, return its decoder."""
 
-
-def get_qr_type_for_data(data):
-    '''Given a data sample, return the QRType of it.'''
     for entry in qrs:
         if entry['sampler'].sample(data) is True:
-            return entry['type']
+            return entry['decoder']()
     return None
-
-
-def get_qr_decoder_for_data(data):
-    qr_type = get_qr_type_for_data(data)
-    return make_qr_decoder(qr_type)

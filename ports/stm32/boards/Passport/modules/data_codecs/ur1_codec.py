@@ -1,76 +1,33 @@
 # SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# ur1_codec.py
+# ur1_sampler.py
 #
 # UR 1.0 codec
 #
-import re
-from ubinascii import unhexlify
 
 from .data_encoder import DataEncoder
 from .data_decoder import DataDecoder, DecodeError
 from .data_sampler import DataSampler
 from .qr_type import QRType
-from ur1.decode_ur import decode_ur, extract_single_workload, Workloads
-from ur1.encode_ur import encode_ur
+
+_BC32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
 
 
 class UR1Decoder(DataDecoder):
     def __init__(self):
-        self.workloads = Workloads()
-        self._received_parts = 0
-        self._total_parts = 0
-        self.error = None
+        raise DecodeError('''Unsupported format.
 
-    def add_data(self, data):
-        try:
-            self.workloads.add(data)
-        except ValueError as exc:
-            raise DecodeError from exc
-
-        self._received_parts, self._total_parts = self.workloads.get_progress()
-
-    def estimated_percent_complete(self):
-        return int((self._received_parts * 100) / self._total_parts)
-
-    def is_complete(self):
-        return self.workloads.is_complete()
-
-    def decode(self, **kwargs):
-        # XXX: This should be optional (e.g., PSBT in binary).
-        #
-        # But the UR1 standard is deprecated.
-        return unhexlify(decode_ur(self.workloads.workloads))
+The QR code scanned uses UR1 and it is not supported as it has been \
+superseded by UR2.
+''')
 
     def qr_type(self):
         return QRType.UR1
 
 
 class UR1Encoder(DataEncoder):
-    def __init__(self, _args):
-        self.parts = []
-        self.next_index = 0
-
-    # Encode the given data
-    def encode(self, data, is_binary=False, max_fragment_len=500):
-        from ubinascii import hexlify
-
-        # Convert from
-        if isinstance(data, str):
-            data = data.encode('utf8')
-
-        if not is_binary:
-            data = hexlify(data)
-            data = data.decode('utf8')
-
-        self.parts = encode_ur(data, fragment_capacity=max_fragment_len)
-
-    def next_part(self):
-        from utils import to_str
-        part = self.parts[self.next_index]
-        self.next_index = (self.next_index + 1) % len(self.parts)
-        return part.upper()
+    pass
 
 
 class UR1Sampler(DataSampler):
@@ -78,9 +35,23 @@ class UR1Sampler(DataSampler):
     # Return True if it matches or False if not
     @classmethod
     def sample(cls, data):
-        r = re.compile('^ur:bytes/')  # Don't look for the n of m count anymore
-        m = r.match(data.lower())
-        return m is not None
+        data = data.lower()
+
+        if not data.startswith('ur:'):
+            return False
+
+        pieces = data.split('/')
+        if not (2 <= len(pieces) <= 4):
+            return False
+
+        # UR1 and UR2 can have a somewhat similar URI format but the BC32
+        # vs bytewords encoding differentiates them.
+        fragment = pieces[-1]
+        for i in range(len(fragment)):
+            if _BC32_CHARSET.find(fragment[i]) == -1:
+                return False
+
+        return True
 
     # Number of bytes required to successfully recognize this format
     @classmethod

@@ -278,17 +278,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ui/__init__.py',
         'ui/ui.py'))
 
-# UR1
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('ur1/__init__.py',
-        'ur1/bc32.py',
-        'ur1/bech32_version.py',
-        'ur1/bech32.py',
-        'ur1/decode_ur.py',
-        'ur1/encode_ur.py',
-        'ur1/mini_cbor.py',
-        'ur1/utils.py'))
-
 # UR2
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ur2/__init__.py',

@@ -99,7 +99,7 @@ class UR2Encoder(DataEncoder):
 
 
 class UR2Sampler(DataSampler):
-    # Check if the given bytes look like UR1 data
+    # Check if the given bytes look like UR2 data
     # Return True if it matches or False if not
     @classmethod
     def sample(cls, data):
