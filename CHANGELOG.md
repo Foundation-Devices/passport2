@@ -8,6 +8,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Perform more accurate calculation of scan progress. (PASS1-553)
 - Report to the user when the data contained in a QR code is not a PSBT. (PASS1-553)
 - Improved the QR code scan error reporting. (PASS1-553)
+- Removed support for [UR1] animated QR codes.
+
+[UR1]: https://github.com/CoboVault/Research/blob/master/papers/bcr-0005-ur.md
 
 ## 2.0.5
 - Ensured "New Account" UI returns to the "More" menu (PASS1-582)

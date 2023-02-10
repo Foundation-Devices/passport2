@@ -11,7 +11,7 @@ from passport import camera
 from views import View
 from styles import Stylize
 from styles.colors import WHITE
-from data_codecs.qr_factory import get_qr_decoder_for_data
+from data_codecs.qr_factory import make_qr_decoder_from_data
 
 
 class Camera(View):
@@ -175,7 +175,7 @@ class CameraQRScanner(Camera):
             return
 
         if self.qr_decoder is None:
-            self.qr_decoder = get_qr_decoder_for_data(data)
+            self.qr_decoder = make_qr_decoder_from_data(data)
 
         self.qr_decoder.add_data(data)
 
