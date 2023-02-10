@@ -44,6 +44,7 @@ from .restore_backup_task import restore_backup_task
 from .save_backup_task import save_backup_task
 from .save_multisig_wallet_task import save_multisig_wallet_task
 from .save_new_account_task import save_new_account_task
+from .save_new_bip85_entry_task import save_new_bip85_entry_task
 from .save_seed_task import save_seed_task
 from .save_wallet_export_to_microsd_task import save_wallet_export_to_microsd_task
 from .search_for_address_task import search_for_address_task
