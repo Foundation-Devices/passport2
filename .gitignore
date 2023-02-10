@@ -81,7 +81,6 @@ extmod/foundation-rust/target
 mpy-cross/mpy-cross-docker
 ports/stm32/boards/Passport/tools/cosign/x86
 ports/stm32/boards/Passport/tools/add-secrets/x86
-ports/stm32/boards/Passport/tools/cosign/x86
 ports/stm32/boards/Passport/bootloader/dev-secrets/
 ports/stm32/boards/Passport/bootloader/version_info.c
 ports/stm32/boards/Passport/bootloader/secrets*

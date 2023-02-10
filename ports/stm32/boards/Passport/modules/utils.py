@@ -892,6 +892,32 @@ def get_account_by_number(acct_num):
     return None
 
 
+def get_bip85_records():
+    from common import settings
+    from constants import DEFAULT_BIP85_ENTRY
+    records = settings.get('bip85_records', [])
+    records.sort(key=lambda a: a.get('index', 0))
+    return records
+
+
+def get_bip85_entry_by_name(name):
+    records = get_bip85_records()
+    for entry in records:
+        if entry.get('name') == name:
+            return entry
+
+    return None
+
+
+def get_bip85_entry_by_index(index):
+    records = get_bip85_records()
+    for entry in records:
+        if entry.get('index') == index:
+            return entry
+
+    return None
+
+
 # Only call when there is an active account
 # def set_next_addr(new_addr):
 #     if not common.active_account:

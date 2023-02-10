@@ -4,20 +4,23 @@
 # new_bip85_flow.py - Create a new BIP85 seed
 
 from flows import Flow
+from constants import MAX_ACCOUNT_NAME_LEN
 
 
 class NewBIP85Flow(Flow):
     def __init__(self):
-        from utils import get_next_bip85_index
+        from wallets.utils import get_next_bip85_index
         self.index = None
         self.num_words = None
         self.next_index = get_next_bip85_index()
         self.seed_num = None
+        self.seed_name = None
         super().__init__(initial_state=self.enter_index, name="ExportBIP85QRFlow")
 
     async def enter_index(self):
         from pages import TextInputPage
         import microns
+        from utils import get_bip85_entry_by_index
         self.index = await TextInputPage(card_header={'title': 'Seed Number'}, numeric_only=True,
                                          initial_text='' if self.next_index is None else str(self.next_index),
                                          max_length=10,
@@ -28,14 +31,17 @@ class NewBIP85Flow(Flow):
             return
         if len(self.index) == 0:
             return  # Try again
-        if self.index < self.next_index:
-            await ErrorPage("This seed number has been used before.").show()
-            return  # Try again
+        existing_entry = get_bip85_entry_by_index(self.index)
+        if existing_entry is not None:
+            await ErrorPage('A seed named "{}" already exists with seed number {}.'
+                            .format(existing_entry['name'], self.index)).show()
+            return
         self.goto(self.enter_seed_name)
 
-    async def enter_account_name(self):
-        result = await TextInputPage(card_header={'title': 'Account Name'},
-                                     initial_text='' if self.account_name is None else self.account_name,
+    async def enter_seed_name(self):
+        from utils import get_bip85_entry_by_name
+        result = await TextInputPage(card_header={'title': 'Seed Name'},
+                                     initial_text='' if self.seed_name is None else self.seed_name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
                                      left_micron=microns.Back,
                                      right_micron=microns.Checkmark).show()
@@ -43,18 +49,33 @@ class NewBIP85Flow(Flow):
             if len(result) == 0:
                 # Just show the page again
                 return
-            self.account_name = result
+            self.seed_name = result
 
             # Check for existing account with this name
-            existing_account = get_account_by_name(self.account_name)
-            if existing_account is not None:
-                await ErrorPage(text='Account #{} already exists with the name "{}".'.format(
-                    existing_account.get('acct_num'), self.account_name)).show()
+            existing_entry = get_bip85_entry_by_name(self.seed_name)
+            if existing_entry is not None:
+                await ErrorPage(text='Seed #{} already exists with the name "{}".'.format(
+                    existing_entry['index'], self.seed_name)).show()
                 return
 
-            self.goto(self.save_account)
+            self.goto(self.save_entry)
         else:
             self.back()
+
+    async def save_entry(self):
+        from common import ui
+        (error,) = await spinner_task('Saving New Seed Details', save_new_account_task,
+                                      args=[self.account_num, self.account_name])
+        if error is None:
+            from flows import AutoBackupFlow
+
+            ui.update_cards(is_new_account=True)
+            await SuccessPage(text='New Account Saved').show()
+            await AutoBackupFlow().run()
+            self.set_result(True)
+        else:
+            await ErrorPage(text='New Account not saved: {}'.format(self.error)).show()
+            self.set_result(False)
 
     async def choose_num_words(self):
         from pages import ChooserPage
