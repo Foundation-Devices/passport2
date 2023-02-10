@@ -7,7 +7,7 @@
 import chains
 import common
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH
-from utils import get_accounts
+from utils import get_accounts, get_bip85_records
 
 
 # Dynamic find the next account number rather than storing it - we never want to skip an account number
@@ -18,6 +18,29 @@ def get_next_account_num():
     acct_nums = []
     for acct in accts:
         acct_nums.append(acct['acct_num'])
+
+    acct_nums.sort()
+    curr_acct_num = 0
+
+    # This should normally be sequentially sorted from 0 onward, monotonically increasing by 1.
+    # If we find it is not then there's a hole in the sequence and we can use it.
+    # That should only happen if the user manually adds custom accounts that cause a gap in the range.
+    for i in range(len(acct_nums)):
+        if acct_nums[curr_acct_num] != curr_acct_num:
+            return curr_acct_num
+        curr_acct_num += 1
+
+    return curr_acct_num
+
+
+# Dynamic find the next bip85 number rather than storing it - we never want to skip an account number
+# since that would create gaps and potentially make recovering funds harder.
+def get_next_bip85_index():
+    accts = get_bip85_records()
+
+    acct_nums = []
+    for acct in accts:
+        acct_nums.append(acct['index'])
 
     acct_nums.sort()
     curr_acct_num = 0
