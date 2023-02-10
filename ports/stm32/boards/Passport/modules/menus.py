@@ -115,10 +115,21 @@ def backup_menu():
     ]
 
 
+def bip85_item_menu():
+    return []
+
+
 def bip85_menu():
     from flows import NewBIP85Flow
+    from utils import get_bip85_records
 
     result = []
+    records = get_bip85_records()
+    for entry in records:
+        result.append({'icon': lv.ICON_SEED,
+                       'label': entry['name'],
+                       'submenu': bip85_item_menu,
+                       'args': {'context': entry}})
 
     # TODO: list saved seeds and indices
     result.append({'icon': lv.ICON_SEED, 'label': 'New Child Seed', 'flow': NewBIP85Flow})
