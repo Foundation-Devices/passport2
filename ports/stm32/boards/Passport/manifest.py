@@ -343,7 +343,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
 
 # Wallets
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('wallets/bitcoin_core.py',
+       ('wallets/__init__.py',
+        'wallets/bitcoin_core.py',
         'wallets/bluewallet.py',
         'wallets/btcpay.py',
         'wallets/caravan.py',
@@ -370,7 +371,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
 
 # Extensions
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('extensions/extensions.py',
+       ('extensions/__init__.py',
+        'extensions/extensions.py',
         'extensions/casa_extension.py',
         'extensions/postmix_extension.py'))
 
