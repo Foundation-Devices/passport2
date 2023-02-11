@@ -56,7 +56,6 @@ class UR2Decoder(DataDecoder):
 class UR2Encoder(DataEncoder):
     def __init__(self, args):
         self.ur_encoder = None
-        self.type = None
         if isinstance(args, dict):
             self.prefix = args['prefix'] or 'bytes'
         else:
