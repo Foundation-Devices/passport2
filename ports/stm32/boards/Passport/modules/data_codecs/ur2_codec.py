@@ -63,7 +63,7 @@ class UR2Encoder(DataEncoder):
             self.prefix = 'bytes'
 
     # Encode the given data
-    def encode(self, data, is_binary=False, max_fragment_len=200):
+    def encode(self, data, max_fragment_len=200):
         # print('UR2Encoder: data="{}"'.format(data))
         if not hasattr(data, 'cbor'):
             encoder = CBOREncoder()
