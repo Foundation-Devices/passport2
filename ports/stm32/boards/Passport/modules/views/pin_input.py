@@ -101,6 +101,8 @@ class PINInput(View):
         self.update_pin()
 
     def set_pin(self, pin):
+        # This makes the character visible when a new character is added,
+        # or when the latest character is still being modified
         if len(pin) > len(self.pin) or (len(pin) > 0 and len(pin) == len(self.pin) and pin[-1] != self.pin[-1]):
             self.show_last_char = True
             if self.timer is not None:
