@@ -84,7 +84,8 @@ class PINInput(View):
             self.show_last_char = True
             if self.timer is not None:
                 self.timer._del()
-            self.timer = lv.timer_create(self.on_timer, 500, None)
+                self.timer = None
+            self.timer = lv.timer_create(self.on_timer, 1000, None)
             self.update_pin()
 
     def del_char(self):
@@ -100,11 +101,14 @@ class PINInput(View):
         self.update_pin()
 
     def set_pin(self, pin):
-        if len(pin) > len(self.pin):
+        # This makes the character visible when a new character is added,
+        # or when the latest character is still being modified
+        if len(pin) > len(self.pin) or (len(pin) > 0 and len(pin) == len(self.pin) and pin[-1] != self.pin[-1]):
             self.show_last_char = True
             if self.timer is not None:
                 self.timer._del()
-            self.timer = lv.timer_create(self.on_timer, 500, None)
+                self.timer = None
+            self.timer = lv.timer_create(self.on_timer, 1000, None)
 
         self.pin = pin
         self.update_pin()

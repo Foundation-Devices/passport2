@@ -6,6 +6,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Head
 
+## 2.0.6
+- Fixed alphanumeric pin entry timing (PASS1-655)
+
 ## 2.0.5
 - Ensured "New Account" UI returns to the "More" menu (PASS1-582)
 - Added changelog (PASS1-581)
