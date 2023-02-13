@@ -278,22 +278,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ui/__init__.py',
         'ui/ui.py'))
 
-# UR2
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('ur2/__init__.py',
-        'ur2/bytewords.py',
-        'ur2/cbor_lite.py',
-        'ur2/constants.py',
-        'ur2/fountain_encoder.py',
-        'ur2/fountain_decoder.py',
-        'ur2/fountain_utils.py',
-        'ur2/random_sampler.py',
-        'ur2/ur_decoder.py',
-        'ur2/ur_encoder.py',
-        'ur2/ur.py',
-        'ur2/utils.py',
-        'ur2/xoshiro256.py'))
-
 # Views
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('views/__init__.py',

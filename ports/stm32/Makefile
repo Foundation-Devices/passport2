@@ -131,7 +131,7 @@ endif
 
 LDFLAGS += -nostdlib -L $(LD_DIR) $(addprefix -T,$(LD_FILES)) -Map=$(@:.elf=.map) --cref
 LDFLAGS += --defsym=_estack_reserve=8
-LIBS = "$(shell $(CC) $(CFLAGS) -print-libgcc-file-name)"
+LIBS += "$(shell $(CC) $(CFLAGS) -print-libgcc-file-name)"
 
 # Remove uncalled code from the final image.
 CFLAGS += -fdata-sections -ffunction-sections
@@ -630,7 +630,7 @@ endef
 
 define GENERATE_ELF
 	$(ECHO) "LINK $(1)"
-	$(Q)$(LD) $(LDFLAGS) -o $(1) $(2) $(LDFLAGS_MOD) $(LIBS)
+	$(Q)$(LD) $(LDFLAGS) -o $(1) $(2) --print-memory-usage $(LDFLAGS_MOD) $(LIBS)
 	$(Q)$(SIZE) $(1)
 	$(if $(filter-out $(TEXT0_ADDR),0x08000000), \
 		$(ECHO) "INFO: this build requires mboot to be installed first")
@@ -723,7 +723,7 @@ $(BUILD)/firmware.pack.dfu: $(BUILD)/firmware.dfu $(MBOOT_PACK_KEYS_FILE)
 $(BUILD)/firmware.hex: $(BUILD)/firmware.elf
 	$(call GENERATE_HEX,$@,$^)
 
-$(BUILD)/firmware.elf: $(OBJ)
+$(BUILD)/firmware.elf: $(OBJ) $(FOUNDATION_RUST_LIB)
 	$(call GENERATE_ELF,$@,$^)
 
 PLLVALUES = boards/pllvalues.py

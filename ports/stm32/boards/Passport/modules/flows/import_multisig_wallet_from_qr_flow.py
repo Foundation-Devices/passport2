@@ -16,7 +16,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
         from pages import ScanQRPage
         from multisig_wallet import MultisigWallet
 
-        result = await ScanQRPage(decode_cbor_bytes=True).show()
+        result = await ScanQRPage().show()
         if result is None:
             self.set_result(False)
             return

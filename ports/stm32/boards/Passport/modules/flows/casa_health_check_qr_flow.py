@@ -20,7 +20,7 @@ class CasaHealthCheckQRFlow(Flow):
         from pages import ScanQRPage, ErrorPage
         import microns
 
-        result = await ScanQRPage(right_micron=microns.Checkmark, decode_cbor_bytes=True).show()
+        result = await ScanQRPage(right_micron=microns.Checkmark).show()
 
         if result is None:
             # User canceled the scan
@@ -82,7 +82,6 @@ class CasaHealthCheckQRFlow(Flow):
 
         result = await ShowQRPage(
             qr_type=QRType.UR2,
-            qr_args={'prefix': 'bytes'},
             qr_data=signed_message,
             caption='Signed Health Check'
         ).show()

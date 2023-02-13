@@ -270,7 +270,8 @@ class ConnectWalletFlow(Flow):
                   self.is_multisig(),
                   self.sig_type.get('legacy', False),
                   # Export mode
-                  'qr'])
+                  'qr',
+                  self.export_mode['qr_type']])
 
         qr_type = self.export_mode['qr_type']
 
@@ -326,7 +327,8 @@ class ConnectWalletFlow(Flow):
                   self.is_multisig(),
                   self.sig_type.get('legacy', False),
                   # Export mode
-                  'microsd'])
+                  'microsd',
+                  None])
 
         data_hash = bytearray(32)
         foundation.sha256(data, data_hash)

@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "foundation"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[[bin]]
+name = "sizes"
+required-features = ["std"]
+
+[dependencies.minicbor]
+version = "0.19"
+default-features = false
+
+[dependencies.heapless]
+version = "0.8"
+git = "https://github.com/japaric/heapless"
+default-features = false
+
+[dependencies.uuid]
+version = "1"
+default-features = false
+
+[dependencies.ur-foundation]
+git = "https://github.com/Foundation-Devices/rust-ur-foundation"
+branch = "dev-v0.1.0"
+default-features = false
+
+[features]
+default = []
+std = []
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[profile.release]
+lto = true
+opt-level = 3

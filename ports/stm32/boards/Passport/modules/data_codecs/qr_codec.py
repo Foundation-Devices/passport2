@@ -33,7 +33,7 @@ class QRDecoder(DataDecoder):
 
 
 class QREncoder(DataEncoder):
-    def __init__(self, _args):
+    def __init__(self):
         self.data = None
 
     def encode(self, data, max_fragment_len=None):

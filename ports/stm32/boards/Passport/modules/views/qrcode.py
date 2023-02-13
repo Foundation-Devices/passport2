@@ -75,7 +75,7 @@ class QRCode(View):
         for i in range(1, sram4.MAX_QR_VERSION + 1):
             if alphanumeric_capacity_by_version[i] >= enc_len:
                 return i
-        raise QRCodeException()
+        raise QRCodeException("Cannot fit {} in a QR code ({} bytes)".format(encoded_data, len(encoded_data)))
 
     def update(self, encoded_data):
         if self.res is None:

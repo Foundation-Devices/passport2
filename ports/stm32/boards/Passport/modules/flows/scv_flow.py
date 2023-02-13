@@ -8,10 +8,11 @@ from flows import Flow
 from pages import ScanQRPage, ShowQRPage, QRScanResult
 from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX
-from ur2.ur import EnvoyURCryptoRequest, EnvoyURCryptoResponse, UR
 from data_codecs.qr_type import QRType
 from utils import a2b_hex
+from ubinascii import hexlify as b2a_hex
 from pincodes import PinAttempt
+from foundation import ur
 import microns
 import foundation
 import passport
@@ -55,7 +56,7 @@ class ScvFlow(Flow):
 
     async def scan_qr_challenge(self):
         from utils import recolor
-        result = await ScanQRPage(left_micron=microns.Cancel, right_micron=None, decode_cbor_bytes=False).show()
+        result = await ScanQRPage(left_micron=microns.Cancel, right_micron=None).show()
 
         # User did not scan anything
         if result is None:
@@ -97,17 +98,13 @@ class ScvFlow(Flow):
                 return
 
         if self.envoy:
-            crypto_request = EnvoyURCryptoRequest(cbor=result.data.cbor)
-            try:
-                crypto_request.decode()
-            except:  # noqa
-                await self.show_error("Security Check QR code is invalid.\n"
-                                      "The QR code could not be decoded.")
-                return
+            passport_request = result.data.unwrap_passport_request()
 
-            self.uuid = crypto_request.uuid
-            challenge = crypto_request.scv_challenge
-            # print('Envoy: challenge={}'.format(challenge))
+            self.uuid = passport_request.uuid()
+            challenge = {
+                'id': passport_request.scv_challenge_id(),
+                'signature': passport_request.scv_challenge_signature(),
+            }
         else:
             try:
                 parts = result.data.split(' ')
@@ -127,18 +124,21 @@ class ScvFlow(Flow):
                 return
 
         id_hash = bytearray(32)
-        foundation.sha256(challenge['id'], id_hash)
-        signature = a2b_hex(challenge['signature'])
-
-        # print('id_hash={}'.format(id_hash))
-        # print('signature={}'.format(signature))
+        id_bin = a2b_hex(challenge['id']) if isinstance(challenge['id'], str) else challenge['id']
+        id_hex = challenge['id'] if isinstance(challenge['id'], str) else b2a_hex(challenge['id'])
+        foundation.sha256(id_hex,
+                          id_hash)
+        if isinstance(challenge['signature'], str):
+            signature = a2b_hex(challenge['signature'])
+        else:
+            signature = challenge['signature']
 
         signature_valid = passport.verify_supply_chain_server_signature(id_hash, signature)
         if not signature_valid:
             await self.show_error('Security Check signature is invalid.')
             return
 
-        self.words = PinAttempt.supply_chain_validation_words(a2b_hex(challenge['id']))
+        self.words = PinAttempt.supply_chain_validation_words(id_bin)
 
         if self.envoy:
             self.goto(self.show_envoy_scan_msg)
@@ -163,11 +163,14 @@ class ScvFlow(Flow):
         from common import system
 
         (version, _, _, _, _) = system.get_software_info()
-        crypto_response = EnvoyURCryptoResponse(uuid=self.uuid,
-                                                words=self.words,
-                                                model=EnvoyURCryptoResponse.PASSPORT_MODEL_BATCH2,
-                                                version=version)
-        crypto_response.encode()
+        crypto_response = ur.new_passport_response(uuid=self.uuid,
+                                                   word1=self.words[0],
+                                                   word2=self.words[1],
+                                                   word3=self.words[2],
+                                                   word4=self.words[3],
+                                                   model=ur.PASSPORT_MODEL_BATCH2,
+                                                   version=version)
+
         result = await ShowQRPage(qr_type=QRType.UR2,
                                   qr_data=crypto_response,
                                   caption='Scan with Envoy',
@@ -248,8 +251,7 @@ def is_valid_envoy_qrcode(result):
     if (
             (result.error is not None) or
             (result.data is None) or
-            (not isinstance(result.data, UR)) or
-            (result.data.type != 'crypto-request')
+            (not isinstance(result.data, ur.Value))
     ):
         return False
 

@@ -18,10 +18,10 @@ qrs = [
 ]
 
 
-def make_qr_encoder(qr_type, args):
+def make_qr_encoder(qr_type):
     for entry in qrs:
         if entry['type'] == qr_type:
-            return entry['encoder'](args)
+            return entry['encoder']()
     return None
 
 

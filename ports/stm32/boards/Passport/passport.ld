@@ -11,7 +11,7 @@ MEMORY
     FLASH (rx)      : ORIGIN = 0x08000000,                  LENGTH = 2048K
     FLASH_ISR (rx)  : ORIGIN = BL_FW_BASE,                  LENGTH = FLASH_ISR_SIZE
     FLASH_TEXT (rx) : ORIGIN = BL_FW_BASE + FLASH_ISR_SIZE, LENGTH = FLASH_TEXT_SIZE
-    DTCM (xrw)      : ORIGIN = 0x20000000,                  LENGTH = 128K           /* Used for storage cache */
+    DTCM (xrw)      : ORIGIN = 0x20000000,                  LENGTH = 128K
     RAM (xrw)       : ORIGIN = 0x24000000,                  LENGTH = 512K           /* AXI SRAM */
     RAM_D2 (rw)     : ORIGIN = 0x30000000,                  LENGTH = 288K           /* D2 SRAM (128K + 128 + 32K) */
     SRAM4 (xrw)     : ORIGIN = 0x38000000,                  LENGTH = 64K
@@ -40,6 +40,10 @@ SECTIONS
     .ram_d2 (NOLOAD) : {
         KEEP(*(.dma_buffers))
     } >RAM_D2
+
+    .dtcm (NOLOAD) : {
+        KEEP(*(.dtcm))
+    } >DTCM
 
     .sram4 (NOLOAD) : {
         KEEP(*(.sram4))
