@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText:  © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # validate_and_build.yaml - GitHub actions for Passport
@@ -6,51 +6,9 @@
 name: Validate and Build
 on: [push]
 jobs:
-  lint-py:
+  lint:
+    name: Lint
     runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-        cache: 'pip'
-    - name: Install pycodestyle
-      run: pip install pycodestyle
-    - name: Run pycodestyle
-      run: |
-        STYLE_TEMP=$(mktemp)
-        
-        if ! pycodestyle --exclude trezor-firmware,unused_modules,graphics.py,translations --statistics ports/stm32/boards/Passport | tee "$STYLE_TEMP"
-        then
-          sed -n -e 's/^\(.*\.py\):\([[:digit:]]\+\):\([[:digit:]]\+\): \(E[[:digit:]]\+\) \(.*\)$/::error file=\1,line=\2,col=\3,title=\4::\5/p' < "$STYLE_TEMP"
-          sed -n -e 's/^\(.*\.py\):\([[:digit:]]\+\):\([[:digit:]]\+\): \(W[[:digit:]]\+\) \(.*\)$/::warning file=\1,line=\2,col=\3,title=\4::\5/p' < "$STYLE_TEMP"
-        exit 1
-        fi
-
-  lint-c:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: Analysing the code
-      uses: jidicula/clang-format-action@7f6b4bf5a7eb211c0872364ccd8072ff8a77ac44
-      with:
-        clang-format-version: '10'
-        check-path: ./ports/stm32
-        exclude-regex: trezor-firmware
-      continue-on-error: true
-
-  lint-reuse:
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: REUSE Compliance Check
-      uses: fsfe/reuse-action@v1
-      continue-on-error: true
-
-  build-firmware:
-    runs-on: ubuntu-20.04
-    needs: [lint-py, lint-c, lint-reuse]
 
     services:
       registry:
@@ -59,126 +17,186 @@ jobs:
           - 5000:5000
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+    - uses: docker/setup-buildx-action@v1
       with:
         driver-opts: network=host
-
-    - name: Cache Docker layers
-      uses: actions/cache@v2
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
-    - name: Build the dependency Docker image
-      uses: docker/build-push-action@v2
+    - uses: docker/build-push-action@v2
       with:
         push: true
-        tags: localhost:5000/foundation-devices/firmware-builder:${{ github.sha }}
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
-    - name: Setup just
-      uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - name: Lint the codebase
+      run: just lint
 
-    #     - name: Build the mono firmware
-    #       run: |
-    #         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
-    #         version=$(cat version.txt)
+  build-firmware:
+    name: Build Firmware
+    runs-on: ubuntu-20.04
+    needs: [lint]
 
-    #         just sign signing_key.pem "${version}" mono
-    #       env:
-    #         SIGNING_KEY: ${{ secrets.UserSigningKey }}
-    #         DOCKER_REGISTRY_BASE: localhost:5000/
+    strategy:
+      matrix:
+        screen: ["mono", "color"]
 
-    #     - name: Upload unsigned mono firmware file
-    #       uses: actions/upload-artifact@v2
-    #       with:
-    #         name: firmware-MONO.bin
-    #         path: ports/stm32/build-Passport/firmware-MONO.bin
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
 
-    #     - name: Upload signed mono firmware file
-    #       uses: actions/upload-artifact@v2
-    #       with:
-    #         name: firmware-MONO-key-user.bin
-    #         path: ports/stm32/build-Passport/firmware-MONO-key-user.bin
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: |
+        echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+        echo "SCREEN_MODE=$(echo "color" | tr a-z A-Z)" >> $GITHUB_ENV
 
-    - name: Clean firmware between different screen builds
-      run: just clean
-      env:
-        DOCKER_REGISTRY_BASE: localhost:5000/
-
-    - name: Build the color firmware
+    - name: Build
       run: |
         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
         version=$(cat version.txt)
 
-        just sign signing_key.pem "${version}" color
+        just sign signing_key.pem "${version}" ${{ matrix.color }}
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
-        DOCKER_REGISTRY_BASE: localhost:5000/
 
-    - name: Upload unsigned color firmware file
+    - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-COLOR.bin
-        path: ports/stm32/build-Passport/firmware-COLOR.bin
+        name: firmware-${{ env.SCREEN_MODE }}.bin
+        path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
-    - name: Upload signed color firmware file
+    - name: Upload firmware (signed)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-COLOR-key-user.bin
-        path: ports/stm32/build-Passport/firmware-COLOR-key-user.bin
+        name: firmware-${{ env.SCREEN_MODE }}-key-user.bin
+        path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}-key-user.bin
 
-    #     - name: Build the mono bootloader
-    #       run: just build-bootloader mono
-    #       env:
-    #         DOCKER_REGISTRY_BASE: localhost:5000/
+  build-bootloader:
+    name: Build Bootloader
+    runs-on: ubuntu-20.04
+    needs: [lint, build-firmware]
 
-    #     - name: Upload mono bootloader
-    #       uses: actions/upload-artifact@v2
-    #       with:
-    #         name: bootloader-MONO.bin
-    #         path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-MONO.bin
+    # TODO: PASS1-665.
+    strategy:
+      matrix:
+        screen: ["color"]
 
-    - name: Clean bootloader between different screen builds
-      run: just clean-bootloader
-      env:
-        DOCKER_REGISTRY_BASE: localhost:5000/
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
 
-    - name: Build the color bootloader
-      run: just build-bootloader color
-      env:
-        DOCKER_REGISTRY_BASE: localhost:5000/
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: |
+        echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+        echo "SCREEN_MODE=$(echo "color" | tr a-z A-Z)" >> $GITHUB_ENV
 
-    - name: Upload color bootloader
+    - name: Build
+      run: just build-bootloader ${{ matrix.screen }}
+
+    - name: Upload bootloader
       uses: actions/upload-artifact@v2
       with:
-        name: bootloader-COLOR.bin
-        path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-COLOR.bin
+        name: bootloader-${{ env.SCREEN_MODE }}.bin
+        path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
 
-    - name: Build and make tools available
+  build-simulator:
+    name: Build Simulator
+    runs-on: ubuntu-20.04
+    needs: [lint, build-firmware]
+
+    strategy:
+      matrix:
+        screen: ["mono", "color"]
+
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+
+    - name: Build
+      run: just build-simulator ${{ matrix.screen }}
+
+  build-tools:
+    name: Build Tools
+    runs-on: ubuntu-20.04
+    needs: [lint]
+
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+
+    - name: Build
       run: just tools
-      env:
-        DOCKER_REGISTRY_BASE: localhost:5000/
-
-    #     - name: Build the mono simulator
-    #       run: |
-    #         just clean-simulator
-    #         just build-simulator mono
-    #       env:
-    #         DOCKER_REGISTRY_BASE: localhost:5000/
-
-    - name: Build the color simulator
-      run: |
-        just clean-simulator
-        just build-simulator color
-      env:
-        DOCKER_REGISTRY_BASE: localhost:5000/
