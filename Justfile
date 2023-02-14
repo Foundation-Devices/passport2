@@ -20,7 +20,7 @@ build-docker:
   set -exo pipefail
   docker build -t ${DOCKER_REGISTRY_BASE}{{docker_image}} .
 
-# build the firmware inside docker
+# Build the firmware inside docker
 build-firmware screen="mono":
   #!/usr/bin/env bash
   set -exo pipefail
@@ -31,7 +31,7 @@ build-firmware screen="mono":
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c 'just build {{screen}} MPY_CROSS=/usr/bin/mpy-cross'
 
-# build the bootloader inside docker
+# Build the bootloader inside docker
 build-bootloader screen="mono":
   #!/usr/bin/env bash
   set -exo pipefail
@@ -42,10 +42,10 @@ build-bootloader screen="mono":
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c 'just build {{screen}}'
 
-# build the docker image and get the tools from it
+# Build the docker image and get the tools from it
 tools: build-docker cosign-tool add-secrets-tool word-list-gen-tool
 
-# get cosign tool from built docker image
+# Get cosign tool from built docker image
 cosign-tool:
   #!/usr/bin/env bash
   set -exo pipefail
@@ -56,7 +56,7 @@ cosign-tool:
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c 'cp /usr/bin/cosign cosign'
 
-# get add-secrets tool from built docker image
+# Get add-secrets tool from built docker image
 add-secrets-tool:
   #!/usr/bin/env bash
   set -exo pipefail
@@ -67,7 +67,7 @@ add-secrets-tool:
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c 'make -C ports/stm32/boards/Passport/tools/add-secrets'
 
-# get word_list_gen tool from built docker image
+# Get word_list_gen tool from built docker image
 word-list-gen-tool:
   #!/usr/bin/env bash
   set -exo pipefail
@@ -78,7 +78,7 @@ word-list-gen-tool:
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c 'gcc word_list_gen.c bip39_words.c bytewords_words.c -o word_list_gen'
 
-# run the built firmware through SHA256
+# Run the built firmware through SHA256
 verify-sha sha:
   #!/usr/bin/env bash
   sha=$(shasum -a 256 {{firmware_path}} | awk '{print $1}')
@@ -91,7 +91,7 @@ verify-sha sha:
     echo "ERROR: Hashes DO NOT match!"
   fi
 
-# sign the built firmware using a private key and the cosign tool
+# Sign the built firmware using a private key and the cosign tool
 sign keypath version screen="mono": (build-firmware screen)
   #!/usr/bin/env bash
   set -exo pipefail
@@ -105,7 +105,7 @@ sign keypath version screen="mono": (build-firmware screen)
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c "just cosign_filepath=build-Passport/firmware-$SCREEN.bin cosign_keypath={{keypath}} sign {{version}} {{screen}} MPY_CROSS=/usr/bin/mpy-cross"
 
-# clean firmware build
+# Clean firmware build
 clean:
   docker run --rm -v "$PWD":/workspace \
     -u $(id -u):$(id -g) \
@@ -114,7 +114,7 @@ clean:
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c "make clean BOARD=Passport"
 
-# clean bootloader build
+# Clean bootloader build
 clean-bootloader:
   docker run --rm -v "$PWD":/workspace \
     -u $(id -u):$(id -g) \
@@ -123,7 +123,7 @@ clean-bootloader:
     ${DOCKER_REGISTRY_BASE}{{docker_image}} \
     -c "just clean"
 
-# clean simulator build
+# Clean simulator build
 clean-simulator:
   docker run --rm -v "$PWD":/workspace \
     -u $(id -u):$(id -g) \
