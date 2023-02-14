@@ -5,10 +5,22 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Improved self-send transaction information formatting (PASS1-638)
+
+## 2.0.7
 - Perform more accurate calculation of scan progress. (PASS1-553)
 - Report to the user when the data contained in a QR code is not a PSBT. (PASS1-553)
 - Improved the QR code scan error reporting. (PASS1-553)
-- Removed support for [UR1] animated QR codes.
+- Removed support for [UR1] animated QR codes (PASS1-620)
+- Improved Founder's Edition screen performance (PASS1-576)
+- Automatically generate hash files using "just hash" (PASS1-605)
+- Added a success screen after multisig imports (PASS1-593)
+- Improved file display error handling (PASS1-584)
+- Added option to delete files from the SD card (PASS1-618)
+- Added Casa health check via SD card (PASS1-595)
+- Added multisig config export via QR and SD card (PASS1-631)
+- Fixed multisig config descriptions (PASS1-643)
+- Erase PSBTs from external flash after signing (PASS1-345)
 
 [UR1]: https://github.com/CoboVault/Research/blob/master/papers/bcr-0005-ur.md
 
