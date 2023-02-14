@@ -14,12 +14,6 @@ firmware_path := base_path + '/build-Passport/'
 # build: docker-build firmware-build bootloader-build
 # build: docker-build (build-bootloader "mono") (build-bootloader "color") (build-firmware "mono") (build-firmware "color")
 
-init:
-  # Ensure submodules are cloned
-  git submodule update --init --recursive
-  # Setup the image converter tool
-  cd tools/lv_img_conv && npm install
-
 # build the dependency docker image
 build-docker:
   #!/usr/bin/env bash
