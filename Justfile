@@ -3,7 +3,7 @@
 #
 # Justfile - Root-level justfile for Passport
 
-export DOCKER_REGISTRY_BASE := ''
+export DOCKER_REGISTRY_BASE := env_var_or_default('DOCKER_REGISTRY_BASE', '')
 
 commit_sha := `git rev-parse HEAD`
 docker_image := 'foundation-devices/firmware-builder:' + commit_sha

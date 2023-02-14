@@ -51,11 +51,13 @@ jobs:
   build-firmware:
     runs-on: ubuntu-20.04
     needs: [lint-py, lint-c, lint-reuse]
+
     services:
       registry:
         image: registry:2
         ports:
           - 5000:5000
+
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -91,10 +93,10 @@ jobs:
     #         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
     #         version=$(cat version.txt)
 
-    #         just DOCKER_REGISTRY_BASE="$D_BASE" sign signing_key.pem "${version}" mono
+    #         just sign signing_key.pem "${version}" mono
     #       env:
     #         SIGNING_KEY: ${{ secrets.UserSigningKey }}
-    #         D_BASE: localhost:5000/
+    #         DOCKER_REGISTRY_BASE: localhost:5000/
 
     #     - name: Upload unsigned mono firmware file
     #       uses: actions/upload-artifact@v2
@@ -109,19 +111,19 @@ jobs:
     #         path: ports/stm32/build-Passport/firmware-MONO-key-user.bin
 
     - name: Clean firmware between different screen builds
-      run: just DOCKER_REGISTRY_BASE="$D_BASE" clean
+      run: just clean
       env:
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
 
     - name: Build the color firmware
       run: |
         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
         version=$(cat version.txt)
 
-        just DOCKER_REGISTRY_BASE="$D_BASE" sign signing_key.pem "${version}" color
+        just sign signing_key.pem "${version}" color
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
 
     - name: Upload unsigned color firmware file
       uses: actions/upload-artifact@v2
@@ -136,9 +138,9 @@ jobs:
         path: ports/stm32/build-Passport/firmware-COLOR-key-user.bin
 
     #     - name: Build the mono bootloader
-    #       run: just DOCKER_REGISTRY_BASE="$D_BASE" build-bootloader mono
+    #       run: just build-bootloader mono
     #       env:
-    #         D_BASE: localhost:5000/
+    #         DOCKER_REGISTRY_BASE: localhost:5000/
 
     #     - name: Upload mono bootloader
     #       uses: actions/upload-artifact@v2
@@ -147,14 +149,14 @@ jobs:
     #         path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-MONO.bin
 
     - name: Clean bootloader between different screen builds
-      run: just DOCKER_REGISTRY_BASE="$D_BASE" clean-bootloader
+      run: just clean-bootloader
       env:
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
 
     - name: Build the color bootloader
-      run: just DOCKER_REGISTRY_BASE="$D_BASE" build-bootloader color
+      run: just build-bootloader color
       env:
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
 
     - name: Upload color bootloader
       uses: actions/upload-artifact@v2
@@ -163,20 +165,20 @@ jobs:
         path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-COLOR.bin
 
     - name: Build and make tools available
-      run: just DOCKER_REGISTRY_BASE="$D_BASE" tools
+      run: just tools
       env:
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
 
     #     - name: Build the mono simulator
     #       run: |
-    #         just DOCKER_REGISTRY_BASE="$D_BASE" clean-simulator
-    #         just DOCKER_REGISTRY_BASE="$D_BASE" build-simulator mono
+    #         just clean-simulator
+    #         just build-simulator mono
     #       env:
-    #         D_BASE: localhost:5000/
+    #         DOCKER_REGISTRY_BASE: localhost:5000/
 
     - name: Build the color simulator
       run: |
-        just DOCKER_REGISTRY_BASE="$D_BASE" clean-simulator
-        just DOCKER_REGISTRY_BASE="$D_BASE" build-simulator color
+        just clean-simulator
+        just build-simulator color
       env:
-        D_BASE: localhost:5000/
+        DOCKER_REGISTRY_BASE: localhost:5000/
