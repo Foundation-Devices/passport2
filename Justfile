@@ -144,11 +144,11 @@ build-simulator screen="mono":
 sim screen="mono" ext="":
   just simulator/sim {{screen}} {{ext}}
 
-simulatordir := `pwd` + "/simulator"
 # Run unit tests.
 test:
   just simulator/build color
-  cd ports/stm32/boards/Passport/modules/tests/; python3 -m pytest . --simulatordir={{simulatordir}}
+  cd ports/stm32/boards/Passport/modules/tests; \
+    python3 -m pytest . --simulatordir=$(pwd)/simulator
 
 # Lint the codebase.
 lint:
