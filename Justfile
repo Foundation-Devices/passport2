@@ -78,10 +78,11 @@ word-list-gen-tool:
         ${DOCKER_REGISTRY_BASE}{{docker_image}} \
         -c 'gcc word_list_gen.c bip39_words.c bytewords_words.c -o word_list_gen'
 
-# Run the built firmware through SHA256
-verify-sha sha:
+# Build the firmware and check its SHA256.
+verify-sha sha screen="mono":
     #!/usr/bin/env bash
-    sha=$(shasum -a 256 {{firmware_path}} | awk '{print $1}')
+
+    sha=$(shasum -a 256 ports/stm32/build-Passport/firmware-{{uppercase(screen)}}.bin | awk '{print $1}')
 
     echo -e "Expected SHA:\t{{sha}}"
     echo -e "Actual SHA:\t${sha}"
