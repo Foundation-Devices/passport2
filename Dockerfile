@@ -6,7 +6,7 @@
 FROM ubuntu:20.04 AS cross_build
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y git make gcc-arm-none-eabi python3 gcc && \
+    apt-get install -y build-essential git gcc-arm-none-eabi python3 && \
     rm -rf /var/lib/apt/lists/*
 COPY drivers /workspace/passport2/drivers
 COPY docs /workspace/passport2/docs
@@ -24,7 +24,7 @@ FROM ubuntu:20.04 AS cosign_build
 ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /workspace
 RUN apt-get update && \
-    apt-get install -y git make libssl-dev gcc && \
+    apt-get install -y build-essential git libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 COPY ports/stm32/boards/Passport/tools/cosign /workspace/passport2/ports/stm32/boards/Passport/tools/cosign
 COPY ports/stm32/boards/Passport/include /workspace/passport2/ports/stm32/boards/Passport/include
@@ -41,6 +41,6 @@ COPY --from=cross_build \
     /workspace/passport2/mpy-cross/mpy-cross /usr/bin/mpy-cross
 ENV PATH="${PATH}:~/bin"
 RUN apt-get update && \
-    apt-get install -y make gcc-arm-none-eabi autotools-dev automake libtool python3 curl libffi-dev pkg-config && \
+    apt-get install -y build-essential gcc-arm-none-eabi autotools-dev automake libtool python3 curl libffi-dev pkg-config && \
     rm -rf /var/lib/apt/lists/* && \
     curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
