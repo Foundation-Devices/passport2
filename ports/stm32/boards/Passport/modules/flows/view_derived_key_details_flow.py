@@ -21,11 +21,5 @@ class ViewDerivedKeyDetailsFlow(Flow):
                                         recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
                                         self.key['index'])
 
-        if self.key['passphrase']:
-            msg += '''\n
-{}\nThis key was generated while a passphrase was applied. \
-Re-apply this passphrase to accurately export this key.''' \
-                   .format(recolor(HIGHLIGHT_TEXT_HEX, 'Passphrase'))
-
         await LongTextPage(card_header={'title': self.key['name']}, text=msg, centered=True).show()
         self.set_result(True)

@@ -35,12 +35,12 @@ def get_next_account_num():
 
 # Dynamic find the next bip85 number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder.
-def get_next_derived_key_index(key_type):
+def get_next_derived_key_index(key_type, xfp):
     keys = get_derived_keys()
 
     key_indices = []
     for key in keys:
-        if key['type'] == key_type:
+        if key['type'] == key_type and key['xfp'] == xfp:
             key_indices.append(key['index'])
 
     key_indices.sort()
