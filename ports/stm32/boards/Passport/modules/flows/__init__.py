@@ -31,6 +31,7 @@ from .delete_derived_key_flow import *
 from .delete_multisig_flow import *
 from .developer_functions_flow import *
 from .erase_passport_flow import *
+from .export_derived_key_flow import *
 from .export_multisig_microsd_flow import *
 from .export_multisig_qr_flow import *
 from .export_summary_flow import *
