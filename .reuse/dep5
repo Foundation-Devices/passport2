@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream - Name: Passport
-Upstream - Contact: hello@foundationdevices.com
+Upstream-Name: Passport
+Upstream-Contact: hello@foundationdevices.com
 Source: https://git.example.com/FoundationDevices/passport2
 
 Files:
