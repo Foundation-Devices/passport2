@@ -48,6 +48,9 @@ sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-
 clean: (run-in-docker "just ports/stm32/clean")
 
 # Clean bootloader build
+clean-firmware: (run-in-docker "just ports/stm32/clean")
+
+# Clean bootloader build
 clean-bootloader: (run-in-docker "just ports/stm32/boards/Passport/bootloader/clean")
 
 # Clean simulator build
