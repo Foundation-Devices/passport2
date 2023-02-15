@@ -70,6 +70,7 @@ from .verify_address_flow import *
 from .verify_backup_flow import *
 from .view_backup_code_flow import *
 from .view_current_firmware_flow import *
+from .view_derived_key_details_flow import *
 from .view_dev_pubkey_flow import *
 from .view_multisig_details_flow import *
 from .view_seed_words_flow import *

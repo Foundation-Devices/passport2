@@ -9,12 +9,34 @@ from flows import Flow
 class NewDerivedKeyFlow(Flow):
     def __init__(self, context=None):
         from wallets.utils import get_next_derived_key_index
+        import stash
         self.index = None
         self.num_words = None
         self.key_name = None
         self.key_type = context
         self.next_index = get_next_derived_key_index(self.key_type)
-        super().__init__(initial_state=self.enter_index, name="NewDerivedKeyFlow")
+
+        self.initial_state = self.enter_index
+        if len(stash.bip39_passphrase) > 0:
+            self.initial_state = self.passphrase_warning
+
+        super().__init__(initial_state=self.initial_state, name="NewDerivedKeyFlow")
+
+    async def passphrase_warning(self):
+        from pages import LongTextPage
+        import microns
+        text = '''\
+A passphrase is active. If you create a key while a passphrase is \
+active, you will need to apply the passphrase to retrieve the key \
+in the future. Do you want to continue?'''
+        result = await LongTextPage(text=text,
+                                    left_micron=microns.Cancel,
+                                    right_micron=microns.Checkmark,
+                                    centered=True).show()
+        if not result:
+            self.set_result(False)
+            return
+        self.goto(self.enter_index)
 
     async def enter_index(self):
         from pages import TextInputPage, ErrorPage
