@@ -9,12 +9,14 @@ from flows import Flow
 class NewDerivedKeyFlow(Flow):
     def __init__(self, context=None):
         from wallets.utils import get_next_derived_key_index
+        from common import settings
         import stash
         self.index = None
         self.num_words = None
         self.key_name = None
         self.key_type = context
-        self.next_index = get_next_derived_key_index(self.key_type)
+        self.xfp = settings.get('xfp')
+        self.next_index = get_next_derived_key_index(self.key_type, self.xfp)
 
         self.initial_state = self.enter_index
         if len(stash.bip39_passphrase) > 0:
@@ -39,30 +41,54 @@ in the future. Do you want to continue?'''
         self.goto(self.enter_index)
 
     async def enter_index(self):
-        from pages import TextInputPage, ErrorPage
+        from pages import TextInputPage, ErrorPage, QuestionPage
         import microns
         from utils import get_derived_key_by_index
-        result = await TextInputPage(card_header={'title': 'Key Number'}, numeric_only=True,
-                                     initial_text='' if self.next_index is None else str(self.next_index),
-                                     max_length=10,
-                                     left_micron=microns.Back,
-                                     right_micron=microns.Checkmark).show()
-        if result is None:
-            self.set_result(False)
-            return
-        if len(result) == 0:
-            return  # Try again
-        self.index = int(result)
-        existing_key = get_derived_key_by_index(self.index, self.key_type)
+        from flows import RenameDerivedKeyFlow
+
+        if self.key_type == "Nostr Key":
+            self.index = 0
+        else:
+            result = await TextInputPage(card_header={'title': 'Key Number'}, numeric_only=True,
+                                         initial_text='' if self.next_index is None else str(self.next_index),
+                                         max_length=10,
+                                         left_micron=microns.Back,
+                                         right_micron=microns.Checkmark).show()
+            if result is None:
+                self.set_result(False)
+                return
+            if len(result) == 0:
+                return  # Try again
+            self.index = int(result)
+        existing_key = get_derived_key_by_index(self.index, self.key_type, self.xfp)
         if existing_key is not None:
-            if len(existing_key['name']) == 0:
-                error_message = 'A previously deleted {} key used key number {}.' \
-                                .format(self.key_type, self.index)
+            if self.key_type == "Nostr Key":
+                if len(existing_key['name']) == 0:
+                    error_message = '''You previously deleted your {}. \
+Would you like to recover it with a new name?''' \
+                                    .format(self.key_type)
+                    result = await QuestionPage(text=error_message).show()
+                    if not result:
+                        self.set_result(False)
+                    else:
+                        await RenameDerivedKeyFlow(existing_key).run()
+                        self.set_result(True)
+                    return
+                else:
+                    error_message = 'You already have a {} named "{}".' \
+                                    .format(self.key_type, existing_key['name'])
+                    await ErrorPage(error_message).show()
+                    self.set_result(False)
+                    return
             else:
-                error_message = 'A {} key named "{}" already exists with key number {}.' \
-                                .format(self.key_type, existing_key['name'], self.index)
-            await ErrorPage(error_message).show()
-            return
+                if len(existing_key['name']) == 0:
+                    error_message = 'A previously deleted {} key used key number {}.' \
+                                    .format(self.key_type, self.index)
+                else:
+                    error_message = 'A {} named "{}" already exists with key number {}.' \
+                                    .format(self.key_type, existing_key['name'], self.index)
+                await ErrorPage(error_message).show()
+                return
         self.goto(self.enter_key_name)
 
     async def enter_key_name(self):
@@ -82,9 +108,9 @@ in the future. Do you want to continue?'''
             self.key_name = result
 
             # Check for existing account with this name
-            existing_key = get_derived_key_by_name(self.key_name, self.key_type)
+            existing_key = get_derived_key_by_name(self.key_name, self.key_type, self.xfp)
             if existing_key is not None:
-                await ErrorPage('{} key ##{} already exists with the name "{}".'
+                await ErrorPage('{} ##{} already exists with the name "{}".'
                                 .format(self.key_type,
                                         existing_key['index'],
                                         self.key_name)).show()
@@ -99,7 +125,7 @@ in the future. Do you want to continue?'''
         from tasks import save_new_derived_key_task
         from utils import spinner_task
         (error,) = await spinner_task('Saving New Key Details', save_new_derived_key_task,
-                                      args=[self.index, self.key_name, self.key_type])
+                                      args=[self.index, self.key_name, self.key_type, self.xfp])
         if error is None:
             from flows import AutoBackupFlow
 
