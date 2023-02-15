@@ -32,6 +32,7 @@ async def erase_passport_task(on_done, full_reset):
         settings.remove('manual_setup')
         settings.remove_regex("^ext\\.*")
         settings.remove('next_addrs')
+        settings.remove('derived_keys')
 
     await sleep_ms(1)
 
