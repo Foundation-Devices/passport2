@@ -74,7 +74,7 @@ class NewAccountFlow(Flow):
             # Check for existing account with this name
             existing_account = get_account_by_name(self.account_name)
             if existing_account is not None:
-                await ErrorPage(text='Account #{} already exists with the name "{}".'.format(
+                await ErrorPage(text='Account ##{} already exists with the name "{}".'.format(
                     existing_account.get('acct_num'), self.account_name)).show()
                 return
 

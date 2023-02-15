@@ -7,7 +7,7 @@
 import chains
 import common
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH
-from utils import get_accounts, get_bip85_records
+from utils import get_accounts, get_derived_keys
 
 
 # Dynamic find the next account number rather than storing it - we never want to skip an account number
@@ -35,25 +35,26 @@ def get_next_account_num():
 
 # Dynamic find the next bip85 number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder.
-def get_next_bip85_index():
-    accts = get_bip85_records()
+def get_next_derived_key_index(key_type):
+    keys = get_derived_keys()
 
-    acct_nums = []
-    for acct in accts:
-        acct_nums.append(acct['index'])
+    key_indices = []
+    for key in keys:
+        if key['type'] == key_type:
+            key_indices.append(key['index'])
 
-    acct_nums.sort()
-    curr_acct_num = 0
+    key_indices.sort()
+    curr_index = 0
 
     # This should normally be sequentially sorted from 0 onward, monotonically increasing by 1.
     # If we find it is not then there's a hole in the sequence and we can use it.
     # That should only happen if the user manually adds custom accounts that cause a gap in the range.
-    for i in range(len(acct_nums)):
-        if acct_nums[curr_acct_num] != curr_acct_num:
-            return curr_acct_num
-        curr_acct_num += 1
+    for i in range(len(key_indices)):
+        if key_indices[curr_index] != curr_index:
+            return curr_index
+        curr_index += 1
 
-    return curr_acct_num
+    return curr_index
 
 # TODO: Make this a data table and drive these function from it
 # P2PKH / Classic  1    Single  Base58 check    x   m/44'/0'/{acct}

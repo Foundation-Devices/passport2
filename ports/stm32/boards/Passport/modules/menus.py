@@ -115,24 +115,32 @@ def backup_menu():
     ]
 
 
-def bip85_item_menu():
-    return []
+def key_item_menu():
+    from flows import DeleteDerivedKeyFlow
+    return [
+        {'icon': lv.ICON_INFO, 'label': 'Info'},
+        {'icon': lv.ICON_SIGN, 'label': 'Rename'},
+        {'icon': lv.ICON_ERASE, 'label': 'Delete', 'flow': DeleteDerivedKeyFlow},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Export'},
+    ]
 
 
-def bip85_menu():
-    from flows import NewBIP85Flow
-    from utils import get_bip85_records
+def key_manager_menu():
+    from flows import NewDerivedKeyFlow
+    from utils import get_derived_keys
+    from derived_key import key_types
 
     result = []
-    records = get_bip85_records()
-    for entry in records:
-        result.append({'icon': lv.ICON_SEED,
-                       'label': entry['name'],
-                       'submenu': bip85_item_menu,
-                       'args': {'context': entry}})
+    keys = get_derived_keys()
+    for key in keys:
+        if len(key['name']) != 0:
+            result.append({'icon': key_types[key['type']]['icon'],
+                           'label': "{} ({})".format(key['name'], key['index']),
+                           'submenu': key_item_menu,
+                           'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
+                           'args': {'context': key}})
 
-    # TODO: list saved seeds and indices
-    result.append({'icon': lv.ICON_SEED, 'label': 'New Child Seed', 'flow': NewBIP85Flow})
+    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'flow': NewDerivedKeyFlow})
 
     return result
 
@@ -145,7 +153,6 @@ def bitcoin_menu():
     return [
         {'icon': lv.ICON_BITCOIN, 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
-        {'icon': lv.ICON_SEED, 'label': 'Child Seeds (BIP85)', 'submenu': bip85_menu},
         {'icon': lv.ICON_NETWORK, 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
     ]
