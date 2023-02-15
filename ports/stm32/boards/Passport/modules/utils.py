@@ -893,19 +893,19 @@ def get_derived_keys():
     return keys
 
 
-def get_derived_key_by_name(name, key_type):
+def get_derived_key_by_name(name, key_type, xfp):
     keys = get_derived_keys()
     for key in keys:
-        if key.get('name') == name and key.get('type') == key_type:
+        if key['name'] == name and key['type'] == key_type and key['xfp'] == xfp:
             return key
 
     return None
 
 
-def get_derived_key_by_index(index, key_type):
+def get_derived_key_by_index(index, key_type, xfp):
     keys = get_derived_keys()
     for key in keys:
-        if key.get('index') == index and key.get('type') == key_type:
+        if key['index'] == index and key['type'] == key_type and key['xfp'] == xfp:
             return key
 
     return None

@@ -32,9 +32,9 @@ class RenameDerivedKeyFlow(Flow):
             self.key_name = result
 
             # Check for existing account with this name
-            existing_key = get_derived_key_by_name(self.key_name, self.key['type'])
+            existing_key = get_derived_key_by_name(self.key_name, self.key['type'], self.key['xfp'])
             if existing_key is not None:
-                await ErrorPage('{} key ##{} already exists with the name "{}".'
+                await ErrorPage('{} ##{} already exists with the name "{}".'
                                 .format(self.key['type'],
                                         existing_key['index'],
                                         self.key_name)).show()
