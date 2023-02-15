@@ -7,33 +7,14 @@ from flows import Flow
 
 
 class NewDerivedKeyFlow(Flow):
-    def __init__(self):
+    def __init__(self, context=None):
+        from wallets.utils import get_next_derived_key_index
         self.index = None
         self.num_words = None
-        self.next_index = None
         self.key_name = None
-        self.key_type = None
-        super().__init__(initial_state=self.select_type, name="NewDerivedKeyFlow")
-
-    async def select_type(self):
-        from pages import ChooserPage
-        import microns
-        from derived_key import key_types
-        from wallets.utils import get_next_derived_key_index
-
-        options = []
-        for key_type in key_types:
-            options.append({'label': key_type, 'value': key_type})
-
-        selection = await ChooserPage(card_header={'title': 'Key Type'}, options=options).show()
-
-        if selection is None:
-            self.set_result(None)
-            return
-
-        self.key_type = selection
+        self.key_type = context
         self.next_index = get_next_derived_key_index(self.key_type)
-        self.goto(self.enter_index)
+        super().__init__(initial_state=self.enter_index, name="NewDerivedKeyFlow")
 
     async def enter_index(self):
         from pages import TextInputPage, ErrorPage
