@@ -45,8 +45,9 @@ in the future. Do you want to continue?'''
         import microns
         from utils import get_derived_key_by_index
         from flows import RenameDerivedKeyFlow
+        from derived_key import key_types
 
-        if self.key_type == "Nostr Key":
+        if not key_types[self.key_type]['indexed']:
             self.index = 0
         else:
             result = await TextInputPage(card_header={'title': 'Key Number'}, numeric_only=True,
@@ -62,7 +63,7 @@ in the future. Do you want to continue?'''
             self.index = int(result)
         existing_key = get_derived_key_by_index(self.index, self.key_type, self.xfp)
         if existing_key is not None:
-            if self.key_type == "Nostr Key":
+            if not key_types[self.key_type]['indexed']:
                 if len(existing_key['name']) == 0:
                     error_message = '''You previously deleted your {}. \
 Would you like to recover it with a new name?''' \
