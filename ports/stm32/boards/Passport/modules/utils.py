@@ -892,28 +892,27 @@ def get_account_by_number(acct_num):
     return None
 
 
-def get_bip85_records():
+def get_derived_keys():
     from common import settings
-    from constants import DEFAULT_BIP85_ENTRY
-    records = settings.get('bip85_records', [])
-    records.sort(key=lambda a: a.get('index', 0))
-    return records
+    keys = settings.get('derived_keys', [])
+    keys.sort(key=lambda a: a.get('index', 0))
+    return keys
 
 
-def get_bip85_entry_by_name(name):
-    records = get_bip85_records()
-    for entry in records:
-        if entry.get('name') == name:
-            return entry
+def get_derived_key_by_name(name, key_type):
+    keys = get_derived_keys()
+    for key in keys:
+        if key.get('name') == name and key.get('type') == key_type:
+            return key
 
     return None
 
 
-def get_bip85_entry_by_index(index):
-    records = get_bip85_records()
-    for entry in records:
-        if entry.get('index') == index:
-            return entry
+def get_derived_key_by_index(index, key_type):
+    keys = get_derived_keys()
+    for key in keys:
+        if key.get('index') == index and key.get('type') == key_type:
+            return key
 
     return None
 
