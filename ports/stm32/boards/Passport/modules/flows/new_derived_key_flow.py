@@ -1,25 +1,45 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# new_bip85_flow.py - Create a new BIP85 seed
+# new_derived_key_flow.py - Create a new derived key
 
 from flows import Flow
 
 
-class NewBIP85Flow(Flow):
+class NewDerivedKeyFlow(Flow):
     def __init__(self):
-        from wallets.utils import get_next_bip85_index
         self.index = None
         self.num_words = None
-        self.next_index = get_next_bip85_index()
-        self.seed_name = None
-        super().__init__(initial_state=self.enter_index, name="ExportBIP85QRFlow")
+        self.next_index = None
+        self.key_name = None
+        self.key_type = None
+        super().__init__(initial_state=self.select_type, name="NewDerivedKeyFlow")
+
+    async def select_type(self):
+        from pages import ChooserPage
+        import microns
+        from derived_key import key_types
+        from wallets.utils import get_next_derived_key_index
+
+        options = []
+        for key_type in key_types:
+            options.append({'label': key_type, 'value': key_type})
+
+        selection = await ChooserPage(card_header={'title': 'Key Type'}, options=options).show()
+
+        if selection is None:
+            self.set_result(None)
+            return
+
+        self.key_type = selection
+        self.next_index = get_next_derived_key_index(self.key_type)
+        self.goto(self.enter_index)
 
     async def enter_index(self):
         from pages import TextInputPage, ErrorPage
         import microns
-        from utils import get_bip85_entry_by_index
-        result = await TextInputPage(card_header={'title': 'Seed Number'}, numeric_only=True,
+        from utils import get_derived_key_by_index
+        result = await TextInputPage(card_header={'title': 'Key Number'}, numeric_only=True,
                                      initial_text='' if self.next_index is None else str(self.next_index),
                                      max_length=10,
                                      left_micron=microns.Back,
@@ -30,20 +50,25 @@ class NewBIP85Flow(Flow):
         if len(result) == 0:
             return  # Try again
         self.index = int(result)
-        existing_entry = get_bip85_entry_by_index(self.index)
-        if existing_entry is not None:
-            await ErrorPage('A seed named "{}" already exists with seed number {}.'
-                            .format(existing_entry['name'], self.index)).show()
+        existing_key = get_derived_key_by_index(self.index, self.key_type)
+        if existing_key is not None:
+            if len(existing_key['name']) == 0:
+                error_message = 'A previously deleted {} key used key number {}.' \
+                                .format(self.key_type, self.index)
+            else:
+                error_message = 'A {} key named "{}" already exists with key number {}.' \
+                                .format(self.key_type, existing_key['name'], self.index)
+            await ErrorPage(error_message).show()
             return
-        self.goto(self.enter_seed_name)
+        self.goto(self.enter_key_name)
 
-    async def enter_seed_name(self):
+    async def enter_key_name(self):
         from constants import MAX_ACCOUNT_NAME_LEN
         from pages import TextInputPage, ErrorPage
         import microns
-        from utils import get_bip85_entry_by_name
-        result = await TextInputPage(card_header={'title': 'Seed Name'},
-                                     initial_text='' if self.seed_name is None else self.seed_name,
+        from utils import get_derived_key_by_name
+        result = await TextInputPage(card_header={'title': 'Key Name'},
+                                     initial_text='' if self.key_name is None else self.key_name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
                                      left_micron=microns.Back,
                                      right_micron=microns.Checkmark).show()
@@ -51,25 +76,27 @@ class NewBIP85Flow(Flow):
             if len(result) == 0:
                 # Just show the page again
                 return
-            self.seed_name = result
+            self.key_name = result
 
             # Check for existing account with this name
-            existing_entry = get_bip85_entry_by_name(self.seed_name)
-            if existing_entry is not None:
-                await ErrorPage(text='Seed #{} already exists with the name "{}".'.format(
-                    existing_entry['index'], self.seed_name)).show()
+            existing_key = get_derived_key_by_name(self.key_name, self.key_type)
+            if existing_key is not None:
+                await ErrorPage('{} key ##{} already exists with the name "{}".'
+                                .format(self.key_type,
+                                        existing_key['index'],
+                                        self.key_name)).show()
                 return
 
-            self.goto(self.save_entry)
+            self.goto(self.save_key)
         else:
             self.back()
 
-    async def save_entry(self):
+    async def save_key(self):
         from pages import SuccessPage, ErrorPage
-        from tasks import save_new_bip85_entry_task
+        from tasks import save_new_derived_key_task
         from utils import spinner_task
-        (error,) = await spinner_task('Saving New Seed Details', save_new_bip85_entry_task,
-                                      args=[self.index, self.seed_name])
+        (error,) = await spinner_task('Saving New Key Details', save_new_derived_key_task,
+                                      args=[self.index, self.key_name, self.key_type])
         if error is None:
             from flows import AutoBackupFlow
 
@@ -88,9 +115,9 @@ class NewBIP85Flow(Flow):
         if self.num_words is None:
             self.set_result(False)
             return
-        self.goto(self.generate_seed)
+        self.goto(self.generate_key)
 
-    async def generate_seed(self):
+    async def generate_key(self):
         from utils import spinner_task
         from tasks import bip85_seed_task
         from pages import ErrorPage
