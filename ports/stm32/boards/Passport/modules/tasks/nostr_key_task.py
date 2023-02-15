@@ -7,7 +7,7 @@ async def nostr_key_task(on_done, num_words, index):
     from trezorcrypto import hmac
     import stash
 
-    path = "m/44'/1237'/0'/0/{}".format(index)
+    path = "m/44'/1237'/0'/0/0"
     width = (num_words - 1) * 11 // 8 + 1
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(path)

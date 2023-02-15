@@ -142,11 +142,12 @@ def key_manager_menu():
     from flows import NewDerivedKeyFlow
     from utils import get_derived_keys
     from derived_key import key_types
+    from common import settings
 
     result = []
     keys = get_derived_keys()
     for key in keys:
-        if len(key['name']) != 0:
+        if len(key['name']) != 0 and key['xfp'] == settings.get('xfp'):
             result.append({'icon': key_types[key['type']]['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
