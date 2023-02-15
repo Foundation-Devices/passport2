@@ -125,6 +125,19 @@ def key_item_menu():
     ]
 
 
+def new_key_menu():
+    from flows import NewDerivedKeyFlow
+    from derived_key import key_types
+
+    result = []
+    for key_type in key_types:
+        result.append({'icon': key_types[key_type]['icon'],
+                       'label': key_type,
+                       'flow': NewDerivedKeyFlow,
+                       'args': {'context': key_type}})
+    return result
+
+
 def key_manager_menu():
     from flows import NewDerivedKeyFlow
     from utils import get_derived_keys
@@ -140,7 +153,7 @@ def key_manager_menu():
                            'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
                            'args': {'context': key}})
 
-    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'flow': NewDerivedKeyFlow})
+    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
 
     return result
 
