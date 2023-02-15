@@ -20,6 +20,7 @@ from .copy_psbt_to_external_flash_task import copy_psbt_to_external_flash_task
 from .clear_psbt_from_external_flash_task import clear_psbt_from_external_flash_task
 from .create_wallet_export_task import create_wallet_export_task
 from .delete_account_task import delete_account_task
+from .delete_derived_key_task import delete_derived_key_task
 from .delay_task import delay_task
 from .delete_multisig_task import delete_multisig_task
 from .double_check_psbt_change_task import double_check_psbt_change_task
@@ -44,7 +45,7 @@ from .restore_backup_task import restore_backup_task
 from .save_backup_task import save_backup_task
 from .save_multisig_wallet_task import save_multisig_wallet_task
 from .save_new_account_task import save_new_account_task
-from .save_new_bip85_entry_task import save_new_bip85_entry_task
+from .save_new_derived_key_task import save_new_derived_key_task
 from .save_seed_task import save_seed_task
 from .save_wallet_export_to_microsd_task import save_wallet_export_to_microsd_task
 from .search_for_address_task import search_for_address_task
