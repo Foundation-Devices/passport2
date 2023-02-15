@@ -39,11 +39,17 @@ ENV PATH="/cargo/bin:${PATH}"
 
 # Finish installation of Rust toolchain.
 RUN rustup component add clippy && \
-    rustup component add rustfmt
+    rustup component add rustfmt && \
+    rustup target add aarch64-unknown-none && \
+    rustup target add thumbv7em-none-eabihf && \
+    rustup target add x86_64-unknown-none
 
-# Install just.
-RUN cargo install just@^1.13 && \
+# Install binaries using cargo.
+RUN cargo install cbindgen@^0.24 && \
+    cargo install just@^1.13 && \
+    mv /cargo/bin/cbindgen /usr/local/bin/cbindgen && \
     mv /cargo/bin/just /usr/local/bin/just && \
+    chmod 755 /usr/local/bin/cbindgen && \
     chmod 755 /usr/local/bin/just
 
 # Allow all users to use CARGO_HOME and RUSTUP_HOME.
