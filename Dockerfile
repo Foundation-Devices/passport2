@@ -32,11 +32,14 @@ RUN pip3 install reuse
 # Install rustup.
 ENV RUSTUP_HOME="/rustup"
 ENV CARGO_HOME="/cargo"
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN mkdir -p /rustup /cargo && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+        sh -s -- -y --profile minimal --default-toolchain 1.67.1
 ENV PATH="/cargo/bin:${PATH}"
 
-# Install Rust toolchain.
-RUN rustup default 1.67.1
+# Finish installation of Rust toolchain.
+RUN rustup component add clippy && \
+    rustup component add rustfmt
 
 # Install just.
 RUN cargo install just@^1.13 && \
