@@ -89,6 +89,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/envoy_setup_flow.py',
 
         'flows/erase_passport_flow.py',
+        'flows/export_derived_key_flow.py',
         'flows/export_multisig_microsd_flow.py',
         'flows/export_multisig_qr_flow.py',
         'flows/export_summary_flow.py',
