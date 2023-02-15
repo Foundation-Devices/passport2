@@ -13,16 +13,12 @@ import stash
 
 
 class ViewSeedWordsFlow(Flow):
-    def __init__(self, bip85_seed=None, bip85_index=None):
-        self.bip85_seed = bip85_seed
-        self.bip85_index = bip85_index
+    def __init__(self, external_key=None):
+        self.external_key = external_key
         super().__init__(initial_state=self.show_intro, name='ViewSeedWordsFlow')
 
     async def show_intro(self):
-        if self.bip85_seed:
-            text = 'Passport is about to display your BIP 85 seed at index {}.'.format(self.bip85_index)
-        else:
-            text = 'Passport is about to display your seed words and, if defined, your passphrase.'
+        text = 'Passport is about to display your seed words and, if defined, your passphrase.'
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=microns.Back, right_micron=microns.Forward).show()
@@ -41,9 +37,9 @@ class ViewSeedWordsFlow(Flow):
             self.set_result(False)
 
     async def show_seed_words(self):
-        if self.bip85_seed:
+        if self.external_key:
             (words, error) = await spinner_task(text='Retrieving Seed', task=get_words_from_seed_task,
-                                                args=[self.bip85_seed])
+                                                args=[self.external_key])
         else:
             (words, passphrase, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
         if error is None and words is not None:
