@@ -37,6 +37,7 @@ from .lvgl_task import lvgl_task
 from .main_task import main_task
 from .make_microsd_file_system_task import make_microsd_file_system_task
 from .new_seed_task import new_seed_task
+from .nostr_key_task import nostr_key_task
 from .power_button_task import power_button_task
 from .read_file_task import read_file_task
 from .rename_account_task import rename_account_task
