@@ -116,10 +116,10 @@ def backup_menu():
 
 
 def key_item_menu():
-    from flows import DeleteDerivedKeyFlow
+    from flows import RenameDerivedKeyFlow, DeleteDerivedKeyFlow
     return [
         {'icon': lv.ICON_INFO, 'label': 'Info'},
-        {'icon': lv.ICON_SIGN, 'label': 'Rename'},
+        {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow},
         {'icon': lv.ICON_ERASE, 'label': 'Delete', 'flow': DeleteDerivedKeyFlow},
         {'icon': lv.ICON_SCAN_QR, 'label': 'Export'},
     ]
