@@ -66,8 +66,6 @@ MAX_ACCOUNTS = 10
 
 DEFAULT_ACCOUNT_ENTRY = {'name': 'Primary', 'acct_num': 0}
 
-DEFAULT_BIP85_ENTRY = {'name': 'Primary', 'index': 0, 'passphrase': False}
-
 
 # Unit types for labeling conversions
 UNIT_TYPE_BTC = 0
