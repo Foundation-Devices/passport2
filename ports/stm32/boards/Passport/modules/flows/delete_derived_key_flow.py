@@ -8,7 +8,7 @@ from flows import Flow
 
 class DeleteDerivedKeyFlow(Flow):
     def __init__(self, context=None):
-        super().__init__(initial_state=self.confirm_delete, name='ExportMultisigQRFlow')
+        super().__init__(initial_state=self.confirm_delete, name='DeleteDerivedKeyFlow')
         self.key = context
 
     async def confirm_delete(self):
