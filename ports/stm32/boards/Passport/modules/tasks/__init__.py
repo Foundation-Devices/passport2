@@ -40,6 +40,7 @@ from .new_seed_task import new_seed_task
 from .power_button_task import power_button_task
 from .read_file_task import read_file_task
 from .rename_account_task import rename_account_task
+from .rename_derived_key_task import rename_derived_key_task
 from .rename_multisig_task import rename_multisig_task
 from .restore_backup_task import restore_backup_task
 from .save_backup_task import save_backup_task
