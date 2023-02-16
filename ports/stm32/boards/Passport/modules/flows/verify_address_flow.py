@@ -79,6 +79,7 @@ class VerifyAddressFlow(Flow):
             if not self.back():
                 self.set_result(False)
                 return
+            return
         elif result.is_failure():
             await ErrorPage(text='Unable to scan QR code.').show()
             self.set_result(False)
