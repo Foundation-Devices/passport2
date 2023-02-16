@@ -25,7 +25,10 @@ class ExportDerivedKeyFlow(Flow):
         else:
             options = [{'label': 'Private Key', 'value': 'key'}]
 
-        self.format = await ChooserPage(card_header={'title': 'Key Format'}, options=options).show()
+        if len(options) == 1:
+            self.format = options[0]['value']
+        else:
+            self.format = await ChooserPage(card_header={'title': 'Key Format'}, options=options).show()
 
         if self.format is None:
             self.set_result(False)

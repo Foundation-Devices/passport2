@@ -104,7 +104,10 @@ in the future. Do you want to continue?'''
 
             self.goto(self.save_key)
         else:
-            self.back()
+            if not key_types[self.key_type]['indexed']:
+                self.set_result(False)
+            else:
+                self.back()
 
     async def save_key(self):
         from pages import SuccessPage, ErrorPage
