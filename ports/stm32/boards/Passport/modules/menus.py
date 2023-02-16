@@ -116,12 +116,16 @@ def backup_menu():
 
 
 def key_item_menu():
-    from flows import ViewDerivedKeyDetailsFlow, RenameDerivedKeyFlow, ExportDerivedKeyFlow  # , DeleteDerivedKeyFlow
+    from flows import (
+        ViewDerivedKeyDetailsFlow,
+        RenameDerivedKeyFlow,
+        ExportDerivedKeyFlow,
+        HideDerivedKeyFlow)
     return [
         {'icon': lv.ICON_ONE_KEY, 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow},
-        # {'icon': lv.ICON_ERASE, 'label': 'Delete', 'flow': DeleteDerivedKeyFlow},
         {'icon': lv.ICON_SCAN_QR, 'label': 'Export', 'flow': ExportDerivedKeyFlow},
+        {'icon': lv.ICON_ERASE, 'label': 'Toggle Hidden', 'flow': HideDerivedKeyFlow},
     ]
 
 
@@ -144,21 +148,31 @@ def new_key_menu():
 
 def key_manager_menu():
     from flows import NewDerivedKeyFlow
-    from utils import get_derived_keys
+    from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
     from derived_key import key_types
     from common import settings
 
     result = []
+
+    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
+    result.append({
+        'icon': lv.ICON_TWO_KEYS,
+        'label': 'Show Hidden',
+        'action': lambda item: toggle_showing_hidden_keys(),
+        'is_toggle': True,
+        'value': lambda: are_hidden_keys_showing(),
+    })
+
     keys = get_derived_keys()
     for key in keys:
-        if len(key['name']) != 0 and key['xfp'] == settings.get('xfp'):
+        if len(key['name']) != 0 \
+                and key['xfp'] == settings.get('xfp') \
+                and (not key['hidden'] or are_hidden_keys_showing()):
             result.append({'icon': key_types[key['type']]['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
                            'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
                            'args': {'context': key}})
-
-    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
 
     return result
 
