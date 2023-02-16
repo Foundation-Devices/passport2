@@ -246,6 +246,10 @@ class PINEntryPage(Page):
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
 
+        if key == lv.KEY.UP:
+            self.input.view_pin()
+            return
+
         if key in self.arrows:
             return
 
