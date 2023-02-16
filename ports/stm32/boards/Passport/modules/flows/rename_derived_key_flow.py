@@ -17,6 +17,7 @@ class RenameDerivedKeyFlow(Flow):
         from pages import TextInputPage, ErrorPage
         import microns
         from utils import get_derived_key_by_name
+        from derived_key import key_types
         name = self.key['name']
 
         result = await TextInputPage(card_header={'title': 'Key Name'},
@@ -35,7 +36,7 @@ class RenameDerivedKeyFlow(Flow):
             existing_key = get_derived_key_by_name(self.key_name, self.key['type'], self.key['xfp'])
             if existing_key is not None:
                 await ErrorPage('{} ##{} already exists with the name "{}".'
-                                .format(self.key['type'],
+                                .format(key_types[self.key['type']]['title'],
                                         existing_key['index'],
                                         self.key_name)).show()
                 return

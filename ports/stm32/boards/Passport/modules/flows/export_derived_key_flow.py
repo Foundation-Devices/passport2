@@ -83,6 +83,7 @@ class ExportDerivedKeyFlow(Flow):
         from pages import ErrorPage
         from utils import file_exists
         from utils import B2A
+        from derived_key import key_types
 
         text = B2A(self.pk)
         key_num = 1
@@ -93,10 +94,11 @@ class ExportDerivedKeyFlow(Flow):
                     path = card.get_sd_root()
                     # Make a unique filename
                     while True:
-                        self.file_path = '{}/{}-{}-{}.txt'.format(path,
-                                                                  self.key['type'],
-                                                                  self.key['name'],
-                                                                  key_num)
+                        self.file_path = '{}/{}-{}-{}.txt' \
+                                         .format(path,
+                                                 key_types[self.key['type']]['title'],
+                                                 self.key['name'],
+                                                 key_num)
                         self.file_path = self.file_path.replace(' ', '_')
                         # Ensure filename doesn't already exist
                         if not file_exists(self.file_path):
