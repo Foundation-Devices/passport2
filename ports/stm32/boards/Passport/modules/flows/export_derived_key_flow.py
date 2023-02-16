@@ -9,37 +9,8 @@ from flows import Flow
 class ExportDerivedKeyFlow(Flow):
     def __init__(self, context=None):
         self.key = context
-        self.format = None
-        self.num_words = None
         self.pk = None
-        super().__init__(initial_state=self.choose_key_format, name="NewDerivedKeyFlow")
-
-    async def choose_key_format(self):
-        from pages import ChooserPage
-        from derived_key import key_types
-
-        options = []
-        if key_types[self.key['type']]['words']:
-            options = [{'label': '24 words', 'value': '24'},
-                       {'label': '12 words', 'value': '12'}]
-        else:
-            options = [{'label': 'Private Key', 'value': 'key'}]
-
-        if len(options) == 1:
-            self.format = options[0]['value']
-        else:
-            self.format = await ChooserPage(card_header={'title': 'Key Format'}, options=options).show()
-
-        if self.format is None:
-            self.set_result(False)
-            return
-
-        if self.format.isdigit():
-            self.num_words = int(self.format)
-        else:
-            self.num_words = 0
-
-        self.goto(self.generate_key)
+        super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
         from utils import spinner_task
@@ -48,7 +19,7 @@ class ExportDerivedKeyFlow(Flow):
 
         (self.pk, error) = await spinner_task(text='Generating Key',
                                               task=key_types[self.key['type']]['task'],
-                                              args=[self.num_words, self.key['index']])
+                                              args=[self.key['index']])
         if error is not None:
             await ErrorPage(error).show()
             self.set_result(False)
