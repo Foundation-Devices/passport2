@@ -895,7 +895,7 @@ def get_account_by_number(acct_num):
 def get_derived_keys():
     from common import settings
     keys = settings.get('derived_keys', [])
-    keys.sort(key=lambda a: a.get('index', 0))
+    keys.sort(key=lambda a: (a.get('type', 0), a.get('index', 0)))
     return keys
 
 
