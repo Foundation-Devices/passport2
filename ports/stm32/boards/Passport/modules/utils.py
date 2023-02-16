@@ -1238,6 +1238,18 @@ def is_extension_enabled(ext_name):
     return common.settings.get(ext_path, False)
 
 
+def toggle_showing_hidden_keys():
+    from common import ui
+    showing = common.settings.get('showing_hidden_keys', False)
+    common.settings.set_volatile('showing_hidden_keys', not showing)
+    ui.update_cards_on_top_level()
+
+
+def are_hidden_keys_showing():
+    showing = common.settings.get('showing_hidden_keys', False)
+    return showing
+
+
 def is_passphrase_active():
     import stash
     return stash.bip39_passphrase != ''
