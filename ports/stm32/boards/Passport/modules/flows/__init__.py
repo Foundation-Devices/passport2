@@ -27,6 +27,7 @@ from .casa_health_check_microsd_flow import *
 from .casa_health_check_qr_flow import *
 from .change_pin_flow import *
 from .delete_account_flow import *
+from .delete_derived_keys_flow import *
 from .delete_multisig_flow import *
 from .developer_functions_flow import *
 from .erase_passport_flow import *

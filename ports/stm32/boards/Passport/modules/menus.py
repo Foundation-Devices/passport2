@@ -243,7 +243,8 @@ def developer_menu():
         NewSeedFlow,
         SetInitialPINFlow,
         DeveloperFunctionsFlow,
-        SpinDelayFlow
+        SpinDelayFlow,
+        DeleteDerivedKeysFlow
     )
     from pages import BatteryPage, StatusPage, ShowQRPage
     from data_codecs.qr_type import QRType
@@ -263,6 +264,7 @@ def developer_menu():
         {'icon': lv.ICON_ONE_KEY, 'label': 'Login', 'flow': LoginFlow},
         {'icon': lv.ICON_SEED, 'label': 'New Seed', 'flow': NewSeedFlow, 'args': {'refresh_cards_when_done': True}},
         {'icon': lv.ICON_ONE_KEY, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
+        {'icon': lv.ICON_ERASE, 'label': 'Erase Child Keys', 'flow': DeleteDerivedKeysFlow},
         # {'icon': lv.ICON_SETTINGS, 'label': 'I\'m Busy!', 'page': LongTextPage,
         #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
         # {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
@@ -275,6 +277,7 @@ def developer_menu():
         # {'icon': lv.ICON_SEED, 'label': 'Enter Seed', 'page': PredictiveTextInputPage},
         # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter Backup Code', 'page': BackupCodePage},
     ]
+
 
 def extensions_menu():
     from extensions.extensions import supported_extensions_menu
