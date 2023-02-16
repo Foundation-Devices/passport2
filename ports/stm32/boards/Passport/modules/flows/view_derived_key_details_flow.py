@@ -16,11 +16,16 @@ class ViewDerivedKeyDetailsFlow(Flow):
         from styles.colors import HIGHLIGHT_TEXT_HEX
         from pages import LongTextPage
         from derived_key import key_types
+        import microns
 
-        msg = "{}\n{}\n\n{}\n{}".format(recolor(HIGHLIGHT_TEXT_HEX, 'Key Type'),
-                                        key_types[self.key['type']]['title'],
-                                        recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
-                                        self.key['index'])
+        msg = "\n{}\n{}\n\n{}\n{}".format(recolor(HIGHLIGHT_TEXT_HEX, 'Key Type'),
+                                          key_types[self.key['type']]['title'],
+                                          recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
+                                          self.key['index'])
 
-        await LongTextPage(card_header={'title': self.key['name']}, text=msg, centered=True).show()
+        await LongTextPage(card_header={'title': self.key['name']},
+                           text=msg,
+                           left_micron=None,
+                           right_micron=microns.Checkmark,
+                           centered=True).show()
         self.set_result(True)

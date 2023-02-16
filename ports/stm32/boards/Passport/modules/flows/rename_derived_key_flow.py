@@ -48,12 +48,10 @@ class RenameDerivedKeyFlow(Flow):
     async def rename_key(self):
         from tasks import rename_derived_key_task
         from utils import spinner_task
-        from pages import SuccessPage
         from flows import AutoBackupFlow
         (error,) = await spinner_task('Renaming Key', rename_derived_key_task,
                                       args=[self.key, self.key_name])
         if error is None:
-            await SuccessPage(text='Key Renamed').show()
             await AutoBackupFlow().run()
             self.set_result(True)
         else:
