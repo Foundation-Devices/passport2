@@ -131,9 +131,13 @@ def new_key_menu():
 
     result = []
     for key_type in range(len(key_types)):
-        result.append({'icon': key_types[key_type]['icon'],
-                       'label': key_types[key_type]['title'],
+        title = key_types[key_type]['title']
+        icon = key_types[key_type]['icon']
+        result.append({'icon': icon,
+                       'label': title,
                        'flow': NewDerivedKeyFlow,
+                       'statusbar': {'title': 'New {}'.format(title),
+                                     'icon': icon},
                        'args': {'context': key_type}})
     return result
 
