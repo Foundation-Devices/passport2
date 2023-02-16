@@ -22,4 +22,8 @@ key_types = [
 ]
 
 # This is unused, but it's an example of the schema
-# DEFAULT_DERIVED_KEY = {'name': 'First', 'index': 0, 'type': 0, 'xfp': <binary xfp>}
+# DEFAULT_DERIVED_KEY = {'name': 'First',
+#                        'index': 0,
+#                        'type': 0,
+#                        'xfp': <binary xfp>,
+#                        'hidden': False}
