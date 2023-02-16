@@ -126,7 +126,6 @@ class PINInput(View):
     def set_mode(self, mode):
         self.input_mode = mode
         self.mode_icon.set_icon(InputMode.get_icon(self.input_mode))
-        self.update_pin()
 
     def view_pin(self):
         self.hidden_mode = False
