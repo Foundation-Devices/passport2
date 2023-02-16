@@ -114,7 +114,10 @@ in the future. Do you want to continue?'''
         from tasks import save_new_derived_key_task
         from utils import spinner_task
         (error,) = await spinner_task('Saving New Key Details', save_new_derived_key_task,
-                                      args=[self.index, self.key_name, self.key_type, self.xfp])
+                                      args=[self.index,
+                                            self.key_name,
+                                            self.key_type,
+                                            self.xfp])
         if error is None:
             from flows import AutoBackupFlow
 
