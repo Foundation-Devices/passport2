@@ -3,6 +3,15 @@
 #
 # bip85_seed_task.py - Task to create a new seed using BIP 85
 
+
+async def bip85_24_word_seed_task(on_done, index):
+    await bip85_seed_task(on_done, 24, index)
+
+
+async def bip85_12_word_seed_task(on_done, index):
+    await bip85_seed_task(on_done, 12, index)
+
+
 async def bip85_seed_task(on_done, num_words, index):
     from trezorcrypto import hmac
     import stash
