@@ -15,9 +15,10 @@ class ViewDerivedKeyDetailsFlow(Flow):
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX
         from pages import LongTextPage
+        from derived_key import key_types
 
         msg = "{}\n{}\n\n{}\n{}".format(recolor(HIGHLIGHT_TEXT_HEX, 'Key Type'),
-                                        self.key['type'],
+                                        key_types[self.key['type']]['title'],
                                         recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
                                         self.key['index'])
 
