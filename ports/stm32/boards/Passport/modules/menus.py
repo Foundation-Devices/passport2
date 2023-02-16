@@ -116,11 +116,11 @@ def backup_menu():
 
 
 def key_item_menu():
-    from flows import ViewDerivedKeyDetailsFlow, RenameDerivedKeyFlow, DeleteDerivedKeyFlow, ExportDerivedKeyFlow
+    from flows import ViewDerivedKeyDetailsFlow, RenameDerivedKeyFlow, ExportDerivedKeyFlow  # , DeleteDerivedKeyFlow
     return [
         {'icon': lv.ICON_ONE_KEY, 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow},
-        {'icon': lv.ICON_ERASE, 'label': 'Delete', 'flow': DeleteDerivedKeyFlow},
+        # {'icon': lv.ICON_ERASE, 'label': 'Delete', 'flow': DeleteDerivedKeyFlow},
         {'icon': lv.ICON_SCAN_QR, 'label': 'Export', 'flow': ExportDerivedKeyFlow},
     ]
 
@@ -130,9 +130,9 @@ def new_key_menu():
     from derived_key import key_types
 
     result = []
-    for key_type in key_types:
+    for key_type in range(len(key_types)):
         result.append({'icon': key_types[key_type]['icon'],
-                       'label': key_type,
+                       'label': key_types[key_type]['title'],
                        'flow': NewDerivedKeyFlow,
                        'args': {'context': key_type}})
     return result

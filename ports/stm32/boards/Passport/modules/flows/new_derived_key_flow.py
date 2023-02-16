@@ -64,30 +64,14 @@ in the future. Do you want to continue?'''
         existing_key = get_derived_key_by_index(self.index, self.key_type, self.xfp)
         if existing_key is not None:
             if not key_types[self.key_type]['indexed']:
-                if len(existing_key['name']) == 0:
-                    error_message = '''You previously deleted your {}. \
-Would you like to recover it with a new name?''' \
-                                    .format(self.key_type)
-                    result = await QuestionPage(text=error_message).show()
-                    if not result:
-                        self.set_result(False)
-                    else:
-                        await RenameDerivedKeyFlow(existing_key).run()
-                        self.set_result(True)
-                    return
-                else:
-                    error_message = 'You already have a {} named "{}".' \
-                                    .format(self.key_type, existing_key['name'])
-                    await ErrorPage(error_message).show()
-                    self.set_result(False)
-                    return
+                error_message = 'You already have a {} named "{}".' \
+                                .format(key_types[self.key_type]['title'], existing_key['name'])
+                await ErrorPage(error_message).show()
+                self.set_result(False)
+                return
             else:
-                if len(existing_key['name']) == 0:
-                    error_message = 'A previously deleted {} key used key number {}.' \
-                                    .format(self.key_type, self.index)
-                else:
-                    error_message = 'A {} named "{}" already exists with key number {}.' \
-                                    .format(self.key_type, existing_key['name'], self.index)
+                error_message = 'A {} named "{}" already exists with key number {}.' \
+                                .format(key_types[self.key_type]['title'], existing_key['name'], self.index)
                 await ErrorPage(error_message).show()
                 return
         self.goto(self.enter_key_name)
@@ -97,6 +81,7 @@ Would you like to recover it with a new name?''' \
         from pages import TextInputPage, ErrorPage
         import microns
         from utils import get_derived_key_by_name
+        from derived_key import key_types
         result = await TextInputPage(card_header={'title': 'Key Name'},
                                      initial_text='' if self.key_name is None else self.key_name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -112,7 +97,7 @@ Would you like to recover it with a new name?''' \
             existing_key = get_derived_key_by_name(self.key_name, self.key_type, self.xfp)
             if existing_key is not None:
                 await ErrorPage('{} ##{} already exists with the name "{}".'
-                                .format(self.key_type,
+                                .format(key_types[self.key_type]['title'],
                                         existing_key['index'],
                                         self.key_name)).show()
                 return
