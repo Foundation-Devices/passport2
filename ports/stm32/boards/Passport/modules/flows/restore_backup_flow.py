@@ -39,7 +39,7 @@ class RestoreBackupFlow(Flow):
                 text='You must erase Passport before you can restore.',
                 yes_text='Erase Now',
                 no_text='Back',
-                default=False).show()
+                initial_value=False).show()
             if result:
                 # If user proceeds all the way through, Passport will be erased and then restarted,
                 # so if we get back here, they did NOT erase.
