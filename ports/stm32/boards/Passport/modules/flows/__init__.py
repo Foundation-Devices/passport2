@@ -55,6 +55,7 @@ from .rename_multisig_flow import *
 from .reset_pin_flow import *
 from .restore_backup_flow import *
 from .restore_seed_flow import *
+from .scan_qr_seed_flow import *
 from .scv_flow import *
 from .set_chain_flow import *
 from .set_initial_pin_flow import *
