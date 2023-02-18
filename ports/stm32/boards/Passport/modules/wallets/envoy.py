@@ -11,13 +11,20 @@ import common
 from utils import to_str, get_accounts
 from data_codecs.qr_type import QRType
 from public_constants import AF_CLASSIC, AF_P2WPKH
+from foundation import ur
 
 # from .multisig_json import create_multisig_json_wallet
 # from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
 from .utils import get_bip_num_from_addr_type
 
 
-def create_envoy_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
+def create_envoy_export(sw_wallet=None,
+                        addr_type=None,
+                        acct_num=0,
+                        multisig=False,
+                        legacy=False,
+                        export_mode='qr',
+                        qr_type=QRType.UR2):
     # Generate line-by-line JSON details about wallet.
     #
     # Adapted from Electrum format, but simplified for Envoy use
@@ -73,7 +80,7 @@ def create_envoy_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fal
 
     msg = ujson.dumps(rv)
     # print('msg={}'.format(to_str(msg)))
-    return (msg, accts)
+    return (ur.new_bytes(msg), accts)
 
 
 EnvoyWallet = {

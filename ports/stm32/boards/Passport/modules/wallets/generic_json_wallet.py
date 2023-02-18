@@ -16,6 +16,8 @@ import stash
 from utils import xfp2str, to_str
 from common import settings
 from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WSH
+from data_codecs.qr_type import QRType
+from foundation import ur
 
 
 def create_generic_json_wallet(sw_wallet=None,
@@ -23,7 +25,8 @@ def create_generic_json_wallet(sw_wallet=None,
                                acct_num=0,
                                multisig=False,
                                legacy=False,
-                               export_mode='qr'):
+                               export_mode='qr',
+                               qr_type=QRType.UR2):
     # Generate data that other programers will use to import from (single-signer)
 
     chain = chains.current_chain()
@@ -65,4 +68,8 @@ def create_generic_json_wallet(sw_wallet=None,
                 rv[name]['_pub'] = zp
 
     msg = ujson.dumps(rv)
+
+    if export_mode == 'qr' and qr_type == QRType.UR2:
+        return (ur.new_bytes(msg), accts)
+
     return (msg, accts)

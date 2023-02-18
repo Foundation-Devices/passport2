@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+alias g := generate
+alias b := build
+alias l := lint
+
+# Generate C bindings header.
+generate: build
+    cbindgen --config cbindgen.toml \
+             --crate foundation \
+             --output include/foundation.h
+
+# Build the crate.
+build:
+    cargo build --target thumbv7em-none-eabihf --release
+
+# Lint the crate.
+lint:
+    cargo clippy --target thumbv7em-none-eabihf
+    cargo fmt --check
+    cbindgen --config cbindgen.toml \
+             --crate foundation \
+             --output include/foundation.h \
+             --verify
+
+# Print size information
+sizes:
+    cargo run --features std

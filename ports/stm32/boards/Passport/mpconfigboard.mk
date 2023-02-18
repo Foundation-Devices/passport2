@@ -93,3 +93,5 @@ ifeq ($(SCREEN_MODE), COLOR)
 				lcd-st7789.c st7789.c)
 	CFLAGS += -DSCREEN_MODE_COLOR=1
 endif
+
+RUST_TARGET := thumbv7em-none-eabihf

@@ -13,7 +13,7 @@ class DataEncoder:
     def __init__(self):
         pass
 
-    def encode(self, data, is_binary=False, max_fragment_len=None):
+    def encode(self, data, max_fragment_len=None):
         pass
 
     def next_part(self):

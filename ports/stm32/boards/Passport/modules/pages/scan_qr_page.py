@@ -26,8 +26,7 @@ class ScanQRPage(Page):
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
-                 right_micron=None,
-                 decode_cbor_bytes=False):
+                 right_micron=None):
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
@@ -35,8 +34,6 @@ class ScanQRPage(Page):
                          right_micron=right_micron,
                          extend_timeout=True)
 
-        # TODO: Temporary flag until we can cleanup the CBOR handling
-        self.decode_cbor_bytes = decode_cbor_bytes
         self.prev_card_header = None
         self.timer = None
         self.camera = CameraQRScanner()
@@ -109,7 +106,7 @@ class ScanQRPage(Page):
 
                 self.progress_label.set_text(progress_text(self.camera.estimated_percent_complete()))
                 if self.camera.is_complete():
-                    data = self.camera.qr_decoder.decode(decode_cbor_bytes=self.decode_cbor_bytes)
+                    data = self.camera.qr_decoder.decode()
                     qr_type = self.camera.qr_decoder.qr_type()
 
                     self.set_result(QRScanResult(data=data, qr_type=qr_type))

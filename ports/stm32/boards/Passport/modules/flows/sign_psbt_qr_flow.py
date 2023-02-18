@@ -4,19 +4,21 @@
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow
+from foundation import ur
 
 
 class SignPsbtQRFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.scan_transaction, name='SignPsbtQRFlow')
         self.psbt = None
+        self.ur_type = None
 
     async def scan_transaction(self):
         from pages import ScanQRPage, ErrorPage
         import microns
 
         # TODO: May need to set statusbar content here and restore it after
-        result = await ScanQRPage(right_micron=microns.Checkmark, decode_cbor_bytes=True).show()
+        result = await ScanQRPage(right_micron=microns.Checkmark).show()
         if result is None:
             # User canceled the scan
             self.set_result(False)
@@ -27,13 +29,25 @@ class SignPsbtQRFlow(Flow):
                 await ErrorPage(text='Unable to scan QR code.\n\n{}'.format(result.error)).show()
                 self.set_result(False)
             else:
-                if isinstance(result.data, str):
+                # TODO: handle hex not only UR. Wasn't handled before the UR
+                # rework too.
+                if isinstance(result.data, ur.Value):
+                    self.qr_type = result.qr_type
+                    self.ur_type = result.data.ur_type()
+
+                    if self.ur_type == ur.Value.BYTES:
+                        self.raw_psbt = result.data.unwrap_bytes()
+                    elif self.ur_type == ur.Value.CRYPTO_PSBT:
+                        self.raw_psbt = result.data.unwrap_crypto_psbt()
+                    else:
+                        await ErrorPage(text='The QR code does not contain a transaction.').show()
+                        self.set_result(False)
+                        return
+
+                    self.goto(self.copy_to_flash)
+                else:
                     await ErrorPage(text='The QR code does not contain a transaction.').show()
                     self.set_result(False)
-                else:
-                    self.raw_psbt = result.data
-                    self.qr_type = result.qr_type
-                    self.goto(self.copy_to_flash)
 
     async def copy_to_flash(self):
         import gc
@@ -94,13 +108,16 @@ class SignPsbtQRFlow(Flow):
 
         gc.collect()
 
-        signed_hex = b2a_hex(signed_bytes)
+        if self.qr_type == QRType.QR:
+            qr_data = b2a_hex(signed_bytes)
+        elif self.qr_type == QRType.UR2 and self.ur_type == ur.Value.BYTES:
+            qr_data = ur.new_bytes(signed_bytes)
+        elif self.qr_type == QRType.UR2 and self.ur_type == ur.Value.CRYPTO_PSBT:
+            qr_data = ur.new_crypto_psbt(signed_bytes)
+        else:
+            raise RuntimeException("Unsupported output format")
 
-        # print('qr_type={}'.format(self.qr_type))
-        await ShowQRPage(
-            qr_type=self.qr_type,
-            qr_data=signed_bytes if self.qr_type == QRType.UR2 else signed_hex,
-            # TODO: This shouldn't be hard-coded
-            qr_args={'prefix': 'crypto-psbt'},
-            right_micron=microns.Checkmark).show()
+        await ShowQRPage(qr_type=self.qr_type,
+                         qr_data=qr_data,
+                         right_micron=microns.Checkmark).show()
         self.set_result(True)

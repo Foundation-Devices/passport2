@@ -34,7 +34,6 @@ class ShowQRPage(Page):
 
     def __init__(self,
                  qr_type=QRType.QR,
-                 qr_args=None,
                  qr_data=None,
                  caption=None,
                  card_header=None,
@@ -47,7 +46,6 @@ class ShowQRPage(Page):
                          right_micron=right_micron,
                          extend_timeout=True)
         self.qr_type = qr_type
-        self.qr_args = qr_args
         self.qr_data = qr_data
         self.caption = caption
         self.curr_fragment_len = 200
@@ -193,7 +191,7 @@ class ShowQRPage(Page):
     def update(self):
         if self.is_attached():
             if self.qr_encoder is None:
-                self.qr_encoder = make_qr_encoder(self.qr_type, self.qr_args)
+                self.qr_encoder = make_qr_encoder(self.qr_type)
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']

@@ -16,7 +16,7 @@
 
 async def read_multisig_config_from_qr():
     from pages import ScanQRPage
-    return await ScanQRPage(decode_cbor_bytes=True).show()
+    return await ScanQRPage().show()
 
 
 async def read_multisig_config_from_microsd():

@@ -48,6 +48,9 @@ sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-
 clean: (run-in-docker "just ports/stm32/clean")
 
 # Clean bootloader build
+clean-firmware: (run-in-docker "just ports/stm32/clean")
+
+# Clean bootloader build
 clean-bootloader: (run-in-docker "just ports/stm32/boards/Passport/bootloader/clean")
 
 # Clean simulator build
@@ -66,7 +69,7 @@ test:
   cd ports/stm32/boards/Passport/modules/tests; python3 -m pytest . --simulatordir=$(pwd)/simulator
 
 # Lint the codebase.
-lint: (run-in-docker "just ports/stm32/lint")
+lint: (run-in-docker "just ports/stm32/lint") (run-in-docker "just extmod/foundation-rust/lint")
 
 [private]
 mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-docker")
