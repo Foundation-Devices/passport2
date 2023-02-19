@@ -96,7 +96,9 @@ pub mod tests {
             (x & (x - 1)) == 0
         }
 
-        assert!(is_power_of_2(UR_MAX_SEQUENCE_COUNT));
-        assert!(max_fragment_len() > 0);
+        assert!(is_power_of_2(decoder::UR_DECODER_MAX_SEQUENCE_COUNT));
+        assert!(is_power_of_2(encoder::UR_ENCODER_MAX_SEQUENCE_COUNT));
+        assert!(max_fragment_len(decoder::UR_DECODER_MAX_STRING) > 0);
+        assert!(max_fragment_len(encoder::UR_ENCODER_MAX_STRING) > 0);
     }
 }
