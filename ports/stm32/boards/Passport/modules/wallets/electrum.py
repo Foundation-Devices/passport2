@@ -20,7 +20,13 @@ from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH
 from .utils import get_bip_num_from_addr_type
 
 
-def create_electrum_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
+def create_electrum_export(sw_wallet=None,
+                           addr_type=None,
+                           acct_num=0,
+                           multisig=False,
+                           legacy=False,
+                           export_mode='qr',
+                           qr_type=None):
     # Generate line-by-line JSON details about wallet.
     #
     # Much reverse engineering of Electrum here. It's a complex legacy file format.
