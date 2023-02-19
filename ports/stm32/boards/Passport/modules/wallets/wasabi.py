@@ -18,7 +18,13 @@ from utils import xfp2str, to_str
 from common import settings, system
 
 
-def create_wasabi_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
+def create_wasabi_export(sw_wallet=None,
+                         addr_type=None,
+                         acct_num=0,
+                         multisig=False,
+                         legacy=False,
+                         export_mode='qr',
+                         qr_type=None):
     # Generate the data for a JSON file which Wasabi can open directly as a new wallet.
 
     chain = chains.current_chain()
