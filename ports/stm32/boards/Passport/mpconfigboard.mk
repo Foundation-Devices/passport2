@@ -95,3 +95,4 @@ ifeq ($(SCREEN_MODE), COLOR)
 endif
 
 RUST_TARGET := thumbv7em-none-eabihf
+export RUSTFLAGS := --cfg dtcm --cfg sram4
