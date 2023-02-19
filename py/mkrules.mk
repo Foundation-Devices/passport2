@@ -217,6 +217,7 @@ lib $(LIBMICROPYTHON): $(OBJ)
 
 clean:
 	$(RM) -rf $(BUILD) $(CLEAN_EXTRA)
+	cargo clean --manifest-path $(FOUNDATION_RUST)/Cargo.toml
 .PHONY: clean
 
 # Clean every non-git file from FROZEN_DIR/FROZEN_MPY_DIR, but making a backup.
