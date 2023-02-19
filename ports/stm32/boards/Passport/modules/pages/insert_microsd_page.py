@@ -37,7 +37,7 @@ class InsertMicroSDPage(StatusPage):
 
             return sd_card_present
 
-        def on_result(res):
+        async def on_result(res):
             nonlocal result
             result = res
             return True
