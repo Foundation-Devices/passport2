@@ -34,7 +34,7 @@ class CasaHealthCheckQRFlow(Flow):
                 self.set_result(False)
             else:
                 if not isinstance(result.data, ur.Value):
-                    await ErrorPage(text='Unable to scan QR code.\n\nNot an Uniform Resource.').show()
+                    await ErrorPage(text='Unable to scan QR code.\n\nNot a Uniform Resource.').show()
                     self.set_result(False)
                     return
 
