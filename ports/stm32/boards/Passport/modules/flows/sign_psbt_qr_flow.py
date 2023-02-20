@@ -5,6 +5,7 @@
 
 from flows import Flow
 from foundation import ur
+from pages import ErrorPage
 
 
 class SignPsbtQRFlow(Flow):
@@ -96,15 +97,20 @@ class SignPsbtQRFlow(Flow):
         import microns
 
         # Copy signed txn into a bytearray and show the data as a UR
-        signed_bytes = None
-        with BytesIO() as bfd:
-            with self.output_encoder(bfd) as fd:
-                # Always serialize back to PSBT for QR codes
-                self.psbt.serialize(fd)
-                bfd.seek(0)
-                signed_bytes = bfd.read()
-                # print('len(signed_bytes)={}'.format(len(signed_bytes)))
-                # print('signed_bytes={}'.format(signed_bytes))
+        try:
+            signed_bytes = None
+            with BytesIO() as bfd:
+                with self.output_encoder(bfd) as fd:
+                    # Always serialize back to PSBT for QR codes
+                    self.psbt.serialize(fd)
+                    bfd.seek(0)
+                    signed_bytes = bfd.read()
+                    # print('len(signed_bytes)={}'.format(len(signed_bytes)))
+                    # print('signed_bytes={}'.format(signed_bytes))
+        except MemoryError as e:
+            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
+            self.set_result(False)
+            return
 
         gc.collect()
 
