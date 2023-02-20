@@ -9,6 +9,7 @@ from pages.show_qr_page import ShowQRPage
 from utils import validate_sign_text, spinner_task
 from tasks import sign_text_file_task
 from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
+from data_codecs.qr_type import QRType
 
 
 class CasaHealthCheckQRFlow(Flow):
@@ -57,7 +58,6 @@ class CasaHealthCheckQRFlow(Flow):
 
                 self.subpath = subpath
 
-                self.qr_type = result.qr_type
                 self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
@@ -74,7 +74,6 @@ class CasaHealthCheckQRFlow(Flow):
 
     async def show_signed_message(self):
         from ubinascii import b2a_base64
-        from data_codecs.qr_type import QRType
 
         sig = b2a_base64(self.signature).decode('ascii').strip()
 
