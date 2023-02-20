@@ -47,14 +47,21 @@ class CasaHealthCheckMicrosdFlow(Flow):
         from files import CardSlot
         from pages import ErrorPage
 
-        with open(self.file_path, 'r') as fd:
-            try:
-                self.lines = fd.read().split('\n')
-            except Exception as e:
-                await ErrorPage(text='Health check format is invalid.').show()
-                self.set_result(False)
-                return
-        self.goto(self.common_flow)
+        try:
+            with CardSlot() as _card:
+                with open(self.file_path, 'r') as fd:
+                    try:
+                        self.lines = fd.read().split('\n')
+                    except Exception as e:
+                        await ErrorPage(text='Health check format is invalid.').show()
+                        self.set_result(False)
+                        return
+
+                    self.goto(self.common_flow)
+        except CardMissingError:
+            result = await InsertMicroSDPage().show()
+            if not result:
+                self.back()
 
     async def common_flow(self):
         from flows import CasaHealthCheckCommonFlow
