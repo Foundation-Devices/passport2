@@ -4,16 +4,17 @@
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
 from flows import Flow
+from files import CardSlot, CardMissingError
+from pages.insert_microsd_page import InsertMicroSDPage
 
 
 def is_health_check(filename):
-    from files import CardSlot
+    filename = filename.lower()
 
-    # print('filenmame={}'.format(filename))
-    if '-signed' in filename.lower():
+    if '-signed' in filename:
         return False
 
-    if '-hc' in filename.lower():
+    if '-hc' in filename:
         return True
     return False
 
