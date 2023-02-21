@@ -14,13 +14,13 @@ from public_constants import MAX_TXN_LEN
 
 async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, offset):
     # sign a PSBT file found on a microSD card
-    from passport import sram4
+    from passport import mem
     from sffile import SFFile
     from errors import Error
     from files import CardSlot
     from utils import HexStreamer, Base64Streamer, HexWriter, Base64Writer
 
-    # TODO: This used to be sram4.tmp_buf, but copying to there fails sometimes
+    # TODO: This used to be mem.tmp_buf, but copying to there fails sometimes
     tmp_buf = bytearray(1024)
 
     # copy buffer into external SPI Flash

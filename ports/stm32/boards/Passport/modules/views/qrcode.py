@@ -4,7 +4,7 @@
 # qrcode.py - Wrapper for LVGL QR code widget
 
 import lvgl as lv
-from passport import sram4
+from passport import mem
 from styles.colors import WHITE, BLACK
 from .view import View
 
@@ -54,11 +54,11 @@ class QRCode(View):
             self.res = min(content_width, content_height)
 
             # Make the QR Code have a size of the content size.
-            self.lvgl_root.set_buffer(sram4.qrcode_buffer,
+            self.lvgl_root.set_buffer(mem.qrcode_buffer,
                                       content_width,
                                       content_height,
-                                      sram4.qrcode_modules_buffer,
-                                      sram4.MAX_QR_VERSION,
+                                      mem.qrcode_modules_buffer,
+                                      mem.MAX_QR_VERSION,
                                       BLACK, WHITE)
 
     def unmount(self):
@@ -72,7 +72,7 @@ class QRCode(View):
 
     def get_version_for_data(self, encoded_data):
         enc_len = len(encoded_data)
-        for i in range(1, sram4.MAX_QR_VERSION + 1):
+        for i in range(1, mem.MAX_QR_VERSION + 1):
             if alphanumeric_capacity_by_version[i] >= enc_len:
                 return i
         raise QRCodeException("Cannot fit {} in a QR code ({} bytes)".format(encoded_data, len(encoded_data)))

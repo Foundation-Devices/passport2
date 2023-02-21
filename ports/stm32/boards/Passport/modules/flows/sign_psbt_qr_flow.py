@@ -4,7 +4,8 @@
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow
-from foundation import ur
+from foundation import FixedBytesIO, ur
+from passport import mem
 from pages import ErrorPage
 
 
@@ -90,7 +91,6 @@ class SignPsbtQRFlow(Flow):
 
     async def show_signed_transaction(self):
         import gc
-        from uio import BytesIO
         from pages import ShowQRPage
         from data_codecs.qr_type import QRType
         from ubinascii import hexlify as b2a_hex
@@ -99,7 +99,7 @@ class SignPsbtQRFlow(Flow):
         # Copy signed txn into a bytearray and show the data as a UR
         try:
             signed_bytes = None
-            with BytesIO() as bfd:
+            with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
