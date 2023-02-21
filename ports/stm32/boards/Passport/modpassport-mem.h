@@ -25,6 +25,12 @@
 #define MP_SRAM4 __attribute__((section(".sram4")))
 
 /**
+ * @brief Attribute used to allocate a static variable in the
+ *        SRAM4 section.
+ */
+#define MP_DTCM __attribute__((section(".dtcm")))
+
+/**
  * @brief Create a compile-time bytearray by reference.
  *
  * Same behaviour as `mp_obj_new_bytearray_by_ref` (bytearray_at in Python side)
@@ -44,6 +50,12 @@
     }
 
 /// package: passport.mem
+
+/// psbt_output: bytearray
+STATIC MP_DTCM uint8_t mod_passport_mem_psbt_output[26 * 1024];
+STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_mem_psbt_output_obj,
+                               mod_passport_mem_psbt_output,
+                               sizeof(mod_passport_mem_psbt_output));
 
 /// ext_settings_buf: bytearray
 STATIC MP_SRAM4 uint8_t mod_passport_mem_ext_settings_buf[16 * 1024];
@@ -90,6 +102,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_passport_mem_qrcode_buffer_clear_obj,
 
 STATIC const mp_rom_map_elem_t mod_passport_mem_globals_table[] = {
         {MP_ROM_QSTR(MP_QSTR_MAX_QR_VERSION), MP_ROM_INT(PASSPORT_MAX_QR_VERSION)},
+        {MP_ROM_QSTR(MP_QSTR_psbt_output), MP_ROM_PTR(&mod_passport_mem_psbt_output_obj)},
         {MP_ROM_QSTR(MP_QSTR_ext_settings_buf), MP_ROM_PTR(&mod_passport_mem_ext_settings_buf_obj)},
         {MP_ROM_QSTR(MP_QSTR_tmp_buf), MP_ROM_PTR(&mod_passport_mem_tmp_buf_obj)},
         {MP_ROM_QSTR(MP_QSTR_psbt_tmp256), MP_ROM_PTR(&mod_passport_mem_psbt_tmp256_obj)},
