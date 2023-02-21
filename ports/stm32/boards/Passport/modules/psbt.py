@@ -16,7 +16,7 @@ import gc
 import history
 import sys
 from sffile import SizerFile
-from passport import sram4
+from passport import mem
 from public_constants import MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
@@ -146,12 +146,12 @@ def get_hash256(fd, poslen, hasher=None):
 
     fd.seek(pos)
     while ll:
-        here = fd.readinto(sram4.psbt_tmp256)
+        here = fd.readinto(mem.psbt_tmp256)
         if not here:
             break
         if here > ll:
             here = ll
-        rv.update(memoryview(sram4.psbt_tmp256)[0:here])
+        rv.update(memoryview(mem.psbt_tmp256)[0:here])
         ll -= here
 
     if hasher:
