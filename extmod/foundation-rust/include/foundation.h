@@ -381,6 +381,11 @@ uint32_t ur_decoder_estimated_percent_complete(UR_Decoder *decoder);
 void ur_decoder_clear(UR_Decoder *decoder);
 
 /**
+ * Returns `true` if the decoder doesn't contain any data.
+ */
+bool ur_decoder_is_empty(UR_Decoder *decoder);
+
+/**
  * Decode the message as an UR value.
  */
 bool ur_decoder_decode_message(UR_Decoder *decoder,

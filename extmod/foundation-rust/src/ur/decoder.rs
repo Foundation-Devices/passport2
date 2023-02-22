@@ -124,6 +124,12 @@ pub extern "C" fn ur_decoder_clear(decoder: &mut UR_Decoder) {
     decoder.inner.clear();
 }
 
+/// Returns `true` if the decoder doesn't contain any data.
+#[no_mangle]
+pub extern "C" fn ur_decoder_is_empty(decoder: &mut UR_Decoder) -> bool {
+    decoder.inner.is_empty()
+}
+
 /// Decode the message as an UR value.
 #[no_mangle]
 pub extern "C" fn ur_decoder_decode_message(
