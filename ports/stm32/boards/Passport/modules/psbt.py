@@ -1411,15 +1411,15 @@ class psbtObject(psbtProxy):
 
         for idx, inp in enumerate(self.inputs):
             # print('Input {}: free mem={}'.format(idx, gc.mem_free()))
+            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
         for idx, outp in enumerate(self.outputs):
             # print('Output {}: free mem={}'.format(idx, gc.mem_free()))
+            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
     # def sign_it(self):
     #     # txn is approved. sign all inputs we can sign. add signatures

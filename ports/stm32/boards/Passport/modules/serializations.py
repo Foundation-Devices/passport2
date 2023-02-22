@@ -437,11 +437,6 @@ class CScriptWitness(object):
         return "CScriptWitness(%s)" % \
                (",".join([bytes_to_hex_str(x) for x in self.stack]))
 
-    def is_null(self):
-        if self.stack:
-            return False
-        return True
-
 
 class CTxInWitness(object):
     def __init__(self):
@@ -455,8 +450,5 @@ class CTxInWitness(object):
 
     def __repr__(self):
         return repr(self.scriptWitness)
-
-    def is_null(self):
-        return self.scriptWitness.is_null()
 
 # EOF
