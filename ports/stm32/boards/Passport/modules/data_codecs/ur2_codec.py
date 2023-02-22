@@ -23,9 +23,11 @@ class UR2Decoder(DataDecoder):
     def add_data(self, data):
         try:
             ur.decoder_receive(data.lower())
-        except ValueError as exc:
-            import sys
-            sys.print_exception(exc)
+        except ur.NotMultiPartError as exc:
+            raise DecodeError(str(exc))
+        except ur.UnsupportedError as exc:
+            raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
+        except ur.OtherError as exc:
             raise DecodeError(str(exc))
 
     def estimated_percent_complete(self):
@@ -37,10 +39,10 @@ class UR2Decoder(DataDecoder):
     def decode(self):
         try:
             return ur.decoder_decode_message()
-        except ValueError as exc:
-            import sys
-            sys.print_exception(exc)
+        except ur.Other as exc:
             raise DecodeError(str(exc))
+        except ur.Unsupported as exc:
+            raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
 
     def qr_type(self):
         return QRType.UR2

@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include "py/obj.h"
+#include "py/objexcept.h"
 #include "foundation.h"
 
 /// package: foundation.ur
@@ -15,6 +16,46 @@ STATIC const mp_obj_type_t mod_foundation_ur_CryptoKeypath_type;
 STATIC const mp_obj_type_t mod_foundation_ur_PassportRequest_type;
 
 STATIC struct _mp_obj_PassportRequest_t *mod_foundation_ur_PassportRequest_new(UR_PassportRequest *value);
+STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error);
+
+/// class OtherError(Exception):
+///     """
+///     """
+STATIC MP_DEFINE_EXCEPTION(OtherError, Exception);
+
+/// class UnsupportedError(Exception):
+///     """
+///     """
+STATIC MP_DEFINE_EXCEPTION(UnsupportedError, Exception);
+
+/// class NotMultiPartError(Exception):
+///     """
+///     """
+STATIC MP_DEFINE_EXCEPTION(NotMultiPartError, Exception);
+
+STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error) {
+    const mp_obj_type_t *type;
+
+    switch (error->kind) {
+        case UR_ERROR_KIND_OTHER:
+            type = &mp_type_OtherError;
+            break;
+        case UR_ERROR_KIND_UNSUPPORTED:
+            type = &mp_type_UnsupportedError;
+            break;
+        case UR_ERROR_KIND_NOT_MULTI_PART:
+            type = &mp_type_UnsupportedError;
+            break;
+        default:
+            type = &mp_type_RuntimeError;
+            break;
+    }
+
+    mp_raise_msg_varg(type,
+                      MP_ERROR_TEXT("%.*s"),
+                      error->len,
+                      error->message);
+}
 
 /// class Value:
 ///     """
@@ -506,8 +547,7 @@ STATIC mp_obj_t mod_foundation_ur_decoder_receive(mp_obj_t ur_obj)
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
     
     if (!ur_decoder_receive(&UR_DECODER, ur, ur_len, &error)) {
-        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%.*s"),
-                          error.len, error.message);
+        mod_foundation_ur_raise(&error);
     }
 
     return mp_const_none;
@@ -556,8 +596,7 @@ STATIC mp_obj_t mod_foundation_ur_decoder_decode_message(void)
     UR_Value value = {0};
 
     if (!ur_decoder_decode_message(&UR_DECODER, &value, &error)) {
-        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%.*s"),
-                          error.len, error.message);
+        mod_foundation_ur_raise(&error);
     }
 
     return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
@@ -578,6 +617,11 @@ STATIC mp_obj_t mod_foundation_ur_validate(mp_obj_t ur_obj)
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_validate_obj, mod_foundation_ur_validate);
 
 STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
+    /// Errors.
+    {MP_ROM_QSTR(MP_QSTR_OtherError), MP_ROM_PTR(&mp_type_OtherError)},
+    {MP_ROM_QSTR(MP_QSTR_UnsupportedError), MP_ROM_PTR(&mp_type_UnsupportedError)},
+    {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_UnsupportedError)},
+
     // Value.
     {MP_ROM_QSTR(MP_QSTR_NETWORK_MAINNET), MP_ROM_INT(UR_NETWORK_MAINNET)},
     {MP_ROM_QSTR(MP_QSTR_NETWORK_TESTNET), MP_ROM_INT(UR_NETWORK_TESTNET)},
