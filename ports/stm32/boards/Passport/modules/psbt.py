@@ -52,19 +52,6 @@ from public_constants import (
 #         return self.rv.digest()
 
 
-def read_varint(v):
-    # read "compact sized" int from a few bytes.
-    assert not isinstance(v, tuple), v
-    nit = v[0]
-    if nit == 253:
-        return unpack_from("<H", v, 1)[0]
-    elif nit == 254:
-        return unpack_from("<I", v, 1)[0]
-    elif nit == 255:
-        return unpack_from("<Q", v, 1)[0]
-    return nit
-
-
 def seq_to_str(seq):
     # take a set or list of numbers and show a tidy list in order.
     return ', '.join(str(i) for i in sorted(seq))
