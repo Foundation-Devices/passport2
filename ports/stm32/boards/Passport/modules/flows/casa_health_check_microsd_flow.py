@@ -101,8 +101,9 @@ class CasaHealthCheckMicrosdFlow(Flow):
         else:
             # Attempt to write-out the transaction
             try:
-                with open(out_full, 'w') as fd:
-                    fd.write(self.signed_message)
+                with CardSlot() as _card:
+                    with open(out_full, 'w') as fd:
+                        fd.write(self.signed_message)
             except OSError as exc:
                 result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
                 # sys.print_exception(exc)
