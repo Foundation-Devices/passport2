@@ -52,19 +52,6 @@ from public_constants import (
 #         return self.rv.digest()
 
 
-def read_varint(v):
-    # read "compact sized" int from a few bytes.
-    assert not isinstance(v, tuple), v
-    nit = v[0]
-    if nit == 253:
-        return unpack_from("<H", v, 1)[0]
-    elif nit == 254:
-        return unpack_from("<I", v, 1)[0]
-    elif nit == 255:
-        return unpack_from("<Q", v, 1)[0]
-    return nit
-
-
 def seq_to_str(seq):
     # take a set or list of numbers and show a tidy list in order.
     return ', '.join(str(i) for i in sorted(seq))
@@ -216,7 +203,8 @@ class psbtProxy:
     def write(self, out_fd, ktype, val, key=b''):
         # serialize helper: write w/ size and key byte
         out_fd.write(ser_compact_size(1 + len(key)))
-        out_fd.write(bytes([ktype]) + key)
+        out_fd.write(bytes([ktype]))
+        out_fd.write(key)
 
         if isinstance(val, tuple):
             (pos, ll) = val
@@ -1423,15 +1411,15 @@ class psbtObject(psbtProxy):
 
         for idx, inp in enumerate(self.inputs):
             # print('Input {}: free mem={}'.format(idx, gc.mem_free()))
+            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
         for idx, outp in enumerate(self.outputs):
             # print('Output {}: free mem={}'.format(idx, gc.mem_free()))
+            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
     # def sign_it(self):
     #     # txn is approved. sign all inputs we can sign. add signatures

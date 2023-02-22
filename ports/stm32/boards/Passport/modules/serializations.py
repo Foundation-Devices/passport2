@@ -205,20 +205,6 @@ def ser_push_data(dd):
         return bytes([76, ll]) + dd       # 0x4c = 76 => OP_PUSHDATA1 + size + data
 
 
-def ser_push_int(n):
-    # push a small integer onto the stack
-    from opcodes import OP_0, OP_1, OP_16, OP_PUSHDATA1
-
-    if n == 0:
-        return bytes([OP_0])
-    elif 1 <= n <= 16:
-        return bytes([OP_1 + n - 1])
-    elif n <= 255:
-        return bytes([1, n])
-
-    raise ValueError(n)
-
-
 def disassemble(script):
     # Very limited script disassembly
     # yeilds (int / bytes, opcode) for each part of the script
@@ -451,11 +437,6 @@ class CScriptWitness(object):
         return "CScriptWitness(%s)" % \
                (",".join([bytes_to_hex_str(x) for x in self.stack]))
 
-    def is_null(self):
-        if self.stack:
-            return False
-        return True
-
 
 class CTxInWitness(object):
     def __init__(self):
@@ -469,139 +450,5 @@ class CTxInWitness(object):
 
     def __repr__(self):
         return repr(self.scriptWitness)
-
-    def is_null(self):
-        return self.scriptWitness.is_null()
-
-
-class CTxWitness(object):
-    def __init__(self):
-        self.vtxinwit = []
-
-    def deserialize(self, f):
-        for i in range(len(self.vtxinwit)):
-            self.vtxinwit[i].deserialize(f)
-
-    def serialize(self):
-        r = b""
-        # This is different than the usual vector serialization --
-        # we omit the length of the vector, which is required to be
-        # the same length as the transaction's vin vector.
-        for x in self.vtxinwit:
-            r += x.serialize()
-        return r
-
-    def __repr__(self):
-        return "CTxWitness(%s)" % \
-               (';'.join([repr(x) for x in self.vtxinwit]))
-
-    def is_null(self):
-        for x in self.vtxinwit:
-            if not x.is_null():
-                return False
-        return True
-
-
-class CTransaction(object):
-    def __init__(self, tx=None):
-        if tx is None:
-            self.nVersion = 1
-            self.vin = []
-            self.vout = []
-            self.wit = CTxWitness()
-            self.nLockTime = 0
-            self.sha256 = None
-            self.hash = None
-        else:
-            import copy         # not supported
-            self.nVersion = tx.nVersion
-            self.vin = copy.deepcopy(tx.vin)
-            self.vout = copy.deepcopy(tx.vout)
-            self.nLockTime = tx.nLockTime
-            self.sha256 = tx.sha256
-            self.hash = tx.hash
-            self.wit = copy.deepcopy(tx.wit)
-
-    def deserialize(self, f):
-        self.nVersion = struct.unpack("<i", f.read(4))[0]
-        self.vin = deser_vector(f, CTxIn)
-        flags = 0
-        if len(self.vin) == 0:
-            flags = struct.unpack("<B", f.read(1))[0]
-            # Not sure why flags can't be zero, but this
-            # matches the implementation in bitcoind
-            if (flags != 0):
-                self.vin = deser_vector(f, CTxIn)
-                self.vout = deser_vector(f, CTxOut)
-        else:
-            self.vout = deser_vector(f, CTxOut)
-        if flags != 0:
-            self.wit.vtxinwit = [CTxInWitness() for i in range(len(self.vin))]
-            self.wit.deserialize(f)
-        self.nLockTime = struct.unpack("<I", f.read(4))[0]
-        self.sha256 = None
-        self.hash = None
-
-    def serialize_without_witness(self):
-        r = struct.pack("<i", self.nVersion)
-        r += ser_vector(self.vin)
-        r += ser_vector(self.vout)
-        r += struct.pack("<I", self.nLockTime)
-        return r
-
-    # Only serialize with witness when explicitly called for
-    def serialize_with_witness(self):
-        flags = 0
-        if not self.wit.is_null():
-            flags |= 1
-        r = struct.pack("<i", self.nVersion)
-        if flags:
-            dummy = []
-            r += ser_vector(dummy)
-            r += struct.pack("<B", flags)
-        r += ser_vector(self.vin)
-        r += ser_vector(self.vout)
-        if flags & 1:
-            if (len(self.wit.vtxinwit) != len(self.vin)):
-                # vtxinwit must have the same length as vin
-                self.wit.vtxinwit = self.wit.vtxinwit[:len(self.vin)]
-                for i in range(len(self.wit.vtxinwit), len(self.vin)):
-                    self.wit.vtxinwit.append(CTxInWitness())
-            r += self.wit.serialize()
-        r += struct.pack("<I", self.nLockTime)
-        return r
-
-    # Regular serialization is without witness -- must explicitly
-    # call serialize_with_witness to include witness data.
-    def serialize(self):
-        return self.serialize_without_witness()
-
-    # Recalculate the txid (transaction hash without witness)
-    def rehash(self):
-        self.sha256 = None
-        self.calc_sha256()
-
-    # We will only cache the serialization without witness in
-    # self.sha256 and self.hash -- those are expected to be the txid.
-    def calc_sha256(self, with_witness=False):
-        if with_witness:
-            # Don't cache the result, just return it
-            return uint256_from_str(hash256(self.serialize_with_witness()))
-
-        if self.sha256 is None:
-            self.sha256 = uint256_from_str(hash256(self.serialize_without_witness()))
-        tmp = hash256(self.serialize())
-        self.hash = b2a_hex(bytes(tmp[i] for i in range(len(tmp) - 1, -1, -1)))
-
-    def is_valid(self):
-        self.calc_sha256()
-        for tout in self.vout:
-            if tout.nValue < 0 or tout.nValue > 21000000 * COIN:
-                return False
-        return True
-
-    def __repr__(self):
-        return "CTransaction(nVersion=%i vin=%s vout=%s wit=%s nLockTime=%i)" \
-            % (self.nVersion, repr(self.vin), repr(self.vout), repr(self.wit), self.nLockTime)
 
 # EOF
