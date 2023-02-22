@@ -35,6 +35,7 @@ pub const fn digit_count(v: usize) -> usize {
 pub enum UR_ErrorKind {
     UR_ERROR_KIND_OTHER,
     UR_ERROR_KIND_UNSUPPORTED,
+    UR_ERROR_KIND_NOT_MULTI_PART,
 }
 
 #[repr(C)]

@@ -6,7 +6,7 @@
 use core::{slice, str};
 
 use ur::UR;
-use ur_foundation::ur;
+use ur_foundation::{ur, ur::decoder::Error};
 
 use crate::ur::{max_fragment_len, registry::UR_Value, UR_Error};
 
@@ -78,13 +78,22 @@ pub unsafe extern "C" fn ur_decoder_receive(
         .map_err(|e| unsafe { UR_Error::other(&e) })
         .and_then(|ur| {
             UR::parse(ur).map_err(|e| unsafe { UR_Error::other(&e) })
-        })
-        .and_then(|ur| {
-            decoder
-                .inner
-                .receive(ur)
-                .map_err(|e| unsafe { UR_Error::other(&e) })
         });
+
+    let ur = match result {
+        Ok(ur) => ur,
+        Err(e) => {
+            *error = e;
+            return false;
+        }
+    };
+
+    let result = decoder.inner.receive(ur).map_err(|e| match e {
+        Error::NotMultiPart => unsafe {
+            UR_Error::new(&e, super::UR_ErrorKind::UR_ERROR_KIND_NOT_MULTI_PART)
+        },
+        _ => unsafe { UR_Error::other(&e) },
+    });
 
     match result {
         Ok(_) => true,
