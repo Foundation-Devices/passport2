@@ -18,7 +18,6 @@
 #
 import trezorcrypto
 from uasyncio import sleep_ms
-from uio import BytesIO
 from common import system
 
 blksize = const(65536)
