@@ -8,7 +8,9 @@ use core::{slice, str};
 use ur::UR;
 use ur_foundation::{ur, ur::decoder::Error};
 
-use crate::ur::{max_fragment_len, registry::UR_Value, UR_Error};
+use crate::ur::{
+    max_fragment_len, max_message_len, registry::UR_Value, UR_Error,
+};
 
 /// Maximum size of an encoded Uniform Resource.
 ///
@@ -29,6 +31,10 @@ pub const UR_DECODER_MAX_FRAGMENT_LEN: usize =
 pub const UR_DECODER_MAX_MESSAGE_LEN: usize =
     UR_DECODER_MAX_FRAGMENT_LEN * UR_DECODER_MAX_SEQUENCE_COUNT;
 
+/// Maximum message length for a single part UR.
+pub const UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN: usize =
+    max_message_len(UR_DECODER_MAX_STRING);
+
 /// Maximum number of mixed parts that can be held.
 pub const UR_DECODER_MAX_MIXED_PARTS: usize = UR_DECODER_MAX_SEQUENCE_COUNT / 4;
 
@@ -46,6 +52,14 @@ pub const UR_DECODER_MAX_UR_TYPE: usize = "crypto-coin-info".len();
 pub static mut UR_DECODER: UR_Decoder = UR_Decoder {
     inner: ur::HeaplessDecoder::new_heapless(),
 };
+
+/// cbindgen:ignore
+#[used]
+#[cfg_attr(dtcm, link_section = ".dtcm")]
+static mut UR_DECODER_SINGLE_PART_MESSAGE: heapless::Vec<
+    u8,
+    UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN,
+> = heapless::Vec::new();
 
 /// Uniform Resource decoder.
 pub struct UR_Decoder {
@@ -197,4 +211,66 @@ pub unsafe extern "C" fn ur_validate(ur: *const u8, ur_len: usize) -> bool {
     }
 
     false
+}
+
+/// # Safety
+///
+/// Same as in `ur_decoder_decode_message`
+#[no_mangle]
+pub unsafe extern "C" fn ur_decode_single_part(
+    ur: *const u8,
+    ur_len: usize,
+    value: &mut UR_Value,
+    error: &mut UR_Error,
+) -> bool {
+    // SAFETY: ur and ur_len are assumed to be valid.
+    let ur = unsafe { slice::from_raw_parts(ur, ur_len) };
+
+    let result = str::from_utf8(ur)
+        .map_err(|e| unsafe { UR_Error::other(&e) })
+        .and_then(|ur| {
+            UR::parse(ur).map_err(|e| unsafe { UR_Error::other(&e) })
+        });
+
+    let ur = match result {
+        Ok(ur) => ur,
+        Err(e) => {
+            *error = e;
+            return false;
+        }
+    };
+
+    let message = unsafe { &mut UR_DECODER_SINGLE_PART_MESSAGE };
+    message.clear();
+    message
+        .resize(UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN, 0)
+        .expect("Message buffer should have the same size as in the constant");
+
+    let result = ur::bytewords::decode_to_slice(
+        ur.as_bytewords()
+            .expect("Uniform Resource should contain bytewords"),
+        message,
+        ur::bytewords::Style::Minimal,
+    )
+    .map_err(|e| unsafe { UR_Error::other(&e) });
+
+    match result {
+        Ok(len) => message.truncate(len),
+        Err(e) => {
+            *error = e;
+            return false;
+        }
+    }
+
+    let result = unsafe { UR_Value::from_ur(ur.as_type(), message) };
+
+    *value = match result {
+        Ok(v) => v,
+        Err(e) => {
+            *error = e;
+            return false;
+        }
+    };
+
+    true
 }

@@ -345,6 +345,8 @@ typedef struct {
 
 
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -400,6 +402,16 @@ bool ur_decoder_decode_message(UR_Decoder *decoder,
  * - `ur` must point to valid memory and must have a length of `ur_len` bytes.
  */
 bool ur_validate(const uint8_t *ur, size_t ur_len);
+
+/**
+ * # Safety
+ *
+ * Same as in `ur_decoder_decode_message`
+ */
+bool ur_decode_single_part(const uint8_t *ur,
+                           size_t ur_len,
+                           UR_Value *value,
+                           UR_Error *error);
 
 /**
  * Start the encoder.

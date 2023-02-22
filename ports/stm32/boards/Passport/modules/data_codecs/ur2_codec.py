@@ -19,12 +19,24 @@ from foundation import ur
 class UR2Decoder(DataDecoder):
     def __init__(self):
         ur.decoder_clear()
+        self.value = None
 
     def add_data(self, data):
+        data = data.lower()
+
         try:
-            ur.decoder_receive(data.lower())
+            ur.decoder_receive(data)
         except ur.NotMultiPartError as exc:
-            raise DecodeError(str(exc))
+            if ur.decoder_is_empty():
+                try:
+                    self.value = ur.decode_single_part(data)
+                except ur.UnsupportedError as exc:
+                    raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
+                except ur.OtherError as exc:
+                    raise DecodeError(str(exc))
+            else:
+                raise DecodeError("""\
+Received single-part UR when multi-part reception was already in place""")
         except ur.UnsupportedError as exc:
             raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
         except ur.OtherError as exc:
@@ -38,11 +50,14 @@ class UR2Decoder(DataDecoder):
 
     def decode(self):
         try:
-            return ur.decoder_decode_message()
+            if self.value is None:
+                self.value = ur.decoder_decode_message()
         except ur.Other as exc:
             raise DecodeError(str(exc))
         except ur.Unsupported as exc:
             raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
+        finally:
+            return self.value
 
     def qr_type(self):
         return QRType.UR2

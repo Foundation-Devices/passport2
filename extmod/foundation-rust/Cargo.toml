@@ -24,6 +24,11 @@ default-features = false
 version = "1"
 default-features = false
 
+[dependencies.ur]
+git = "https://github.com/Foundation-Devices/ur-rs"
+branch = "dev"
+default-features = false
+
 [dependencies.ur-foundation]
 git = "https://github.com/Foundation-Devices/rust-ur-foundation"
 branch = "dev-v0.1.0"
