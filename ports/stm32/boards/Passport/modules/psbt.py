@@ -216,7 +216,8 @@ class psbtProxy:
     def write(self, out_fd, ktype, val, key=b''):
         # serialize helper: write w/ size and key byte
         out_fd.write(ser_compact_size(1 + len(key)))
-        out_fd.write(bytes([ktype]) + key)
+        out_fd.write(bytes([ktype]))
+        out_fd.write(key)
 
         if isinstance(val, tuple):
             (pos, ll) = val
