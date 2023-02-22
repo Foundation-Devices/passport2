@@ -41,7 +41,7 @@ pub const UR_ENCODER_MAX_MESSAGE_LEN: usize =
 /// Statically allocated encoder.
 #[no_mangle]
 #[used]
-#[cfg_attr(encoder_sram4, link_section = ".sram4")]
+#[cfg_attr(sram4, link_section = ".sram4")]
 pub static mut UR_ENCODER: UR_Encoder = UR_Encoder {
     inner: ur::HeaplessEncoder::new_heapless(),
 };
