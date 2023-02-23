@@ -452,6 +452,9 @@ class HexWriter:
         buf[0:len(b)] = b
         return len(b)
 
+    def getvalue(self):
+        return self.fd.getvalue()
+
 
 class Base64Writer:
     # Emulate a file/stream but convert binary to Base64 as they write
@@ -480,6 +483,9 @@ class Base64Writer:
             assert tmp[-1:] == b'\n', tmp
             assert tmp[-2:-1] != b'=', tmp
             self.fd.write(tmp[:-1])
+
+    def getvalue(self):
+        return self.fd.getvalue()
 
 
 def swab32(n):

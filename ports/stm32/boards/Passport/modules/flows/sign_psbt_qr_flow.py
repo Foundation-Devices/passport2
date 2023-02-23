@@ -97,14 +97,15 @@ class SignPsbtQRFlow(Flow):
         import microns
 
         # Copy signed txn into a bytearray and show the data as a UR
+        # try:
+        signed_bytes = None
         try:
-            signed_bytes = None
             with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
                     bfd.seek(0)
-                    signed_bytes = bfd.read()
+                    signed_bytes = bfd.getvalue()
                     # print('len(signed_bytes)={}'.format(len(signed_bytes)))
                     # print('signed_bytes={}'.format(signed_bytes))
         except MemoryError as e:
