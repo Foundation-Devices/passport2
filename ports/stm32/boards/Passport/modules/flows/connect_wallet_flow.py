@@ -30,6 +30,7 @@ from public_constants import TRUST_PSBT
 from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
 from utils import random_hex, spinner_task
+from foundation import ur
 import common
 import microns
 import foundation
@@ -418,7 +419,11 @@ class ConnectWalletFlow(Flow):
 
         try:
             # Mulitsig config should be a bytes-like object that we decode to a string
-            self.multisig_import_data = scan_result.data.decode('utf-8')
+            if isinstance(scan_result.data, ur.Value):
+                self.multisig_import_data = scan_result.data.unwrap_bytes().decode('utf-8')
+            elif isinstance(scan_result.data, str):
+                self.multisig_import_data = scan_result.data
+
             # from utils import to_str
             # print('MS Data: {}'.format(to_str(self.multisig_import_data)))
         except BaseException as e:
