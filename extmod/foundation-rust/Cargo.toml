@@ -37,5 +37,7 @@ std = []
 crate-type = ["lib", "staticlib"]
 
 [profile.release]
-lto = true
-opt-level = 3
+lto = "fat"
+opt-level = "z"
+codegen-units = 1
+strip = true
