@@ -19,18 +19,17 @@ pub const UR_DECODER_MAX_STRING: usize = 1408;
 /// Maximum sequence count for the decoder.
 ///
 /// Must be a power of two.
-pub const UR_DECODER_MAX_SEQUENCE_COUNT: usize = 32;
+pub const UR_DECODER_MAX_SEQUENCE_COUNT: usize = 128;
 
 /// Maximum fragment length.
 pub const UR_DECODER_MAX_FRAGMENT_LEN: usize =
     max_fragment_len(UR_DECODER_MAX_STRING);
 
 /// Maximum message length that can be decoded.
-pub const UR_DECODER_MAX_MESSAGE_LEN: usize =
-    UR_DECODER_MAX_FRAGMENT_LEN * UR_DECODER_MAX_SEQUENCE_COUNT;
+pub const UR_DECODER_MAX_MESSAGE_LEN: usize = 24 * 1024;
 
 /// Maximum number of mixed parts that can be held.
-pub const UR_DECODER_MAX_MIXED_PARTS: usize = UR_DECODER_MAX_SEQUENCE_COUNT / 4;
+pub const UR_DECODER_MAX_MIXED_PARTS: usize = 8;
 
 /// Size of the decoder queue.
 pub const UR_DECODER_QUEUE_SIZE: usize = 8;

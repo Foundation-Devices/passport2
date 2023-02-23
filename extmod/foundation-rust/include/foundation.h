@@ -31,17 +31,17 @@
  *
  * Must be a power of two.
  */
-#define UR_DECODER_MAX_SEQUENCE_COUNT 32
+#define UR_DECODER_MAX_SEQUENCE_COUNT 128
 
 /**
  * Maximum message length that can be decoded.
  */
-#define UR_DECODER_MAX_MESSAGE_LEN (UR_DECODER_MAX_FRAGMENT_LEN * UR_DECODER_MAX_SEQUENCE_COUNT)
+#define UR_DECODER_MAX_MESSAGE_LEN (24 * 1024)
 
 /**
  * Maximum number of mixed parts that can be held.
  */
-#define UR_DECODER_MAX_MIXED_PARTS (UR_DECODER_MAX_SEQUENCE_COUNT / 4)
+#define UR_DECODER_MAX_MIXED_PARTS 8
 
 /**
  * Size of the decoder queue.
