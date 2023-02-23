@@ -28,19 +28,14 @@ class ExportSummaryFlow(Flow):
             self.set_result(False)
 
     async def do_export(self):
-        if not _try_microsd():
-            result = await InsertMicroSDPage().show()
-            if not result:
-                self.set_result(False)
-            else:
-                return  # Will cause this state to rerun and check the card again
-
         (error,) = await spinner_task('Exporting wallet summary', export_summary_task, ['public.txt'])
         if error is None:
             await SuccessPage(text='Exported successfully.').show()
             self.set_result(True)
         elif error is Error.MICROSD_CARD_MISSING:
-            return
+            result = await InsertMicroSDPage().show()
+            if not result:
+                self.set_result(False)
         elif error is Error.FILE_WRITE_ERROR:
             await ErrorPage(text='Unable to export summary file.  Error writing to file.').show()
             self.set_result(False)
