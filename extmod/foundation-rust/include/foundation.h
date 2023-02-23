@@ -78,6 +78,7 @@ typedef enum {
 typedef enum {
   UR_ERROR_KIND_OTHER,
   UR_ERROR_KIND_UNSUPPORTED,
+  UR_ERROR_KIND_NOT_MULTI_PART,
 } UR_ErrorKind;
 
 /**
@@ -344,6 +345,8 @@ typedef struct {
 
 
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -380,6 +383,11 @@ uint32_t ur_decoder_estimated_percent_complete(UR_Decoder *decoder);
 void ur_decoder_clear(UR_Decoder *decoder);
 
 /**
+ * Returns `true` if the decoder doesn't contain any data.
+ */
+bool ur_decoder_is_empty(UR_Decoder *decoder);
+
+/**
  * Decode the message as an UR value.
  */
 bool ur_decoder_decode_message(UR_Decoder *decoder,
@@ -394,6 +402,16 @@ bool ur_decoder_decode_message(UR_Decoder *decoder,
  * - `ur` must point to valid memory and must have a length of `ur_len` bytes.
  */
 bool ur_validate(const uint8_t *ur, size_t ur_len);
+
+/**
+ * # Safety
+ *
+ * Same as in `ur_decoder_decode_message`
+ */
+bool ur_decode_single_part(const uint8_t *ur,
+                           size_t ur_len,
+                           UR_Value *value,
+                           UR_Error *error);
 
 /**
  * Start the encoder.

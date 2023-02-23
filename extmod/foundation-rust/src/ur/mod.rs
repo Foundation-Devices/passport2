@@ -26,6 +26,16 @@ pub const fn max_fragment_len(max_characters: usize) -> usize {
     max_bytes_for_part - Part::max_encoded_len()
 }
 
+pub const fn max_message_len(max_characters: usize) -> usize {
+    const MAX_UR_PREFIX: usize = "ur:crypto-coin-info/".len();
+
+    let max_chars_for_message: usize = max_characters - MAX_UR_PREFIX;
+
+    let max_bytes_for_message: usize = (max_chars_for_message / 2) - 4;
+
+    max_bytes_for_message
+}
+
 /// Count the number of digits in a number.
 pub const fn digit_count(v: usize) -> usize {
     (v.ilog10() + 1) as usize
@@ -35,6 +45,7 @@ pub const fn digit_count(v: usize) -> usize {
 pub enum UR_ErrorKind {
     UR_ERROR_KIND_OTHER,
     UR_ERROR_KIND_UNSUPPORTED,
+    UR_ERROR_KIND_NOT_MULTI_PART,
 }
 
 #[repr(C)]
