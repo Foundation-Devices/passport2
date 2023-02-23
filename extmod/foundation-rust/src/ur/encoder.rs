@@ -35,8 +35,7 @@ pub const UR_ENCODER_MAX_SEQUENCE_COUNT: usize = usize::next_power_of_two(
 
 /// Maximum message length that can be encoded.
 /// cbindgen:ignore
-pub const UR_ENCODER_MAX_MESSAGE_LEN: usize =
-    UR_ENCODER_MAX_FRAGMENT_LEN * UR_ENCODER_MAX_SEQUENCE_COUNT;
+pub const UR_ENCODER_MAX_MESSAGE_LEN: usize = UR_DECODER_MAX_MESSAGE_LEN;
 
 /// Statically allocated encoder.
 #[no_mangle]
