@@ -30,6 +30,8 @@ Several tools are required for building Passport.
 
 #### Install Rust Toolchain
 
+First install the `rustup` tool from [rustup.rs](https://rustup.rs/).
+
     rustup default 1.67.1
     rustup target add aarch64-unknown-none # For the simulator. Only if on macOS with an M1 CPU.
     rustup target add thumbv7em-none-eabihf
