@@ -175,8 +175,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_lv_Keypad_set_key_cb_obj, mod_pass
 
 STATIC mp_obj_t mod_passport_lv_Keypad_toggle_up_repeat(mp_obj_t self_in){
     enable_up_repeat = !enable_up_repeat;
-    return mp_const_true
+    return mp_const_true;
 }
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_lv_Keypad_toggle_up_repeat_obj, mod_passport_lv_Keypad_toggle_up_repeat);
 
 /// def enable_global(self, enable):
 ///     """
@@ -330,6 +331,7 @@ STATIC const mp_rom_map_elem_t mod_passport_lv_Keypad_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_get_keycode), MP_ROM_PTR(&mod_passport_lv_Keypad_get_keycode_obj)},
     {MP_ROM_QSTR(MP_QSTR_read_cb), MP_ROM_PTR(&PTR_OBJ(mod_passport_lv_Keypad_read_cb))},
     {MP_ROM_QSTR(MP_QSTR_set_key_cb), MP_ROM_PTR(&mod_passport_lv_Keypad_set_key_cb_obj)},
+    {MP_ROM_QSTR(MP_QSTR_toggle_up_repeat), MP_ROM_PTR(&mod_passport_lv_Keypad_toggle_up_repeat_obj)},
     {MP_ROM_QSTR(MP_QSTR_inject), MP_ROM_PTR(&mod_passport_lv_Keypad_inject_obj)},
     {MP_ROM_QSTR(MP_QSTR_enable_global_nav_keys), MP_ROM_PTR(&mod_passport_lv_Keypad_enable_global_nav_keys_obj)},
     {MP_ROM_QSTR(MP_QSTR_intercept_all), MP_ROM_PTR(&mod_passport_lv_Keypad_intercept_all_obj)},
