@@ -232,32 +232,35 @@ class PINEntryPage(Page):
     def attach(self, group):
         super().attach(group)
         group.add_obj(self.lvgl_root)
-        self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
+        # self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
+        common.keypad.set_intercept_key_cb(self.on_key)
 
     def detach(self):
-        self.lvgl_root.remove_event_cb(self.on_key)
+        # self.lvgl_root.remove_event_cb(self.on_key)
+        common.keypad.set_intercept_key_cb(None)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 
-    def on_key(self, event):
-        key = event.get_key()
-
+    def on_key(self, key, pressed):
         # Disable backspace if viewing the security words
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
 
         if key == lv.KEY.UP:
-            self.input.view_pin()
-            return
+            if pressed:
+                self.input.view_pin()
+            else:
+                self.input.hide_pin()
 
         if key in self.arrows:
             return
 
-        if not self.displaying_security_words:
-            self.t9.on_key(key)
-            self.pin = self.t9.get_text()
-            self.input.set_pin(self.pin)
-            self.input.set_mode(self.t9.mode)
+        if pressed:
+            if not self.displaying_security_words:
+                self.t9.on_key(key)
+                self.pin = self.t9.get_text()
+                self.input.set_pin(self.pin)
+                self.input.set_mode(self.t9.mode)
 
     async def on_security_words(self, security_words, error):
         from serializations import sha256

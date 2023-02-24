@@ -23,7 +23,6 @@ class PINInput(View):
         self.show_last_char = False
         self.timer = None
         self.hidden_mode = True
-        self.hidden_timer = None
 
         self.set_size(lv.pct(100), 35)
 
@@ -129,14 +128,8 @@ class PINInput(View):
 
     def view_pin(self):
         self.hidden_mode = False
-        if self.hidden_timer is not None:
-            self.hidden_timer._del()
-            self.hidden_timer = None
-        self.hidden_timer = lv.timer_create(self.on_hidden_timer, 500, None)
         self.update_pin()
 
-    def on_hidden_timer(self, t):
-        self.hidden_timer._del()
-        self.hidden_timer = None
+    def hide_pin(self, t):
         self.hidden_mode = True
         self.update_pin()
