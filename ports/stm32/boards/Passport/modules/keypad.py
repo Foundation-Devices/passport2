@@ -148,5 +148,5 @@ class Keypad:
 
             # print('check_pending_keys 3: pending_keys={}'.format(self.pending_keys))
 
-    def toggle_up_repeat(self):
-        self.keypad.toggle_up_repeat()
+    def set_key_repeat(self, key, repeat):
+        self.keypad.set_key_repeat(key, repeat)
