@@ -234,12 +234,12 @@ class PINEntryPage(Page):
         group.add_obj(self.lvgl_root)
         # self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
         common.keypad.set_intercept_key_cb(self.on_key)
-        common.keypad.toggle_up_repeat()
+        common.keypad.set_key_repeat(lv.KEY.UP, False)
 
     def detach(self):
         # self.lvgl_root.remove_event_cb(self.on_key)
         common.keypad.set_intercept_key_cb(None)
-        common.keypad.toggle_up_repeat()
+        common.keypad.set_key_repeat(lv.KEY.UP, True)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 
