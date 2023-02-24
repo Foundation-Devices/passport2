@@ -3,7 +3,7 @@
 
 //! Decoder.
 
-use core::{slice, str};
+use core::{fmt, slice, str};
 
 use ur::UR;
 use ur_foundation::{ur, ur::decoder::Error};
@@ -91,6 +91,14 @@ pub unsafe extern "C" fn ur_decoder_receive(
         .map_err(|e| unsafe { UR_Error::other(&e) })
         .and_then(|ur| {
             UR::parse(ur).map_err(|e| unsafe { UR_Error::other(&e) })
+        })
+        .and_then(|ur| match ur.sequence_count() {
+            Some(n) if n > UR_DECODER_MAX_SEQUENCE_COUNT as u32 => {
+                Err(unsafe {
+                    UR_Error::other(&TooManySequences { sequence_count: n })
+                })
+            }
+            _ => Ok(ur),
         });
 
     let ur = match result {
@@ -272,4 +280,19 @@ pub unsafe extern "C" fn ur_decode_single_part(
     };
 
     true
+}
+
+struct TooManySequences {
+    sequence_count: u32,
+}
+
+impl fmt::Display for TooManySequences {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "The UR contains more sequences than we can handle.\n\nMaximum sequence count supported: {}.\n\nMessage sequence count: {}.",
+            UR_DECODER_MAX_SEQUENCE_COUNT,
+            self.sequence_count,
+        )
+    }
 }
