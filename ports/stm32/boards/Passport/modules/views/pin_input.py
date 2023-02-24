@@ -130,6 +130,6 @@ class PINInput(View):
         self.hidden_mode = False
         self.update_pin()
 
-    def hide_pin(self, t):
+    def hide_pin(self):
         self.hidden_mode = True
         self.update_pin()
