@@ -81,12 +81,11 @@ class SignPsbtQRFlow(Flow):
         from flows import SignPsbtCommonFlow
 
         # This flow validates and signs if all goes well, and returns the signed psbt
-        result = await SignPsbtCommonFlow(self.psbt_len).run()
+        self.psbt = await SignPsbtCommonFlow(self.psbt_len).run()
 
-        if result is None:
+        if self.psbt is None:
             self.set_result(False)
         else:
-            self.psbt = result
             self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
