@@ -22,6 +22,7 @@ STATIC const mp_obj_fun_builtin_fixed_t mod_passport_lv_Keypad_irq_callback_obj;
 STATIC mp_obj_t                         key_cb                  = mp_const_none;
 STATIC bool                             global_nav_keys_enabled = true;
 STATIC bool                             intercept_all_keys      = false;
+STATIC bool                             enable_up_repeat        = true;
 
 typedef struct _key_filter_t {
     uint32_t release_time;
@@ -172,6 +173,11 @@ STATIC mp_obj_t mod_passport_lv_Keypad_set_key_cb(mp_obj_t self_in, mp_obj_t key
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_lv_Keypad_set_key_cb_obj, mod_passport_lv_Keypad_set_key_cb);
 
+STATIC mp_obj_t mod_passport_lv_Keypad_toggle_up_repeat(mp_obj_t self_in){
+    enable_up_repeat = !enable_up_repeat;
+    return mp_const_true
+}
+
 /// def enable_global(self, enable):
 ///     """
 ///     """
@@ -218,8 +224,11 @@ void start_repeat_timer(uint32_t delay) {
 
 bool is_repeatable_key(uint32_t key) {
     switch (key) {
-        case LV_KEY_DOWN:
         case LV_KEY_UP:
+            if (!enable_up_repeat) {
+                return false;
+            }
+        case LV_KEY_DOWN:
         case LV_KEY_BACKSPACE:
             return true;
     }
