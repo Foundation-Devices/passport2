@@ -4,7 +4,6 @@
 # import_multisig_wallet_from_qr_flow.py - Import a multisig wallet from a QR code
 
 from flows import Flow
-from foundation import ur
 
 
 class ImportMultisigWalletFromQRFlow(Flow):
@@ -16,6 +15,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
     async def scan_qr_code(self):
         from pages import ScanQRPage, ErrorPage
         from multisig_wallet import MultisigWallet
+        from foundation import ur
 
         result = await ScanQRPage().show()
         if result is None:
