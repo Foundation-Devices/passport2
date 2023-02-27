@@ -36,6 +36,8 @@ from public_constants import (
 # print some things
 # DEBUG = const(1)
 
+_MAGIC = b'psbt\xff'
+
 
 def seq_to_str(seq):
     # take a set or list of numbers and show a tidy list in order.
@@ -1329,7 +1331,7 @@ class psbtObject(psbtProxy):
     def read_psbt(cls, fd):
         # read in a PSBT file. Captures fd and keeps it open.
         hdr = fd.read(5)
-        if hdr != b'psbt\xff':
+        if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
         rv = cls()
@@ -1353,7 +1355,7 @@ class psbtObject(psbtProxy):
         def wr(*a):
             self.write(out_fd, *a)
 
-        out_fd.write(b'psbt\xff')
+        out_fd.write(_MAGIC)
 
         if upgrade_txn and self.is_complete():
             # write out the ready-to-transmit txn
