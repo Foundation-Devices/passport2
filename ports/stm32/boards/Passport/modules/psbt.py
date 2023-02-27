@@ -1382,23 +1382,14 @@ class psbtObject(psbtProxy):
             for k in self.unknown:
                 wr(k[0], self.unknown[k], k[1:])
 
-        # import micropython
-        # print('======================================')
-        # micropython.mem_info(1)
-        # print('======================================')
-
         # sep between globals and inputs
         out_fd.write(b'\0')
 
         for idx, inp in enumerate(self.inputs):
-            # print('Input {}: free mem={}'.format(idx, gc.mem_free()))
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
         for idx, outp in enumerate(self.outputs):
-            # print('Output {}: free mem={}'.format(idx, gc.mem_free()))
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
