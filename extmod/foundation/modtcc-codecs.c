@@ -214,6 +214,55 @@ STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_o
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(modtcc_bech32_encode_obj, modtcc_bech32_encode);
 
+STATIC mp_obj_t modtcc_bech32_plain_encode(mp_obj_t hrp_obj, mp_obj_t data_obj) {
+    const char* hrp            = mp_obj_str_get_str(hrp_obj);
+    mp_buffer_info_t buf;
+    mp_get_buffer_raise(data_obj, &buf, MP_BUFFER_READ);
+
+    // low-level bech32 functions want 5-bit data unpacked into bytes. first value is
+    // the version number (5 bits), and remainder is packed data.
+
+    uint8_t data[buf.len];
+    size_t  data_len = 0;
+    int cv_ok        = sw_convert_bits(data, &data_len, 5, buf.buf, buf.len, 8, true);
+
+    if (cv_ok != 1) {
+        mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
+    }
+
+    vstr_t vstr;
+    vstr_init_len(&vstr, strlen(hrp) + data_len + 8);
+
+    /** Encode a Bech32 string
+     *
+     *  Out: output:  Pointer to a buffer of size strlen(hrp) + data_len + 8 that
+     *                will be updated to contain the null-terminated Bech32 string.
+     *  In: hrp :     Pointer to the null-terminated human readable part.
+     *      data :    Pointer to an array of 5-bit values.
+     *      data_len: Length of the data array.
+     *  Returns 1 if successful.
+
+        int bech32_encode(
+            char *output,
+            const char *hrp,
+            const uint8_t *data,
+            size_t data_len,
+            bech32_encoding enc
+        );
+     */
+    // printf("hrp=%s, data_len=%d\n", hrp, data_len);
+    int rv = bech32_encode(vstr.buf, hrp, data, data_len, BECH32_ENCODING_BECH32);
+
+    if (rv != 1) {
+        mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
+    }
+
+    vstr.len = strlen(vstr.buf);
+
+    return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(modtcc_bech32_plain_encode_obj, modtcc_bech32_plain_encode);
+
 STATIC mp_obj_t modtcc_bech32_decode(mp_obj_t enc) {
     const char* s = mp_obj_str_get_str(enc);
 
@@ -283,6 +332,7 @@ STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_b32_encode), MP_ROM_PTR(&modtcc_b32_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_b32_decode), MP_ROM_PTR(&modtcc_b32_decode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
+    {MP_ROM_QSTR(MP_QSTR_bech32_plain_encode), MP_ROM_PTR(&modtcc_bech32_plain_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_decode), MP_ROM_PTR(&modtcc_bech32_decode_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(modtcc_codecs_globals, modtcc_codecs_globals_table);

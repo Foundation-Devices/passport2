@@ -6,8 +6,8 @@
 import lvgl as lv
 from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_task
 
-# Each key generation task must take num_words and index as args, whether or not they use them.
-# The type is stored as an index into this, so this MUST NOT be re-ordered.
+# Each key generation task must take index as args, whether or not they use it.
+# The type is stored as an index into this array, so this MUST NOT be re-ordered.
 key_types = [
     {'title': '24 Word Seed',
      'icon': lv.ICON_BITCOIN,
@@ -23,7 +23,7 @@ key_types = [
      'icon': lv.ICON_ONE_KEY,
      'indexed': False,
      'words': False,
-     'task': nostr_key_task}
+     'task': nostr_key_task},
 ]
 
 # This is unused, but it's an example of the schema
