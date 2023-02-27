@@ -36,20 +36,7 @@ from public_constants import (
 # print some things
 # DEBUG = const(1)
 
-# class HashNDump:
-#     def __init__(self, d=None):
-#         self.rv = trezorcrypto.sha256()
-#         print('Hashing: ', end='')
-#         if d:
-#             self.update(d)
-#
-#     def update(self, d):
-#         print(b2a_hex(d), end=' ')
-#         self.rv.update(d)
-#
-#     def digest(self):
-#         print(' END')
-#         return self.rv.digest()
+_MAGIC = b'psbt\xff'
 
 
 def seq_to_str(seq):
@@ -157,7 +144,7 @@ class psbtProxy:
 
     def __init__(self):
         self.fd = None
-        # self.unknown = {}
+        self.unknown = {}
 
     def __getattr__(self, nm):
         if nm in self.blank_flds:
@@ -306,8 +293,6 @@ class psbtOutputProxy(psbtProxy):
         elif kt == PSBT_OUT_WITNESS_SCRIPT:
             self.witness_script = val
         else:
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -325,9 +310,8 @@ class psbtOutputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_OUT_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
     def validate(self, out_idx, txo, my_xfp, active_multisig):
         # Do things make sense for this output?
@@ -781,8 +765,6 @@ class psbtInputProxy(psbtProxy):
             self.sighash = unpack('<I', val)[0]
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -816,9 +798,8 @@ class psbtInputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_IN_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
 
 class psbtObject(psbtProxy):
@@ -1350,7 +1331,7 @@ class psbtObject(psbtProxy):
     def read_psbt(cls, fd):
         # read in a PSBT file. Captures fd and keeps it open.
         hdr = fd.read(5)
-        if hdr != b'psbt\xff':
+        if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
         rv = cls()
@@ -1374,7 +1355,7 @@ class psbtObject(psbtProxy):
         def wr(*a):
             self.write(out_fd, *a)
 
-        out_fd.write(b'psbt\xff')
+        out_fd.write(_MAGIC)
 
         if upgrade_txn and self.is_complete():
             # write out the ready-to-transmit txn
@@ -1401,23 +1382,14 @@ class psbtObject(psbtProxy):
             for k in self.unknown:
                 wr(k[0], self.unknown[k], k[1:])
 
-        # import micropython
-        # print('======================================')
-        # micropython.mem_info(1)
-        # print('======================================')
-
         # sep between globals and inputs
         out_fd.write(b'\0')
 
         for idx, inp in enumerate(self.inputs):
-            # print('Input {}: free mem={}'.format(idx, gc.mem_free()))
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
         for idx, outp in enumerate(self.outputs):
-            # print('Output {}: free mem={}'.format(idx, gc.mem_free()))
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
