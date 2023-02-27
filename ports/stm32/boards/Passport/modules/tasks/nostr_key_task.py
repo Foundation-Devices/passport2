@@ -4,13 +4,12 @@
 # nostr_key_task.py - Task to create a new nostr key
 
 async def nostr_key_task(on_done, index):
-    from trezorcrypto import hmac
     import stash
+    import tcc
 
     path = "m/44'/1237'/0'/0/0"
-    width = (24 - 1) * 11 // 8 + 1
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(path)
-        entropy = hmac(512, '', node.private_key()).digest()
-        seed = entropy[0:width]
-    await on_done(seed, None)
+        key = node.private_key()
+    key = tcc.codecs.bech32_plain_encode("nsec", key)
+    await on_done(key, None)
