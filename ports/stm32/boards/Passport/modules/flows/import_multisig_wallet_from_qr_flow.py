@@ -4,6 +4,7 @@
 # import_multisig_wallet_from_qr_flow.py - Import a multisig wallet from a QR code
 
 from flows import Flow
+from foundation import ur
 
 
 class ImportMultisigWalletFromQRFlow(Flow):
@@ -13,7 +14,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
         self.error = None
 
     async def scan_qr_code(self):
-        from pages import ScanQRPage
+        from pages import ScanQRPage, ErrorPage
         from multisig_wallet import MultisigWallet
 
         result = await ScanQRPage().show()
@@ -25,7 +26,11 @@ class ImportMultisigWalletFromQRFlow(Flow):
             await ErrorPage(text='Unable to scan QR code.').show()
             return
 
-        data = result.data
+        if not isinstance(result.data, ur.Value):
+            await ErrorPage(text='Bad QR format.').show()
+            return
+
+        data = result.data.unwrap_bytes()
         if isinstance(data, (bytes, bytearray)):
             data = data.decode('utf-8')
 
