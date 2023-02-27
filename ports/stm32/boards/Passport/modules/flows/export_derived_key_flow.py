@@ -49,7 +49,13 @@ class ExportDerivedKeyFlow(Flow):
         from pages import ShowQRPage
         from utils import B2A
         import microns
-        await ShowQRPage(qr_data=B2A(self.pk), right_micron=microns.Checkmark).show()
+
+        if isinstance(self.pk, str):
+            qr_data = self.pk
+        else:
+            qr_data = B2A(self.pk)
+        print(qr_data)
+        await ShowQRPage(qr_data=qr_data, right_micron=microns.Checkmark).show()
         self.set_result(True)
 
     async def save_to_sd(self):
@@ -59,7 +65,12 @@ class ExportDerivedKeyFlow(Flow):
         from utils import B2A
         from derived_key import key_types
 
-        text = B2A(self.pk)
+        if isinstance(self.pk, str):
+            text = self.pk
+        else:
+            text = B2A(self.pk)
+
+        print(text)
         key_num = 1
 
         while True:
