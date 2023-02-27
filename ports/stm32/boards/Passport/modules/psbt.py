@@ -36,21 +36,6 @@ from public_constants import (
 # print some things
 # DEBUG = const(1)
 
-# class HashNDump:
-#     def __init__(self, d=None):
-#         self.rv = trezorcrypto.sha256()
-#         print('Hashing: ', end='')
-#         if d:
-#             self.update(d)
-#
-#     def update(self, d):
-#         print(b2a_hex(d), end=' ')
-#         self.rv.update(d)
-#
-#     def digest(self):
-#         print(' END')
-#         return self.rv.digest()
-
 
 def seq_to_str(seq):
     # take a set or list of numbers and show a tidy list in order.
