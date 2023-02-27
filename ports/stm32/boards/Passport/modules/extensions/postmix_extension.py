@@ -29,7 +29,7 @@ PostmixExtension = {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
         'title': postmix_account.get('name'),
         'page_micron': microns.PageDot,
         'bg_color': RED,

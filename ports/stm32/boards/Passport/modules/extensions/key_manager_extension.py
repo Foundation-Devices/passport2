@@ -28,7 +28,7 @@ KeyManagerExtension = {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
         'title': label,
         'page_micron': microns.PageDot,
         'bg_color': BITCOIN_ORANGE,

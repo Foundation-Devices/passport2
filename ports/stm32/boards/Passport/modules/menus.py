@@ -146,6 +146,17 @@ def new_key_menu():
     return result
 
 
+def manage_keys():
+    from utils import toggle_showing_hidden_keys, are_hidden_keys_showing
+    return [
+        {'icon': lv.ICON_TWO_KEYS,
+         'label': 'Show Hidden',
+         'action': lambda item: toggle_showing_hidden_keys(),
+         'is_toggle': True,
+         'value': lambda: are_hidden_keys_showing()},
+    ]
+
+
 def key_manager_menu():
     from flows import NewDerivedKeyFlow
     from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
@@ -155,13 +166,6 @@ def key_manager_menu():
     result = []
 
     result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
-    result.append({
-        'icon': lv.ICON_TWO_KEYS,
-        'label': 'Show Hidden',
-        'action': lambda item: toggle_showing_hidden_keys(),
-        'is_toggle': True,
-        'value': lambda: are_hidden_keys_showing(),
-    })
 
     keys = get_derived_keys()
     for key in keys:
@@ -173,6 +177,8 @@ def key_manager_menu():
                            'submenu': key_item_menu,
                            'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
                            'args': {'context': key}})
+
+    result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 
     return result
 
