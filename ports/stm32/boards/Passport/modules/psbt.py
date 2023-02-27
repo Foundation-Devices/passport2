@@ -157,7 +157,7 @@ class psbtProxy:
 
     def __init__(self):
         self.fd = None
-        # self.unknown = {}
+        self.unknown = {}
 
     def __getattr__(self, nm):
         if nm in self.blank_flds:
@@ -306,8 +306,6 @@ class psbtOutputProxy(psbtProxy):
         elif kt == PSBT_OUT_WITNESS_SCRIPT:
             self.witness_script = val
         else:
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -325,9 +323,8 @@ class psbtOutputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_OUT_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
     def validate(self, out_idx, txo, my_xfp, active_multisig):
         # Do things make sense for this output?
@@ -781,8 +778,6 @@ class psbtInputProxy(psbtProxy):
             self.sighash = unpack('<I', val)[0]
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -816,9 +811,8 @@ class psbtInputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_IN_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
 
 class psbtObject(psbtProxy):
