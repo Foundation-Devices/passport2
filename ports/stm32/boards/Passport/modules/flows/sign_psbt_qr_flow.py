@@ -112,6 +112,7 @@ class SignPsbtQRFlow(Flow):
             self.set_result(False)
             return
 
+        self.psbt = None
         gc.collect()
 
         if self.qr_type == QRType.QR:
