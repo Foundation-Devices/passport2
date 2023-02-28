@@ -14,8 +14,6 @@ class SetChainFlow(Flow):
         self.result = None
 
     async def show_setting_page(self):
-        from common import ui
-
         self.result = await ChainSettingPage(card_header={'title': 'Network', 'icon': lv.ICON_NETWORK}).show()
         if self.result is 'TBTC':
             self.goto(self.show_testnet_warning)
@@ -23,8 +21,6 @@ class SetChainFlow(Flow):
             self.set_result(self.result)
 
     async def show_testnet_warning(self):
-        from common import ui
-
         await ErrorPage(
             'Passport is in Testnet mode. Use a separate seed to avoid issues with malicious software wallets.').show()
 
