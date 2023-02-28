@@ -83,7 +83,10 @@ class CasaHealthCheckQRFlow(Flow):
 
         sig = b2a_base64(self.signature).decode('ascii').strip()
 
-        signed_message = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
+        signed_message = ur.new_bytes(RFC_SIGNATURE_TEMPLATE.format(addr=self.address,
+                                                                    msg=self.text,
+                                                                    blockchain='BITCOIN',
+                                                                    sig=sig))
 
         result = await ShowQRPage(
             qr_type=QRType.UR2,
