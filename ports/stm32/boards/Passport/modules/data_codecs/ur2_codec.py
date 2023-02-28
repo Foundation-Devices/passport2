@@ -43,9 +43,15 @@ Received single-part UR when multi-part reception was already in place""")
             raise DecodeError(str(exc))
 
     def estimated_percent_complete(self):
+        if self.value is not None:
+            return 100
+
         return ur.decoder_estimated_percent_complete()
 
     def is_complete(self):
+        if self.value is not None:
+            return True
+
         return ur.decoder_is_complete()
 
     def decode(self):
