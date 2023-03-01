@@ -832,6 +832,7 @@ class psbtObject(psbtProxy):
         self.total_value_in = None
         self.presigned_inputs = set()
         self.multisig_import_needs_approval = False
+        self.self_send = False
 
         # when signing segwit stuff, there is some re-use of hashes
         self.hashPrevouts = None
@@ -1120,7 +1121,6 @@ class psbtObject(psbtProxy):
                 pass
 
         # check fee is reasonable
-        sending_to_self = False
         total_non_change_out = self.total_value_out - total_change
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
         #       self.total_value_out, total_change))
@@ -1128,19 +1128,23 @@ class psbtObject(psbtProxy):
         if self.total_value_out == 0:
             per_fee = 100
         elif total_non_change_out == 0:
-            sending_to_self = True
+            self.self_send = True
         else:
             # Calculate fee based on non-change output value
             per_fee = (fee / total_non_change_out) * 100
 
-        if sending_to_self:
-            self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
-
-        if fee > total_non_change_out:
-            self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
-        elif per_fee >= 5:
-            self.warnings.append(('Big Fee', 'Network fee is more than '
-                                  '5%% of total non-change value (%.1f%%).' % per_fee))
+        if self.self_send:
+            # self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
+            per_fee = (fee / self.total_value_out) * 100
+            if per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
+        else:
+            if fee > total_non_change_out:
+                self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
+            elif per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
 
         # Enforce policy related to change outputs
         self.consider_dangerous_change(self.my_xfp)
