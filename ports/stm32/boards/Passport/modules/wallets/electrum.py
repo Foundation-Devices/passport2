@@ -13,6 +13,8 @@
 import stash
 import ujson
 import chains
+from data_codecs.qr_type import QRType
+from foundation import ur
 from utils import xfp2str, to_str
 # from .multisig_json import create_multisig_json_wallet
 # from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
@@ -69,7 +71,10 @@ def create_electrum_export(sw_wallet=None,
     # Find the derivation path and account number.
     accts = [{'fmt': addr_type, 'deriv': acct_path, 'acct': acct_num}]
     msg = ujson.dumps(rv)
-    # print('msg={}'.format(to_str(msg)))
+
+    if qr_type == QRType.UR2:
+        return (ur.new_bytes(msg), accts)
+
     return (msg, accts)
 
 
