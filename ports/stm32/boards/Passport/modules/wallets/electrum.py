@@ -93,7 +93,8 @@ def create_electrum_watch_only_export(sw_wallet=None,
                                       acct_num=0,
                                       multisig=False,
                                       legacy=False,
-                                      export_mode=None):
+                                      export_mode=None,
+                                      qr_type=None):
     from common import settings
 
     mode = get_bip_num_from_addr_type(addr_type, multisig)
