@@ -11,7 +11,13 @@ from utils import xfp2str, to_str
 from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH
 
 
-def create_vault_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr'):
+def create_vault_export(sw_wallet=None,
+                        addr_type=None,
+                        acct_num=0,
+                        multisig=False,
+                        legacy=False,
+                        export_mode='qr',
+                        qr_type=None):
     from common import settings, system
 
     chain = chains.current_chain()
@@ -31,5 +37,4 @@ def create_vault_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fal
 
     accts = [{'fmt': AF_P2WPKH, 'deriv': acct_path, 'acct': acct_num}]
 
-    # print('msg={}'.format(to_str(msg)))
     return (msg, accts)
