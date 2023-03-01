@@ -67,7 +67,6 @@ def create_casa_export(sw_wallet=None,
     '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
                sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
 
-            print('create_casa_export() returning:\n{}'.format(s))
             return (s, None)  # No 'acct_info'
 
 
