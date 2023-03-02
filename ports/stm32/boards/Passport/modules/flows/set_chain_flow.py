@@ -16,7 +16,8 @@ class SetChainFlow(Flow):
         network = await ChainSettingPage(card_header={'title': 'Network', 'icon': lv.ICON_NETWORK}).show()
 
         if network is 'TBTC':
-            await ErrorPage(
-                'Passport is in Testnet mode. Use a separate seed to avoid issues with malicious software wallets.').show()
+            text = "Passport is in Testnet mode. Use a separate seed to avoid issues " \
+                   "with malicious software wallets."
+            await ErrorPage(text).show()
 
         self.set_result(network)
