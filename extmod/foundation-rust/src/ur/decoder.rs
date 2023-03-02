@@ -72,7 +72,7 @@ pub struct UR_Decoder {
     >,
 }
 
-/// Receive an Uniform Resource part.
+/// Receive a Uniform Resource part.
 ///
 /// # Safety
 ///
@@ -196,7 +196,7 @@ pub extern "C" fn ur_decoder_decode_message(
     true
 }
 
-/// Returns `true` if the string is an uniform resource, `false` otherwise.
+/// Returns `true` if the string is a uniform resource, `false` otherwise.
 ///
 /// # Safety
 ///
