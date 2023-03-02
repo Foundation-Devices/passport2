@@ -205,8 +205,8 @@ STATIC mp_obj_t mod_foundation_ur_CryptoCoinInfo_make_new(const mp_obj_type_t *t
     mp_obj_CryptoCoinInfo_t *o = m_new_obj(mp_obj_CryptoCoinInfo_t);
     o->base.type = &mod_foundation_ur_CryptoCoinInfo_type;
 
-    o->info.coin_type = mp_obj_get_int(args[0]);
-    o->info.network = mp_obj_get_int(args[1]);
+    o->info.coin_type = mp_obj_int_get_uint_checked(args[0]);
+    o->info.network = mp_obj_int_get_uint_checked(args[1]);
 
     return MP_OBJ_FROM_PTR(o);
 }
@@ -241,13 +241,13 @@ STATIC mp_obj_t mod_foundation_ur_CryptoKeypath_make_new(const mp_obj_type_t *ty
     o->base.type = &mod_foundation_ur_CryptoKeypath_type;
 
     if (args[0].u_obj != MP_OBJ_NULL) {
-        o->keypath.source_fingerprint = mp_obj_get_int(args[0].u_obj);
+        o->keypath.source_fingerprint = mp_obj_int_get_uint_checked(args[0].u_obj);
     } else {
         o->keypath.source_fingerprint = 0;
     }
 
     if (args[1].u_obj != MP_OBJ_NULL) {
-        o->keypath.depth = mp_obj_get_int(args[1].u_obj);
+        o->keypath.depth = mp_obj_int_get_uint_checked(args[1].u_obj);
         o->keypath.has_depth = true;
     } else {
         o->keypath.depth = 0;
@@ -362,7 +362,7 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
         { MP_QSTR_chain_code,         MP_ARG_KW_ONLY  | MP_ARG_OBJ,  {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_use_info,           MP_ARG_KW_ONLY  | MP_ARG_OBJ,  {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_origin,             MP_ARG_KW_ONLY  | MP_ARG_OBJ,  {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_parent_fingerprint, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int = 0} },
+        { MP_QSTR_parent_fingerprint, MP_ARG_KW_ONLY  | MP_ARG_OBJ,  {.u_obj = MP_OBJ_NULL} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -400,13 +400,18 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
         origin_obj = MP_OBJ_TO_PTR(args[4].u_obj);
     }
 
+    uint32_t source_fingerprint = 0;
+    if (args[5].u_obj != MP_OBJ_NULL) {
+        source_fingerprint = mp_obj_int_get_uint_checked(args[5].u_obj);
+    }
+
     ur_registry_new_derived_key(&value,
                                 args[0].u_bool,
                                 key_data.buf,
                                 chain_code_info.buf,
                                 &use_info_obj->info,
                                 &origin_obj->keypath,
-                                args[5].u_int);
+                                source_fingerprint);
 
     return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
 }
@@ -441,6 +446,7 @@ STATIC mp_obj_t mod_foundation_ur_new_passport_response(size_t n_args,
     mp_buffer_info_t uuid = {0};
     UR_Solution solution = {0};
     UR_Value value = {0};
+    uint32_t model = 0;
 
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_uuid,    MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
@@ -448,7 +454,7 @@ STATIC mp_obj_t mod_foundation_ur_new_passport_response(size_t n_args,
         { MP_QSTR_word2,   MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_word3,   MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_word4,   MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_model,   MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_model,   MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_version, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     };
 
@@ -475,12 +481,16 @@ STATIC mp_obj_t mod_foundation_ur_new_passport_response(size_t n_args,
     solution.word4 = (const char *)word4;
     solution.word4_len = word4_len;
 
+    if (args[5].u_obj != MP_OBJ_NULL) {
+        model = mp_obj_int_get_uint_checked(args[5].u_obj);
+    }
+
     GET_STR_DATA_LEN(args[6].u_obj, passport_firmware_version, passport_firmware_version_len);
 
     ur_registry_new_passport_response(&value,
                                       uuid.buf,
                                       &solution,
-                                      args[5].u_int,
+                                      model,
                                       (const char *)passport_firmware_version,
                                       passport_firmware_version_len);
 
@@ -507,7 +517,7 @@ STATIC mp_obj_t mod_foundation_ur_encoder_start(mp_obj_t value_in,
     }
 
     value = MP_OBJ_TO_PTR(value_in);
-    max_fragment_len = mp_obj_get_int(max_fragment_len_in);
+    max_fragment_len = mp_obj_int_get_uint_checked(max_fragment_len_in);
     ur_encoder_start(&UR_ENCODER, &value->value, max_fragment_len);
 
     return mp_const_none;
