@@ -291,7 +291,7 @@ typedef struct {
 } UR_PassportResponse;
 
 /**
- * An uniform resource.
+ * A uniform resource.
  */
 typedef enum {
   /**
@@ -356,7 +356,7 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
- * Receive an Uniform Resource part.
+ * Receive a Uniform Resource part.
  *
  * # Safety
  *
@@ -395,7 +395,7 @@ bool ur_decoder_decode_message(UR_Decoder *decoder,
                                UR_Error *error);
 
 /**
- * Returns `true` if the string is an uniform resource, `false` otherwise.
+ * Returns `true` if the string is a uniform resource, `false` otherwise.
  *
  * # Safety
  *

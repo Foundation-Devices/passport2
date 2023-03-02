@@ -66,7 +66,7 @@ impl<'a> Value<'a> {
     }
 }
 
-/// An uniform resource.
+/// A uniform resource.
 #[repr(C)]
 pub enum UR_Value {
     /// `bytes`.
