@@ -166,8 +166,10 @@ def multisig_item_menu():
 
     return [
         {'icon': lv.ICON_TWO_KEYS, 'label': 'View Details', 'flow': ViewMultisigDetailsFlow},
-        {'icon': lv.ICON_SCAN_QR, 'label': 'Export via QR', 'flow': ExportMultisigQRFlow},
-        {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Export via QR', 'flow': ExportMultisigQRFlow,
+         'statusbar': {'title': 'EXPORT'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
+         'statusbar': {'title': 'EXPORT'}},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow},
     ]
