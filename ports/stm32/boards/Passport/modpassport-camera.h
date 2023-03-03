@@ -71,10 +71,6 @@ STATIC mp_obj_t mod_passport_camera_snapshot(void) {
     // that the address is not NULL.
     uint16_t *framebuffer = framebuffer_camera();
 
-#ifdef SCREEN_MODE_COLOR
-    swizzle_u16(framebuffer, CAMERA_HOR_RES, CAMERA_VER_RES);
-#endif  // SCREEN_MODE_COLOR
-
     // Remove vertical line from the camera.
     for (int y = 0; y < CAMERA_VER_RES; y++) {
         int line = y * CAMERA_HOR_RES;
@@ -167,18 +163,3 @@ STATIC const mp_obj_module_t mod_passport_camera_module = {
     .base    = {&mp_type_module},
     .globals = (mp_obj_dict_t*)&mod_passport_camera_globals,
 };
-
-#ifdef SCREEN_MODE_COLOR
-STATIC void swizzle_u16(uint16_t* buffer, int w, int h) {
-    uint16_t* end = buffer + (w * h);
-
-    while (buffer < end) {
-        uint16_t c = __builtin_bswap16(*buffer);
-        uint16_t b = (c & 0xF800) >> 11;
-        uint16_t g = c & 0x07E0;
-        uint16_t r = (c & 0x001F) << 11;
-        *buffer    = __builtin_bswap16(r | g | b);
-        buffer++;
-    }
-}
-#endif
