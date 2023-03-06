@@ -348,7 +348,7 @@ void ui_show_hex_buffer(char* card_title, uint8_t* data, uint32_t length) {
 }
 
 void ui_ask_shutdown() {
-    if (ui_show_message("PASSPORT", "Shutdown?", "\n\nAre you sure you\nwant to shutdown?", &ICON_CANCEL,
+    if (ui_show_message("PASSPORT", "Shut down?", "\n\nAre you sure you\nwant to shut down?", &ICON_CANCEL,
                         &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
         display_clean_shutdown();
     }
@@ -463,18 +463,19 @@ void ui_draw_wrapped_text(uint16_t x, uint16_t y, uint16_t max_width, char* text
 }
 
 // Show message and then delay or wait for button press
-bool ui_show_message(char* title, char* message, char* left_btn, char* right_btn, bool center) {
+bool ui_show_message(
+    char* title, char* message, const lv_img_dsc_t* left_btn, const lv_img_dsc_t* right_btn, bool center) {
     return ui_show_message_color(title, message, left_btn, right_btn, center, COLOR_BLACK, COLOR_WHITE);
 }
 
 // Show message and then delay or wait for button press
-bool ui_show_message_color(char*    title,
-                           char*    message,
-                           char*    left_btn,
-                           char*    right_btn,
-                           bool     center,
-                           uint16_t header_text_color,
-                           uint16_t header_bg_color) {
+bool ui_show_message_color(char*               title,
+                           char*               message,
+                           const lv_img_dsc_t* left_btn,
+                           const lv_img_dsc_t* right_btn,
+                           bool                center,
+                           uint16_t            header_text_color,
+                           uint16_t            header_bg_color) {
     bool exit             = false;
     bool result           = false;
     bool is_left_pressed  = false;
@@ -554,15 +555,15 @@ void ui_show_fatal_error(char* error) {
     while (true) {
         if (show_error) {
             // Show the error
-            if (ui_show_message("Fatal Error", error, "Contact", "Shutdown", true)) {
+            if (ui_show_message("Fatal Error", error, &ICON_EMAIL, &ICON_SHUTDOWN, true)) {
                 display_clean_shutdown();
             } else {
                 show_error = false;
             }
         } else {
             // Show Contact Info
-            if (ui_show_message("Contact", "\nContact us at:\n\nsupport@foundationdevices.com", "<", "Shutdown",
-                                true)) {
+            if (ui_show_message("Contact", "\nContact us at:\n\nsupport@foundationdevices.com", &ICON_BACK,
+                                &ICON_SHUTDOWN, true)) {
                 display_clean_shutdown();
             } else {
                 show_error = true;
@@ -574,7 +575,7 @@ void ui_show_fatal_error(char* error) {
 void ui_show_hex_buffer(char* title, uint8_t* data, uint32_t length) {
     char buf[512];
     bytes_to_hex_str(data, length, buf, 8, "\n");
-    ui_show_message(title, buf, "Shutdown", ">", true);
+    ui_show_message(title, buf, &ICON_SHUTDOWN, &ICON_CHECKMARK, true);
 }
 
 #endif /* FACTORY_TEST */
