@@ -118,7 +118,7 @@ KEY_ID ui_show_message_color(char*               screen_title,
                              uint16_t            header_text_color,
                              uint16_t            page_n,
                              uint16_t            of_m,
-                             uint8_t             enabled_keys[],
+                             KEY_ID              enabled_keys[],
                              uint8_t             num_enabled_keys);
 
 void ui_show_fatal_error(char* message);
