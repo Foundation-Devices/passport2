@@ -9,7 +9,12 @@ import common
 
 
 class Flow():
-    def __init__(self, initial_state=None, name='Flow', settings_key=None, statusbar=None):
+    def __init__(self,
+                 initial_state=None,
+                 name='Flow',
+                 settings_key=None,
+                 statusbar=None,
+                 upper_menu=None):
         self.state = initial_state
         self.name = name
         self.prev_states = []
