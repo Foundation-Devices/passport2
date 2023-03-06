@@ -10,7 +10,10 @@ from pages import QuestionPage
 
 
 class ShutdownPage(QuestionPage):
-    def __init__(self, icon=lv.LARGE_ICON_QUESTION, icon_color=DEFAULT_LARGE_ICON_COLOR, text='Shutdown Passport now?'):
+    def __init__(self,
+                 icon=lv.LARGE_ICON_QUESTION,
+                 icon_color=DEFAULT_LARGE_ICON_COLOR,
+                 text='Shut down Passport now?'):
         super().__init__(icon=icon, icon_color=icon_color, text=text)
 
     def attach(self, group):

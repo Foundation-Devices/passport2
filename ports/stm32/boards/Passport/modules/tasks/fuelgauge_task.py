@@ -109,7 +109,7 @@ async def fuelgauge_task():
             await ShutdownPage(
                 icon=lv.LARGE_ICON_ERROR,
                 icon_color=COPPER,
-                text='Battery low!\n\nShutdown Passport now?').show()
+                text='Battery low!\n\nShut down Passport now?').show()
             common.ui.pop_page(last_active_page)
 
         # Wait for a SOC_INT pulse.
