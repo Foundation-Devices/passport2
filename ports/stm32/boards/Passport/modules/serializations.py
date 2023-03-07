@@ -304,9 +304,6 @@ def ser_sig_compact(r, s, recid):
 # Objects that map to bitcoind objects, which can be serialized/deserialized
 
 
-MSG_WITNESS_FLAG = 1 << 30
-
-
 class COutPoint(object):
     def __init__(self, hash=0, n=0):
         self.hash = hash
