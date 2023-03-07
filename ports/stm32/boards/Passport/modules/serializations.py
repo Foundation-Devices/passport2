@@ -186,13 +186,6 @@ def deser_int_vector(f):
     return r
 
 
-def ser_int_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += struct.pack("<i", i)
-    return r
-
-
 def ser_push_data(dd):
     # "compile" data to be pushed on the script stack
     # - will be minimal sized, but only supports size ranges we're likely to see
