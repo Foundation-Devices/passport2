@@ -195,9 +195,6 @@
 // Initialize the camera.
 HAL_StatusTypeDef camera_init(void);
 
-// De-initialize the camera.
-void camera_uninit(void);
-
 // Turn on the camera.
 HAL_StatusTypeDef camera_on(void);
 
