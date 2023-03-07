@@ -10,8 +10,6 @@
 #include "st7789.h"
 
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
