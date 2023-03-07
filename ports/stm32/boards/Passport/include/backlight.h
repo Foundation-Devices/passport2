@@ -9,8 +9,7 @@
 #ifndef STM32_BACKLIGHT_H
 #define STM32_BACKLIGHT_H
 
-#include "stm32h7xx_hal.h"
-
+#include <stdint.h>
 #include <stdbool.h>
 
 extern void backlight_init(void);
