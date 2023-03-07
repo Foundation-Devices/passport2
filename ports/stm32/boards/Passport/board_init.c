@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
-//
 
-#include <string.h>
+#include <stdio.h>
 
 #include "stm32h7xx_hal.h"
 
@@ -12,7 +11,6 @@
 #include "camera-ovm7690.h"
 #include "frequency.h"
 #include "gpio.h"
-#include "image_conversion.h"
 #include "se.h"
 #include "utils.h"
 
@@ -26,11 +24,8 @@ void Passport_board_init(void) {
     set_stack_sentinel();
 
     gpio_init();
-
     frequency_turbo(true);
-
     display_init(false);
-
     camera_init();
     adc_init();
     se_setup();
