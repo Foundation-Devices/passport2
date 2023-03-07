@@ -145,15 +145,6 @@ def ser_vector(v, ser_function_name=None):
     return r
 
 
-def deser_uint256_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = deser_uint256(f)
-        r.append(t)
-    return r
-
-
 def deser_string_vector(f):
     nit = deser_compact_size(f)
     r = []
