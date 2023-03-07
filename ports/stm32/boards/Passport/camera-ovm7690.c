@@ -723,7 +723,3 @@ HAL_StatusTypeDef camera_continuous(void) {
     // printf("[%s] camera in continous capture mode\n", __func__);
     return HAL_OK;
 }
-
-void camera_stop(void) {
-    camera_off();
-}
