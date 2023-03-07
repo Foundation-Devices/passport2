@@ -314,8 +314,10 @@ void factory_test_camera(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_eeprom(uint32_t param1, uint32_t param2) {
+    factory_test_set_message("I2C init");
     i2c_init();
 
+    factory_test_set_message("EEPROM init");
     if (eeprom_init(&g_hi2c2) != HAL_OK) {
         factory_test_set_result_error(105, "Failed to init EEPROM");
         return;
@@ -326,12 +328,14 @@ void factory_test_eeprom(uint32_t param1, uint32_t param2) {
         buf[i] = i;
     }
 
+    factory_test_set_message("EEPROM write");
     if (eeprom_write(0x00, (uint8_t *)&buf, sizeof(buf)) != HAL_OK) {
         factory_test_set_result_error(105, "EEPROM write failed");
         return;
     }
     memset(&buf, 0, sizeof(buf));
 
+    factory_test_set_message("EEPROM read");
     if (eeprom_read(0x00, (uint8_t *)&buf, sizeof(buf)) != HAL_OK) {
         factory_test_set_result_error(105, "EEPROM read failed");
         return;
