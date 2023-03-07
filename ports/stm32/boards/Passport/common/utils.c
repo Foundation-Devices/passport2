@@ -205,3 +205,11 @@ bool check_stack(char* msg, bool print) {
 }
 
 #endif /* PASSPORT_BOOTLOADER */
+
+board_rev_t get_board_rev(void) {
+    uint8_t bit0 = (GPIO_PIN_SET == HAL_GPIO_ReadPin(BRDREV0_PORT, BRDREV0_PIN));
+    uint8_t bit1 = (GPIO_PIN_SET == HAL_GPIO_ReadPin(BRDREV1_PORT, BRDREV1_PIN));
+    uint8_t bit2 = (GPIO_PIN_SET == HAL_GPIO_ReadPin(BRDREV2_PORT, BRDREV2_PIN));
+
+    return (bit0 | bit1 << 1 | bit2 << 2);
+}
