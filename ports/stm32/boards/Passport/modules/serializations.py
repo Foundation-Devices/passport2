@@ -253,12 +253,6 @@ def FromHex(obj, hex_string):
     obj.deserialize(BytesIO(hex_str_to_bytes(hex_string)))
     return obj
 
-# Convert a binary-serializable object to hex (eg for submission via RPC)
-
-
-def ToHex(obj):
-    return bytes_to_hex_str(obj.serialize())
-
 
 def ser_sig_der(r, s, sighash_type=1):
     sig = b"\x30"
