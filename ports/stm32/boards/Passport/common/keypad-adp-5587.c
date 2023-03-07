@@ -9,6 +9,7 @@
 #include "stm32h7xx_hal.h"
 
 #include "delay.h"
+#include "utils.h"
 #include "keypad-adp-5587.h"
 
 static I2C_HandleTypeDef* hi2c = NULL;
@@ -31,17 +32,17 @@ static int keypad_setup(void) {
     // Enable GPI part of event FIFO (R0 to R7, C0 to C7, C8 to C9)
     // With retry in case of i2c error
     for (int i = 0; i < 5; i++) {
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG1, 0xFF);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG1, 0xFF);
         if (rc < 0) {
             continue; // Retry
         }
 
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG2, 0xFF);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG2, 0xFF);
         if (rc < 0) {
             continue; // Retry
         }
 
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG3, 0x03);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG3, 0x03);
         if (rc < 0) {
             continue; // Retry
         }
@@ -112,7 +113,7 @@ static bool read_num_keys(uint8_t *num_keys) {
         return false;
     }
 
-    int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_LCK_EC_STAT, &data, 1);
+    int rc = keypad_read(get_kbd_addr(), KBD_REG_KEY_LCK_EC_STAT, &data, 1);
     if (rc < 0) {
         return false;
     }
@@ -134,10 +135,25 @@ bool keypad_poll_key(uint8_t* key) {
     }
 
     // Read from the key queue
-    int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, key, 1);
+    int rc = keypad_read(get_kbd_addr(), KBD_REG_KEY_EVENTA, key, 1);
     if (rc < 0) {
         return false;
     }
 
     return true;
+}
+
+uint8_t get_kbd_addr(void) {
+    board_rev_t rev = get_board_rev();
+
+    switch (rev) {
+        case REV_A:
+        return KBD_ADDR_REV_A;
+
+        case REV_B:
+        return KBD_ADDR_REV_B;
+
+        default:
+        return KBD_ADDR_REV_A;
+    }
 }

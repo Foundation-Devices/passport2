@@ -48,7 +48,7 @@ void display_show(void) {
     // Clear the keypad interrupt so that it will retrigger if it had any events while
     // interrupts were disabled, else it will hang the controller since it's waiting
     // for the previous interrupt to be acknowledged.
-    keypad_write(KBD_ADDR, KBD_REG_INT_STAT, 0xFF);
+    keypad_write(get_kbd_addr(), KBD_REG_INT_STAT, 0xFF);
 #endif /* DEBUG */
 }
 
