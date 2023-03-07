@@ -12,7 +12,14 @@
 #include "frequency.h"
 #include "gpio.h"
 #include "se.h"
+
+#ifndef PASSPORT_DEBUG_STACK
+#define PASSPORT_DEBUG_STACK 0
+#endif
+
+#if PASSPORT_DEBUG_STACK
 #include "utils.h"
+#endif
 
 void Passport_board_init(void) {
     /* Enable the console UART */
@@ -21,7 +28,9 @@ void Passport_board_init(void) {
     printf("%lu, %lu, %lu, %lu, %lu\n", HAL_RCC_GetSysClockFreq(), SystemCoreClock, HAL_RCC_GetHCLKFreq(),
            HAL_RCC_GetPCLK1Freq(), HAL_RCC_GetPCLK2Freq());
 
+#if PASSPORT_DEBUG_STACK
     set_stack_sentinel();
+#endif
 
     gpio_init();
     frequency_turbo(true);
@@ -30,7 +39,9 @@ void Passport_board_init(void) {
     adc_init();
     se_setup();
 
-    // check_stack("Passport_board_init() complete", true);
+#if PASSPORT_DEBUG_STACK
+    check_stack("Passport_board_init() complete", true);
+#endif
 }
 
 void Passport_board_early_init(void) {}
