@@ -116,12 +116,6 @@ def uint256_from_str(s):
     return r
 
 
-def uint256_from_compact(c):
-    nbytes = (c >> 24) & 0xFF
-    v = (c & 0xFFFFFF) << (8 * (nbytes - 3))
-    return v
-
-
 def deser_vector(f, c):
     nit = deser_compact_size(f)
     r = []
@@ -145,22 +139,6 @@ def ser_vector(v, ser_function_name=None):
     return r
 
 
-def deser_uint256_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = deser_uint256(f)
-        r.append(t)
-    return r
-
-
-def ser_uint256_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += ser_uint256(i)
-    return r
-
-
 def deser_string_vector(f):
     nit = deser_compact_size(f)
     r = []
@@ -177,22 +155,6 @@ def ser_string_vector(v):
     return r
 
 
-def deser_int_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = struct.unpack("<i", f.read(4))[0]
-        r.append(t)
-    return r
-
-
-def ser_int_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += struct.pack("<i", i)
-    return r
-
-
 def ser_push_data(dd):
     # "compile" data to be pushed on the script stack
     # - will be minimal sized, but only supports size ranges we're likely to see
@@ -203,20 +165,6 @@ def ser_push_data(dd):
         return bytes([ll]) + dd           # OP_PUSHDATAn + data
     else:
         return bytes([76, ll]) + dd       # 0x4c = 76 => OP_PUSHDATA1 + size + data
-
-
-def ser_push_int(n):
-    # push a small integer onto the stack
-    from opcodes import OP_0, OP_1, OP_16, OP_PUSHDATA1
-
-    if n == 0:
-        return bytes([OP_0])
-    elif 1 <= n <= 16:
-        return bytes([OP_1 + n - 1])
-    elif n <= 255:
-        return bytes([1, n])
-
-    raise ValueError(n)
 
 
 def disassemble(script):
@@ -264,18 +212,6 @@ def disassemble(script):
         raise ValueError("bad script")
 
 
-# Deserialize from a hex string representation (eg from RPC)
-def FromHex(obj, hex_string):
-    obj.deserialize(BytesIO(hex_str_to_bytes(hex_string)))
-    return obj
-
-# Convert a binary-serializable object to hex (eg for submission via RPC)
-
-
-def ToHex(obj):
-    return bytes_to_hex_str(obj.serialize())
-
-
 def ser_sig_der(r, s, sighash_type=1):
     sig = b"\x30"
 
@@ -319,20 +255,7 @@ def ser_sig_der(r, s, sighash_type=1):
 
     return sig
 
-
-def ser_sig_compact(r, s, recid):
-    rec = struct.unpack("B", recid)[0]
-    prefix = struct.pack("B", 27 + 4 + rec)
-
-    sig = prefix
-    sig += r + s
-
-    return sig
-
 # Objects that map to bitcoind objects, which can be serialized/deserialized
-
-
-MSG_WITNESS_FLAG = 1 << 30
 
 
 class COutPoint(object):
