@@ -9,8 +9,6 @@
 #include "stm32h7xx_hal.h"
 
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #define SCREEN_WIDTH 230
 #define SCREEN_HEIGHT 303
