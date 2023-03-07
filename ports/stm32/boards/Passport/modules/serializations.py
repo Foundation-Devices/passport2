@@ -116,12 +116,6 @@ def uint256_from_str(s):
     return r
 
 
-def uint256_from_compact(c):
-    nbytes = (c >> 24) & 0xFF
-    v = (c & 0xFFFFFF) << (8 * (nbytes - 3))
-    return v
-
-
 def deser_vector(f, c):
     nit = deser_compact_size(f)
     r = []
