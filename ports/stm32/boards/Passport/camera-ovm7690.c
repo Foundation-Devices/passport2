@@ -597,17 +597,6 @@ HAL_StatusTypeDef camera_init(void) {
     return HAL_OK;
 }
 
-void camera_uninit(void) {
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_6 | GPIO_PIN_4);
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_6 | GPIO_PIN_7);
-    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_3);
-    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6);
-
-    /* Disable DCMI clock */
-    __DCMI_CLK_DISABLE();
-}
-
 HAL_StatusTypeDef camera_on(void) {
     HAL_StatusTypeDef ret = HAL_OK;
     uint8_t           val = 0;
