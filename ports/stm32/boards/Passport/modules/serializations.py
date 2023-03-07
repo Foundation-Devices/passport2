@@ -177,15 +177,6 @@ def ser_string_vector(v):
     return r
 
 
-def deser_int_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = struct.unpack("<i", f.read(4))[0]
-        r.append(t)
-    return r
-
-
 def ser_push_data(dd):
     # "compile" data to be pushed on the script stack
     # - will be minimal sized, but only supports size ranges we're likely to see
