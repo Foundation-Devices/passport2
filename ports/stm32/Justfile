@@ -133,6 +133,7 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
 
     SIZE=$(ls -l build-Passport/$SIGNED_FILENAME | cut -d " " -f5)
 
+    # 1792k firmware size limit
     LIMIT=1835008
     echo "limit: $LIMIT"
     echo "size: $SIZE"
