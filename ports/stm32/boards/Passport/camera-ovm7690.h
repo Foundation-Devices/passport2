@@ -207,7 +207,4 @@ HAL_StatusTypeDef camera_off(void);
 // Take a snapshot using the camera.
 HAL_StatusTypeDef camera_snapshot(void);
 
-// Run the camera in continuous mode.
-HAL_StatusTypeDef camera_continuous(void);
-
 #endif /* __CAMERA_OVM7960_H */

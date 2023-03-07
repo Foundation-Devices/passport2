@@ -695,31 +695,3 @@ HAL_StatusTypeDef camera_snapshot(void) {
     // printf("camera_snapshot(): took %lu ms\n", total_end - total_start);
     return HAL_OK;
 }
-
-HAL_StatusTypeDef camera_continuous(void) {
-    HAL_StatusTypeDef ret              = HAL_OK;
-    uint16_t*         framebuffer_addr = NULL;
-
-    if ((framebuffer_addr = framebuffer_camera()) == NULL) {
-        // printf("[%s] framebuffer_camera() failed\n", __func__);
-        return HAL_ERROR;
-    }
-
-    if ((ret = camera_on()) < 0) {
-        // printf("[%s] camera_on() failed\n", __func__);
-        return ret;
-    }
-
-    /* Clear any current interrupts */
-    _camera_dcmi_clear_int();
-
-    /* Run in continuous mode */
-    if ((ret = HAL_DCMI_Start_DMA(&hdcmi, DCMI_MODE_CONTINUOUS, (uint32_t)framebuffer_addr,
-                                  CAMERA_FRAMEBUFFER_SIZE / 4)) != HAL_OK) {
-        // printf("[%s] HAL_DCMI_Start_DMA() failed\n", __func__);
-        return ret;
-    }
-
-    // printf("[%s] camera in continous capture mode\n", __func__);
-    return HAL_OK;
-}
