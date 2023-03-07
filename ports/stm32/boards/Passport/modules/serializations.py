@@ -234,12 +234,6 @@ def disassemble(script):
         raise ValueError("bad script")
 
 
-# Deserialize from a hex string representation (eg from RPC)
-def FromHex(obj, hex_string):
-    obj.deserialize(BytesIO(hex_str_to_bytes(hex_string)))
-    return obj
-
-
 def ser_sig_der(r, s, sighash_type=1):
     sig = b"\x30"
 
