@@ -14,9 +14,8 @@
 
 #ifdef PASSPORT_BOOTLOADER
 #include "lvgl.h"
-#endif
-
 #include "passport_fonts.h"
+#endif
 
 // Pass this constant to center text horizontally
 #define CENTER_X 32767
