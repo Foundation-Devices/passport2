@@ -154,13 +154,6 @@ def deser_uint256_vector(f):
     return r
 
 
-def ser_uint256_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += ser_uint256(i)
-    return r
-
-
 def deser_string_vector(f):
     nit = deser_compact_size(f)
     r = []
