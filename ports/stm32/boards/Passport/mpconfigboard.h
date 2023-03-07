@@ -67,7 +67,7 @@ void Passport_board_init(void);
 #define PASSPORT_KEYPAD_BEGIN_ATOMIC_SECTION() disable_irq()
 #define PASSPORT_KEYPAD_END_ATOMIC_SECTION(state) \
     enable_irq(state);                            \
-    keypad_write(KBD_ADDR, KBD_REG_INT_STAT, 0xFF)
+    keypad_write(get_kbd_addr(), KBD_REG_INT_STAT, 0xFF)
 
 // The board has an 8MHz HSE, the following gives 480MHz CPU speed
 #define MICROPY_HW_CLK_PLLM (1)
