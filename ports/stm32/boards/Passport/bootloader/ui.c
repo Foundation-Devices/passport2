@@ -13,6 +13,19 @@
 #include "ui.h"
 #include "utils.h"
 
+static bool poll_for_key(uint8_t* p_key, bool* p_is_key_down) {
+    uint8_t key;
+
+    if (!keypad_poll_key(&key)) {
+        return false;
+    }
+
+    *p_key         = key & 0x7F;
+    *p_is_key_down = (key & 0x80) ? true : false;
+
+    return true;
+}
+
 #ifndef FACTORY_TEST
 
 #include "utils.h"
@@ -133,19 +146,6 @@ uint16_t ui_draw_wrapped_text(uint16_t x, uint16_t y, uint16_t max_width, char* 
     }
 
     return curr_y - y;
-}
-
-static bool poll_for_key(uint8_t* p_key, bool* p_is_key_down) {
-    uint8_t key;
-
-    if (!keypad_poll_key(&key)) {
-        return false;
-    }
-
-    *p_key         = key & 0x7F;
-    *p_is_key_down = (key & 0x80) ? true : false;
-
-    return true;
 }
 
 KEY_ID STD_KEYS[]  = {KEY_LEFT_SELECT, KEY_RIGHT_SELECT};
