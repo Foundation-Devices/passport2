@@ -30,6 +30,7 @@
 #include "fwheader.h"
 #include "verify.h"
 #include "update.h"
+#include "keypad-adp-5587.h"
 
 volatile FactoryTestInfo* pFactoryTestInfo = (FactoryTestInfo*)SRAM4_START;
 
@@ -349,6 +350,8 @@ void factory_test_eeprom(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_keypad(uint32_t param1, uint32_t param2) {
+    keypad_init();
+
     factory_test_set_progress(100);
     factory_test_set_result_success();
 }
