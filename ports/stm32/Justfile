@@ -139,7 +139,7 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
     echo "size: $SIZE"
     if [ $SIZE -gt $LIMIT ]
     then
-        echo "Firmware too large: $SIZE, limit: $LIMIT"
+        echo "ERROR: Firmware too large"
         exit 1
     fi
 
