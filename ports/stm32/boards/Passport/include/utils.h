@@ -58,20 +58,14 @@ bool     check_stack(char* msg, bool print);
 #endif
 
 
-#define BRDREV0_PIN GPIO_PIN_13
-#define BRDREV0_PORT GPIOD
+#define KEYPAD_DRIVER_REV_PIN GPIO_PIN_13
+#define KEYPAD_DRIVER_REV_PORT GPIOD
 
-#define BRDREV1_PIN GPIO_PIN_12
-#define BRDREV1_PORT GPIOD
-
-#define BRDREV2_PIN GPIO_PIN_11
-#define BRDREV2_PORT GPIOD
-
-typedef enum board_rev {
+typedef enum keypad_driver_rev {
   REV_A = 0,
   REV_B = 1,
-} board_rev_t;
+} keypad_driver_rev_t;
 
-board_rev_t get_board_rev(void);
+keypad_driver_rev_t get_keypad_driver_rev(void);
 
 #endif /* _UTILS_H_ */
