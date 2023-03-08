@@ -350,7 +350,16 @@ void factory_test_eeprom(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_keypad(uint32_t param1, uint32_t param2) {
-    keypad_init();
+    if (keypad_init()) {
+        factory_test_set_result_error(111, "Can't init keypad");
+        return;
+    }
+
+    uint8_t num = 0;
+    if (!read_num_keys(&num)) {
+        factory_test_set_result_error(111, "Can't read number of keys");
+        return;
+    }
 
     factory_test_set_progress(100);
     factory_test_set_result_success();
@@ -423,13 +432,51 @@ void factory_test_sd_card(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_fuel_gauge(uint32_t param1, uint32_t param2) {
+    i2c_init();
+
+    factory_test_set_message("Scanning addresses");
+
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < 255; i++) {
+        int res = HAL_I2C_IsDeviceReady(&g_hi2c2, i << 1, 10, 1000);
+        if (res == HAL_OK) {
+            count++;
+        }
+    }
+
+    if (count == 0) {
+        factory_test_set_message("Zero found");
+        return;
+    } else if (count == 1) {
+        factory_test_set_message("One found");
+        return;
+    } else if (count == 2) {
+        factory_test_set_message("Two found");
+        return;
+    } else if (count == 3) {
+        factory_test_set_message("Three found");
+        return;
+    } else if (count == 4) {
+        factory_test_set_message("Four found");
+        return;
+    } else {
+        factory_test_set_message("Many found");
+        return;
+    }
+
+    while (true) {}
+
+    factory_test_set_message("bq27520_init");
     bq27520_init();
 
+    factory_test_set_message("bq27520_probe");
     if (bq27520_probe() != HAL_OK) {
         factory_test_set_result_error(104, "Can't connect to fuel gauge chip");
         bq27520_deinit();
         return;
     }
+
+    factory_test_set_message("ok");
 
     bq27520_deinit();
     factory_test_set_result_success();

@@ -53,7 +53,7 @@ static int keypad_setup(void) {
     return rc;
 }
 
-void keypad_init(void) {
+bool keypad_init(void) {
     int              rcc;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -77,11 +77,13 @@ void keypad_init(void) {
     rcc = keypad_setup();
     if (rcc < 0)
 #ifdef PASSPORT_BOOTLOADER
-        ;
+        return false;
 #else
-        ;
+        return false;
         // printf("[%s-%d] keypad_setup() failed\n", __func__, __LINE__);
 #endif /* PASSPORT_BOOTLOADER */
+
+    return true;
 }
 
 int keypad_write(uint8_t address, uint8_t reg, uint8_t data) {
@@ -106,7 +108,7 @@ int keypad_read(uint8_t address, uint8_t reg, uint8_t* data, uint8_t len) {
 /**
  * Reads number of keys in the key queue.
  */
-static bool read_num_keys(uint8_t *num_keys) {
+bool read_num_keys(uint8_t *num_keys) {
     uint8_t data = 0;
 
     if (!num_keys) {
