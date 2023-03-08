@@ -438,7 +438,7 @@ void factory_test_fuel_gauge(uint32_t param1, uint32_t param2) {
 
     uint8_t count = 0;
     for (uint8_t i = 0; i < 255; i++) {
-        int res = HAL_I2C_IsDeviceReady(&g_hi2c2, i << 1, 10, 1000);
+        int res = HAL_I2C_IsDeviceReady(&g_hi2c2, ((uint16_t)i) << 1, 10, 10000);
         if (res == HAL_OK) {
             count++;
         }
@@ -446,22 +446,16 @@ void factory_test_fuel_gauge(uint32_t param1, uint32_t param2) {
 
     if (count == 0) {
         factory_test_set_message("Zero found");
-        return;
     } else if (count == 1) {
         factory_test_set_message("One found");
-        return;
     } else if (count == 2) {
         factory_test_set_message("Two found");
-        return;
     } else if (count == 3) {
         factory_test_set_message("Three found");
-        return;
     } else if (count == 4) {
         factory_test_set_message("Four found");
-        return;
     } else {
         factory_test_set_message("Many found");
-        return;
     }
 
     while (true) {}
