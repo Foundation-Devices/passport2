@@ -144,7 +144,7 @@ bool keypad_poll_key(uint8_t* key) {
 }
 
 uint8_t get_kbd_addr(void) {
-    board_rev_t rev = get_board_rev();
+    keypad_driver_rev_t rev = get_keypad_driver_rev();
 
     switch (rev) {
         case REV_A:
