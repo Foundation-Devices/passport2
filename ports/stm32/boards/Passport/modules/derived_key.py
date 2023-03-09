@@ -20,7 +20,7 @@ key_types = [
      'words': True,
      'task': bip85_12_word_seed_task},
     {'title': 'Nostr Key',
-     'icon': lv.ICON_ONE_KEY,
+     'icon': lv.ICON_NOSTR,
      'indexed': False,
      'words': False,
      'task': nostr_key_task},
