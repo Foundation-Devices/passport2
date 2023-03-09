@@ -53,9 +53,10 @@ class RenameDerivedKeyFlow(Flow):
         (error,) = await spinner_task('Renaming Key', rename_derived_key_task,
                                       args=[self.key, self.key_name])
         if error is None:
-            statusbar = MenuFlow.latest_menu.get_prev_statusbar()
-            statusbar['title'] = "{} ({})".format(self.key_name, self.key['index'])
-            MenuFlow.latest_menu.update_prev_statusbar(statusbar)
+            if MenuFlow.latest_menu is not None:
+                statusbar = MenuFlow.latest_menu.get_prev_statusbar()
+                statusbar['title'] = "{} ({})".format(self.key_name, self.key['index'])
+                MenuFlow.latest_menu.update_prev_statusbar(statusbar)
 
             await AutoBackupFlow().run()
             self.set_result(True)
