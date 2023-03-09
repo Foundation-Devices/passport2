@@ -16,7 +16,7 @@ from utils import B2A
 from ustruct import pack, unpack
 from exceptions import IncorrectUTXOAmount
 from ubinascii import b2a_base64, a2b_base64
-from serializations import COutPoint, uint256_from_str
+from serializations import COutPoint, uint256_from_bytes
 from common import flash_cache
 
 # Limited space in external flash, so we compress as much as possible:
@@ -179,7 +179,7 @@ def add_segwit_utxos_finalize(txid):
         return
 
     # add it to the cache
-    prevout = COutPoint(uint256_from_str(txid), 0)
+    prevout = COutPoint(uint256_from_bytes(txid), 0)
     for oi, amount in new_outpts:
         prevout.n = oi
         OutptValueCache.add(prevout, amount)

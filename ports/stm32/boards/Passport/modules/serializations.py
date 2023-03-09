@@ -108,7 +108,18 @@ def ser_uint256(u):
     return rs
 
 
-def uint256_from_str(s):
+def uint256_from_bytes(s: bytes) -> int:
+    """
+    Deserialize a little-endian 256-bit unsigned integer from a bytes string.
+
+    :param s: The bytes to deserialize.
+    :raises: ValueError if the s length is less than 32 bytes.
+    :return: The deserialized integer.
+    """
+
+    if len(s) < 32:
+        raise ValueError("bytes length must be at least 32")
+
     r = 0
     t = struct.unpack("<IIIIIIII", s[:32])
     for i in range(8):
@@ -509,10 +520,10 @@ class CTransaction(object):
     def calc_sha256(self, with_witness=False):
         if with_witness:
             # Don't cache the result, just return it
-            return uint256_from_str(hash256(self.serialize_with_witness()))
+            return uint256_from_bytes(hash256(self.serialize_with_witness()))
 
         if self.sha256 is None:
-            self.sha256 = uint256_from_str(hash256(self.serialize_without_witness()))
+            self.sha256 = uint256_from_bytes(hash256(self.serialize_without_witness()))
         tmp = hash256(self.serialize())
         self.hash = b2a_hex(bytes(tmp[i] for i in range(len(tmp) - 1, -1, -1)))
 
