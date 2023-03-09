@@ -11,6 +11,8 @@ import common
 
 
 class MenuFlow(Flow):
+    latest_menu = None
+
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
                  card_header=None, statusbar=None, one_shot=False):
         self.menu = menu
@@ -23,6 +25,7 @@ class MenuFlow(Flow):
         self.card_header = card_header
         self.statusbar = statusbar
         self.one_shot = one_shot
+        MenuFlow.latest_menu = self
 
     async def show_menu(self):
         from common import ui
@@ -96,7 +99,7 @@ class MenuFlow(Flow):
                 if self.context is not None:
                     args['context'] = self.context
                 # print('FLOW >>>>>>> args={}'.format(args))
-                await flow(**args, upper_menu=self).run()
+                await flow(**args).run()
                 if self.prev_statusbar is not None:
                     ui.set_statusbar(**self.prev_statusbar)
                     self.prev_statusbar = None
