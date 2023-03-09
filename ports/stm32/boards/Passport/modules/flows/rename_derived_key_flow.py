@@ -7,11 +7,10 @@ from flows import Flow
 
 
 class RenameDerivedKeyFlow(Flow):
-    def __init__(self, context=None, upper_menu=None):
+    def __init__(self, context=None):
         super().__init__(initial_state=self.enter_name, name='RenameDerivedKeyFlow')
         self.key = context
         self.key_name = None
-        self.upper_menu = upper_menu
 
     async def enter_name(self):
         from constants import MAX_ACCOUNT_NAME_LEN
@@ -49,14 +48,14 @@ class RenameDerivedKeyFlow(Flow):
     async def rename_key(self):
         from tasks import rename_derived_key_task
         from utils import spinner_task
-        from flows import AutoBackupFlow
+        from flows import AutoBackupFlow, MenuFlow
 
         (error,) = await spinner_task('Renaming Key', rename_derived_key_task,
                                       args=[self.key, self.key_name])
         if error is None:
-            statusbar = self.upper_menu.get_prev_statusbar()
+            statusbar = MenuFlow.latest_menu.get_prev_statusbar()
             statusbar['title'] = "{} ({})".format(self.key_name, self.key['index'])
-            self.upper_menu.update_prev_statusbar(statusbar)
+            MenuFlow.latest_menu.update_prev_statusbar(statusbar)
 
             await AutoBackupFlow().run()
             self.set_result(True)
