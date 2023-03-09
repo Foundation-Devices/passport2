@@ -13,8 +13,7 @@ class Flow():
                  initial_state=None,
                  name='Flow',
                  settings_key=None,
-                 statusbar=None,
-                 upper_menu=None):
+                 statusbar=None):
         self.state = initial_state
         self.name = name
         self.prev_states = []
