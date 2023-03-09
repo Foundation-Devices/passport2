@@ -22,7 +22,7 @@ from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL
-from serializations import ser_push_data, uint256_from_str
+from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 
 from public_constants import (
@@ -559,7 +559,7 @@ class psbtInputProxy(psbtProxy):
             # - challenge: it's a straight dsha256() for old serializations, but not for newer
             #   segwit txn's... plus I don't want to deserialize it here.
             try:
-                observed = uint256_from_str(calc_txid(self.fd, self.utxo))
+                observed = uint256_from_bytes(calc_txid(self.fd, self.utxo))
             except BaseException:
                 raise AssertionError("Trouble parsing UTXO given for input #%d" % idx)
 
