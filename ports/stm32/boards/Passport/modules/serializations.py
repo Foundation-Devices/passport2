@@ -108,7 +108,18 @@ def ser_uint256(u):
     return rs
 
 
-def uint256_from_str(s):
+def uint256_from_bytes(s: bytes) -> int:
+    """
+    Deserialize a little-endian 256-bit unsigned integer from a bytes string.
+
+    :param s: The bytes to deserialize.
+    :raises: ValueError if the s length is less than 32 bytes.
+    :return: The deserialized integer.
+    """
+
+    if len(s) < 32:
+        raise ValueError("bytes length must be at least 32")
+
     r = 0
     t = struct.unpack("<IIIIIIII", s[:32])
     for i in range(8):
