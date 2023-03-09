@@ -104,7 +104,9 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     lv_coord_t res = LV_MIN(imgdsc->header.w, imgdsc->header.h);
 
     int32_t qr_version;
-    if (qrcodegen_isAlphanumeric((const char*)data, data_len)) {
+    if (qrcodegen_isNumeric((const char*)data, data_len)) {
+        qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_NUMERIC, data_len);
+    } else if (qrcodegen_isAlphanumeric((const char*)data, data_len)) {
         qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_ALPHANUMERIC, data_len);
     } else {
         qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_BYTE, data_len);
