@@ -327,6 +327,7 @@ def developer_menu():
             BatteryPage,
             DeleteDerivedKeysFlow,
             DeveloperFunctionsFlow,
+            FCCTestFlow,
             SpinDelayFlow,
         )
         from pages import StatusPage, ShowQRPage
@@ -349,9 +350,9 @@ def developer_menu():
             {'icon': lv.ICON_SEED, 'label': 'New Seed', 'flow': NewSeedFlow, 'args': {'refresh_cards_when_done': True}},
             {'icon': lv.ICON_ONE_KEY, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
             {'icon': lv.ICON_ERASE, 'label': 'Erase Child Keys', 'flow': DeleteDerivedKeysFlow},
+            {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
             # {'icon': lv.ICON_SETTINGS, 'label': 'I\'m Busy!', 'page': LongTextPage,
             #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
-            # {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
             # {'icon': lv.ICON_ABOUT, 'label': 'Color Picker', 'page': ColorPickerPage},
             # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter PIN', 'page': PINEntryPage,
             #  'args': {'title': 'Enter Initial PIN'}},
