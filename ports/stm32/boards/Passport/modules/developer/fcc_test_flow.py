@@ -5,9 +5,9 @@
 
 from animations.constants import TRANSITION_DIR_POP
 import lvgl as lv
-from flows import Flow
+from flows import Flow, ScanQRFlow
 import microns
-from pages import ProgressPage, ScanQRPage
+from pages import ProgressPage
 from styles.colors import COPPER
 from tasks import fcc_copy_files_task
 from utils import start_task
@@ -26,9 +26,11 @@ class FCCTestFlow(Flow):
         self.progress_page = None
 
     async def show_camera(self):
-        result = await ScanQRPage().show(auto_close_timeout=_CAMERA_DISPLAY_DURATION_SECS)
+        result = await ScanQRFlow(auto_close_timeout=_CAMERA_DISPLAY_DURATION_SECS,
+                                  data_description='a normal QR code').run()
+
+        # User used a button to back out
         if result is None:
-            # User used a button to back out
             self.set_result(False)
             return
 
