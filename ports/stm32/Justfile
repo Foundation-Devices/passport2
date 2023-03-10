@@ -131,6 +131,18 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
         SIGNED_FILENAME="v{{version}}-passport-fe-key-user.bin"
     fi
 
+    SIZE=$(ls -l build-Passport/$SIGNED_FILENAME | cut -d " " -f5)
+
+    # 1792k firmware size limit
+    LIMIT=1835008
+    echo "limit: $LIMIT"
+    echo "size: $SIZE"
+    if [ $SIZE -gt $LIMIT ]
+    then
+        echo "ERROR: Firmware too large"
+        exit 1
+    fi
+
     just run-ocd-command "flash write_image erase build-Passport/$SIGNED_FILENAME $BL_FW_HDR_BASE"
 
 # Install a recent Foundation-signed build
