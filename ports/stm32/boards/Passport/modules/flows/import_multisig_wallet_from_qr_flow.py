@@ -13,29 +13,21 @@ class ImportMultisigWalletFromQRFlow(Flow):
         self.error = None
 
     async def scan_qr_code(self):
-        from pages import ScanQRPage, ErrorPage
-        from multisig_wallet import MultisigWallet
+        from data_codecs.qr_type import QRType
         from foundation import ur
+        from flows import ScanQRFlow
+        from multisig_wallet import MultisigWallet
 
-        result = await ScanQRPage().show()
+        result = await ScanQRFlow(qr_types=[QRType.UR2],
+                                  ur_types=[ur.Value.BYTES],
+                                  data_description='a multisig wallet configuration file').run()
         if result is None:
             self.set_result(False)
             return
-        elif result.is_failure():
-            self.set_result(False)
-            await ErrorPage(text='Unable to scan QR code.').show()
-            return
-
-        if not isinstance(result.data, ur.Value):
-            await ErrorPage(text='Bad QR format.').show()
-            return
-
-        data = result.data.unwrap_bytes()
-        if isinstance(data, (bytes, bytearray)):
-            data = data.decode('utf-8')
 
         try:
-            self.ms = await MultisigWallet.from_file(data)
+            file = result.unwrap_bytes().decode('utf-8')
+            self.ms = await MultisigWallet.from_file(file)
         except BaseException as e:
             if e.args is None or len(e.args) == 0:
                 self.error = "Multisig Import Error"
@@ -43,7 +35,6 @@ class ImportMultisigWalletFromQRFlow(Flow):
                 self.error = e.args[0]
             self.goto(self.show_error)
             return
-        # print('New MS: {}'.format(self.ms.serialize()))
 
         self.goto(self.do_import)
 
