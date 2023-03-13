@@ -60,29 +60,7 @@ class ScvFlow(Flow):
 
         # User did not scan anything
         if result is None:
-            from pages import QuestionPage
-            if self.envoy:
-                cancel = await QuestionPage(
-                    text='Cancel Envoy Setup?\n\n{}'.format(
-                        recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
-                ).show()
-                if cancel:
-                    self.set_result(None)
-                else:
-                    return
-            else:
-                if not self.ask_to_skip:
-                    self.set_result(True)
-                else:
-                    skip = await QuestionPage(
-                        text='Skip Security Check?\n\n{}'.format(
-                            recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
-                    ).show()
-                    if skip:
-                        common.settings.set('validated_ok', True)
-                        self.set_result(True)
-                    else:
-                        self.back()
+            self.goto(self.ask_to_skip)
             return
 
         # Scan succeeded -- verify its content
