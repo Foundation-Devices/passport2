@@ -433,44 +433,13 @@ void factory_test_sd_card(uint32_t param1, uint32_t param2) {
 
 void factory_test_fuel_gauge(uint32_t param1, uint32_t param2) {
     i2c_init();
-
-    factory_test_set_message("Scanning addresses");
-
-    uint8_t count = 0;
-    for (uint8_t i = 0; i < 255; i++) {
-        int res = HAL_I2C_IsDeviceReady(&g_hi2c2, ((uint16_t)i) << 1, 10, 10000);
-        if (res == HAL_OK) {
-            count++;
-        }
-    }
-
-    if (count == 0) {
-        factory_test_set_message("Zero found");
-    } else if (count == 1) {
-        factory_test_set_message("One found");
-    } else if (count == 2) {
-        factory_test_set_message("Two found");
-    } else if (count == 3) {
-        factory_test_set_message("Three found");
-    } else if (count == 4) {
-        factory_test_set_message("Four found");
-    } else {
-        factory_test_set_message("Many found");
-    }
-
-    while (true) {}
-
-    factory_test_set_message("bq27520_init");
     bq27520_init();
 
-    factory_test_set_message("bq27520_probe");
     if (bq27520_probe() != HAL_OK) {
         factory_test_set_result_error(104, "Can't connect to fuel gauge chip");
         bq27520_deinit();
         return;
     }
-
-    factory_test_set_message("ok");
 
     bq27520_deinit();
     factory_test_set_result_success();
