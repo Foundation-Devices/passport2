@@ -181,7 +181,7 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
             self.back()
 
     async def show_error(self, message):
-        from pages import InfoPage
+        from pages import ErrorPage
 
-        await InfoPage(text=message).show()
+        await ErrorPage(text=message).show()
         self.reset(self.show_intro)
