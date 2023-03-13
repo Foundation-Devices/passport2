@@ -125,7 +125,6 @@ class ScvFlow(Flow):
 
     async def show_envoy_scan_msg(self):
         from pages import InfoPage
-        from utils import recolor
 
         result = await InfoPage(
             text='On Envoy, select {next}, and scan the following QR code.'
@@ -202,9 +201,6 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
                 self.goto(self.ask_to_skip)
 
     async def ask_to_skip(self):
-        from pages import QuestionPage
-        from utils import recolor
-
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
