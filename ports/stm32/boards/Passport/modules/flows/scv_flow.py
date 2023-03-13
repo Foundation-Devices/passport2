@@ -36,19 +36,16 @@ class ScvFlow(Flow):
     async def show_intro(self):
         from pages import ShieldPage
 
-        text = []
-        # Only show the first item for manual flow
-        if not self.envoy:
-            text.append('Let\'s confirm Passport was not tampered with during shipping.')
-
         if self.envoy:
-            text.append('On the next screen, scan the QR code shown in Envoy.')
+            text = 'On the next screen, scan the QR code shown in Envoy.'
         else:
-            text.append('On the next screen, scan the Security Check QR code from validate.foundationdevices.com.')
+            text = 'Let\'s confirm Passport was not tampered with during shipping.' \
+                   'On the next screen, scan the Security Check ' \
+                   'QR code from validate.foundationdevices.com.'
 
-        result = await ShieldPage(
-            text=text,
-            left_micron=microns.Back, right_micron=microns.Forward).show()
+        result = await ShieldPage(text=text,
+                                  left_micron=microns.Back,
+                                  right_micron=microns.Forward).show()
         if result:
             self.goto(self.scan_qr_challenge)
         else:
