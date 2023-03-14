@@ -787,7 +787,7 @@ class MultisigWallet:
 
         # path length of derivation given needs to match xpub's depth
         p_len = deriv.count('/')
-        assert p_len == depth, 'deriv %d != %d xpub depth (xfp=%s)' % (
+        assert p_len == depth, 'Path length (%d) does not match xpub depth (%d), (xfp=%s)' % (
             p_len, depth, xfp2str(xfp))
 
         if xfp == my_xfp:
