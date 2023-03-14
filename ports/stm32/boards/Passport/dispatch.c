@@ -31,7 +31,6 @@
 #include "gpio.h"
 #include "pins.h"
 #include "se-atecc608a.h"
-#include "version.h"
 
 #define D1_AXISRAM_SIZE_MAX ((uint32_t)0x00080000U)
 
