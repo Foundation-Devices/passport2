@@ -32,7 +32,7 @@ class ExportDerivedKeyFlow(Flow):
         from derived_key import key_types
 
         options = [{'label': 'Export via QR', 'value': self.show_qr_code},
-                   {'label': 'Export via SD', 'value': self.save_to_sd}]
+                   {'label': 'Export via microSD', 'value': self.save_to_sd}]
 
         if key_types[self.key['type']]['words']:
             options.append({'label': 'Show seed words', 'value': self.show_seed_words})
