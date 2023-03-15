@@ -10,12 +10,12 @@ from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_ta
 # The type is stored as an index into this array, so this MUST NOT be re-ordered.
 key_types = [
     {'title': '24 Word Seed',
-     'icon': lv.ICON_BITCOIN,
+     'icon': lv.ICON_SEED_24,
      'indexed': True,
      'words': True,
      'task': bip85_24_word_seed_task},
     {'title': '12 Word Seed',
-     'icon': lv.ICON_BITCOIN,
+     'icon': lv.ICON_SEED_12,
      'indexed': True,
      'words': True,
      'task': bip85_12_word_seed_task},
