@@ -30,6 +30,7 @@
 #include "fwheader.h"
 #include "verify.h"
 #include "update.h"
+#include "keypad-adp-5587.h"
 
 volatile FactoryTestInfo* pFactoryTestInfo = (FactoryTestInfo*)SRAM4_START;
 
@@ -349,6 +350,17 @@ void factory_test_eeprom(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_keypad(uint32_t param1, uint32_t param2) {
+    if (keypad_init()) {
+        factory_test_set_result_error(111, "Can't init keypad");
+        return;
+    }
+
+    uint8_t num = 0;
+    if (!read_num_keys(&num)) {
+        factory_test_set_result_error(111, "Can't read number of keys");
+        return;
+    }
+
     factory_test_set_progress(100);
     factory_test_set_result_success();
 }
@@ -420,6 +432,7 @@ void factory_test_sd_card(uint32_t param1, uint32_t param2) {
 }
 
 void factory_test_fuel_gauge(uint32_t param1, uint32_t param2) {
+    i2c_init();
     bq27520_init();
 
     if (bq27520_probe() != HAL_OK) {

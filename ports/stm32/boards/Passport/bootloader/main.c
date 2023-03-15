@@ -172,6 +172,7 @@ void HardFault_Handler(void) {
         ;
 }
 
+#ifndef FACTORY_TEST
 static void MPU_Config(void) {
     MPU_Region_InitTypeDef MPU_InitStruct;
 
@@ -301,6 +302,8 @@ static void MPU_Config(void) {
     /* Enable MPU */
     HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
+
+#endif /* ifndef FACTORY_TEST */
 
 static void version(void) {
     passport_firmware_header_t* fwhdr       = (passport_firmware_header_t*)FW_HDR;
