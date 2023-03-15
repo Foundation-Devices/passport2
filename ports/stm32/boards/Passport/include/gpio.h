@@ -6,7 +6,7 @@
 #define __GPIO_H__
 
 void gpio_init(void);
-void passport_reset(void);
-void passport_shutdown(void);
+__attribute__((noreturn)) void passport_reset(void);
+__attribute__((noreturn)) void passport_shutdown(void);
 
 #endif  // __GPIO_H__
