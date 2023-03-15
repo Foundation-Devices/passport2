@@ -26,6 +26,12 @@ _VERSIONS = [
     {'alphanumeric': 535, 'binary': 367},  # Version 12
 ]
 
+_SEEDQR_VERSIONS = [
+    41,   # Version 1
+    77,   # Version 2
+    127,  # Version 3
+]
+
 brightness_levels = [5, 25, 50, 75, 100]
 
 
@@ -97,7 +103,7 @@ class ShowQRPage(Page):
             self.add_child(self.caption_label)
 
     def is_qr_resizable(self):
-        return self.qr_type != QRType.QR
+        return self.qr_type not in [QRType.QR, QRType.SQR, QRType.CSQR]
 
     def attach(self, group):
         super().attach(group)
@@ -193,10 +199,14 @@ class ShowQRPage(Page):
     def update(self):
         if self.is_attached():
             if self.qr_encoder is None:
-                self.qr_encoder = make_qr_encoder(self.qr_type)
+                self.qr_encoder = make_qr_encoder(self.qr_type, self.qr_args)
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
+                if self.qr_type == QRType.CSQR or self.qr_type == QRType.SQR:
+                    self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]
+                    # TODO: how does this handle setting a fragment length lower
+                    # than the data size?
                 else:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['binary']
 
@@ -215,6 +225,9 @@ class ShowQRPage(Page):
             #       same as last time (or, if possible, if part count == 1).
             if self.prev_part != part:
                 self.prev_part = part
-                data = part.encode('ascii')
+                if self.qr_type == QRType.CSQR:
+                    data = part
+                else:
+                    data = part.encode('ascii')
                 # print('data={}'.format(data))
                 self.qrcode.update(data)

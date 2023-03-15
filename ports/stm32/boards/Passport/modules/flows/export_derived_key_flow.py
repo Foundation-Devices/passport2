@@ -46,15 +46,41 @@ class ExportDerivedKeyFlow(Flow):
         self.goto(mode)
 
     async def show_qr_code(self):
-        from pages import ShowQRPage
-        from utils import B2A
+        from pages import ShowQRPage, ChooserPage
+        from utils import B2A, spinner_task
+        from tasks import get_words_from_seed_task
+        from data_codecs.qr_type import QRType
         import microns
+        from derived_key import key_types
 
-        if isinstance(self.pk, str):
-            qr_data = self.pk
+        if key_types[self.key['type']]['words']:
+            options = [{'label': 'Compact SeedQR', 'value': QRType.CSQR},
+                       {'label': 'SeedQr', 'value': QRType.SQR},
+                       {'label': 'Private Key', 'value': QRType.QR}]
+
+            qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()
         else:
-            qr_data = B2A(self.pk)
-        await ShowQRPage(qr_data=qr_data, right_micron=microns.Checkmark).show()
+            qr_type = QRType.QR
+
+        if qr_type is None:
+            self.set_result(False)
+            return
+
+        if qr_type is QRType.QR:
+            if isinstance(self.pk, str):
+                qr_data = self.pk
+            else:
+                qr_data = B2A(self.pk)
+        else:
+            (qr_data, error) = await spinner_task(text='Retrieving Seed',
+                                                  task=get_words_from_seed_task,
+                                                  args=[self.pk])
+            if error is not None or qr_data is None:
+                await ErrorPage(text='Unable to retrieve seed: {}'.format(error)).show()
+                self.set_result(False)
+                return
+        await ShowQRPage(qr_type=qr_type, qr_data=qr_data, right_micron=microns.Checkmark).show()
+
         self.set_result(True)
 
     async def save_to_sd(self):

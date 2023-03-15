@@ -11,3 +11,5 @@ class QRType:
     QR = 0      # Standard QR code with no additional encoding
     UR1 = 1     # UR 1.0 pre-standard from Blockchain Commons
     UR2 = 2     # UR 2.0 standard from Blockchain Commons
+    CSQR = 3    # Compact SeedQR
+    SQR = 4     # SeedQR
