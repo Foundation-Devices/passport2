@@ -8,12 +8,11 @@
 
 #include "ring_buffer.h"
 
-#include "../../../../lib/lv_bindings/driver/include/common.h"
-#include "../../../../lib/lv_bindings/lv_conf.h"
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
+#include "lib/lv_bindings/driver/include/common.h"
+#include "lvgl/lvgl.h"
 
 #ifndef KEYPAD_DEBUG
-// #define KEYPAD_DEBUG 1
+#define KEYPAD_DEBUG 0
 #endif
 
 STATIC mp_obj_t key_cb = mp_const_none;
