@@ -40,7 +40,6 @@
 #define MAX_I_SAMPLES 20
 #define MAX_V_SAMPLES 4
 
-static ADC_HandleTypeDef hadc3;
 static ADC_HandleTypeDef hadc2;
 
 static HAL_StatusTypeDef adc2_init(void) {
@@ -110,59 +109,6 @@ static HAL_StatusTypeDef adc2_init(void) {
     rc = HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
     if (rc != HAL_OK) {
         printf("ADC2 calibration failed\n");
-        return rc;
-    }
-
-    return HAL_OK;
-}
-
-HAL_StatusTypeDef adc3_init(void) {
-    HAL_StatusTypeDef rc;
-
-    hadc3.Instance = ADC3;
-    rc             = HAL_ADC_DeInit(&hadc3);
-    if (rc != HAL_OK) {
-        printf("Failed to deinit ADC3\n");
-        return rc;
-    }
-
-    __HAL_RCC_ADC3_CLK_ENABLE();
-
-    /**ADC3 GPIO Configuration
-    PC2_C     ------> ADC3_INP0 - ALS_OUT
-    PC3_C     ------> ADC3_INP1 - BDREV
-    */
-    HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PC2 | SYSCFG_SWITCH_PC3,
-                                  SYSCFG_SWITCH_PC2_OPEN | SYSCFG_SWITCH_PC3_OPEN);
-
-    hadc3.Instance                      = ADC3;
-    hadc3.Init.ClockPrescaler           = ADC_CLOCK_ASYNC_DIV2;  // 4
-    hadc3.Init.Resolution               = ADC_RESOLUTION_16B;
-    hadc3.Init.ScanConvMode             = ADC_SCAN_DISABLE;
-    hadc3.Init.EOCSelection             = ADC_EOC_SINGLE_CONV;
-    hadc3.Init.LowPowerAutoWait         = DISABLE;
-    hadc3.Init.ContinuousConvMode       = ENABLE;  // DIS
-    hadc3.Init.NbrOfConversion          = 1;
-    hadc3.Init.DiscontinuousConvMode    = DISABLE;
-    hadc3.Init.ExternalTrigConv         = ADC_SOFTWARE_START;
-    hadc3.Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE;
-    hadc3.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
-    hadc3.Init.Overrun                  = ADC_OVR_DATA_OVERWRITTEN;
-    hadc3.Init.LeftBitShift             = ADC_LEFTBITSHIFT_NONE;
-
-    /*
-     * Perform oversampling to read multiple samples
-     * and compute the average in HW.
-     */
-    hadc3.Init.OversamplingMode                   = ENABLE;
-    hadc3.Init.Oversampling.Ratio                 = 0x20; /* Bit for 32x oversampling */
-    hadc3.Init.Oversampling.RightBitShift         = ADC_RIGHTBITSHIFT_5;
-    hadc3.Init.Oversampling.TriggeredMode         = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
-    hadc3.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
-
-    rc = HAL_ADC_Init(&hadc3);
-    if (rc != HAL_OK) {
-        printf("ADC3 init failed\n");
         return rc;
     }
 
@@ -371,69 +317,10 @@ int adc_read_powermon(uint16_t* current, uint16_t* voltage) {
     return 0;
 }
 
-/*
- * adc_read_boardrev() - Reads the board revision channel
- * and returns a numeric value based on the milli-volts
- * read divided by the number of milli-volts per revision.
- */
-int adc_read_boardrev(uint16_t* board_rev) {
-    HAL_StatusTypeDef      rc;
-    ADC_ChannelConfTypeDef sConfig = {0};
-    uint32_t               adc_value;
-    uint16_t               millivolts;
-
-    *board_rev = 0;
-
-    /** Configure Regular Channel
-    */
-    sConfig.Channel      = ADC_CHANNEL_1;
-    sConfig.Rank         = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
-    sConfig.SingleDiff   = ADC_SINGLE_ENDED;
-    sConfig.OffsetNumber = ADC_OFFSET_NONE;
-    sConfig.Offset       = 0;
-    rc                   = HAL_ADC_ConfigChannel(&hadc3, &sConfig);
-    if (rc != HAL_OK) {
-        printf("Failed to config ADC3 channel\n");
-        return -1;
-    }
-
-    /* Run the ADC calibration in single-ended mode */
-    rc = HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-    if (rc != HAL_OK) {
-        printf("ADC3 calibration failed - boardrev\n");
-        return -1;
-    }
-
-    rc = HAL_ADC_Start(&hadc3);
-    if (rc != HAL_OK) {
-        printf("ADC3 start failed\n");
-        return -1;
-    }
-
-    rc = HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
-    if (rc != HAL_OK) {
-        printf("ADC3 poll for conversion failed\n");
-        return -1;
-    }
-    adc_value = HAL_ADC_GetValue(&hadc3);
-    HAL_ADC_Stop(&hadc3);
-
-    millivolts = (((adc_value)*REF_VOLTAGE_MV) / MAX_SAMPLES_CNT);
-
-    printf("[%s] millivolts: %u\n", __func__, millivolts);
-
-    *board_rev = millivolts / MILLIVOLTS_PER_REVISION;
-    return 0;
-}
-
 int adc_init(void) {
     HAL_StatusTypeDef rc;
 
     rc = adc2_init();
-    if (rc != HAL_OK) return -1;
-
-    rc = adc3_init();
     if (rc != HAL_OK) return -1;
 
     return 0;
