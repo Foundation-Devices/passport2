@@ -6,6 +6,7 @@
 
 #include "py/obj.h"
 #include "py/objarray.h"
+#include "py/binary.h"
 
 #include "../../../../lib/lv_bindings/lvgl/lvgl.h"
 
