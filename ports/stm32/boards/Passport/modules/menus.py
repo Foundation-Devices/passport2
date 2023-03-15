@@ -248,6 +248,7 @@ def developer_menu():
     )
     from pages import BatteryPage, StatusPage, ShowQRPage
     from data_codecs.qr_type import QRType
+    from foundation import ur
 
     return [
         {'icon': lv.ICON_BATTERY, 'label': 'Battery', 'page': BatteryPage},
