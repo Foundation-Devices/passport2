@@ -146,6 +146,18 @@ STATIC mp_obj_t mod_trezorcrypto_bip39_seed(size_t n_args,
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_bip39_seed_obj, 2,
                                            3, mod_trezorcrypto_bip39_seed);
 
+//Returns BIP39 english index of the given word
+STATIC mp_obj_t mod_trezorcrypto_bip39_find_word(mp_obj_t word) {
+  mp_buffer_info_t wd = {0};
+  mp_get_buffer_raise(word, &wd, MP_BUFFER_READ);
+  if (wd.len == 0) {
+    return mp_const_none;
+  }
+  return mp_obj_new_int(mnemonic_find_word(wd.buf));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_bip39_find_word_obj,
+                                 mod_trezorcrypto_bip39_find_word);
+
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_bip39_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_bip39)},
     {MP_ROM_QSTR(MP_QSTR_complete_word),
@@ -158,6 +170,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_bip39_globals_table[] = {
      MP_ROM_PTR(&mod_trezorcrypto_bip39_from_data_obj)},
     {MP_ROM_QSTR(MP_QSTR_check), MP_ROM_PTR(&mod_trezorcrypto_bip39_check_obj)},
     {MP_ROM_QSTR(MP_QSTR_seed), MP_ROM_PTR(&mod_trezorcrypto_bip39_seed_obj)},
+    {MP_ROM_QSTR(MP_QSTR_find_word), MP_ROM_PTR(&mod_trezorcrypto_bip39_find_word_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_bip39_globals,
                             mod_trezorcrypto_bip39_globals_table);
