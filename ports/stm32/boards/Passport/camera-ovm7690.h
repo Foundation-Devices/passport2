@@ -44,7 +44,6 @@
 
 #define CAMERA_I2C_ADDR (0x21 << 1)  // Use 8-bit address
 
-#if 0 /* Not used for now */
 /* Camera registers */
 #define GAIN 0x00
 #define BGAIN 0x01
@@ -190,7 +189,6 @@
 #define REGDF 0xDF
 #define REGE0 0xE0
 #define REGE1 0xE1
-#endif
 
 // Initialize the camera.
 HAL_StatusTypeDef camera_init(void);
