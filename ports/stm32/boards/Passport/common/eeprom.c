@@ -78,16 +78,6 @@ HAL_StatusTypeDef eeprom_write(uint16_t offset, uint8_t* buffer, uint8_t len) {
 #define EEPROM_ADDR_RTC_CALIBRATION_OFFSET 0
 #define EEPROM_ADDR_SCREEN_BRIGHTNESS 4
 
-int32_t eeprom_get_rtc_calibration_offset(int32_t _default) {
-    int32_t offset = 0;
-    if (eeprom_read(EEPROM_ADDR_RTC_CALIBRATION_OFFSET, (uint8_t*)&offset, sizeof(int32_t)) == HAL_OK) {
-        return offset;
-    }
-
-    // Got an error on read, so return the default
-    return _default;
-}
-
 bool eeprom_set_rtc_calibration_offset(int32_t offset) {
     return eeprom_write(EEPROM_ADDR_RTC_CALIBRATION_OFFSET, (uint8_t*)&offset, sizeof(int32_t)) == HAL_OK;
 }
