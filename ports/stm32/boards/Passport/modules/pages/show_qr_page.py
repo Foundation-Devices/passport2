@@ -225,9 +225,9 @@ class ShowQRPage(Page):
             #       same as last time (or, if possible, if part count == 1).
             if self.prev_part != part:
                 self.prev_part = part
-                if self.qr_type == QRType.CSQR:
+                if self.qr_type == QRType.CSQR or self.qr_type == QRType.SQR:
                     data = part
                 else:
                     data = part.encode('ascii')
                 # print('data={}'.format(data))
-                self.qrcode.update(data)
+                self.qrcode.update(data, self.qr_type)
