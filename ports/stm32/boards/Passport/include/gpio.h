@@ -5,8 +5,8 @@
 #ifndef __GPIO_H__
 #define __GPIO_H__
 
-extern void gpio_init(void);
-extern void passport_reset(void);
-extern void passport_shutdown(void);
+void gpio_init(void);
+void passport_reset(void);
+void passport_shutdown(void);
 
 #endif  // __GPIO_H__
