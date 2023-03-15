@@ -68,6 +68,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'data_codecs/qr_codec.py',
         'data_codecs/qr_factory.py',
         'data_codecs/qr_type.py',
+        'data_codecs/seedqr_codec.py',
         'data_codecs/seed_sampler.py',
         'data_codecs/ur1_codec.py',
         'data_codecs/ur2_codec.py'))

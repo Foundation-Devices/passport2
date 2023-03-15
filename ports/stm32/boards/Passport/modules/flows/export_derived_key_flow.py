@@ -95,7 +95,6 @@ class ExportDerivedKeyFlow(Flow):
         else:
             text = B2A(self.pk)
 
-        print(text)
         key_num = 1
 
         while True:
