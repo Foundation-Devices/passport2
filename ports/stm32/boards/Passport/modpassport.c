@@ -7,7 +7,6 @@
 
 // Include all submodules and classes implementations.
 #include "modpassport-backlight.h"
-#include "modpassport-boardrev.h"
 #include "modpassport-camera.h"
 #include "modpassport-fuelgauge.h"
 #include "modpassport-noise.h"
@@ -83,7 +82,6 @@ STATIC const mp_rom_map_elem_t passport_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_fuelgauge), MP_ROM_PTR(&mod_passport_fuelgauge_module)},
 #endif
     {MP_ROM_QSTR(MP_QSTR_Backlight), MP_ROM_PTR(&mod_passport_Backlight_type)},
-    {MP_ROM_QSTR(MP_QSTR_Boardrev), MP_ROM_PTR(&mod_passport_Boardrev_type)},
     {MP_ROM_QSTR(MP_QSTR_Noise), MP_ROM_PTR(&mod_passport_Noise_type)},
 #ifdef SCREEN_MODE_MONO
     {MP_ROM_QSTR(MP_QSTR_Powermon), MP_ROM_PTR(&mod_passport_Powermon_type)},
