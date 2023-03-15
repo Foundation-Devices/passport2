@@ -10,6 +10,7 @@ from .qr_codec import QREncoder, QRDecoder, QRSampler
 from .ur1_codec import UR1Encoder, UR1Decoder, UR1Sampler
 from .ur2_codec import UR2Encoder, UR2Decoder, UR2Sampler
 from .compact_seedqr_codec import CompactSeedQREncoder
+from .seedqr_codec import SeedQREncoder
 from .qr_type import QRType
 
 qrs = [
@@ -17,6 +18,7 @@ qrs = [
     {'type': QRType.UR1, 'encoder': UR1Encoder, 'decoder': UR1Decoder, 'sampler': UR1Sampler},
     {'type': QRType.QR, 'encoder': QREncoder, 'decoder': QRDecoder, 'sampler': QRSampler},
     {'type': QRType.CSQR, 'encoder': CompactSeedQREncoder, 'decoder': None, 'sampler': None},
+    {'type': QRType.SQR, 'encoder': SeedQREncoder, 'decoder': None, 'sampler': None},
 ]
 
 
