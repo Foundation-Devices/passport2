@@ -39,7 +39,7 @@ void display_init(bool clear);
 void display_clear(uint16_t color);
 void display_fill(uint16_t color);
 void display_show(void);
-void display_clean_shutdown(void);
+__attribute__((noreturn)) void display_clean_shutdown(void);
 
 #ifdef PASSPORT_BOOTLOADER
 extern void     display_progress_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t percent, char* message);
