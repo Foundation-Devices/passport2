@@ -6,8 +6,6 @@
 
 #include "framebuffer.h"
 
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
-
 /// package: passport_lv.lcd
 
 /// def init() -> None:

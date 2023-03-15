@@ -10,9 +10,7 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
-#include "../../../../lib/lv_bindings/driver/include/common.h"
-#include "../../../../lib/lv_bindings/lv_conf.h"
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
+#include "lvgl/lvgl.h"
 
 #if defined(SCREEN_MODE_MONO) && defined(SCREEN_MODE_COLOR)
 #error "SCREEN_MODE_MONO and SCREEN_MODE_COLOR cannot be used at the same time"
