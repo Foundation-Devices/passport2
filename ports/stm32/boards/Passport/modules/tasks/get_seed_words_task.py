@@ -29,4 +29,4 @@ async def get_words_from_seed_task(on_done, seed):
         words = trezorcrypto.bip39.from_data(seed).split(' ')
         await on_done(words, None)
     except Exception as e:
-        await one_done(None, '{}'.format(e))
+        await on_done(None, '{}'.format(e))
