@@ -26,6 +26,24 @@ alphanumeric_capacity_by_version = [
     619
 ]
 
+# Capacity in bytes for LOW ECC and numeric
+numeric_capacity_by_version = [
+    0,
+    41,
+    77,
+    127,
+    187,
+    255,
+    322,
+    370,
+    461,
+    552,
+    652,
+    772,
+    883,
+    1022
+]
+
 
 class QRCode(View):
     """Displays a QR code"""
@@ -70,20 +88,26 @@ class QRCode(View):
     def reset_sizing(self):
         self.lvgl_root.reset_last_version()
 
-    def get_version_for_data(self, encoded_data):
+    def get_version_for_data(self, encoded_data, qr_type):
+        from data_codecs.qr_type import QRType
+
         enc_len = len(encoded_data)
+        if qr_type in [QRType.CSQR, QRType.SQR]:
+            capacity_by_version = numeric_capacity_by_version
+        else:
+            capacity_by_version = alphanumeric_capacity_by_version
         for i in range(1, sram4.MAX_QR_VERSION + 1):
-            if alphanumeric_capacity_by_version[i] >= enc_len:
+            if capacity_by_version[i] >= enc_len:
                 return i
         raise QRCodeException()
 
-    def update(self, encoded_data):
+    def update(self, encoded_data, qr_type):
         if self.res is None:
             self.configure_canvas_buffer()
             if self.res is None:
                 return
 
-        min_version = self.get_version_for_data(encoded_data)
+        min_version = self.get_version_for_data(encoded_data, qr_type)
 
         last_version = self.lvgl_root.get_last_version()
 
