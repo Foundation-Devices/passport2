@@ -132,7 +132,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b32_decode_obj, modtcc_b32_decode);
 
 // pack and unpack bits; probably 5 or 8...
 //
-STATIC inline int sw_convert_bits(
+STATIC int sw_convert_bits(
     uint8_t* out, size_t* outlen, const int outbits, const uint8_t* in, size_t inlen, const int inbits, bool pad) {
     uint32_t val  = 0;
     int      bits = 0;
