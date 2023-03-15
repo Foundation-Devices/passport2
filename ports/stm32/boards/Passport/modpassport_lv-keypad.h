@@ -9,9 +9,8 @@
 #include "extint.h"
 #include "pins.h"
 
-#include "../../../../lib/lv_bindings/driver/include/common.h"
-#include "../../../../lib/lv_bindings/lv_conf.h"
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
+#include "lib/lv_bindings/driver/include/common.h"
+#include "lvgl/lvgl.h"
 
 #include "keypad-adp-5587.h"
 #include "ring_buffer.h"
