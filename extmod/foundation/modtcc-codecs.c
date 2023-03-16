@@ -152,12 +152,13 @@ STATIC inline int sw_convert_bits(
     } else if (((val << (outbits - bits)) & maxv) || bits >= inbits) {
         return 0;
     }
+
     return 1;
 }
 
 STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_obj, mp_obj_t data_obj) {
-    const char* hrp            = mp_obj_str_get_str(hrp_obj);
-    uint32_t    segwit_version = mp_obj_int_get_checked(segwit_version_obj);
+    const char*    hrp            = mp_obj_str_get_str(hrp_obj);
+    const uint32_t segwit_version = mp_obj_int_get_checked(segwit_version_obj);
 
     mp_buffer_info_t buf;
     mp_get_buffer_raise(data_obj, &buf, MP_BUFFER_READ);
@@ -169,12 +170,13 @@ STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_o
         mp_raise_ValueError(MP_ERROR_TEXT("sw version"));
     }
 
-    uint8_t data[buf.len + 1];
+    uint8_t *data    = m_new(uint8_t, buf.len + 1);
     size_t  data_len = 0;
     data[0]          = segwit_version;
     int cv_ok        = sw_convert_bits(data + 1, &data_len, 5, buf.buf, buf.len, 8, true);
 
     if (cv_ok != 1) {
+        m_del(uint8_t, data, buf.len + 1);
         mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
     }
 
@@ -184,30 +186,12 @@ STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_o
     vstr_t vstr;
     vstr_init_len(&vstr, strlen(hrp) + data_len + 8);
 
-    /** Encode a Bech32 string
-     *
-     *  Out: output:  Pointer to a buffer of size strlen(hrp) + data_len + 8 that
-     *                will be updated to contain the null-terminated Bech32 string.
-     *  In: hrp :     Pointer to the null-terminated human readable part.
-     *      data :    Pointer to an array of 5-bit values.
-     *      data_len: Length of the data array.
-     *  Returns 1 if successful.
-
-        int bech32_encode(
-            char *output,
-            const char *hrp,
-            const uint8_t *data,
-            size_t data_len,
-            bech32_encoding enc
-        );
-     */
-    // printf("hrp=%s, data_len=%d\n", hrp, data_len);
     int rv = bech32_encode(vstr.buf, hrp, data, data_len, BECH32_ENCODING_BECH32);
-
     if (rv != 1) {
+        m_del(uint8_t, data, buf.len + 1);
         mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
     }
-
+    m_del(uint8_t, data, buf.len + 1);
     vstr.len = strlen(vstr.buf);
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
