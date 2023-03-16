@@ -79,9 +79,9 @@ class MicronBar(View):
             elif num_dots <= 14:
                 col_padding = 4
             elif num_dots <= 18:
-                col_padding = 1
+                col_padding = 2
             else:
-                col_padding = 0
+                col_padding = 2
 
             with LocalStyle(self.page_dots_container) as style:
                 style.pad_col(col_padding)
