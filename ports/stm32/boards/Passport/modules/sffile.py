@@ -85,6 +85,12 @@ class SFFile:
             while self.sf.is_busy():
                 await sleep_ms(50)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
+
     def wait_writable(self):
         # TODO: Could add some timeout handling here.
         while self.sf.is_busy():
