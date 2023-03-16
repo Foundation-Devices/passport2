@@ -38,14 +38,16 @@ class SeedQREncoder(DataEncoder):
 
     def encode(self, data, is_binary=False, max_fragment_len=None):
         import trezorcrypto
-        # TODO: optimize with StringIO
-        data_str = ""
+        import uio
+
+        data_str = uio.StringIO(4 * len(data))
 
         # Get indices in binary string of 11 bits per index
         for word in data:
             index = trezorcrypto.bip39.find_word(word)
-            data_str += str("%04d" % index)
-        self.data = data_str
+            data_str.write('{:04d}'.format(index))
+
+        self.data = data_str.getvalue()
 
     def next_part(self):
         return self.data
