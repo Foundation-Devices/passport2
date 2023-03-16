@@ -27,9 +27,9 @@ _VERSIONS = [
 ]
 
 _SEEDQR_VERSIONS = [
-    41,   # Version 1
-    77,   # Version 2
-    127,  # Version 3
+    {'numeric': 41, 'binary': 17},   # Version 1
+    {'numeric': 77, 'binary': 32},   # Version 2
+    {'numeric': 127, 'binary': 53},  # Version 3
 ]
 
 brightness_levels = [5, 25, 50, 75, 100]
@@ -203,10 +203,10 @@ class ShowQRPage(Page):
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
-                if self.qr_type == QRType.CSQR or self.qr_type == QRType.SQR:
-                    self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]
-                    # TODO: how does this handle setting a fragment length lower
-                    # than the data size?
+                if self.qr_type == QRType.CSQR:
+                    self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['binary']
+                if self.qr_type == QRType.SQR:
+                    self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['numeric']
                 else:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['binary']
 
