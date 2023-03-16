@@ -146,7 +146,7 @@ STATIC mp_obj_t mod_trezorcrypto_bip39_seed(size_t n_args,
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_bip39_seed_obj, 2,
                                            3, mod_trezorcrypto_bip39_seed);
 
-//Returns BIP39 english index of the given word
+// Returns BIP39 English index of the given word
 STATIC mp_obj_t mod_trezorcrypto_bip39_find_word(mp_obj_t word) {
   mp_buffer_info_t wd = {0};
   mp_get_buffer_raise(word, &wd, MP_BUFFER_READ);

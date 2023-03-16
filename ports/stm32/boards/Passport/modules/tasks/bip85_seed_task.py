@@ -14,10 +14,11 @@ async def bip85_12_word_seed_task(on_done, index):
 
 async def bip85_seed_task(on_done, num_words, index):
     from trezorcrypto import hmac
+    from utils import get_width_from_num_words
     import stash
 
     path = "m/83696968'/39'/0'/{}'/{}'".format(num_words, index)
-    width = (num_words - 1) * 11 // 8 + 1
+    width = get_width_from_num_words(num_words)
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(path)
         entropy = hmac(512, 'bip-entropy-from-k', node.private_key()).digest()
