@@ -18,6 +18,8 @@
 #
 import trezorcrypto
 from uasyncio import sleep_ms
+from uio import BytesIO
+from common import system
 
 blksize = const(65536)
 
@@ -28,12 +30,13 @@ def PADOUT(n):
 
 
 class SFFile:
-    def __init__(self, start, length=0, max_size=1, pre_erased=False):
+    def __init__(self, start, length=0, max_size=1, message=None, pre_erased=False):
         if not pre_erased:
             assert start % blksize == 0  # 'misaligned'
         self.start = start
         self.pos = 0
         self.length = length        # byte-wise length
+        self.message = message
 
         if max_size is not None:
             self.max_size = PADOUT(max_size) if not pre_erased else max_size
@@ -81,9 +84,26 @@ class SFFile:
         for i in range(0, self.max_size, blksize):
             self.sf.block_erase(self.start + i)
 
+            # if i and self.message:
+            # from common import dis
+            # system.progress_bar((i*100)//self.max_size)
+
             # expect block erase to take up to 2 seconds
             while self.sf.is_busy():
                 await sleep_ms(50)
+
+    def __enter__(self):
+        if self.message:
+            from common import dis
+            dis.fullscreen(self.message)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # if self.message:
+        # from common import dis
+        # system.progress_bar(100)
+
+        return False
 
     def wait_writable(self):
         # TODO: Could add some timeout handling here.
@@ -148,6 +168,10 @@ class SFFile:
         self.sf.read(self.start + self.pos, rv)
 
         self.pos += ll
+
+        if self.message and ll > 1:
+            from common import dis
+            # system.progress_bar((self.pos * 100) // self.length)
 
         # altho tempting to return a bytearray (which we already have) many
         # callers expect return to be bytes and have those methods, like "find"

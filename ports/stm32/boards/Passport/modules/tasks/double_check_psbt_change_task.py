@@ -25,6 +25,9 @@ async def double_check_psbt_change_task(on_done, psbt):
             for count, out_idx in enumerate(change_outs):
                 # only expecting single case, but be general
 
+                # TODO: Could add on_progress() here for larger transactions
+                # system.progress_bar(int(count / len(change_outs)) * 100)
+
                 oup = psbt.outputs[out_idx]
 
                 good = 0

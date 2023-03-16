@@ -28,6 +28,7 @@ async def sign_psbt_task(on_done, psbt):
             success = set()
             for in_idx, txi in psbt.input_iter():
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
+                # system.progress_bar(int(in_idx * 100 / self.num_inputs))
 
                 inp = psbt.inputs[in_idx]
 
