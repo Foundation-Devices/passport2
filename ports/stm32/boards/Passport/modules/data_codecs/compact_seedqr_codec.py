@@ -40,15 +40,17 @@ class CompactSeedQREncoder(DataEncoder):
         import trezorcrypto
         import math
         from utils import get_width_from_num_words
-        # TODO: optimize with StringIO
-        binary_str = ""
+        import uio
+
+        binary_str = uio.StringIO(11 * len(data))
 
         # Get indices in binary string of 11 bits per index
         for word in data:
             index = trezorcrypto.bip39.find_word(word)
             index_bin = '{:011b}'.format(index)
-            # binary_str += '{:011}'bin(index).split('b')[1].zfill(11)
-            binary_str += index_bin
+            binary_str.write(index_bin)
+
+        binary_str = binary_str.getvalue()
 
         # Exclude checksum bits
         if len(data) == 24:
