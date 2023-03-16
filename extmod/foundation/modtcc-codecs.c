@@ -28,14 +28,6 @@
 #include "hasher.h"
 #include "segwit_addr.h"
 
-/*
-int base58_encode_check(const uint8_t *data, int len, HasherType hasher_type, char *str, int strsize);
-int base58_decode_check(const char *str, HasherType hasher_type, uint8_t *data, int datalen);
-
-char *base32_encode(const uint8_t *in, size_t inlen, char *out, size_t outlen, const char *alphabet);
-uint8_t *base32_decode(const char *in, size_t inlen, uint8_t *out, size_t outlen, const char *alphabet);
-*/
-
 //
 // Base 58
 //
