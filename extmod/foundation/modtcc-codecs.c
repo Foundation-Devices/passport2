@@ -11,7 +11,7 @@
  * see LICENSE file for details
  *
  *
- * Various encodes/decoders/serializers: base58, base32, bech32, etc.
+ * Various encodes/decoders/serializers: base58, bech32, etc.
  *
  */
 
@@ -23,7 +23,6 @@
 
 #include "py/objstr.h"
 
-#include "base32.h"
 #include "base58.h"
 #include "hasher.h"
 #include "segwit_addr.h"
@@ -56,26 +55,6 @@ STATIC mp_obj_t modtcc_b58_encode(mp_obj_t data) {
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b58_encode_obj, modtcc_b58_encode);
-
-//
-// Base 32
-//
-
-STATIC mp_obj_t modtcc_b32_decode(mp_obj_t enc) {
-    const char* s = mp_obj_str_get_str(enc);
-
-    uint8_t tmp[256];
-
-    uint8_t* last = base32_decode(s, strlen(s), tmp, sizeof(tmp), BASE32_ALPHABET_RFC4648);
-
-    if (!last) {
-        // transcription error from user is very likely
-        mp_raise_ValueError(MP_ERROR_TEXT("corrupt base32"));
-    }
-
-    return mp_obj_new_bytes(tmp, last - tmp);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b32_decode_obj, modtcc_b32_decode);
 
 //
 //
@@ -216,7 +195,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_bech32_decode_obj, modtcc_bech32_decode)
 STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_codecs)},
     {MP_ROM_QSTR(MP_QSTR_b58_encode), MP_ROM_PTR(&modtcc_b58_encode_obj)},
-    {MP_ROM_QSTR(MP_QSTR_b32_decode), MP_ROM_PTR(&modtcc_b32_decode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_decode), MP_ROM_PTR(&modtcc_bech32_decode_obj)},
 };
