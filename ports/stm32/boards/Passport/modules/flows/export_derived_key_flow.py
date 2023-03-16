@@ -54,8 +54,8 @@ class ExportDerivedKeyFlow(Flow):
         from derived_key import key_types
 
         if key_types[self.key['type']]['words']:
-            options = [{'label': 'Compact SeedQR', 'value': QRType.CSQR},
-                       {'label': 'SeedQr', 'value': QRType.SQR},
+            options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                       {'label': 'SeedQr', 'value': QRType.SEED_QR},
                        {'label': 'Private Key', 'value': QRType.QR}]
 
             qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()

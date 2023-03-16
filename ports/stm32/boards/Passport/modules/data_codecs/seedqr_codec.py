@@ -38,6 +38,7 @@ class SeedQREncoder(DataEncoder):
 
     def encode(self, data, is_binary=False, max_fragment_len=None):
         import trezorcrypto
+        # TODO: optimize with StringIO
         data_str = ""
 
         # Get indices in binary string of 11 bits per index
