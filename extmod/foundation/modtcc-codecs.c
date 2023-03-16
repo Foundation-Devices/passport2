@@ -57,22 +57,6 @@ STATIC mp_obj_t modtcc_b58_encode(mp_obj_t data) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b58_encode_obj, modtcc_b58_encode);
 
-STATIC mp_obj_t modtcc_b58_decode(mp_obj_t enc) {
-    const char* s = mp_obj_str_get_str(enc);
-
-    uint8_t tmp[128];
-
-    int rl = base58_decode_check(s, HASHER_SHA2D, tmp, sizeof(tmp));
-
-    if (rl <= 0) {
-        // transcription error from user is very likely
-        mp_raise_ValueError(MP_ERROR_TEXT("corrupt base58"));
-    }
-
-    return mp_obj_new_bytes(tmp, rl);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b58_decode_obj, modtcc_b58_decode);
-
 //
 // Base 32
 //
@@ -271,7 +255,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_bech32_decode_obj, modtcc_bech32_decode)
 STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_codecs)},
     {MP_ROM_QSTR(MP_QSTR_b58_encode), MP_ROM_PTR(&modtcc_b58_encode_obj)},
-    {MP_ROM_QSTR(MP_QSTR_b58_decode), MP_ROM_PTR(&modtcc_b58_decode_obj)},
     {MP_ROM_QSTR(MP_QSTR_b32_encode), MP_ROM_PTR(&modtcc_b32_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_b32_decode), MP_ROM_PTR(&modtcc_b32_decode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
