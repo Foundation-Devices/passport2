@@ -911,6 +911,10 @@ def get_derived_key_by_index(index, key_type, xfp):
     return None
 
 
+def get_width_from_num_words(num_words):
+    return (num_words - 1) * 11 // 8 + 1
+
+
 # Only call when there is an active account
 # def set_next_addr(new_addr):
 #     if not common.active_account:

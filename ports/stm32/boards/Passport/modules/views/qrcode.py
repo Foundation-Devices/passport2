@@ -92,7 +92,7 @@ class QRCode(View):
         from data_codecs.qr_type import QRType
 
         enc_len = len(encoded_data)
-        if qr_type in [QRType.CSQR, QRType.SQR]:
+        if qr_type in [QRType.COMPACT_SEED_QR, QRType.SEED_QR]:
             capacity_by_version = numeric_capacity_by_version
         else:
             capacity_by_version = alphanumeric_capacity_by_version

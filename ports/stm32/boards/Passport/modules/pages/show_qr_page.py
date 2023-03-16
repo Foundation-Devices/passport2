@@ -105,7 +105,7 @@ class ShowQRPage(Page):
             self.add_child(self.caption_label)
 
     def is_qr_resizable(self):
-        return self.qr_type not in [QRType.QR, QRType.SQR, QRType.CSQR]
+        return self.qr_type not in [QRType.QR, QRType.SEED_QR, QRType.COMPACT_SEED_QR]
 
     def attach(self, group):
         super().attach(group)
@@ -203,9 +203,9 @@ class ShowQRPage(Page):
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
-                if self.qr_type == QRType.CSQR:
+                if self.qr_type == QRType.COMPACT_SEED_QR:
                     self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['binary']
-                if self.qr_type == QRType.SQR:
+                if self.qr_type == QRType.SEED_QR:
                     self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['numeric']
                 else:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['binary']
@@ -225,7 +225,7 @@ class ShowQRPage(Page):
             #       same as last time (or, if possible, if part count == 1).
             if self.prev_part != part:
                 self.prev_part = part
-                if self.qr_type == QRType.CSQR or self.qr_type == QRType.SQR:
+                if self.qr_type == QRType.COMPACT_SEED_QR or self.qr_type == QRType.SEED_QR:
                     data = part
                 else:
                     data = part.encode('ascii')
