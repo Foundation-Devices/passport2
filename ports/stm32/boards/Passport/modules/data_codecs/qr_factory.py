@@ -17,8 +17,8 @@ qrs = [
     {'type': QRType.UR2, 'encoder': UR2Encoder, 'decoder': UR2Decoder, 'sampler': UR2Sampler},
     {'type': QRType.UR1, 'encoder': UR1Encoder, 'decoder': UR1Decoder, 'sampler': UR1Sampler},
     {'type': QRType.QR, 'encoder': QREncoder, 'decoder': QRDecoder, 'sampler': QRSampler},
-    {'type': QRType.CSQR, 'encoder': CompactSeedQREncoder, 'decoder': None, 'sampler': None},
-    {'type': QRType.SQR, 'encoder': SeedQREncoder, 'decoder': None, 'sampler': None},
+    {'type': QRType.COMPACT_SEED_QR, 'encoder': CompactSeedQREncoder, 'decoder': None, 'sampler': None},
+    {'type': QRType.SEED_QR, 'encoder': SeedQREncoder, 'decoder': None, 'sampler': None},
 ]
 
 

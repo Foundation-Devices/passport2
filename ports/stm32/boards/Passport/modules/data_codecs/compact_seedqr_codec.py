@@ -39,6 +39,8 @@ class CompactSeedQREncoder(DataEncoder):
     def encode(self, data, is_binary=False, max_fragment_len=None):
         import trezorcrypto
         import math
+        from utils import get_width_from_num_words
+        # TODO: optimize with StringIO
         binary_str = ""
 
         # Get indices in binary string of 11 bits per index
@@ -56,9 +58,10 @@ class CompactSeedQREncoder(DataEncoder):
             binary_str = binary_str[:-4]
 
         # Convert to binary
-        as_bytes = bytearray()
-        for i in range(0, math.ceil(len(binary_str) / 8)):
-            as_bytes.append(int('0b' + binary_str[i * 8:(i + 1) * 8], 2))
+        width = get_width_from_num_words(len(data))
+        as_bytes = bytearray(width)
+        for i in range(0, width):
+            as_bytes[i] = int('0b' + binary_str[i * 8:(i + 1) * 8], 2)
 
         self.data = as_bytes
 
