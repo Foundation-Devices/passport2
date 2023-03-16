@@ -61,29 +61,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b58_encode_obj, modtcc_b58_encode);
 // Base 32
 //
 
-STATIC mp_obj_t modtcc_b32_encode(mp_obj_t data) {
-    mp_buffer_info_t buf;
-    mp_get_buffer_raise(data, &buf, MP_BUFFER_READ);
-    if (buf.len == 0) {
-        return mp_const_empty_bytes;
-    }
-
-    vstr_t vstr;
-    vstr_init_len(&vstr, (buf.len * 2) + 10);
-
-    char* last = base32_encode(buf.buf, buf.len, vstr.buf, vstr.len, BASE32_ALPHABET_RFC4648);
-
-    if (!last) {
-        // unlikely
-        mp_raise_ValueError(NULL);
-    }
-
-    vstr.len = last - vstr.buf;  // strips NUL
-
-    return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b32_encode_obj, modtcc_b32_encode);
-
 STATIC mp_obj_t modtcc_b32_decode(mp_obj_t enc) {
     const char* s = mp_obj_str_get_str(enc);
 
@@ -239,7 +216,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_bech32_decode_obj, modtcc_bech32_decode)
 STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_codecs)},
     {MP_ROM_QSTR(MP_QSTR_b58_encode), MP_ROM_PTR(&modtcc_b58_encode_obj)},
-    {MP_ROM_QSTR(MP_QSTR_b32_encode), MP_ROM_PTR(&modtcc_b32_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_b32_decode), MP_ROM_PTR(&modtcc_b32_decode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_decode), MP_ROM_PTR(&modtcc_bech32_decode_obj)},
