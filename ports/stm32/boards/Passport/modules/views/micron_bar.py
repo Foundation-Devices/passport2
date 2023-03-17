@@ -76,10 +76,10 @@ class MicronBar(View):
             num_dots = len(self.card_descs)
             if num_dots <= 12:
                 col_padding = 5
-            elif num_dots <= 14:
+            elif num_dots <= 13:
                 col_padding = 4
-            elif num_dots <= 18:
-                col_padding = 2
+            elif num_dots <= 14:
+                col_padding = 3
             else:
                 col_padding = 2
 
