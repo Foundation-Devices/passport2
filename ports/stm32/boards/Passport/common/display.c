@@ -53,12 +53,10 @@ void display_show(void) {
 }
 
 // Clear the memory display and then shutdown
-void display_clean_shutdown() {
+__attribute__((noreturn)) void display_clean_shutdown() {
     display_clear(COLOR_BLACK);
     display_show();
     passport_shutdown();
-    while (true)
-        ;
 }
 
 #ifdef PASSPORT_BOOTLOADER
