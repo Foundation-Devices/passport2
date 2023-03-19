@@ -148,41 +148,24 @@ STATIC mp_obj_t modtcc_bech32_plain_encode(size_t n_args, const mp_obj_t *args) 
     // low-level bech32 functions want 5-bit data unpacked into bytes. first value is
     // the version number (5 bits), and remainder is packed data.
 
-    uint8_t data[buf.len];
+    uint8_t *data    = m_new(uint8_t, buf.len);
     size_t  data_len = 0;
     int cv_ok        = sw_convert_bits(data, &data_len, 5, buf.buf, buf.len, 8, true);
 
     if (cv_ok != 1) {
+        m_del(uint8_t, data, buf.len);
         mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
     }
 
     vstr_t vstr;
     vstr_init_len(&vstr, strlen(hrp) + data_len + 8);
 
-    /** Encode a Bech32 string
-     *
-     *  Out: output:  Pointer to a buffer of size strlen(hrp) + data_len + 8 that
-     *                will be updated to contain the null-terminated Bech32 string.
-     *  In: hrp :     Pointer to the null-terminated human readable part.
-     *      data :    Pointer to an array of 5-bit values.
-     *      data_len: Length of the data array.
-     *  Returns 1 if successful.
-
-        int bech32_encode(
-            char *output,
-            const char *hrp,
-            const uint8_t *data,
-            size_t data_len,
-            bech32_encoding enc
-        );
-     */
-    // printf("hrp=%s, data_len=%d\n", hrp, data_len);
     int rv = bech32_encode(vstr.buf, hrp, data, data_len, bech32_version);
-
     if (rv != 1) {
+        m_del(uint8_t, data, buf.len);
         mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
     }
-
+    m_del(uint8_t, data, buf.len);
     vstr.len = strlen(vstr.buf);
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
