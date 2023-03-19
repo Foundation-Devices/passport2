@@ -14,9 +14,7 @@ async def get_seed_words_task(on_done):
 
             words = trezorcrypto.bip39.from_data(sv.raw).split(' ')
 
-            passphrase = stash.bip39_passphrase or None
-
-            await on_done(words, passphrase, None)
+            await on_done(words, None)
 
     except Exception as e:
         # print('get_seed_words_task(): Exception: {}'.format(e))
