@@ -54,7 +54,6 @@ class ExportDerivedKeyFlow(Flow):
             qr_data = self.pk
         else:
             qr_data = B2A(self.pk)
-        print(qr_data)
         await ShowQRPage(qr_data=qr_data, right_micron=microns.Checkmark).show()
         self.set_result(True)
 
