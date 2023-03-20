@@ -200,7 +200,7 @@ class ChainsBase:
 
         # P2TR
         if ll == 34 and script[0:2] == b'\x51\x20':
-            return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, script[2:])
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script[2:], tcc.codecs.BECH32_ENCODING_BECH32M)
 
         raise ValueError('Unknown payment script', repr(script))
 
