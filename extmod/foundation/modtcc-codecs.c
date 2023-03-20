@@ -16,7 +16,6 @@
  */
 
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "py/runtime.h"
@@ -87,12 +86,17 @@ STATIC inline int sw_convert_bits(
     return 1;
 }
 
-STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_obj, mp_obj_t data_obj) {
-    const char*    hrp            = mp_obj_str_get_str(hrp_obj);
-    const uint32_t segwit_version = mp_obj_int_get_checked(segwit_version_obj);
+STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
+    const char*    hrp            = mp_obj_str_get_str(args[0]);
+    const uint32_t segwit_version = mp_obj_int_get_checked(args[1]);
+    uint32_t       bech32_version = BECH32_ENCODING_BECH32;
+
+    if (n_args == 4) {
+        bech32_version = mp_obj_int_get_checked(args[3]);
+    }
 
     mp_buffer_info_t buf;
-    mp_get_buffer_raise(data_obj, &buf, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[2], &buf, MP_BUFFER_READ);
 
     // low-level bech32 functions want 5-bit data unpacked into bytes. first value is
     // the version number (5 bits), and remainder is packed data.
@@ -117,7 +121,7 @@ STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_o
     vstr_t vstr;
     vstr_init_len(&vstr, strlen(hrp) + data_len + 8);
 
-    int rv = bech32_encode(vstr.buf, hrp, data, data_len, BECH32_ENCODING_BECH32);
+    int rv = bech32_encode(vstr.buf, hrp, data, data_len, bech32_version);
     if (rv != 1) {
         m_del(uint8_t, data, buf.len + 1);
         mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
@@ -127,12 +131,14 @@ STATIC mp_obj_t modtcc_bech32_encode(mp_obj_t hrp_obj, mp_obj_t segwit_version_o
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(modtcc_bech32_encode_obj, modtcc_bech32_encode);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modtcc_bech32_encode_obj, 3, 4, modtcc_bech32_encode);
 
 STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_codecs)},
     {MP_ROM_QSTR(MP_QSTR_b58_encode), MP_ROM_PTR(&modtcc_b58_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
+    {MP_ROM_QSTR(MP_QSTR_BECH32_ENCODING_BECH32), MP_ROM_INT(BECH32_ENCODING_BECH32)},
+    {MP_ROM_QSTR(MP_QSTR_BECH32_ENCODING_BECH32M), MP_ROM_INT(BECH32_ENCODING_BECH32M)},
 };
 STATIC MP_DEFINE_CONST_DICT(modtcc_codecs_globals, modtcc_codecs_globals_table);
 
