@@ -113,7 +113,7 @@ class ExportDerivedKeyFlow(Flow):
         if not result:
             self.set_result(False)
         else:
-            self.goto(self.create_file)
+            self.goto(self.save_to_sd)
 
     async def show_success(self):
         from pages import SuccessPage
