@@ -66,7 +66,7 @@ class AboutFlow(Flow):
 Foundation Devices
 6 Liberty Square ##6018
 Boston, MA 02109 USA""".format(title=recolor(HIGHLIGHT_TEXT_HEX, 'PASSPORT'))
-        await LongTextPage(
+        result = await LongTextPage(
             text=msg,
             icon=lv.IMAGE_REGULATORY,
             icon_color=TEXT_GREY,
@@ -74,4 +74,7 @@ Boston, MA 02109 USA""".format(title=recolor(HIGHLIGHT_TEXT_HEX, 'PASSPORT'))
             card_header={'title': 'Regulatory'},
             right_micron=microns.Checkmark).show()
 
+        if result:
+            self.set_result(False)
+            return
         self.goto(self.about_page)
