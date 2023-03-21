@@ -71,7 +71,7 @@ def go():
 
     # Give a chance for early foundational changes to be applied
     from schema_evolution import handle_schema_evolutions, handle_foundational_evolutions
-    handle_foundational_evolutions()
+    uasyncio.run(handle_foundational_evolutions())
 
     # Initialize user settings from external or internal flash
     from ext_settings import ExtSettings
