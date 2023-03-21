@@ -67,7 +67,7 @@ class ChangePINFlow(Flow):
         self.reset(self.enter_old_pin)
 
     async def show_error(self):
-        if ErrorPage(text='Unable to change PIN.\n\nThe current PIN is incorrect').show():
+        if await ErrorPage(text='Unable to change PIN.\n\nThe current PIN is incorrect.').show():
             self.reset(self.enter_old_pin)
         else:
             self.set_result(False)
