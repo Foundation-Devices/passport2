@@ -61,8 +61,10 @@ class Display:
         # LVGL --------------------------------------------------------------------------------------------------------
 
         self.backlight = Backlight()
+        self.curr_brightness = 100
 
     def set_brightness(self, val):
         # 0-100 are valid
         if val >= 0 and val <= 100:
             self.backlight.intensity(val)
+            self.curr_brightness = val

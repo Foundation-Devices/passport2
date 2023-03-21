@@ -22,7 +22,13 @@ def global_key_cb(key, is_pressed):
 
 
 def feedback(e, f):
+    from utils import get_screen_brightness
     common.last_interaction_time = utime.ticks_ms()
+
+    # Un-dim screen if auto-shutdown is in effect
+    true_brightness = get_screen_brightness(100)
+    if true_brightness != common.display.curr_brightness:
+        common.display.set_brightness(true_brightness)
 
 
 class Keypad:
