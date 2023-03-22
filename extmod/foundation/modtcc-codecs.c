@@ -101,7 +101,7 @@ STATIC inline int sw_convert_bits_buffer_size(
     size_t out_total = in_total / outbits;
 
     // add 1 if padding is included and necessary
-    if (pad && (in_total % out_total)) {
+    if (pad && (in_total % outbits)) {
         out_total++;
     }
 
