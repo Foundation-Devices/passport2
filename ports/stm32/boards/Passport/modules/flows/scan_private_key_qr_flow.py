@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# scan_qr_seed_flow.py - Scan a QR code containing a seed
+# scan_private_key_qr_flow.py - Scan a QR code containing a private key
 
 from flows import Flow
 from pages import ErrorPage, QuestionPage, SuccessPage
@@ -10,9 +10,9 @@ from utils import has_secrets, spinner_task
 from translations import t, T
 
 
-class ScanQRSeedFlow(Flow):
+class ScanPrivateKeyQRFlow(Flow):
     def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
-        super().__init__(initial_state=self.confirm_scan, name='ScanQRSeedFlow')
+        super().__init__(initial_state=self.confirm_scan, name='ScanPrivateKeyQRFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.autobackup = autobackup
         self.full_backup = full_backup
@@ -24,7 +24,7 @@ class ScanQRSeedFlow(Flow):
             self.set_result(False)
             return
 
-        result = await QuestionPage(text='Scan a QR seed now? Make sure you trust the source.').show()
+        result = await QuestionPage(text='Scan a private key QR now? Make sure you trust the source.').show()
         if result:
             self.goto(self.scan_seed)
         else:
