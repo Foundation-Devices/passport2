@@ -107,6 +107,7 @@ class ShowQRPage(Page):
 
         # Intercept keys for size and brightness level change
         common.keypad.set_intercept_key_cb(self.on_key)
+        common.showing_qr = True
 
         if self.is_qr_resizable():
             self.prev_top_level = common.ui.set_is_top_level(False)
@@ -146,6 +147,7 @@ class ShowQRPage(Page):
 
         # Stop intercepting key presses
         common.keypad.set_intercept_key_cb(None)
+        common.showing_qr = False
 
         if self.prev_card_header is not None:
             common.ui.set_card_header(**self.prev_card_header, force_all=True)
