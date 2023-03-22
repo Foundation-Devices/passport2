@@ -63,20 +63,27 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(modtcc_b58_encode_obj, modtcc_b58_encode);
 // pack and unpack bits; probably 5 or 8...
 //
 STATIC inline int sw_convert_bits(
-    uint8_t* out, size_t* outlen, const int outbits, const uint8_t* in, size_t inlen, const int inbits, bool pad) {
+    uint8_t* out, size_t* outlen, const int outbits, const uint8_t* in, size_t inlen, const int inbits, bool pad, size_t limit) {
     uint32_t val  = 0;
     int      bits = 0;
     uint32_t maxv = (((uint32_t)1) << outbits) - 1;
+    *outlen = 0;
     while (inlen--) {
         val = (val << inbits) | *(in++);
         bits += inbits;
         while (bits >= outbits) {
             bits -= outbits;
+            if (*outlen == limit) {
+                return 0;
+            }
             out[(*outlen)++] = (val >> bits) & maxv;
         }
     }
     if (pad) {
         if (bits) {
+            if (*outlen == limit) {
+                return 0;
+            }
             out[(*outlen)++] = (val << (outbits - bits)) & maxv;
         }
     } else if (((val << (outbits - bits)) & maxv) || bits >= inbits) {
@@ -84,6 +91,21 @@ STATIC inline int sw_convert_bits(
     }
 
     return 1;
+}
+
+STATIC inline int sw_convert_bits_buffer_size(
+    const int outbits, size_t inlen, const int inbits, bool pad) {
+    // number of bits input
+    size_t in_total = inlen * inbits;
+    // number of bytes to fit output bits in new base
+    size_t out_total = in_total / outbits;
+
+    // add 1 if padding is included and necessary
+    if (pad && (in_total % outbits)) {
+        out_total++;
+    }
+
+    return out_total;
 }
 
 STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
@@ -105,13 +127,14 @@ STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
         mp_raise_ValueError(MP_ERROR_TEXT("sw version"));
     }
 
-    uint8_t *data    = m_new(uint8_t, buf.len + 1);
+    size_t buf_size  = sw_convert_bits_buffer_size(5, buf.len, 8, true);
+    uint8_t *data    = m_new(uint8_t, buf_size + 1);
     size_t  data_len = 0;
     data[0]          = segwit_version;
-    int cv_ok        = sw_convert_bits(data + 1, &data_len, 5, buf.buf, buf.len, 8, true);
+    int cv_ok        = sw_convert_bits(data + 1, &data_len, 5, buf.buf, buf.len, 8, true, buf_size);
 
     if (cv_ok != 1) {
-        m_del(uint8_t, data, buf.len + 1);
+        m_del(uint8_t, data, buf_size + 1);
         mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
     }
 
@@ -123,10 +146,10 @@ STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
 
     int rv = bech32_encode(vstr.buf, hrp, data, data_len, bech32_version);
     if (rv != 1) {
-        m_del(uint8_t, data, buf.len + 1);
+        m_del(uint8_t, data, buf_size + 1);
         mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
     }
-    m_del(uint8_t, data, buf.len + 1);
+    m_del(uint8_t, data, buf_size + 1);
     vstr.len = strlen(vstr.buf);
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
