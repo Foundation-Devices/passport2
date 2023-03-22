@@ -167,16 +167,16 @@ STATIC mp_obj_t modtcc_bech32_plain_encode(size_t n_args, const mp_obj_t *args) 
     mp_buffer_info_t buf;
     mp_get_buffer_raise(args[1], &buf, MP_BUFFER_READ);
 
-
     // low-level bech32 functions want 5-bit data unpacked into bytes. first value is
     // the version number (5 bits), and remainder is packed data.
 
-    uint8_t *data    = m_new(uint8_t, buf.len);
+    size_t buf_size  = sw_convert_bits_buffer_size(5, buf.len, 8, true);
+    uint8_t *data    = m_new(uint8_t, buf_size);
     size_t  data_len = 0;
-    int cv_ok        = sw_convert_bits(data, &data_len, 5, buf.buf, buf.len, 8, true);
+    int cv_ok        = sw_convert_bits(data, &data_len, 5, buf.buf, buf.len, 8, true, buf_size);
 
     if (cv_ok != 1) {
-        m_del(uint8_t, data, buf.len);
+        m_del(uint8_t, data, buf_size);
         mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
     }
 
@@ -185,10 +185,10 @@ STATIC mp_obj_t modtcc_bech32_plain_encode(size_t n_args, const mp_obj_t *args) 
 
     int rv = bech32_encode(vstr.buf, hrp, data, data_len, bech32_version);
     if (rv != 1) {
-        m_del(uint8_t, data, buf.len);
+        m_del(uint8_t, data, buf_size);
         mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
     }
-    m_del(uint8_t, data, buf.len);
+    m_del(uint8_t, data, buf_size);
     vstr.len = strlen(vstr.buf);
 
     return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
