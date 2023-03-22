@@ -13,22 +13,24 @@ import passport
 from passport_lv import Keypad as _Keypad
 
 
-# Passing self.key_cb to set_key_cb() doesn't work, so we do this way instead
-def global_key_cb(key, is_pressed):
-    if common.keypad.intercept_key_cb is not None:
-        common.keypad.intercept_key_cb(key, is_pressed)
-
-    common.keypad.key_cb(key, is_pressed)
-
-
 def feedback(e, f):
     from utils import get_screen_brightness
+    import common
     common.last_interaction_time = utime.ticks_ms()
 
     # Un-dim screen if auto-shutdown is in effect
     true_brightness = get_screen_brightness(100)
-    if true_brightness != common.display.curr_brightness:
+    if true_brightness != common.display.curr_brightness and not common.showing_qr:
         common.display.set_brightness(true_brightness)
+
+
+# Passing self.key_cb to set_key_cb() doesn't work, so we do this way instead
+def global_key_cb(key, is_pressed):
+    if common.keypad.intercept_key_cb is not None:
+        common.keypad.intercept_key_cb(key, is_pressed)
+        feedback(None, None)
+
+    common.keypad.key_cb(key, is_pressed)
 
 
 class Keypad:
