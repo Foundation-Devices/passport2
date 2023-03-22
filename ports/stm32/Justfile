@@ -78,17 +78,18 @@ compile-commands screen="mono" ext="":
 #
 
 # Build the firmware
-build screen="mono" +ext='':
+build screen="mono" dev="" +ext='':
     @echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
 
     make -j{{jobs}} \
         LV_CFLAGS='{{base_cflags}} {{ if screen == "mono" { mono_cflags } else { color_cflags } }}' \
         BOARD=Passport \
         SCREEN_MODE={{ uppercase(screen) }} \
+        FROZEN_MANIFEST={{ if dev == "dev" { 'boards/Passport/manifest_dev.py' } else { 'boards/Passport/manifest.py' } }} \
         {{ext}}
 
 # Sign current firmware build with the user.pem key and set specified version
-sign version="1.0.0" screen="mono" ext="": (build screen ext)
+sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     #!/usr/bin/env bash
     set -e
     SCREEN_EXT={{screen}}
@@ -116,7 +117,7 @@ sign version="1.0.0" screen="mono" ext="": (build screen ext)
     echo -e "\nSigning Complete!"
 
 # Build, sign and flash the firmware with the specified version
-flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
+flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext) && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 

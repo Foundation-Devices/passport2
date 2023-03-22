@@ -27,6 +27,8 @@ MICROPY_ROM_TEXT_COMPRESSION ?= 1
 # File containing description of content to be frozen into firmware.
 FROZEN_MANIFEST ?= boards/manifest.py
 
+$(info FROZEN_MANIFEST is $(FROZEN_MANIFEST))
+
 # Location of mboot (or other bootloader) if the device has one.
 # Used by machine.bootloader().
 MBOOT_TEXT0_ADDR ?= 0x08000000
