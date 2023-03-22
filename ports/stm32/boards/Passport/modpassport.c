@@ -73,6 +73,11 @@ STATIC const mp_rom_map_elem_t passport_module_globals_table[] = {
 #else
     {MP_ROM_QSTR(MP_QSTR_IS_COLOR), MP_ROM_FALSE},
 #endif  // SCREEN_MODE_COLOR
+#ifdef DEV_BUILD
+    {MP_ROM_QSTR(MP_QSTR_IS_DEV), MP_ROM_TRUE},
+#else
+    {MP_ROM_QSTR(MP_QSTR_IS_DEV), MP_ROM_FALSE},
+#endif
 #ifdef HAS_FUEL_GAUGE
     {MP_ROM_QSTR(MP_QSTR_HAS_FUEL_GAUGE), MP_ROM_TRUE},
 #else
