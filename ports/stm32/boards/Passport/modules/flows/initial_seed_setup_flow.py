@@ -41,14 +41,13 @@ class InitialSeedSetupFlow(Flow):
 
     async def show_seed_setup_menu(self):
         from pages import ChooserPage
-        from flows import NewSeedFlow, RestoreSeedFlow, RestoreBackupFlow, ScanPrivateKeyQRFlow
+        from flows import NewSeedFlow, RestoreSeedFlow, RestoreBackupFlow
         import microns
 
         options = [{'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow()},
                    {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow()},
                    {'label': 'Create New Seed',
-                    'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)},
-                   {'label': 'Scan Private Key QR', 'value': lambda: ScanPrivateKeyQRFlow(full_backup=True)}]
+                    'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)}]
 
         flow = await ChooserPage(
             text=None,
