@@ -3,44 +3,55 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-FROM ubuntu:20.04 AS cross_build
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y git make gcc-arm-none-eabi python3 gcc && \
-    rm -rf /var/lib/apt/lists/*
-COPY drivers /workspace/passport2/drivers
-COPY docs /workspace/passport2/docs
-COPY extmod /workspace/passport2/extmod
-COPY lib /workspace/passport2/lib
-COPY mpy-cross /workspace/passport2/mpy-cross
-COPY py /workspace/passport2/py
-COPY ports/stm32/boards/Passport/include /workspace/passport2/ports/stm32/boards/Passport/include
-COPY ports/stm32/boards/Passport/common /workspace/passport2/ports/stm32/boards/Passport/common
-COPY ports/stm32/boards/Passport/images /workspace/passport2/ports/stm32/boards/Passport/images
-WORKDIR /workspace/passport2/mpy-cross
-RUN make
+FROM ubuntu:20.04
 
-FROM ubuntu:20.04 AS cosign_build
 ARG DEBIAN_FRONTEND=noninteractive
-WORKDIR /workspace
-RUN apt-get update && \
-    apt-get install -y git make libssl-dev gcc && \
-    rm -rf /var/lib/apt/lists/*
-COPY ports/stm32/boards/Passport/tools/cosign /workspace/passport2/ports/stm32/boards/Passport/tools/cosign
-COPY ports/stm32/boards/Passport/include /workspace/passport2/ports/stm32/boards/Passport/include
-COPY ports/stm32/boards/Passport/common /workspace/passport2/ports/stm32/boards/Passport/common
-COPY lib /workspace/passport2/lib
-WORKDIR /workspace/passport2/ports/stm32/boards/Passport/tools/cosign
-RUN make
 
-FROM ubuntu:20.04 AS firmware_builder
-ARG DEBIAN_FRONTEND=noninteractive
-COPY --from=cosign_build \
-    /workspace/passport2/ports/stm32/boards/Passport/tools/cosign/x86/release/cosign /usr/bin/cosign
-COPY --from=cross_build \
-    /workspace/passport2/mpy-cross/mpy-cross /usr/bin/mpy-cross
-ENV PATH="${PATH}:~/bin"
+# Install packages.
+#
+# Alphabetic ordering is recommended.
 RUN apt-get update && \
-    apt-get install -y make gcc-arm-none-eabi autotools-dev automake libtool python3 curl libffi-dev pkg-config && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+    apt-get install -y automake \
+                       autotools-dev \
+                       build-essential \
+                       curl \
+                       gcc-arm-none-eabi \
+                       git \
+                       libffi-dev \
+                       libssl-dev \
+                       libtool \
+                       pkg-config \
+                       pycodestyle \
+                       python3 \
+                       python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install reuse.
+RUN pip3 install reuse
+
+# Install rustup.
+ENV RUSTUP_HOME="/rustup"
+ENV CARGO_HOME="/cargo"
+RUN mkdir -p /rustup /cargo && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+        sh -s -- -y --profile minimal --default-toolchain 1.67.1
+ENV PATH="/cargo/bin:${PATH}"
+
+# Finish installation of Rust toolchain.
+RUN rustup component add clippy && \
+    rustup component add rustfmt && \
+    rustup target add aarch64-unknown-none && \
+    rustup target add thumbv7em-none-eabihf && \
+    rustup target add x86_64-unknown-none
+
+# Install binaries using cargo.
+RUN cargo install cbindgen@^0.24 && \
+    cargo install just@^1.13 && \
+    mv /cargo/bin/cbindgen /usr/local/bin/cbindgen && \
+    mv /cargo/bin/just /usr/local/bin/just && \
+    chmod 755 /usr/local/bin/cbindgen && \
+    chmod 755 /usr/local/bin/just
+
+# Allow all users to use CARGO_HOME and RUSTUP_HOME.
+RUN chmod -R 777 /cargo && \
+    chmod -R 777 /rustup

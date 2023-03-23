@@ -179,7 +179,7 @@ ifneq ($(PROG),)
 # Build a standalone executable (unix does this)
 all: $(PROG)
 
-$(PROG): $(OBJ)
+$(PROG): $(OBJ) $(FOUNDATION_RUST_LIB)
 	$(ECHO) "LINK $@"
 # Do not pass COPT here - it's *C* compiler optimizations. For example,
 # we may want to compile using Thumb, but link with non-Thumb libc.
@@ -217,6 +217,7 @@ lib $(LIBMICROPYTHON): $(OBJ)
 
 clean:
 	$(RM) -rf $(BUILD) $(CLEAN_EXTRA)
+	cargo clean --manifest-path $(FOUNDATION_RUST)/Cargo.toml
 .PHONY: clean
 
 # Clean every non-git file from FROZEN_DIR/FROZEN_MPY_DIR, but making a backup.

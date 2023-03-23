@@ -134,6 +134,36 @@ endif
 ifeq ($(SCREEN_MODE),MONO)
 SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/mono -type f -name "*.c")))
 endif
+
+
+ifeq ($(RUST_TARGET),)
+  UNAME_M ?= $(shell uname -m)
+
+  ifeq ($(UNAME_M),x86_64)
+    RUST_ARCH ?= x86_64
+  else ifeq ($(UNAME_M),arm)
+    RUST_ARCH ?= arm
+  else ifeq ($(UNAME_M),arm64)
+    RUST_ARCH ?= aarch64
+  endif
+
+  RUST_TARGET ?= $(RUST_ARCH)-unknown-none
+endif
+
+FOUNDATION_RUST ?= $(TOP)/extmod/foundation-rust
+FOUNDATION_RUST_SRC ?= $(wildcard $(FOUNDATION_RUST)/src/*.rs) \
+	$(FOUNDATION_RUST)/Cargo.lock \
+	$(FOUNDATION_RUST)/Cargo.toml \
+	$(FOUNDATION_RUST)/cbindgen.toml
+
+FOUNDATION_RUST_LIB ?= $(FOUNDATION_RUST)/target/$(RUST_TARGET)/release/libfoundation.a
+
+CFLAGS_MOD += -I$(FOUNDATION_RUST)/include
+LDFLAGS_MOD += -L$(shell dirname $(FOUNDATION_RUST_LIB)) -lfoundation
+
+$(FOUNDATION_RUST_LIB): $(FOUNDATION_RUST_SRC)
+	$(ECHO) "CARGO foundation-rust"
+	@cargo build --manifest-path $(FOUNDATION_RUST)/Cargo.toml --target $(RUST_TARGET) --release
 # FOUNDATION CHANGE: END
 
 

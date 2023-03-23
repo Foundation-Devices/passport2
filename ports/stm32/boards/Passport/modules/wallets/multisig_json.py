@@ -16,6 +16,8 @@ import uio
 from utils import xfp2str
 from common import settings
 from public_constants import AF_P2SH, AF_P2WSH, AF_P2WSH_P2SH
+from data_codecs.qr_type import QRType
+from foundation import ur
 
 
 def create_multisig_json_wallet(sw_wallet=None,
@@ -23,7 +25,8 @@ def create_multisig_json_wallet(sw_wallet=None,
                                 acct_num=0,
                                 multisig=False,
                                 legacy=False,
-                                export_mode='qr'):
+                                export_mode='qr',
+                                qr_type=QRType.UR2):
     fp = uio.StringIO()
     chain = chains.current_chain()
 
@@ -50,5 +53,8 @@ def create_multisig_json_wallet(sw_wallet=None,
     xfp = xfp2str(settings.get('xfp', 0))
     fp.write('  "xfp": "%s"\n}\n' % xfp)
     result = fp.getvalue()
-    # print('xpub json = {}'.format(result))
+
+    if export_mode == 'qr' and qr_type == QRType.UR2:
+        return (ur.new_bytes(result), accts)
+
     return (result, accts)

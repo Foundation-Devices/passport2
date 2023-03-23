@@ -56,6 +56,7 @@ class ExportMultisigMicrosdFlow(Flow):
                 return
 
     async def show_insert_microsd_error(self):
+        from pages import InsertMicroSDPage
         result = await InsertMicroSDPage().show()
         if not result:
             self.set_result(False)

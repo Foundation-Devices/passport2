@@ -20,7 +20,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Added Casa health check via SD card (PASS1-595)
 - Added multisig config export via QR and SD card (PASS1-631)
 - Fixed multisig config descriptions (PASS1-643)
-- Erase PSBTs from external flash after signing (PASS1-345)
+- Improved the UR animated QR codes encoder and decoder to allow signing
+bigger transactions. (SFT-1063)
+- Fix camera color issue. (SFT-1428)
 
 [UR1]: https://github.com/CoboVault/Research/blob/master/papers/bcr-0005-ur.md
 

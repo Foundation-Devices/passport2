@@ -17,6 +17,7 @@ def _alloc(ln):
     return bytearray(ln)
 
 
+psbt_output = _alloc(26 * 1024)
 ext_settings_buf = _alloc(16 * 1024)
 tmp_buf = _alloc(1024)
 psbt_tmp256 = _alloc(256)

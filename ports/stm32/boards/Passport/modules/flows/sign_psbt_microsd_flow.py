@@ -54,7 +54,6 @@ class SignPsbtMicroSDFlow(Flow):
         from pages import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
         from tasks import copy_psbt_file_to_external_flash_task
-        from utils import clear_psbt_flash
         from errors import Error
 
         # TODO: I think this is always a bytes object -- can probably remove this check
@@ -72,7 +71,6 @@ class SignPsbtMicroSDFlow(Flow):
             copy_psbt_file_to_external_flash_task,
             args=[None, self.file_path, TXN_INPUT_OFFSET])
         if error is not None:
-            await clear_psbt_flash(self.psbt_len)
             if error == Error.PSBT_TOO_LARGE:
                 await ErrorPage(text='PSBT too large').show()
             else:
@@ -87,25 +85,21 @@ class SignPsbtMicroSDFlow(Flow):
 
     async def common_flow(self):
         from flows import SignPsbtCommonFlow
-        from utils import clear_psbt_flash
 
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
         if result is None:
-            await clear_psbt_flash(self.psbt_len)
             self.set_result(False)
         else:
             self.psbt = result
             self.goto(self.write_signed_transaction)
 
     async def show_card_missing(self):
-        from utils import clear_psbt_flash
 
         result = await InsertMicroSDPage().show()
         if not result:
             result = QuestionPage(text='Cancel signing this transaction?').show()
             if result:
-                await clear_psbt_flash(self.psbt_len)
                 self.set_result(None)
 
         self.goto(self.write_signed_transaction)
@@ -114,7 +108,6 @@ class SignPsbtMicroSDFlow(Flow):
         from files import CardSlot, CardMissingError, securely_blank_file
         from utils import HexWriter
         from pages import ErrorPage
-        from utils import clear_psbt_flash
 
         orig_path, basename = self.file_path.rsplit('/', 1)
         orig_path += '/'
@@ -163,7 +156,6 @@ class SignPsbtMicroSDFlow(Flow):
                                 self.txid = self.psbt.finalize(fd)
 
                     securely_blank_file(self.file_path)
-                    await clear_psbt_flash(self.psbt_len)
 
                 # Success and done!
                 self.goto(self.show_success)
@@ -171,7 +163,6 @@ class SignPsbtMicroSDFlow(Flow):
 
             except OSError as exc:
                 # If this ever changes to not fall through, clear the flash
-                # await clear_psbt_flash(self.psbt_len)
                 result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
                 # sys.print_exception(exc)
                 # fall thru to try again

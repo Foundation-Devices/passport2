@@ -28,6 +28,16 @@ to install to a different folder, and just update command paths appropriately.
 ### Install Dependencies
 Several tools are required for building Passport.
 
+#### Install Rust Toolchain
+
+First install the `rustup` tool from [rustup.rs](https://rustup.rs/).
+
+    rustup default 1.67.1
+    rustup target add aarch64-unknown-none # For the simulator. Only if on macOS with an M1 CPU.
+    rustup target add thumbv7em-none-eabihf
+    rustup target add x86_64-unknown-none
+    cargo install cbindgen
+
 #### Cross-Compiler Toolchain
 The cross-compiler enables your PC to build code for the STM32H753 MCU used by Passport.  Use the following commands to install and build the cross-compiler and MicroPython tools.
 
