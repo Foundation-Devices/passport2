@@ -168,10 +168,12 @@ def key_manager_menu():
     result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
 
     keys = get_derived_keys()
+    xfp = settings.get('xfp')
+    showing_hidden = are_hidden_keys_showing()
     for key in keys:
         if len(key['name']) != 0 \
-                and key['xfp'] == settings.get('xfp') \
-                and (not key['hidden'] or are_hidden_keys_showing()):
+                and key['xfp'] == xfp \
+                and (not key['hidden'] or showing_hidden):
             result.append({'icon': key_types[key['type']]['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
