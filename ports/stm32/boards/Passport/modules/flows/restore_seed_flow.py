@@ -13,9 +13,28 @@ from tasks import save_seed_task
 
 class RestoreSeedFlow(Flow):
     def __init__(self, refresh_cards_when_done=False):
-        super().__init__(initial_state=self.choose_seed_len, name='RestoreSeedFlow')
+        super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_words = []
+
+    async def choose_restore_method(self):
+        from pages import ChooserPage
+
+        options = [{'label': 'Enter Seed Words', 'value': self.choose_seed_len},
+                   {'label': 'Scan QR', 'value': self.scan_qr}]
+        flow = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
+
+        if flow is None:
+            self.set_result(False)
+            return
+
+        self.goto(flow)
+
+    async def scan_qr(self):
+        from flows import ScanPrivateKeyQRFlow
+        result = await ScanPrivateKeyQRFlow(
+            refresh_cards_when_done=self.refresh_cards_when_done).run()
+        self.set_result(result)
 
     async def choose_seed_len(self):
         self.seed_length = await SeedLengthChooserPage().show()
