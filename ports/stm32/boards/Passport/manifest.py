@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
@@ -77,7 +77,9 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/apply_passphrase_flow.py',
         'flows/auto_backup_flow.py',
         'flows/backup_flow.py',
-        'flows/casa_health_check_flow.py',
+        'flows/casa_health_check_common_flow.py',
+        'flows/casa_health_check_microsd_flow.py',
+        'flows/casa_health_check_qr_flow.py',
         'flows/change_pin_flow.py',
         'flows/delete_account_flow.py',
         'flows/delete_multisig_flow.py',
@@ -85,6 +87,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/envoy_setup_flow.py',
 
         'flows/erase_passport_flow.py',
+        'flows/export_multisig_microsd_flow.py',
+        'flows/export_multisig_qr_flow.py',
         'flows/export_summary_flow.py',
         #  'flows/fcc_test_flow.py',
         'flows/file_picker_flow.py',
@@ -123,6 +127,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/restore_seed_flow.py',
         'flows/scv_flow.py',
         'flows/select_setup_mode_flow.py',
+        'flows/selected_file_flow.py',
         'flows/set_chain_flow.py',
         'flows/set_initial_pin_flow.py',
         'flows/show_security_words_setting_flow.py',
@@ -223,6 +228,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'tasks/change_pin_task.py',
         'tasks/copy_psbt_file_to_external_flash_task.py',
         'tasks/copy_psbt_to_external_flash_task.py',
+        'tasks/clear_psbt_from_external_flash_task.py',
         'tasks/double_check_psbt_change_task.py',
         'tasks/create_wallet_export_task.py',
         'tasks/copy_firmware_to_spi_flash_task.py',
@@ -272,33 +278,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ui/__init__.py',
         'ui/ui.py'))
 
-# UR1
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('ur1/__init__.py',
-        'ur1/bc32.py',
-        'ur1/bech32_version.py',
-        'ur1/bech32.py',
-        'ur1/decode_ur.py',
-        'ur1/encode_ur.py',
-        'ur1/mini_cbor.py',
-        'ur1/utils.py'))
-
-# UR2
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('ur2/__init__.py',
-        'ur2/bytewords.py',
-        'ur2/cbor_lite.py',
-        'ur2/constants.py',
-        'ur2/fountain_encoder.py',
-        'ur2/fountain_decoder.py',
-        'ur2/fountain_utils.py',
-        'ur2/random_sampler.py',
-        'ur2/ur_decoder.py',
-        'ur2/ur_encoder.py',
-        'ur2/ur.py',
-        'ur2/utils.py',
-        'ur2/xoshiro256.py'))
-
 # Views
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('views/__init__.py',
@@ -337,7 +316,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
 
 # Wallets
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('wallets/bitcoin_core.py',
+       ('wallets/__init__.py',
+        'wallets/bitcoin_core.py',
         'wallets/bluewallet.py',
         'wallets/btcpay.py',
         'wallets/caravan.py',
@@ -361,5 +341,12 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/vault.py',
         'wallets/wasabi.py',
         'wallets/keeper.py'))
+
+# Extensions
+freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
+       ('extensions/__init__.py',
+        'extensions/extensions.py',
+        'extensions/casa_extension.py',
+        'extensions/postmix_extension.py'))
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

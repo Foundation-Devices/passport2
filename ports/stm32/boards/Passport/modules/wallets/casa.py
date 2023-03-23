@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # casa.py - Casa support
@@ -9,11 +9,16 @@ import chains
 import stash
 from utils import xfp2str
 from data_codecs.qr_type import QRType
-from ur2.cbor_lite import CBOREncoder
-from ur2.ur import UR
+from foundation import ur
 
 
-def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=False, legacy=False, export_mode='qr',):
+def create_casa_export(sw_wallet=None,
+                       addr_type=None,
+                       acct_num=0,
+                       multisig=False,
+                       legacy=False,
+                       export_mode='qr',
+                       qr_type=QRType.UR2):
     # Get public details about wallet.
     #
     # simple text format:
@@ -24,69 +29,22 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
 
     chain = chains.current_chain()
 
-    if export_mode == 'qr':
-        # crypto-hdkey spec: https://github.com/BlockchainCommons/Research/blob/master/papers/bcr-2020-007-hdkey.md
-        #
-        # Casa `crypto-hdkey` CDDL:
-        # {
-        #     is-private: false,
-        #     key-data: bytes,
-        #     chain-code: bytes,
-        #     use-info: {
-        #         type: cointype-btc,
-        #         network: testnet-btc
-        #     },
-        #     origin: {
-        #         source-fingerprint: uint32,
-        #         depth: uint8
-        #     },
-        #     parent-fingerprint: uint32
-        # }
+    if export_mode == 'qr' and qr_type == QRType.UR2:
         with stash.SensitiveValues() as sv:
-            # Encoder
-            encoder = CBOREncoder()
             is_mainnet = chain.ctype == 'BTC'
-            pk = sv.node.public_key()
-            cc = sv.node.chain_code()
 
-            # Map size of 6
-            encoder.encodeMapSize(6)
-            # Tag 2: is-private
-            encoder.encodeUnsigned(2)
-            encoder.encodeBool(False)
-            # Tag 3: key-data
-            encoder.encodeUnsigned(3)
-            encoder.encodeBytes(bytearray(pk))
-            # Tag 4: chain-code
-            encoder.encodeUnsigned(4)
-            encoder.encodeBytes(bytearray(cc))
-            # Tag 5 (305): use-info
-            encoder.encodeUnsigned(5)
-            encoder.encodeUndefined(305)
-            encoder.encodeMapSize(2)
-            # use-info Tag 1: type 0 = BTC
-            encoder.encodeUnsigned(1)
-            encoder.encodeUnsigned(0)
-            # use-info Tag 2: network 0 = Mainnet=0, Testnet=1
-            encoder.encodeUnsigned(2)
-            encoder.encodeUnsigned(0 if is_mainnet else 1)
-            # Tag 6 (304): origin
-            encoder.encodeUnsigned(6)
-            encoder.encodeUndefined(304)
-            encoder.encodeMapSize(2)
-            # origin Tag 2: source-fingerprint
-            encoder.encodeUnsigned(2)
-            encoder.encodeUnsigned(int(xfp2str(settings.get('xfp')), 16))
-            # origin Tag 3: depth = 0 (Always depth zero for Casa)
-            encoder.encodeUnsigned(3)
-            encoder.encodeUnsigned(0)
-            # Tag 8: parent-fingerprint
-            encoder.encodeUnsigned(8)
-            encoder.encodeUnsigned(0)
+            network = ur.NETWORK_TESTNET if is_mainnet else ur.NETWORK_TESTNET
+            use_info = ur.CryptoCoinInfo(ur.CoinType.BTC, network)
+            origin = ur.CryptoKeypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
+                                      depth=0)
 
-            import binascii
-            print('encoder.get_bytes() = {}'.format(binascii.hexlify(bytearray(encoder.get_bytes()))))
-            return (UR('crypto-hdkey', encoder.get_bytes()), None)
+            crypto_hdkey = ur.new_derived_key(sv.node.public_key(),
+                                              is_private=False,
+                                              chain_code=sv.node.chain_code(),
+                                              use_info=use_info,
+                                              origin=origin)
+
+            return (crypto_hdkey, None)
     else:
         with stash.SensitiveValues() as sv:
             s = '''\
@@ -109,7 +67,6 @@ def create_casa_export(sw_wallet=None, addr_type=None, acct_num=0, multisig=Fals
     '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
                sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
 
-            print('create_casa_export() returning:\n{}'.format(s))
             return (s, None)  # No 'acct_info'
 
 

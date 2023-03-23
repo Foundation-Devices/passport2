@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -15,7 +15,7 @@ from public_constants import MAX_TXN_LEN
 async def copy_psbt_to_external_flash_task(on_done, on_progress, data, offset):
     # sign a PSBT file found on a microSD card
     from uio import BytesIO
-    from passport import sram4
+    from passport import mem
     from sffile import SFFile
     from errors import Error
     from utils import HexStreamer, Base64Streamer, HexWriter, Base64Writer
@@ -25,6 +25,10 @@ async def copy_psbt_to_external_flash_task(on_done, on_progress, data, offset):
     with BytesIO(data) as fd:
         # See how long it is -- This version of seek returns the final offset
         psbt_len = len(data)
+
+        if psbt_len > MAX_TXN_LEN:
+            await on_done(0, None, Error.PSBT_TOO_LARGE)
+            return
 
         # determine encoding used, although we prefer binary
         taste = fd.read(10)
@@ -53,15 +57,15 @@ async def copy_psbt_to_external_flash_task(on_done, on_progress, data, offset):
             await out.erase()
 
             while 1:
-                n = fd.readinto(sram4.tmp_buf)
+                n = fd.readinto(mem.tmp_buf)
                 # print('sign copy to SPI flash 1: n={}'.format(n))
                 if not n:
                     break
 
-                if n == len(sram4.tmp_buf):
-                    abuf = sram4.tmp_buf
+                if n == len(mem.tmp_buf):
+                    abuf = mem.tmp_buf
                 else:
-                    abuf = memoryview(sram4.tmp_buf)[0:n]
+                    abuf = memoryview(mem.tmp_buf)[0:n]
 
                 if not decoder:
                     out.write(abuf)

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -720,6 +720,18 @@ class MultisigWallet:
         # done. have all the parts
         return cls(name, (M, N), xpubs, unique_id, addr_fmt=addr_fmt, chain_type=expect_chain, deriv=my_deriv)
 
+    def to_file(self):
+        from public_constants import MULTISIG_EXPORT_TEMPLATE, MULTISIG_DERIV_TEMPLATE
+        file_string = MULTISIG_EXPORT_TEMPLATE.format(self.name,
+                                                      self.M,
+                                                      self.N,
+                                                      self.render_addr_fmt(self.addr_fmt))
+
+        for xfp, deriv, xpub in self.xpubs:
+            file_string += MULTISIG_DERIV_TEMPLATE.format(deriv, xfp2str(xfp), xpub)
+
+        return file_string
+
     @classmethod
     def check_xpub(cls, xfp, xpub, deriv, expect_chain, my_xfp, xpubs):
         # Shared code: consider an xpub for inclusion into a wallet, if ok, append
@@ -930,7 +942,7 @@ class MultisigWallet:
 
         return derivs, dsum
 
-    def format_overview(self):
+    def format_overview(self, importing=True):
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX, COPPER_HEX
 
@@ -961,16 +973,20 @@ class MultisigWallet:
 {} This new wallet is similar to an existing wallet, but will NOT replace it. Consider deleting previous \
 wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.join(diff_items)
             is_dup = True
-        elif num_dups:
+        elif importing and num_dups:
             msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.'
             is_dup = True
+        elif not importing:
+            msg = ''
         else:
             msg = 'Create new multisig wallet?'
 
         derivs, dsum = self.get_deriv_paths()
 
-        msg += '''\n
-{name_title}
+        if importing:
+            msg += '\n\n'
+
+        msg += '''{name_title}
 {name}
 
 {policy_title} {M} of {N}

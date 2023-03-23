@@ -1,161 +1,86 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Justfile - Root-level justfile for Passport
+# Justfile - Root-level Justfile for Passport
 
-export DOCKER_REGISTRY_BASE := ''
+export DOCKER_IMAGE := env_var_or_default('DOCKER_IMAGE', 'foundation-devices/passport2:latest')
 
-commit_sha := `git rev-parse HEAD`
-docker_image := 'foundation-devices/firmware-builder:' + commit_sha
-base_path := 'ports/stm32'
-firmware_path := base_path + '/build-Passport/'
-
-# build the docker image and then the firmware and bootloader
-# build: docker-build firmware-build bootloader-build
-# build: docker-build (build-bootloader "mono") (build-bootloader "color") (build-firmware "mono") (build-firmware "color")
-
-init:
-  # Ensure submodules are cloned
-  git submodule update --init --recursive
-  # Setup the image converter tool
-  cd tools/lv_img_conv && npm install
-
-# build the dependency docker image
+# Build the docker image
 build-docker:
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker build -t ${DOCKER_REGISTRY_BASE}{{docker_image}} .
+    docker build -t ${DOCKER_IMAGE} .
 
-# build the firmware inside docker
-build-firmware screen="mono":
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/{{base_path}} \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c 'just build {{screen}} MPY_CROSS=/usr/bin/mpy-cross'
+# Build the firmware inside docker.
+build-firmware screen="mono": mpy-cross (run-in-docker ("just ports/stm32/build " + screen))
 
 # build the bootloader inside docker
-build-bootloader screen="mono":
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/{{base_path}}/boards/Passport/bootloader \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c 'just build {{screen}}'
+build-bootloader screen="mono": (run-in-docker ("just ports/stm32/boards/Passport/bootloader/build " + screen))
 
-# build the docker image and get the tools from it
-tools: build-docker cosign-tool add-secrets-tool word-list-gen-tool
+# Run the built firmware through SHA256
+verify-sha sha screen="mono":
+    #!/usr/bin/env bash
+    sha=$(shasum -a 256 ports/stm32/build-Passport/firmware-{{uppercase(screen)}}.bin | awk '{print $1}')
 
-# get cosign tool from built docker image
-cosign-tool:
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c 'cp /usr/bin/cosign cosign'
+    if [ -z "${sha}" ]; then
+        exit 1
+    fi
 
-# get add-secrets tool from built docker image
-add-secrets-tool:
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c 'make -C ports/stm32/boards/Passport/tools/add-secrets'
+    echo -e "Expected SHA:\t{{sha}}"
+    echo -e "Actual SHA:\t${sha}"
+    if [ "$sha" = "{{sha}}" ]; then
+        echo "Hashes match!"
+    else
+        echo "ERROR: Hashes DO NOT match!"
+        exit 1
+    fi
 
-# get word_list_gen tool from built docker image
-word-list-gen-tool:
-  #!/usr/bin/env bash
-  set -exo pipefail
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/ports/stm32/boards/Passport/tools/word_list_gen \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c 'gcc word_list_gen.c bip39_words.c bytewords_words.c -o word_list_gen'
+tools: build-add-secrets build-cosign
 
-# run the built firmware through SHA256
-verify-sha sha:
-  #!/usr/bin/env bash
-  sha=$(shasum -a 256 {{firmware_path}} | awk '{print $1}')
+# Build the add-secrets tool.
+build-add-secrets: (run-in-docker "make -C ports/stm32/boards/Passport/tools/add-secrets")
 
-  echo -e "Expected SHA:\t{{sha}}"
-  echo -e "Actual SHA:\t${sha}"
-  if [ "$sha" = "{{sha}}" ]; then
-    echo "Hashes match!"
-  else
-    echo "ERROR: Hashes DO NOT match!"
-  fi
+# Build the cosign tool.
+build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
 
-# sign the built firmware using a private key and the cosign tool
-sign keypath version screen="mono": (build-firmware screen)
-  #!/usr/bin/env bash
-  set -exo pipefail
+# Sign the built firmware using a private key and the cosign tool
+sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
 
-  SCREEN={{screen}}
-  SCREEN=`echo ${SCREEN^^}`
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/{{base_path}} \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c "just cosign_filepath=build-Passport/firmware-$SCREEN.bin cosign_keypath={{keypath}} sign {{version}} {{screen}} MPY_CROSS=/usr/bin/mpy-cross"
+# Clean firmware build
+clean: (run-in-docker "just ports/stm32/clean")
 
-# clean firmware build
-clean:
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/{{base_path}} \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c "make clean BOARD=Passport"
+# Clean bootloader build
+clean-firmware: (run-in-docker "just ports/stm32/clean")
 
-# clean bootloader build
-clean-bootloader:
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/{{base_path}}/boards/Passport/bootloader \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c "just clean"
+# Clean bootloader build
+clean-bootloader: (run-in-docker "just ports/stm32/boards/Passport/bootloader/clean")
 
-# clean simulator build
-clean-simulator:
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/simulator \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c "just clean"
+# Clean simulator build
+clean-simulator: (run-in-docker "just simulator/clean")
 
-build-simulator screen="mono":
-  docker run --rm -v "$PWD":/workspace \
-    -u $(id -u):$(id -g) \
-    -w /workspace/simulator \
-    --entrypoint bash \
-    ${DOCKER_REGISTRY_BASE}{{docker_image}} \
-    -c "just build {{screen}} MPY_CROSS=/usr/bin/mpy-cross"
+# Build simulator
+build-simulator screen="mono": (run-in-docker ("just simulator/build " + screen))
 
 # Run the simulator.
 sim screen="mono" ext="":
-  just simulator/sim {{screen}} {{ext}}
+    just simulator/sim {{screen}} {{ext}}
 
-simulatordir := `pwd` + "/simulator"
 # Run unit tests.
 test:
   just simulator/build color
-  cd ports/stm32/boards/Passport/modules/tests/; python3 -m pytest . --simulatordir={{simulatordir}}
+  cd ports/stm32/boards/Passport/modules/tests; python3 -m pytest . --simulatordir=$(pwd)/simulator
 
 # Lint the codebase.
-lint:
-  just ports/stm32/lint
+lint: (run-in-docker "just ports/stm32/lint") (run-in-docker "just extmod/foundation-rust/lint")
+
+[private]
+mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-docker")
+
+[private]
+run-in-docker command:
+    docker run --rm -v "$PWD":/workspace \
+        -u $(id -u):$(id -g) \
+        -v $(pwd):/workspace \
+        -w /workspace \
+        -e MPY_CROSS="/workspace/mpy-cross/mpy-cross-docker" \
+        --entrypoint bash \
+        ${DOCKER_IMAGE} \
+        -c 'export PATH=$PATH:/workspace/ports/stm32/boards/Passport/tools/cosign/x86/release;{{command}}'

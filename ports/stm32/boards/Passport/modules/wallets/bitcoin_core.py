@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -22,7 +22,8 @@ def create_bitcoin_core_export(sw_wallet=None,
                                acct_num=0,
                                multisig=False,
                                legacy=False,
-                               export_mode='qr'):
+                               export_mode='qr',
+                               qr_type=None):
     import ustruct
     xfp = xfp2str(settings.get('xfp'))
 

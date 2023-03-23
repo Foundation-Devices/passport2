@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -235,7 +235,8 @@ def handle_fatal_error(exc):
             sys.print_exception(exc2)
 
 
-def get_file_list(path=None, include_folders=False, include_parent=False, suffix=None, filter_fn=None):
+def get_file_list(path=None, include_folders=False, include_parent=False,
+                  suffix=None, filter_fn=None, show_hidden=False):
     file_list = []
 
     with CardSlot() as card:
@@ -265,18 +266,35 @@ def get_file_list(path=None, include_folders=False, include_parent=False, suffix
                 continue
 
             # Skip "hidden" files that start with "."
-            if filename[0] == '.':
+            if filename[0] == '.' and not show_hidden:
                 continue
 
             # Apply file filter, if given (only to files -- folder are included by default)
             if not is_folder and filter_fn is not None and not filter_fn(filename):
                 continue
 
-            full_path = path + '/' + filename
+            full_path = "{}/{}".format(path, filename)
 
             file_list.append((filename, full_path, is_folder))
 
     return file_list
+
+
+def delete_file(path):
+    with CardSlot() as card:
+        if path is None:
+            return
+
+        # Ensure path is build properly
+        if not path.startswith(card.get_sd_root()):
+            # print('ERROR: The path for get_file_list() must start with "{}"'.format(card.get_sd_root()))
+            return
+
+        if folder_exists(path):
+            uos.rmdir(path)
+
+        if file_exists(path):
+            uos.remove(path)
 
 
 class InputMode():
@@ -434,6 +452,9 @@ class HexWriter:
         buf[0:len(b)] = b
         return len(b)
 
+    def getvalue(self):
+        return self.fd.getvalue()
+
 
 class Base64Writer:
     # Emulate a file/stream but convert binary to Base64 as they write
@@ -462,6 +483,9 @@ class Base64Writer:
             assert tmp[-1:] == b'\n', tmp
             assert tmp[-2:-1] != b'=', tmp
             self.fd.write(tmp[:-1])
+
+    def getvalue(self):
+        return self.fd.getvalue()
 
 
 def swab32(n):
@@ -557,9 +581,9 @@ def cleanup_deriv_path(bin_path, allow_star=False):
             ip = int(p, 10)
         except Exception:
             ip = -1
-        assert 0 <= ip < 0x80000000 and p == str(ip), "bad component: " + p
+        assert 0 <= ip < 0x80000000 and p == str(ip), "bad component: {}".format(p)
 
-    return 'm/' + '/'.join(parts)
+    return 'm/{}'.format('/'.join(parts))
 
 
 def keypath_to_str(bin_path, prefix='m/', skip=1):
@@ -1101,6 +1125,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     :return: None
     """
     from files import CardMissingError
+    from pages import ErrorPage
 
     sd_card_change = False
     prev_sd_card_cb = None
@@ -1120,7 +1145,14 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
     CardSlot.set_sd_card_change_cb(sd_card_cb)
 
-    await page.display()
+    try:
+        await page.display()
+    except Exception as e:
+        page.unmount()
+        restore_sd_cb()
+        await on_result(None)
+        await ErrorPage(text='Unable to display page.').show()
+        return
 
     g = page.poll_for_done()
     while True:
@@ -1146,7 +1178,8 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
         except StopIteration as result:
             result = result.value
 
-            if on_result(result):
+            success = await on_result(result)
+            if success:
                 page.restore_statusbar_and_card_header()
                 restore_sd_cb()
                 return
@@ -1230,5 +1263,12 @@ def set_screen_brightness(value):
         common.system.set_screen_brightness(value)
     else:
         common.settings.set('screen_brightness', value)
+
+
+async def clear_psbt_flash(psbt_len):
+    from utils import spinner_task
+    from tasks import clear_psbt_from_external_flash_task
+
+    await spinner_task(None, clear_psbt_from_external_flash_task, args=[psbt_len])
 
 # EOF

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # show_qr_page.py - Show a QR code
@@ -17,6 +17,15 @@ from utils import get_screen_brightness
 
 _FRAME_TIME = const(300)
 
+# Supported QR code versions.
+#
+# Assumes ECC L for alphanumeric and binary capacity.
+_VERSIONS = [
+    {'alphanumeric': 154, 'binary': 106},  # Version 5
+    {'alphanumeric': 279, 'binary': 192},  # Version 8
+    {'alphanumeric': 535, 'binary': 367},  # Version 12
+]
+
 brightness_levels = [5, 25, 50, 75, 100]
 
 
@@ -25,7 +34,6 @@ class ShowQRPage(Page):
 
     def __init__(self,
                  qr_type=QRType.QR,
-                 qr_args=None,
                  qr_data=None,
                  caption=None,
                  card_header=None,
@@ -38,7 +46,6 @@ class ShowQRPage(Page):
                          right_micron=right_micron,
                          extend_timeout=True)
         self.qr_type = qr_type
-        self.qr_args = qr_args
         self.qr_data = qr_data
         self.caption = caption
         self.curr_fragment_len = 200
@@ -184,19 +191,22 @@ class ShowQRPage(Page):
     def update(self):
         if self.is_attached():
             if self.qr_encoder is None:
-                self.qr_encoder = make_qr_encoder(self.qr_type, self.qr_args)
-                # print('qr_size_idx={}'.format(self.qr_size_idx))
-                self.curr_fragment_len = self.qr_encoder.get_max_len(self.qr_size_idx)
-                # print('curr_fragment_len={}'.format(self.curr_fragment_len))
+                self.qr_encoder = make_qr_encoder(self.qr_type)
+
+                if self.qr_type == QRType.UR2:
+                    self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
+                else:
+                    self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['binary']
+
                 self.qr_encoder.encode(self.qr_data, max_fragment_len=self.curr_fragment_len)
                 self.qrcode.reset_sizing()
 
             part = self.qr_encoder.next_part()
-
             if part is None:
                 return
 
-            if self.qr_type != QRType.QR:
+            # URs are always alphanumeric, but they might be in lowercase.
+            if self.qr_type == QRType.UR2:
                 part = part.upper()
 
             # TODO: Optimization: Don't update if the fragment is the

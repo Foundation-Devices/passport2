@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Building the generator
 You should only need to regenerate the ../bip39_word_info.c file if BIP39 changes,
 which is extremely unlikely, or if you want to generate the same structure for words

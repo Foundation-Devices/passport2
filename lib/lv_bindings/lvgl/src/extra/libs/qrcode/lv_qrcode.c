@@ -62,8 +62,6 @@ void lv_qrcode_set_buffer(lv_obj_t * obj, void * img_buf, lv_coord_t hor_res, lv
     qrcode->modules_buf = modules_buf;
     qrcode->max_version = max_version;
 
-    // printf("modules buf %p\n", qrcode->modules_buf);
-
     lv_canvas_set_buffer(obj, img_buf, hor_res, ver_res, LV_IMG_CF_INDEXED_1BIT);
     lv_canvas_set_palette(obj, 0, dark_color);
     lv_canvas_set_palette(obj, 1, light_color);
@@ -89,7 +87,7 @@ int32_t lv_qrcode_get_last_version(lv_obj_t * obj)
 int32_t lv_qrcode_get_min_fit_version(lv_obj_t * obj, uint32_t data_len)
 {
     LV_UNUSED(obj);
-    return qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, data_len);
+    return qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_BYTE, data_len);
 }
 
 lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, int32_t min_version)
@@ -105,7 +103,13 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     lv_img_dsc_t * imgdsc = lv_canvas_get_img(obj);
     lv_coord_t res = LV_MIN(imgdsc->header.w, imgdsc->header.h);
 
-    int32_t qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, data_len);
+    int32_t qr_version;
+    if (qrcodegen_isAlphanumeric((const char*)data, data_len)) {
+        qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_ALPHANUMERIC, data_len);
+    } else {
+        qr_version = qrcodegen_getMinFitVersion(qrcodegen_Ecc_LOW, qrcodegen_Mode_BYTE, data_len);
+    }
+
     if(qr_version <= 0) return LV_RES_INV;
     if(qr_version > qrcode->max_version) return LV_RES_INV;
     if(qr_version < min_version) qr_version = min_version;
@@ -123,16 +127,10 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     }
     qrcode->last_version = qr_version;
 
-    if (data_len > sizeof(qrcode->data_and_tmp)) {
-        return LV_RES_INV;
-    }
-
-    lv_memcpy(qrcode->data_and_tmp, data, data_len);
-
-    bool ok = qrcodegen_encodeBinary(qrcode->data_and_tmp, data_len,
-                                     qrcode->modules_buf, qrcodegen_Ecc_LOW,
-                                     qr_version, qr_version,
-                                     qrcodegen_Mask_AUTO, true);
+    bool ok = qrcodegen_encodeText((const char*)data, data_len, qrcode->tmp,
+                                   qrcode->modules_buf, qrcodegen_Ecc_LOW,
+                                   qr_version, qr_version,
+                                   qrcodegen_Mask_AUTO, true);
     if (!ok) {
         return LV_RES_INV;
     }

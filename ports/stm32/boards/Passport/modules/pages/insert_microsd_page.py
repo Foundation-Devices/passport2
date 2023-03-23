@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # insert_microsd_page.py
@@ -37,7 +37,7 @@ class InsertMicroSDPage(StatusPage):
 
             return sd_card_present
 
-        def on_result(res):
+        async def on_result(res):
             nonlocal result
             result = res
             return True

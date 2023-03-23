@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # errors.py - Error codes that functions can return -- mostly used for tasks to return
@@ -23,4 +23,5 @@ Error = enum(
     'PSBT_INVALID',
     'SECURE_ELEMENT_ERROR',
     'USER_SETTINGS_FULL',
+    'PSBT_TOO_LARGE',
 )

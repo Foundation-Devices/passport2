@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # camera.py
@@ -9,7 +9,9 @@ import passport
 from foundation import qr
 from passport import camera
 from views import View
-from data_codecs.qr_factory import get_qr_decoder_for_data
+from styles import Stylize
+from styles.colors import WHITE
+from data_codecs.qr_factory import make_qr_decoder_from_data
 
 
 class Camera(View):
@@ -42,8 +44,16 @@ class Camera(View):
         self.content_height = None
         self.img_dsc = None
 
+        if not passport.IS_COLOR and not passport.IS_SIMULATOR:
+            with Stylize(self) as default:
+                default.bg_color(WHITE)
+                default.border_width(0)
+
     def create_lvgl_root(self, lvgl_parent):  # noqa
-        return lv.img(lvgl_parent)
+        if passport.IS_COLOR or passport.IS_SIMULATOR:
+            return lv.img(lvgl_parent)
+        else:
+            return lv.obj(lvgl_parent)
 
     def hook(self):
         pass
@@ -62,7 +72,6 @@ class Camera(View):
         if self.content_width is None or self.content_height is None:
             self.enable()
             if self.content_width is None or self.content_height is None:
-                print('Not enabled')
                 return
 
         # Take the camera image.
@@ -72,9 +81,14 @@ class Camera(View):
         # full access to the buffer.
         self.hook()
 
-        # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
-        camera.resize(self.content_width, self.content_height)
-        self.lvgl_root.invalidate()
+        if passport.IS_COLOR or passport.IS_SIMULATOR:
+            # Resize the framebuffer and invalidate the widget contents, so it gets redrawn.
+            camera.resize(self.content_width, self.content_height)
+            self.lvgl_root.invalidate()
+        else:  # MONO device
+            # Update the viewfinder using the grayscale image in the QR framebuffer
+            import passport_lv
+            passport_lv.lcd.update_viewfinder_direct(qr.framebuffer, self.HOR_RES, self.VER_RES)
 
     def enable(self):
         """Enable the camera"""
@@ -92,7 +106,13 @@ class Camera(View):
             # complete area). The pixel format of the camera is the same one as the
             # LVGL format.
             self._framebuffer = camera.framebuffer()
+
+            # Nothing else to do on device since viewfinder is hard-wired at the lower level
+            if not passport.IS_COLOR and not passport.IS_SIMULATOR:
+                return
+
             self.lvgl_root.refr_size()
+
             self.content_width = min(self.content_width, self.HOR_RES)
             self.content_height = min(self.content_height, self.VER_RES)
             self.img_dsc = lv.img_dsc_t({
@@ -104,9 +124,6 @@ class Camera(View):
                 'data': self._framebuffer,
             })
             self.lvgl_root.set_src(self.img_dsc)
-            if not passport.IS_COLOR and not passport.IS_SIMULATOR:
-                self.lvgl_root.set_pivot(self.content_width // 2, self.content_height // 2)
-                self.lvgl_root.set_angle(900)
         else:
             self.content_width = None
             self.content_height = None
@@ -126,12 +143,9 @@ class Camera(View):
 class CameraQRScanner(Camera):
     """Camera QR code scanner and decoder"""
 
-    def __init__(self, result_cb=None, progress_cb=None, error_cb=None):
+    def __init__(self):
         super().__init__()
         self.qr_decoder = None
-        self.result_cb = result_cb
-        self.progress_cb = progress_cb
-        self.error_cb = error_cb
         qr.init(self.HOR_RES, self.VER_RES)
 
     def hook(self):
@@ -150,45 +164,32 @@ class CameraQRScanner(Camera):
 
         super().update()
 
-        # print('update')
-
-        # Do not scan anything if we are completed decoding.
+        # Do not scan anything if decoding is complete.
         if self.qr_decoder is not None:
             if self.qr_decoder.is_complete():
                 return
 
-        # print('decoding')
-
         # Find QR codes in the QR framebuffer, and return early if no data found.
         data = qr.scan()
-
         if data is None:
-            # print('None')
             return
 
-        # print('============================================================')
-        # print('data {}'.format(data))
-        # print('============================================================')
+        if self.qr_decoder is None:
+            self.qr_decoder = make_qr_decoder_from_data(data)
 
-        try:
-            if self.qr_decoder is None:
-                self.qr_decoder = get_qr_decoder_for_data(data)
+        self.qr_decoder.add_data(data)
 
-            self.qr_decoder.add_data(data)
+    def estimated_percent_complete(self):
+        """Returns an integer from 0-100 representing the estimated percentage of completion"""
 
-            error = self.qr_decoder.get_error()
-            if error is not None:
-                if callable(self.error_cb):
-                    self.error_cb(error)
-                return
+        if self.qr_decoder is None:
+            return 0
 
-            if self.qr_decoder.is_complete():
-                if callable(self.result_cb):
-                    self.result_cb(self.qr_decoder)
-                return
+        return self.qr_decoder.estimated_percent_complete()
 
-            if callable(self.progress_cb):
-                self.progress_cb(self.qr_decoder)
-        except Exception as e:  # noqa
-            # print('Exception in CameraQRScanner: {}'.format(e))
-            pass
+    def is_complete(self):
+        """Returns true if the scan is complete"""
+
+        if self.qr_decoder is not None:
+            return self.qr_decoder.is_complete()
+        return False

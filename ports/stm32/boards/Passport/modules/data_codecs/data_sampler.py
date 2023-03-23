@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # data_sampler.py
@@ -9,8 +9,7 @@
 
 # Determine if the provided data matches the format of the sampler.
 class DataSampler:
-    # Check if the given bytes look like UR1 data
-    # Return True if it matches or False if not
+    # Return True if data matches or False if not
     @classmethod
     def sample(cls, data):
         pass

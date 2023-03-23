@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -14,13 +14,13 @@ from public_constants import MAX_TXN_LEN
 
 async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, offset):
     # sign a PSBT file found on a microSD card
-    from passport import sram4
+    from passport import mem
     from sffile import SFFile
     from errors import Error
     from files import CardSlot
     from utils import HexStreamer, Base64Streamer, HexWriter, Base64Writer
 
-    # TODO: This used to be sram4.tmp_buf, but copying to there fails sometimes
+    # TODO: This used to be mem.tmp_buf, but copying to there fails sometimes
     tmp_buf = bytearray(1024)
 
     # copy buffer into external SPI Flash
@@ -33,6 +33,10 @@ async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, 
             # See how long it is -- This version of seek returns the final offset
             psbt_len = fd.seek(0, 2)
             fd.seek(0)
+
+            if psbt_len > MAX_TXN_LEN:
+                await on_done(0, None, Error.PSBT_TOO_LARGE)
+                return
 
             # determine encoding used, although we prefer binary
             taste = fd.read(10)

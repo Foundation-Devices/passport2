@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # menus.py - Menu configuration
@@ -34,8 +34,19 @@ def account_menu():
     ]
 
 
+def health_check_submenu():
+    from flows import CasaHealthCheckQRFlow, CasaHealthCheckMicrosdFlow
+
+    return [
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Check with QR Code', 'flow': CasaHealthCheckQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Check with microSD', 'flow': CasaHealthCheckMicrosdFlow,
+         'statusbar': {'title': 'SIGN'}},
+    ]
+
+
 def casa_menu():
-    from flows import CasaHealthCheckFlow, VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
 
     return [
         {'icon': lv.ICON_SCAN_QR, 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
@@ -43,7 +54,7 @@ def casa_menu():
         {'icon': lv.ICON_MICROSD, 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': lv.ICON_VERIFY_ADDRESS, 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'flow': CasaHealthCheckFlow},
+        {'icon': lv.ICON_HEALTH_CHECK, 'label': 'Health Check', 'submenu': health_check_submenu},
         {'icon': lv.ICON_CONNECT, 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
     ]
@@ -150,10 +161,15 @@ def microsd_menu():
 
 
 def multisig_item_menu():
-    from flows import RenameMultisigFlow, DeleteMultisigFlow, ViewMultisigDetailsFlow
+    from flows import (RenameMultisigFlow, DeleteMultisigFlow, ViewMultisigDetailsFlow,
+                       ExportMultisigQRFlow, ExportMultisigMicrosdFlow)
 
     return [
         {'icon': lv.ICON_TWO_KEYS, 'label': 'View Details', 'flow': ViewMultisigDetailsFlow},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Export via QR', 'flow': ExportMultisigQRFlow,
+         'statusbar': {'title': 'EXPORT'}},
+        {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
+         'statusbar': {'title': 'EXPORT'}},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow},
         {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow},
     ]
@@ -226,58 +242,46 @@ def advanced_menu():
 #         LoginFlow,
 #         NewSeedFlow,
 #         SetInitialPINFlow,
-#         DeveloperFunctionsFlow,
-#         ResetPINFlow,
+#         # DeveloperFunctionsFlow,
+#         # ResetPINFlow,
 #         SpinDelayFlow
 #     )
 #     from pages import BatteryPage, StatusPage, ShowQRPage
 #     from data_codecs.qr_type import QRType
-
+#     from foundation import ur
+#
 #     return [
 #         {'icon': lv.ICON_BATTERY, 'label': 'Battery', 'page': BatteryPage},
-#         {'icon': lv.ICON_ERASE, 'label': 'Factory Reset',
-#             'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
 #         {'icon': lv.ICON_RETRY, 'label': 'Spin!!!', 'flow': SpinDelayFlow, 'args': {'delay_ms': 10000}},
-#         {'icon': lv.ICON_SETTINGS, 'label': 'Dump Settings',
-#             'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'dump_settings'}},
 #         {'icon': lv.ICON_SCAN_QR, 'label': 'Show Setup QR', 'page': StatusPage, 'args': {
 #             'text': 'Scan the QR code above with Envoy.', 'icon': lv.LARGE_ICON_SETUP_QR}, 'card_header': {}},
 #         {'icon': lv.ICON_SCAN_QR, 'label': 'Show Test UR', 'page': ShowQRPage, 'args': {
-#             'qr_type': QRType.UR2, 'qr_data': 'sdflkajd lkajdslkajdslkajsdkajdlkajsdflkajdslkjasdlkjadsflkajsdsdfl' +
-#             'lkajdslkajdslkajsdkajdlkajsdflkajdslkjasdlkjadsflkajsdflksdflkajd lkajdslkajdslkajsdkajdlkajsdajdslkj' +
-#             'asdlkjadsflkajsdflksdflkajd lkajdslkajdslkajsdkajdlkajsdflkajdslkjasdlkjadsflkajsdflksdflkajd lkajds' +
-#             'lkajdslkajsdkajdlkajsdflkajdslkjasdlkja'}},
+#             'qr_type': QRType.UR2, 'qr_data': ur.new_bytes('test data' * 10)}},
 #         {'icon': lv.ICON_SHIELD, 'label': 'Supply Chain', 'flow': ScvFlow},
 #         {'icon': lv.ICON_ONE_KEY, 'label': 'Login', 'flow': LoginFlow},
 #         {'icon': lv.ICON_SEED, 'label': 'New Seed', 'flow': NewSeedFlow, 'args': {'refresh_cards_when_done': True}},
-#         {'icon': lv.ICON_CHANGE_PIN, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
-#         {'icon': lv.ICON_CHANGE_PIN, 'label': 'Reset PIN', 'flow': ResetPINFlow},
+#         {'icon': lv.ICON_ONE_KEY, 'label': 'Set PIN', 'flow': SetInitialPINFlow},
+#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Reset PIN', 'flow': ResetPINFlow},
+#         # {'icon': lv.ICON_ERASE, 'label': 'Factory Reset',
+#         #     'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
+#         # {'icon': lv.ICON_SETTINGS, 'label': 'Dump Settings',
+#         #     'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'dump_settings'}},
 #         # {'icon': lv.ICON_SETTINGS, 'label': 'I\'m Busy!', 'page': LongTextPage,
 #         #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
 #         # {'icon': lv.ICON_SETTINGS, 'label': 'FCC Test', 'flow': FCCTestFlow},
 #         # {'icon': lv.ICON_ABOUT, 'label': 'Color Picker', 'page': ColorPickerPage},
-#         # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter PIN', 'page': PINEntryPage,
+#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Enter PIN', 'page': PINEntryPage,
 #         #  'args': {'title': 'Enter Initial PIN'}},
 #         # {'icon': lv.ICON_FOLDER, 'label': 'Rename Account', 'page': TextInputPage,
 #         #     'args': {'card_header': {'title': 'Rename Account', 'icon': lv.ICON_ABOUT, 'right_text': '!!',
 #         #              'bg_color': RED, 'fg_color': FD_BLUE}}},
 #         # {'icon': lv.ICON_SEED, 'label': 'Enter Seed', 'page': PredictiveTextInputPage},
-#         # {'icon': lv.ICON_CHANGE_PIN, 'label': 'Enter Backup Code', 'page': BackupCodePage},
+#         # {'icon': lv.ICON_ONE_KEY, 'label': 'Enter Backup Code', 'page': BackupCodePage},
 #     ]
 
-
 def extensions_menu():
-    from utils import is_extension_enabled, toggle_extension_enabled
-    # from pages import ColorPickerPage
-    return [
-        # {'icon': lv.ICON_INFO, 'label': 'Color Picker', 'page': ColorPickerPage},
-        {'icon': lv.ICON_CASA, 'label': 'Casa', 'action': lambda item: toggle_extension_enabled('casa'),
-         'is_toggle': True, 'value': lambda: is_extension_enabled('casa')},
-        {'icon': lv.ICON_SPIRAL, 'label': 'Postmix', 'action': lambda item: toggle_extension_enabled('postmix'),
-         'is_toggle': True, 'value': lambda: is_extension_enabled('postmix')},
-        # {'icon': lv.ICON_SETTINGS, 'label': 'BIP85', 'action': lambda item: toggle_extension_enabled('bip85'),
-        #  'is_toggle': True, 'value': lambda: is_extension_enabled('bip85')},
-    ]
+    from extensions.extensions import supported_extensions_menu
+    return supported_extensions_menu
 
 
 def settings_menu():

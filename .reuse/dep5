@@ -1,30 +1,106 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream - Name: Passport
-Upstream - Contact: hello@foundationdevices.com
-Source: https://git.example.com/FoundationDevices/passport
+Upstream-Name: Passport
+Upstream-Contact: hello@foundationdevices.com
+Source: https://git.example.com/FoundationDevices/passport2
 
-Files: MP-*.md TODO.md MP-ACKNOWLEDGEMENTS docs/* drivers/* examples/* extmod/* lib/* py/* tests/* tools/* .gitattributes .gitignore .gitmodules .travis.yml logo/* mpy-cross/*
+Files:
+  extmod/crypto-algorithms/*
+Copyright: Brad Conte (brad AT bradconte.com)
+License: Unlicense
+
+Files:
+  extmod/re1.5/*
+Copyright: Copyright (c) 2007-2009 Russ Cox, Google Inc.
+License: BSD-3-Clause
+
+Files: extmod/trezor-firmware/*
+Copyright: Copyright (c) SatoshiLabs
+License: GPL-3.0-only
+
+Files: extmod/uzlib/*
+Copyright: Copyright (c) 2003 by Joergen Ibsen / Jibz
+License: Zlib
+
+Files: ports/stm32/boards/Passport/common/micro-ecc/*
+Copyright: Copyright (c) 2014, Kenneth MacKay
+License: BSD-2-Clause
+
+Files: ports/stm32/pybcdc.inf_template
+Copyright:
+  Copyright (c) 2000 Microsoft Corporation
+  Copyright (C) 2007 Microchip Technology Inc.
+  Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)
+License: MIT
+
+Files:
+  extmod/virtpin.c
+  extmod/virtpin.h
+Copyright: Copyright (c) 2016 Paul Sokolovsky
+License: MIT
+
+Files:
+  extmod/misc.h
+  extmod/uos_dupterm.c
+  extmod/utime_mphal.c
+  extmod/utime_mphal.h
+Copyright:
+  Copyright (c) 2013-2016 Damien P. George
+  Copyright (c) 2016 Paul Sokolovsky
+License: MIT
+
+Files:
+  MP-*.md
+  MP-ACKNOWLEDGEMENTS
+  docs/*
+  drivers/*
+  examples/*
+  extmod/axtls-include/*
+  extmod/bufhelper.c
+  extmod/bufhelper.h
+  extmod/btstack/*
+  extmod/extmod.cmake
+  extmod/extmod.mk
+  extmod/lwip-include/*
+  extmod/machine_*.c
+  extmod/machine_*.h
+  extmod/mod*.c
+  extmod/mod*.h
+  extmod/mpbthci.c
+  extmod/mpbthci.h
+  extmod/network_cyw43.c
+  extmod/network_cyw43.h
+  extmod/nimble/*
+  extmod/uasyncio/*
+  extmod/vfs*.c
+  extmod/vfs*.h
+  extmod/webrepl/*
+  lib/*
+  ports/stm32/*.c
+  ports/stm32/*.h
+  ports/stm32/*.mk
+  ports/stm32/*.py
+  ports/stm32/*.s
+  ports/stm32/autoflash
+  ports/stm32/boards/*.cfg
+  ports/stm32/boards/*.ld
+  ports/stm32/Makefile
+  ports/stm32/README.md
+  ports/unix/*
+  py/*
+  tests/*
+  tools/*
+  .gitattributes
+  logo/*
+  mpy-cross/*
 Copyright: Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)
 License: MIT
 
-Files: ports/unix/*
-Copyright: Copyright(c) 2016 - 2021 Damien P.George(http://micropython.org/)
-License: MIT
-
-Files: ports/stm32/*
-Copyright: Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)
-License: MIT
-Copyright: 2020 Foundation Devices, Inc.  <hello@foundationdevices.com>
-License: GPL-3.0-or-later
-
-Files: SECURITY/*.png
-Copyright: 2020 Foundation Devices, Inc.  <hello@foundationdevices.com>
-License: GPL-3.0-or-later
-
-Files: simulator/*.png simulator/*.jpg
-Copyright: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
-License: GPL-3.0-or-later
-
-Files: simulator/*.py simulator/sim_modules/* simulator/work/* version.txt
-Copyright: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+Files:
+  ports/stm32/boards/Passport/images/*/*.png
+  ports/stm32/boards/Passport/bootloader/images/*/*.png
+  SECURITY/*.png
+  simulator/*.png
+  simulator/*.jpg
+  version.txt
+Copyright: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 License: GPL-3.0-or-later

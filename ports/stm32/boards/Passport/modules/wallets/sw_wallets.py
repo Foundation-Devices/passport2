@@ -1,10 +1,11 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sw_wallets.py - Software wallet config data for all supported wallets
 #
 
 from .bitcoin_core import BitcoinCoreWallet
+from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
 from .casa import CasaWallet
@@ -14,7 +15,6 @@ from .electrum import ElectrumWallet
 from .envoy import EnvoyWallet
 # from .fullynoded import FullyNodedWallet
 # from .gordian import GordianWallet
-from .keeper import KeeperWallet
 # from .lily import LilyWallet
 from .nunchuk import NunchukWallet
 from .simple_bitcoin_wallet import SimpleBitcoinWallet
@@ -27,6 +27,7 @@ from .wasabi import WasabiWallet
 supported_software_wallets = [
     EnvoyWallet,
     BitcoinCoreWallet,
+    KeeperWallet,
     BlueWallet,
     BtcPayWallet,
     # CaravanWallet,
@@ -35,7 +36,6 @@ supported_software_wallets = [
     ElectrumWallet,
     # FullyNodedWallet,
     # GordianWallet,
-    KeeperWallet,
     # LilyWallet,
     NunchukWallet,
     SimpleBitcoinWallet,

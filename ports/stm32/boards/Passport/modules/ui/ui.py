@@ -1,11 +1,10 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # ui.py - High-level UI interface
 
 import lvgl as lv
 import common
-from styles.colors import RED
 
 
 def get_account_bg(account):
@@ -198,9 +197,10 @@ class UI():
             self, is_delete_account=False, stay_on_same_card=False, is_new_account=False, is_init=False):
         from flows import MenuFlow
         from utils import get_accounts, has_seed
-        from menus import account_menu, casa_menu, plus_menu, postmix_menu
+        from menus import account_menu, plus_menu
+        from extensions.extensions import supported_extensions
         from constants import MAX_ACCOUNTS
-        from styles.colors import CASA_PURPLE, DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
+        from styles.colors import DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
         self.update_cards_pending = False
@@ -262,45 +262,13 @@ class UI():
 
             # Add special accounts
 
-            # Casa account - account number is zero, but they use a special derivation path
-            if common.settings.get('ext.casa.enabled', False):
-                casa_account = {'name': 'Casa', 'acct_num': 0}
-                casa_card = {
-                    'right_icon': lv.ICON_CASA,
-                    'header_color': LIGHT_GREY,
-                    'header_fg_color': LIGHT_TEXT,
-                    'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
-                    'title': casa_account.get('name'),
-                    'page_micron': microns.PageDot,
-                    'bg_color': CASA_PURPLE,
-                    'flow': MenuFlow,
-                    'args': {'menu': casa_menu, 'is_top_level': True},
-                    'account': casa_account
-                }
-                if len(stash.bip39_passphrase) > 0:
-                    casa_card['icon'] = lv.ICON_PASSPHRASE
-
-                card_descs.append(casa_card)
-
-            # Postmix account for CoinJoin
-            if common.settings.get('ext.postmix.enabled', False):
-                postmix_account = {'name': 'Postmix', 'acct_num': 2_147_483_646}
-                postmix_card = {
-                    'right_icon': lv.ICON_SPIRAL,
-                    'header_color': LIGHT_GREY,
-                    'header_fg_color': LIGHT_TEXT,
-                    'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': WHITE},
-                    'title': postmix_account.get('name'),
-                    'page_micron': microns.PageDot,
-                    'bg_color': RED,
-                    'flow': MenuFlow,
-                    'args': {'menu': postmix_menu, 'is_top_level': True},
-                    'account': postmix_account
-                }
-                if len(stash.bip39_passphrase) > 0:
-                    postmix_card['icon'] = lv.ICON_PASSPHRASE
-
-                card_descs.append(postmix_card)
+            for extension in supported_extensions:
+                if common.settings.get('ext.{}.enabled'.format(extension['name']), False):
+                    if len(stash.bip39_passphrase) > 0:
+                        extension['card']['icon'] = lv.ICON_PASSPHRASE
+                    else:
+                        extension['card']['icon'] = None
+                    card_descs.append(extension['card'])
 
             more_card = {
                 'statusbar': {'title': 'MORE', 'icon': lv.ICON_ADD_ACCOUNT, 'fg_color': WHITE},

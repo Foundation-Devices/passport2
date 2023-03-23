@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
@@ -10,10 +10,10 @@
 #include "modpassport-boardrev.h"
 #include "modpassport-camera.h"
 #include "modpassport-fuelgauge.h"
+#include "modpassport-mem.h"
 #include "modpassport-noise.h"
 #include "modpassport-powermon.h"
 #include "modpassport-settingsflash.h"
-#include "modpassport-sram4.h"
 #include "modpassport-system.h"
 
 #include "uECC.h"
@@ -89,7 +89,7 @@ STATIC const mp_rom_map_elem_t passport_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_Powermon), MP_ROM_PTR(&mod_passport_Powermon_type)},
     {MP_ROM_QSTR(MP_QSTR_SettingsFlash), MP_ROM_PTR(&mod_passport_SettingsFlash_type)},
 #endif
-    {MP_ROM_QSTR(MP_QSTR_sram4), MP_ROM_PTR(&mod_passport_sram4_module)},
+    {MP_ROM_QSTR(MP_QSTR_mem), MP_ROM_PTR(&mod_passport_mem_module)},
     {MP_ROM_QSTR(MP_QSTR_System), MP_ROM_PTR(&mod_passport_System_type)}};
 STATIC MP_DEFINE_CONST_DICT(passport_module_globals, passport_module_globals_table);
 

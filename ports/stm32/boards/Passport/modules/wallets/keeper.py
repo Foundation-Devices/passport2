@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # keeper.py - Keeper wallet support
@@ -10,7 +10,7 @@ from .multisig_import import read_multisig_config_from_qr, read_multisig_config_
 from data_codecs.qr_type import QRType
 
 KeeperWallet = {
-    'label': 'Keeper',
+    'label': 'Bitcoin Keeper',
     'sig_types': [
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_generic_json_wallet},
         {'id': 'multisig', 'label': 'Multisig', 'addr_type': None, 'create_wallet': create_multisig_json_wallet,

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -25,7 +25,7 @@ from uio import BytesIO
 from sffile import SFFile
 from utils import to_str, call_later_ms
 from constants import SPI_FLASH_SECTOR_SIZE
-from passport import sram4
+from passport import mem
 
 
 class ExtSettings:
@@ -137,7 +137,7 @@ class ExtSettings:
 
                     # print('i={}: {}'.format(i, bytes_to_hex_str(b)))
                     if i != (self.slot_size / 32 - 1):
-                        sram4.ext_settings_buf[i * 32:(i * 32) + 32] = b
+                        mem.ext_settings_buf[i * 32:(i * 32) + 32] = b
                         chk.update(b)
                     else:
                         expect = b
@@ -155,7 +155,7 @@ class ExtSettings:
 
                 # loads() can't work from a byte array, and converting to
                 # bytes here would copy it; better to use file emulation.
-                fd = BytesIO(sram4.ext_settings_buf)
+                fd = BytesIO(mem.ext_settings_buf)
                 d = ujson.load(fd)
             except BaseException:
                 # One in 65k or so chance to come here w/ garbage decoded, so
@@ -253,6 +253,13 @@ class ExtSettings:
         if kn in self.current:
             self.current.pop(kn, None)
             self.changed()
+
+    def remove_regex(self, pattern):
+        import re
+        pattern = re.compile(pattern)
+        matches = [k for k in self.current if pattern.search(k)]
+        for k in matches:
+            self.remove(k)
 
     def clear(self):
         # print('clear() called!')

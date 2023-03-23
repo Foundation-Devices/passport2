@@ -1,8 +1,9 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
 import lvgl as lv
+from data_codecs.data_decoder import DecodeError
 from pages import Page
 from styles.colors import TEXT_GREY
 from styles.style import Stylize
@@ -15,7 +16,6 @@ import passport
 
 def progress_text(p):
     label = 'Scanning...' if p == 0 else '{}%'.format(p)
-    # print('label={}'.format(label))
     return label
 
 
@@ -26,8 +26,7 @@ class ScanQRPage(Page):
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
-                 right_micron=None,
-                 decode_cbor_bytes=False):
+                 right_micron=None):
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
@@ -35,13 +34,10 @@ class ScanQRPage(Page):
                          right_micron=right_micron,
                          extend_timeout=True)
 
-        # TODO: Temporary flag until we can cleanup the CBOR handling
-        self.decode_cbor_bytes = decode_cbor_bytes
         self.prev_card_header = None
         self.timer = None
-        self.camera = CameraQRScanner(result_cb=self.complete,
-                                      progress_cb=self.progress,
-                                      error_cb=self.error)
+        self.camera = CameraQRScanner()
+
         # TODO:
         #   lv.pct(100) just makes the widget inside the camera view to return
         #   invalid values for it's content width.
@@ -58,9 +54,13 @@ class ScanQRPage(Page):
         else:
             # Camera needs to be a square on Founders Edition so that the rotation
             # works properly.
-            self.camera.set_width(180)
-            self.camera.set_height(180)
-        self.camera.set_y(-22)
+            self.camera.set_width(188)
+            self.camera.set_height(188)
+
+        if passport.IS_COLOR:
+            self.camera.set_y(-22)
+        else:
+            self.camera.set_y(-12)
         self.set_scroll_dir(dir=lv.DIR.NONE)
         with Stylize(self.camera) as default:
             default.align(lv.ALIGN.CENTER)
@@ -70,7 +70,12 @@ class ScanQRPage(Page):
         self.progress_label = Label(text=progress_text(0), color=TEXT_GREY)
         with Stylize(self.progress_label) as default:
             default.align(lv.ALIGN.BOTTOM_MID)
-            default.pad(bottom=8)
+            if passport.IS_COLOR:
+                default.pad(bottom=8)
+            else:
+                # self.progress_label.set_y(0)
+                default.pad(bottom=0)
+
         self.set_children([self.camera, self.progress_label])
 
     def attach(self, group):
@@ -96,7 +101,17 @@ class ScanQRPage(Page):
 
     def update(self):
         if self.is_attached():
-            self.camera.update()
+            try:
+                self.camera.update()
+
+                self.progress_label.set_text(progress_text(self.camera.estimated_percent_complete()))
+                if self.camera.is_complete():
+                    data = self.camera.qr_decoder.decode()
+                    qr_type = self.camera.qr_decoder.qr_type()
+
+                    self.set_result(QRScanResult(data=data, qr_type=qr_type))
+            except DecodeError as exc:
+                self.set_result(QRScanResult(error=exc))
 
     # Just return None.
     def left_action(self, is_pressed):
@@ -107,20 +122,6 @@ class ScanQRPage(Page):
     def right_action(self, is_pressed):
         if not is_pressed:
             self.set_result(None)
-
-    def complete(self, qr_decoder):
-        qr_type = qr_decoder.get_data_format()
-        self.set_result(QRScanResult(data=qr_decoder.decode(decode_cbor_bytes=self.decode_cbor_bytes), qr_type=qr_type))
-
-    def progress(self, qr_decoder):
-        # print('Updating progress label...')
-        n = qr_decoder.received_parts()
-        m = qr_decoder.total_parts()
-        p = int((n * 100) / m)
-        self.progress_label.set_text(progress_text(p))
-
-    def error(self, error):
-        self.set_result(QRScanResult(error=error))
 
 
 class QRScanResult:
@@ -135,3 +136,6 @@ class QRScanResult:
         self.data = data
         self.error = error
         self.qr_type = qr_type
+
+    def is_failure(self):
+        return self.error is not None

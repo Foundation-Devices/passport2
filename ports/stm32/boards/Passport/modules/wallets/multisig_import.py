@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -16,7 +16,7 @@
 
 async def read_multisig_config_from_qr():
     from pages import ScanQRPage
-    return await ScanQRPage(decode_cbor_bytes=True).show()
+    return await ScanQRPage().show()
 
 
 async def read_multisig_config_from_microsd():

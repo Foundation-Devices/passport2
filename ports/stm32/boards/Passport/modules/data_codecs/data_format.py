@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # data_format.py
@@ -16,12 +16,6 @@ from flows import (
     MagicScanImportMultisigFlow,
     MagicScanImportSeedFlow,
     MagicScanValidateAddressFlow)
-
-
-class QRType:
-    QR = 0      # Standard QR code with no additional encoding
-    UR1 = 1     # UR 1.0 pre-standard from Blockchain Commons
-    UR2 = 2     # UR 2.0 standard from Blockchain Commons
 
 
 samplers = [

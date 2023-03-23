@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
@@ -93,3 +93,6 @@ ifeq ($(SCREEN_MODE), COLOR)
 				lcd-st7789.c st7789.c)
 	CFLAGS += -DSCREEN_MODE_COLOR=1
 endif
+
+RUST_TARGET := thumbv7em-none-eabihf
+export RUSTFLAGS := --cfg dtcm --cfg sram4

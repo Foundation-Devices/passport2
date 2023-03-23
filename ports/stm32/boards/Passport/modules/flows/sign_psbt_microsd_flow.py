@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sign_psbt_microsd_flow.py - Sign a PSBT from a microSD card
@@ -54,6 +54,7 @@ class SignPsbtMicroSDFlow(Flow):
         from pages import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
         from tasks import copy_psbt_file_to_external_flash_task
+        from errors import Error
 
         # TODO: I think this is always a bytes object -- can probably remove this check
         # The data can be a string or may already be a bytes object
@@ -70,7 +71,10 @@ class SignPsbtMicroSDFlow(Flow):
             copy_psbt_file_to_external_flash_task,
             args=[None, self.file_path, TXN_INPUT_OFFSET])
         if error is not None:
-            await ErrorPage(text='Invalid PSBT (copying microSD)').show()
+            if error == Error.PSBT_TOO_LARGE:
+                await ErrorPage(text='PSBT too large').show()
+            else:
+                await ErrorPage(text='Invalid PSBT (copying microSD)').show()
             self.set_result(False)
             return
 
@@ -91,6 +95,7 @@ class SignPsbtMicroSDFlow(Flow):
             self.goto(self.write_signed_transaction)
 
     async def show_card_missing(self):
+
         result = await InsertMicroSDPage().show()
         if not result:
             result = QuestionPage(text='Cancel signing this transaction?').show()
@@ -157,6 +162,7 @@ class SignPsbtMicroSDFlow(Flow):
                 return
 
             except OSError as exc:
+                # If this ever changes to not fall through, clear the flash
                 result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
                 # sys.print_exception(exc)
                 # fall thru to try again

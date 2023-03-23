@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -101,6 +101,18 @@ RFC_SIGNATURE_TEMPLATE = '''\
 {addr}
 {sig}
 -----END {blockchain} SIGNED MESSAGE-----
+'''
+
+MULTISIG_EXPORT_TEMPLATE = '''\
+Name: {}
+Policy: {} of {}
+Format: {}
+'''
+
+MULTISIG_DERIV_TEMPLATE = '''\
+
+Derivation: {}
+{}: {}
 '''
 
 

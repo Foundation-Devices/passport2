@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # view_multisig_details_flow.py - Show user details of an existing wallet
@@ -17,7 +17,7 @@ class ViewMultisigDetailsFlow(Flow):
         self.ms = MultisigWallet.get_by_idx(self.storage_idx)
 
     async def show_overview(self):
-        msg, _ = self.ms.format_overview()
+        msg, _ = self.ms.format_overview(importing=False)
 
         result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
         if not result:

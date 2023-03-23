@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -16,7 +16,7 @@ import gc
 import history
 import sys
 from sffile import SizerFile
-from passport import sram4
+from passport import mem
 from public_constants import MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
@@ -36,33 +36,7 @@ from public_constants import (
 # print some things
 # DEBUG = const(1)
 
-# class HashNDump:
-#     def __init__(self, d=None):
-#         self.rv = trezorcrypto.sha256()
-#         print('Hashing: ', end='')
-#         if d:
-#             self.update(d)
-#
-#     def update(self, d):
-#         print(b2a_hex(d), end=' ')
-#         self.rv.update(d)
-#
-#     def digest(self):
-#         print(' END')
-#         return self.rv.digest()
-
-
-def read_varint(v):
-    # read "compact sized" int from a few bytes.
-    assert not isinstance(v, tuple), v
-    nit = v[0]
-    if nit == 253:
-        return unpack_from("<H", v, 1)[0]
-    elif nit == 254:
-        return unpack_from("<I", v, 1)[0]
-    elif nit == 255:
-        return unpack_from("<Q", v, 1)[0]
-    return nit
+_MAGIC = b'psbt\xff'
 
 
 def seq_to_str(seq):
@@ -146,12 +120,12 @@ def get_hash256(fd, poslen, hasher=None):
 
     fd.seek(pos)
     while ll:
-        here = fd.readinto(sram4.psbt_tmp256)
+        here = fd.readinto(mem.psbt_tmp256)
         if not here:
             break
         if here > ll:
             here = ll
-        rv.update(memoryview(sram4.psbt_tmp256)[0:here])
+        rv.update(memoryview(mem.psbt_tmp256)[0:here])
         ll -= here
 
     if hasher:
@@ -170,7 +144,7 @@ class psbtProxy:
 
     def __init__(self):
         self.fd = None
-        # self.unknown = {}
+        self.unknown = {}
 
     def __getattr__(self, nm):
         if nm in self.blank_flds:
@@ -216,7 +190,8 @@ class psbtProxy:
     def write(self, out_fd, ktype, val, key=b''):
         # serialize helper: write w/ size and key byte
         out_fd.write(ser_compact_size(1 + len(key)))
-        out_fd.write(bytes([ktype]) + key)
+        out_fd.write(bytes([ktype]))
+        out_fd.write(key)
 
         if isinstance(val, tuple):
             (pos, ll) = val
@@ -318,8 +293,6 @@ class psbtOutputProxy(psbtProxy):
         elif kt == PSBT_OUT_WITNESS_SCRIPT:
             self.witness_script = val
         else:
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -337,9 +310,8 @@ class psbtOutputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_OUT_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
     def validate(self, out_idx, txo, my_xfp, active_multisig):
         # Do things make sense for this output?
@@ -793,8 +765,6 @@ class psbtInputProxy(psbtProxy):
             self.sighash = unpack('<I', val)[0]
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            if not self.unknown:
-                self.unknown = {}
             self.unknown[key] = val
 
     def serialize(self, out_fd, my_idx):
@@ -828,9 +798,8 @@ class psbtInputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_IN_WITNESS_SCRIPT, self.witness_script)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknown:
+            wr(k[0], self.unknown[k], k[1:])
 
 
 class psbtObject(psbtProxy):
@@ -863,6 +832,7 @@ class psbtObject(psbtProxy):
         self.total_value_in = None
         self.presigned_inputs = set()
         self.multisig_import_needs_approval = False
+        self.self_send = False
 
         # when signing segwit stuff, there is some re-use of hashes
         self.hashPrevouts = None
@@ -1151,7 +1121,6 @@ class psbtObject(psbtProxy):
                 pass
 
         # check fee is reasonable
-        sending_to_self = False
         total_non_change_out = self.total_value_out - total_change
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
         #       self.total_value_out, total_change))
@@ -1159,19 +1128,23 @@ class psbtObject(psbtProxy):
         if self.total_value_out == 0:
             per_fee = 100
         elif total_non_change_out == 0:
-            sending_to_self = True
+            self.self_send = True
         else:
             # Calculate fee based on non-change output value
             per_fee = (fee / total_non_change_out) * 100
 
-        if sending_to_self:
-            self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
-
-        if fee > total_non_change_out:
-            self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
-        elif per_fee >= 5:
-            self.warnings.append(('Big Fee', 'Network fee is more than '
-                                  '5%% of total non-change value (%.1f%%).' % per_fee))
+        if self.self_send:
+            # self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
+            per_fee = (fee / self.total_value_out) * 100
+            if per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
+        else:
+            if fee > total_non_change_out:
+                self.warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
+            elif per_fee >= 5:
+                self.warnings.append(('Big Fee', 'Network fee is more than '
+                                      '5%% of total non-change value (%.1f%%).' % per_fee))
 
         # Enforce policy related to change outputs
         self.consider_dangerous_change(self.my_xfp)
@@ -1362,7 +1335,7 @@ class psbtObject(psbtProxy):
     def read_psbt(cls, fd):
         # read in a PSBT file. Captures fd and keeps it open.
         hdr = fd.read(5)
-        if hdr != b'psbt\xff':
+        if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
         rv = cls()
@@ -1386,7 +1359,7 @@ class psbtObject(psbtProxy):
         def wr(*a):
             self.write(out_fd, *a)
 
-        out_fd.write(b'psbt\xff')
+        out_fd.write(_MAGIC)
 
         if upgrade_txn and self.is_complete():
             # write out the ready-to-transmit txn
@@ -1413,25 +1386,16 @@ class psbtObject(psbtProxy):
             for k in self.unknown:
                 wr(k[0], self.unknown[k], k[1:])
 
-        # import micropython
-        # print('======================================')
-        # micropython.mem_info(1)
-        # print('======================================')
-
         # sep between globals and inputs
         out_fd.write(b'\0')
 
         for idx, inp in enumerate(self.inputs):
-            # print('Input {}: free mem={}'.format(idx, gc.mem_free()))
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
         for idx, outp in enumerate(self.outputs):
-            # print('Output {}: free mem={}'.format(idx, gc.mem_free()))
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-            gc.collect()  # Give collector a chance to run to help avoid fragmentation
 
     # def sign_it(self):
     #     # txn is approved. sign all inputs we can sign. add signatures

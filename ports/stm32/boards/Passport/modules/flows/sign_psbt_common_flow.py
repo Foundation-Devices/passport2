@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -59,10 +59,14 @@ class SignPsbtCommonFlow(Flow):
         try:
             outputs = uio.StringIO()
 
+            if self.psbt.self_send:
+                outputs.write("\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send')))
+
             first = True
             for idx, tx_out in self.psbt.output_iter():
                 outp = self.psbt.outputs[idx]
-                if outp.is_change:
+                # Show change outputs if this is a self-send
+                if outp.is_change and not self.psbt.self_send:
                     continue
 
                 if first:
@@ -71,10 +75,6 @@ class SignPsbtCommonFlow(Flow):
                     outputs.write('\n')
 
                 outputs.write(self.render_output(tx_out))
-
-            if first:
-                # All outputs are change, so no amount is being "sent" to another wallet
-                outputs.write('\n{}\nNone'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Amount')))
 
             # print('total_out={} total_in={}
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
@@ -86,7 +86,10 @@ class SignPsbtCommonFlow(Flow):
                 card_header={'title': 'Transaction Details'}
             ).show()
             if result:
-                self.goto(self.show_change)
+                if self.psbt.self_send:
+                    self.goto(self.show_warnings)
+                else:
+                    self.goto(self.show_change)
             else:
                 self.set_result(None)
 

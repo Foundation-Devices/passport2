@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # lily.py - Lily wallet support
@@ -19,7 +19,7 @@ LilyWallet = {
          'import_microsd': read_multisig_config_from_microsd}
     ],
     'export_modes': [
-        # {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR1},
+        # {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-lily.json',
          'filename_pattern_multisig': '{sd}/{xfp}-lily-multisig.json'}
     ]

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -44,7 +44,7 @@ class Display:
         HALF_WIDTH = WIDTH // 2
         HEIGHT = 303
         HALF_HEIGHT = HEIGHT // 2
-        HEADER_HEIGHT = 40
+        HEADER_HEIGHT = 38
         FOOTER_HEIGHT = 32
         SCROLLBAR_WIDTH = 8
         NUM_LVGL_BUF_LINES = HEIGHT
