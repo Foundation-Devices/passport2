@@ -162,8 +162,8 @@ class CardSlot:
         # prefer SD card if we can
         path = path or (self.get_sd_root() + '/')
 
-        assert '/' not in pattern
-        assert '.' in pattern
+        assert '/' not in pattern, "Filenames must not contain '/'"
+        assert '.' in pattern, "Filenames must have an extension like '.txt'"
 
         basename, ext = pattern.rsplit('.', 1)
         ext = '.' + ext
