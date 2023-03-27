@@ -16,7 +16,10 @@ class ViewSeedWordsFlow(Flow):
         import microns
         from pages import InfoPage
 
-        text = 'Passport is about to display your seed words and, if defined, your passphrase.'
+        if self.external_key:
+            text = 'Passport is about to display your seed words.'
+        else:
+            text = 'Passport is about to display your seed words and, if defined, your passphrase.'
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=microns.Back, right_micron=microns.Forward).show()
@@ -48,6 +51,6 @@ class ViewSeedWordsFlow(Flow):
             return
 
         result = await SeedWordsListPage(words=words).show()
-        if stash.bip39_passphrase != '':
+        if stash.bip39_passphrase != '' and not self.external_key:
             await InfoPage(text='Passphrase: {}'.format(stash.bip39_passphrase)).show()
         self.set_result(result)
