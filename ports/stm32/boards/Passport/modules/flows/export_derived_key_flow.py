@@ -55,8 +55,7 @@ class ExportDerivedKeyFlow(Flow):
 
         if key_types[self.key['type']]['words']:
             options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
-                       {'label': 'SeedQr', 'value': QRType.SEED_QR},
-                       {'label': 'Private Key', 'value': QRType.QR}]
+                       {'label': 'SeedQr', 'value': QRType.SEED_QR}]
 
             qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()
         else:
@@ -87,8 +86,12 @@ class ExportDerivedKeyFlow(Flow):
         from utils import file_exists
         from utils import B2A
         from derived_key import key_types
+        from flows import GetSeedWordsFlow
 
-        if isinstance(self.pk, str):
+        if key_types[self.key['type']]['words']:
+            words = await GetSeedWordsFlow(self.pk).run()
+            text = " ".join(words)
+        elif isinstance(self.pk, str):
             text = self.pk
         else:
             text = B2A(self.pk)
