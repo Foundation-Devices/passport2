@@ -23,6 +23,11 @@ class FilePickerFlow(Flow):
     def __init__(
             self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
             filter_fn=None, select_text="Select"):
+        from files import CardSlot
+
+        if not initial_path:
+            initial_path = CardSlot.get_sd_root()
+
         super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
             initial_path))
         self.initial_path = initial_path
