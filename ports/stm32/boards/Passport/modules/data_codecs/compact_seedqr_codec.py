@@ -36,7 +36,7 @@ class CompactSeedQRDecoder(DataDecoder):
 
 
 class CompactSeedQREncoder(DataEncoder):
-    def __init__(self, _args):
+    def __init__(self):
         self.data = None
 
     def encode(self, data, is_binary=False, max_fragment_len=None):
