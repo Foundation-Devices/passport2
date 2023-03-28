@@ -199,7 +199,7 @@ class ShowQRPage(Page):
     def update(self):
         if self.is_attached():
             if self.qr_encoder is None:
-                self.qr_encoder = make_qr_encoder(self.qr_type, self.qr_args)
+                self.qr_encoder = make_qr_encoder(self.qr_type)
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
