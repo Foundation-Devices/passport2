@@ -20,18 +20,21 @@ class SaveToMicroSDFlow(Flow):
         from files import CardSlot, CardMissingError
         from pages import ErrorPage
 
-        try:
-            with CardSlot() as card:
-                self.out_full, _ = card.pick_filename(self.filename, self.path)
-                with open(self.out_full, 'w' + self.mode) as fd:
-                    fd.write(self.data)
-        except CardMissingError:
-            self.goto(self.show_card_missing)
-            return
-        except Exception as e:
-            await ErrorPage(text='Failed to write file: {}'.format(e)).show()
-            self.set_result(False)
-            return
+        for path in [self.path, None]:
+            try:
+                with CardSlot() as card:
+                    self.out_full, _ = card.pick_filename(self.filename, path)
+                    with open(self.out_full, 'w' + self.mode) as fd:
+                        fd.write(self.data)
+                    if self.out_full:
+                        break
+            except CardMissingError:
+                self.goto(self.show_card_missing)
+                return
+            except Exception as e:
+                await ErrorPage(text='Failed to write file: {}'.format(e)).show()
+                self.set_result(False)
+                return
 
         self.goto(self.success)
 
