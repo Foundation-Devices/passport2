@@ -1317,4 +1317,12 @@ async def clear_psbt_flash(psbt_len):
 
     await spinner_task(None, clear_psbt_from_external_flash_task, args=[psbt_len])
 
+
+def get_words_from_seed(seed):
+    try:
+        words = trezorcrypto.bip39.from_data(seed).split(' ')
+        return (words, None)
+    except Exception as e:
+        return (None, '{}'.format(e))
+
 # EOF
