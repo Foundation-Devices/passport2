@@ -12,16 +12,15 @@ class GetSeedWordsFlow(Flow):
         self.external_key = external_key
 
     async def get_words(self):
-        from tasks import get_seed_words_task, get_words_from_seed_task
-        from utils import spinner_task
+        from tasks import get_seed_words_task
+        from utils import spinner_task, get_words_from_seed
         from pages import ErrorPage
 
         if self.external_key:
-            (words, error) = await spinner_task(text='Retrieving Seed',
-                                                task=get_words_from_seed_task,
-                                                args=[self.external_key])
+            (words, error) = get_words_from_seed(self.external_key)
         else:
-            (words, error) = await spinner_task('Retrieving Seed', get_seed_words_task)
+            (words, error) = await spinner_task(text='Retrieving Seed',
+                                                task=get_seed_words_task)
 
         if error is not None or words is None:
             await ErrorPage(text='Unable to retrieve seed: {}'.format(error)).show()

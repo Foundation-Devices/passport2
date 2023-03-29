@@ -29,7 +29,7 @@ from .format_microsd_task import format_microsd_task
 # from .fcc_copy_files_task import fcc_copy_files_task
 from .generate_addresses_task import generate_addresses_task
 from .get_security_words_task import get_security_words_task
-from .get_seed_words_task import *
+from .get_seed_words_task import get_seed_words_task
 from .get_backup_code_task import get_backup_code_task
 from .hide_derived_key_task import hide_derived_key_task
 from .login_task import login_task

@@ -3,6 +3,7 @@
 #
 # nostr_key_task.py - Task to create a new nostr key
 
+
 async def nostr_key_task(on_done, index):
     import stash
     import tcc
