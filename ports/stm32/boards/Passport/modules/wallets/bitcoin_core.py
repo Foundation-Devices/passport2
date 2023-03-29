@@ -107,7 +107,7 @@ BitcoinCoreWallet = {
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_bitcoin_core_export},
     ],
     'export_modes': [
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-bitcoin-core.txt', 'ext': '.txt',
-         'filename_pattern_multisig': '{sd}/{xfp}-bitcoin-core-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-bitcoin-core.txt', 'ext': '.txt',
+         'filename_pattern_multisig': '{xfp}-bitcoin-core-multisig.json'}
     ]
 }

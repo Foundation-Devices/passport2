@@ -18,8 +18,7 @@ from pages import (
     SWWalletChooserPage)
 from tasks import (
     create_wallet_export_task,
-    generate_addresses_task,
-    write_data_to_file_task)
+    generate_addresses_task)
 from wallets.utils import (
     get_deriv_path_from_address_and_acct,
     get_addr_type_from_address,
@@ -314,8 +313,8 @@ class ConnectWalletFlow(Flow):
             self.goto_address_verification_method(save_curr=False)
 
     async def export_by_microsd(self):
-        from files import CardSlot
         from utils import xfp2str
+        from flows import SaveToMicroSDFlow
 
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
@@ -340,62 +339,44 @@ class ConnectWalletFlow(Flow):
         else:
             filename_pattern = self.export_mode['filename_pattern']
 
-        file_path = filename_pattern.format(sd=CardSlot.get_sd_root(),
-                                            hash=data_hash,
-                                            acct=self.acct_num,
-                                            random=random_hex(8),
-                                            xfp=xfp2str(common.settings.get('xfp')).lower())
+        filename = filename_pattern.format(hash=data_hash,
+                                           acct=self.acct_num,
+                                           xfp=xfp2str(common.settings.get('xfp')).lower())
 
-        (error,) = await spinner_task(
-            'Exporting Data',
-            write_data_to_file_task,
-            args=[file_path, data])
+        save_result = await SaveToMicroSDFlow(filename=filename, data=data).run()
 
-        if error is None:
-            # Save the progress so that we can resume later
-            self.exported = True
-
-            filename = file_path.split('/')[-1]
-            await SuccessPage(text='Saved successfully to microSD:\n\n{}.'.format(filename)).show()
-
-            # If multisig, we need to import the quorum/config info first, else go right to validating the first
-            # receive address from the wallet.
-            if self.is_multisig():
-                # Only perform multisig import if wallet does not prevent it
-                if not self.is_skip_multisig_import_enabled():
-                    self.goto_multisig_import_mode()
-                    return
-
-                # Only perform address validation if wallet does not prevent it
-                if self.is_skip_address_verification_enabled():
-                    if self.is_force_multisig_policy_enabled():
-                        info_text = "For compatibility with {}, Passport will set your " \
-                                    "Multisig Policy to Skip Verification.".format(self.sw_wallet['label'])
-                        result = await InfoPage(text=info_text).show()
-                        if not result:
-                            if not self.back():
-                                self.set_result(False)
-                                return
-                        else:
-                            common.settings.set('multisig_policy', TRUST_PSBT)
-                            self.goto(self.complete)
-                    else:
-                        self.goto(self.complete)
-            else:
-                self.goto_address_verification_method(save_curr=False)
-
-        elif error is Error.MICROSD_CARD_MISSING:
-            result = await InsertMicroSDPage().show()
-            if not result:
-                if not self.back():
-                    self.set_result(False)
-                return
-            else:
-                # Rerun this state and retry
-                return
-        elif error is Error.FILE_WRITE_ERROR:
-            await ErrorPage(text='Unable to save wallet connection file.  Error writing to microSD card.').show()
+        if not save_result:
             self.set_result(False)
+            return
+
+        # Save the progress so that we can resume later
+        self.exported = True
+
+        # If multisig, we need to import the quorum/config info first, else go right to validating the first
+        # receive address from the wallet.
+        if self.is_multisig():
+            # Only perform multisig import if wallet does not prevent it
+            if not self.is_skip_multisig_import_enabled():
+                self.goto_multisig_import_mode()
+                return
+
+            # Only perform address validation if wallet does not prevent it
+            if self.is_skip_address_verification_enabled():
+                if self.is_force_multisig_policy_enabled():
+                    info_text = "For compatibility with {}, Passport will set your " \
+                                "Multisig Policy to Skip Verification.".format(self.sw_wallet['label'])
+                    result = await InfoPage(text=info_text).show()
+                    if not result:
+                        if not self.back():
+                            self.set_result(False)
+                            return
+                    else:
+                        common.settings.set('multisig_policy', TRUST_PSBT)
+                        self.goto(self.complete)
+                else:
+                    self.goto(self.complete)
+        else:
+            self.goto_address_verification_method(save_curr=False)
 
     async def import_multisig_config_from_qr(self):
         msg = self.get_custom_text(
