@@ -245,11 +245,14 @@ def developer_menu():
             LoginFlow,
             NewSeedFlow,
             SetInitialPINFlow,
+        )
+        from developer import (
+            BatteryPage,
+            DeleteDerivedKeysFlow,
             DeveloperFunctionsFlow,
             SpinDelayFlow,
-            DeleteDerivedKeysFlow
         )
-        from pages import BatteryPage, StatusPage, ShowQRPage
+        from pages import StatusPage, ShowQRPage
         from data_codecs.qr_type import QRType
         from foundation import ur
 
