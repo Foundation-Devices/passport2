@@ -33,7 +33,7 @@ def create_casa_export(sw_wallet=None,
         with stash.SensitiveValues() as sv:
             is_mainnet = chain.ctype == 'BTC'
 
-            network = ur.NETWORK_TESTNET if is_mainnet else ur.NETWORK_TESTNET
+            network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
             use_info = ur.CryptoCoinInfo(ur.CoinType.BTC, network)
             origin = ur.CryptoKeypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
                                       depth=0)
