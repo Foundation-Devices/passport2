@@ -895,23 +895,23 @@ def get_account_by_number(acct_num):
 def get_derived_keys():
     from common import settings
     keys = settings.get('derived_keys', [])
-    keys.sort(key=lambda a: (a.get('type', 0), a.get('index', 0)))
+    keys.sort(key=lambda a: (a.get('tn', 0), a.get('index', 0)))
     return keys
 
 
-def get_derived_key_by_name(name, key_type, xfp):
+def get_derived_key_by_name(name, key_tn, xfp):
     keys = get_derived_keys()
     for key in keys:
-        if key['name'] == name and key['type'] == key_type and key['xfp'] == xfp:
+        if key['name'] == name and key['tn'] == key_tn and key['xfp'] == xfp:
             return key
 
     return None
 
 
-def get_derived_key_by_index(index, key_type, xfp):
+def get_derived_key_by_index(index, key_tn, xfp):
     keys = get_derived_keys()
     for key in keys:
-        if key['index'] == index and key['type'] == key_type and key['xfp'] == xfp:
+        if key['index'] == index and key['tn'] == key_tn and key['xfp'] == xfp:
             return key
 
     return None

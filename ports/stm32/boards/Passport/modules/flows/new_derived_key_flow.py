@@ -16,7 +16,7 @@ class NewDerivedKeyFlow(Flow):
         self.key_name = None
         self.key_type = context
         self.xfp = settings.get('xfp')
-        self.next_index = get_next_derived_key_index(self.key_type, self.xfp)
+        self.next_index = get_next_derived_key_index(self.key_type['tn'], self.xfp)
 
         self.initial_state = self.enter_index
         if len(stash.bip39_passphrase) > 0:
@@ -45,9 +45,8 @@ in the future. Do you want to continue?'''
         import microns
         from utils import get_derived_key_by_index
         from flows import RenameDerivedKeyFlow
-        from derived_key import key_types
 
-        if not key_types[self.key_type]['indexed']:
+        if not self.key_type['indexed']:
             self.index = 0
         else:
             result = await TextInputPage(card_header={'title': 'Key Number'}, numeric_only=True,
@@ -61,17 +60,17 @@ in the future. Do you want to continue?'''
             if len(result) == 0:
                 return  # Try again
             self.index = int(result)
-        existing_key = get_derived_key_by_index(self.index, self.key_type, self.xfp)
+        existing_key = get_derived_key_by_index(self.index, self.key_type['tn'], self.xfp)
         if existing_key is not None:
-            if not key_types[self.key_type]['indexed']:
+            if not self.key_type['indexed']:
                 error_message = 'You already have a {} named "{}".' \
-                                .format(key_types[self.key_type]['title'], existing_key['name'])
+                                .format(self.key_type['title'], existing_key['name'])
                 await ErrorPage(error_message).show()
                 self.set_result(False)
                 return
             else:
                 error_message = 'A {} named "{}" already exists with key number {}.' \
-                                .format(key_types[self.key_type]['title'], existing_key['name'], self.index)
+                                .format(self.key_type['title'], existing_key['name'], self.index)
                 await ErrorPage(error_message).show()
                 return
         self.goto(self.enter_key_name)
@@ -81,7 +80,6 @@ in the future. Do you want to continue?'''
         from pages import TextInputPage, ErrorPage
         import microns
         from utils import get_derived_key_by_name
-        from derived_key import key_types
         result = await TextInputPage(card_header={'title': 'Key Name'},
                                      initial_text='' if self.key_name is None else self.key_name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -94,17 +92,17 @@ in the future. Do you want to continue?'''
             self.key_name = result
 
             # Check for existing account with this name
-            existing_key = get_derived_key_by_name(self.key_name, self.key_type, self.xfp)
+            existing_key = get_derived_key_by_name(self.key_name, self.key_type['tn'], self.xfp)
             if existing_key is not None:
                 await ErrorPage('{} ##{} already exists with the name "{}".'
-                                .format(key_types[self.key_type]['title'],
+                                .format(self.key_type['title'],
                                         existing_key['index'],
                                         self.key_name)).show()
                 return
 
             self.goto(self.save_key)
         else:
-            if not key_types[self.key_type]['indexed']:
+            if not self.key_type['indexed']:
                 self.set_result(False)
             else:
                 self.back()
@@ -118,7 +116,7 @@ in the future. Do you want to continue?'''
         (error,) = await spinner_task('Saving New Key Details', save_new_derived_key_task,
                                       args=[self.index,
                                             self.key_name,
-                                            self.key_type,
+                                            self.key_type['tn'],
                                             self.xfp])
         if error is None:
             from flows import AutoBackupFlow

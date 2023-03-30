@@ -134,9 +134,9 @@ def new_key_menu():
     from derived_key import key_types
 
     result = []
-    for key_type in range(len(key_types)):
-        title = key_types[key_type]['title']
-        icon = key_types[key_type]['icon']
+    for key_type in key_types:
+        title = key_type['title']
+        icon = key_type['icon']
         result.append({'icon': icon,
                        'label': title,
                        'flow': NewDerivedKeyFlow,
@@ -160,7 +160,7 @@ def manage_keys():
 def key_manager_menu():
     from flows import NewDerivedKeyFlow
     from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
-    from derived_key import key_types
+    from derived_key import get_key_type_from_tn
     from common import settings
 
     result = []
@@ -170,11 +170,17 @@ def key_manager_menu():
     keys = get_derived_keys()
     xfp = settings.get('xfp')
     showing_hidden = are_hidden_keys_showing()
+
     for key in keys:
         if len(key['name']) != 0 \
                 and key['xfp'] == xfp \
                 and (not key['hidden'] or showing_hidden):
-            result.append({'icon': key_types[key['type']]['icon'],
+            key_type = get_key_type_from_tn(key['tn'])
+
+            if not key_type:
+                continue
+
+            result.append({'icon': key_type['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
                            'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},

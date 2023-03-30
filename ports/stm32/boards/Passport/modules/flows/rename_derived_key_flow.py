@@ -11,13 +11,22 @@ class RenameDerivedKeyFlow(Flow):
         super().__init__(initial_state=self.enter_name, name='RenameDerivedKeyFlow')
         self.key = context
         self.key_name = None
+        self.key_type = None
 
     async def enter_name(self):
         from constants import MAX_ACCOUNT_NAME_LEN
         from pages import TextInputPage, ErrorPage
         import microns
         from utils import get_derived_key_by_name
-        from derived_key import key_types
+        from derived_key import get_key_type_from_tn
+
+        self.key_type = get_key_type_from_tn(self.key['tn'])
+
+        if not self.key_type:
+            await ErrorPage("Invalid key type number: {}".format(self.key['tn'])).show()
+            self.set_result(False)
+            return
+
         name = self.key['name']
 
         result = await TextInputPage(card_header={'title': 'Key Name'},
@@ -33,10 +42,10 @@ class RenameDerivedKeyFlow(Flow):
             self.key_name = result
 
             # Check for existing account with this name
-            existing_key = get_derived_key_by_name(self.key_name, self.key['type'], self.key['xfp'])
+            existing_key = get_derived_key_by_name(self.key_name, self.key['tn'], self.key['xfp'])
             if existing_key is not None:
                 await ErrorPage('{} ##{} already exists with the name "{}".'
-                                .format(key_types[self.key['type']]['title'],
+                                .format(self.key_type['title'],
                                         existing_key['index'],
                                         self.key_name)).show()
                 return
