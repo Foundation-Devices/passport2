@@ -14,12 +14,19 @@ class ViewDerivedKeyDetailsFlow(Flow):
     async def show_overview(self):
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX
-        from pages import LongTextPage
-        from derived_key import key_types
+        from pages import LongTextPage, ErrorPage
+        from derived_key import get_key_type_from_tn
         import microns
 
+        key_type = get_key_type_from_tn(self.key['tn'])
+
+        if not key_type:
+            await ErrorPage("Invalid key type number: {}".format(self.key['tn'])).show()
+            self.set_result(False)
+            return
+
         msg = "\n{}\n{}\n\n{}\n{}".format(recolor(HIGHLIGHT_TEXT_HEX, 'Key Type'),
-                                          key_types[self.key['type']]['title'],
+                                          key_type['title'],
                                           recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
                                           self.key['index'])
 

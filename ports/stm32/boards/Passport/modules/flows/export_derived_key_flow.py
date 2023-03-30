@@ -9,16 +9,24 @@ from flows import Flow
 class ExportDerivedKeyFlow(Flow):
     def __init__(self, context=None):
         self.key = context
+        self.key_type = None
         self.pk = None
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
         from utils import spinner_task
-        from derived_key import key_types
+        from derived_key import get_key_type_from_tn
         from pages import ErrorPage
 
+        self.key_type = get_key_type_from_tn(self.key['tn'])
+
+        if not self.key_type:
+            await ErrorPage("Invalid key type number: {}".format(self.key['tn'])).show()
+            self.set_result(False)
+            return
+
         (self.pk, error) = await spinner_task(text='Generating Key',
-                                              task=key_types[self.key['type']]['task'],
+                                              task=self.key_type['task'],
                                               args=[self.key['index']])
         if error is not None:
             await ErrorPage(error).show()
@@ -29,12 +37,11 @@ class ExportDerivedKeyFlow(Flow):
 
     async def choose_export_mode(self):
         from pages import ChooserPage
-        from derived_key import key_types
 
         options = [{'label': 'Export via QR', 'value': self.show_qr_code},
                    {'label': 'Export via microSD', 'value': self.save_to_sd}]
 
-        if key_types[self.key['type']]['words']:
+        if self.key_type['words']:
             options.append({'label': 'Show seed words', 'value': self.show_seed_words})
 
         mode = await ChooserPage(card_header={'title': 'Export Mode'}, options=options).show()
@@ -51,9 +58,8 @@ class ExportDerivedKeyFlow(Flow):
         from utils import B2A
         from data_codecs.qr_type import QRType
         import microns
-        from derived_key import key_types
 
-        if key_types[self.key['type']]['words']:
+        if self.key_type['words']:
             options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
                        {'label': 'SeedQr', 'value': QRType.SEED_QR}]
 
@@ -85,10 +91,9 @@ class ExportDerivedKeyFlow(Flow):
         from pages import ErrorPage
         from utils import file_exists
         from utils import B2A
-        from derived_key import key_types
         from flows import GetSeedWordsFlow
 
-        if key_types[self.key['type']]['words']:
+        if self.key_type['words']:
             words = await GetSeedWordsFlow(self.pk).run()
             text = " ".join(words)
         elif isinstance(self.pk, str):
@@ -106,7 +111,7 @@ class ExportDerivedKeyFlow(Flow):
                     while True:
                         self.file_path = '{}/{}-{}-{}.txt' \
                                          .format(path,
-                                                 key_types[self.key['type']]['title'],
+                                                 self.key_type['title'],
                                                  self.key['name'],
                                                  key_num)
                         self.file_path = self.file_path.replace(' ', '_')

@@ -4,14 +4,14 @@
 # save_new_derived_key_task.py - Task to save a new derived key
 
 
-async def save_new_derived_key_task(on_done, index, key_name, key_type, xfp):
+async def save_new_derived_key_task(on_done, index, key_name, key_tn, xfp):
     from common import settings
     from utils import get_derived_keys
 
     keys = get_derived_keys()
     keys.append({'name': key_name,
                  'index': index,
-                 'type': key_type,
+                 'tn': key_tn,
                  'xfp': xfp,
                  'hidden': False})
     settings.set('derived_keys', keys)
