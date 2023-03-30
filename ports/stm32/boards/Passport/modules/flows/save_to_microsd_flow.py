@@ -7,9 +7,16 @@ from flows import Flow
 
 
 class SaveToMicroSDFlow(Flow):
-    def __init__(self, filename, data, success_text="file", path=None, mode=''):
+    def __init__(self,
+                 filename,
+                 data=None,
+                 write_task=None,  # Custom task for writing, used instead of data
+                 success_text="file",
+                 path=None,
+                 mode=''):
         self.filename = filename.replace(' ', '_')
         self.data = data
+        self.write_task = write_task
         self.success_text = success_text
         self.path = path
         self.mode = mode
@@ -19,14 +26,24 @@ class SaveToMicroSDFlow(Flow):
     async def save(self):
         from files import CardSlot, CardMissingError
         from pages import ErrorPage
+        from utils import spinner_task
+
+        written = False
 
         for path in [self.path, None]:
             try:
                 with CardSlot() as card:
                     self.out_full, _ = card.pick_filename(self.filename, path)
-                    with open(self.out_full, 'w' + self.mode) as fd:
-                        fd.write(self.data)
-                    if self.out_full:
+                    if self.data:
+                        with open(self.out_full, 'w' + self.mode) as fd:
+                            fd.write(self.data)
+                        written = True
+                    elif self.write_task:
+                        await spinner_task("Writing {}.".format(self.success_text),
+                                           self.write_task,
+                                           args=[self.out_full])
+                        written = True
+                    if written:
                         break
             except CardMissingError:
                 self.goto(self.show_card_missing)
@@ -36,7 +53,10 @@ class SaveToMicroSDFlow(Flow):
                 self.set_result(False)
                 return
 
-        self.goto(self.success)
+        if written:
+            self.goto(self.success)
+        else:
+            await ErrorPage("Failed to write file: no data or write task.").show()
 
     async def success(self):
         from pages import SuccessPage

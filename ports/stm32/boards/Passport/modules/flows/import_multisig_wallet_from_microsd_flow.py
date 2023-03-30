@@ -14,16 +14,13 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
 
     async def choose_wallet_file(self):
         from flows import FilePickerFlow
-        from files import CardSlot
         from pages import InsertMicroSDPage, ErrorPage
         from tasks import read_file_task
         from utils import spinner_task
         from errors import Error
         from multisig_wallet import MultisigWallet
 
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(initial_path=root_path, show_folders=True).run()
+        result = await FilePickerFlow(show_folders=True).run()
         if result is None:
             self.set_result(False)
             return
