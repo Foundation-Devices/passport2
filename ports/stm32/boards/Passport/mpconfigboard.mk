@@ -33,7 +33,7 @@ MICROPY_PY_LWIP = 0
 MICROPY_PY_USSL = 0
 MICROPY_SSL_MBEDTLS = 0
 
-FROZEN_MANIFEST = boards/Passport/manifest.py
+FROZEN_MANIFEST ?= boards/Passport/manifest.py
 
 MICROPY_EXTMOD_DIR = ../../extmod
 CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \

@@ -10,6 +10,7 @@ from utime import ticks_ms
 
 IS_SIMULATOR = True
 IS_COLOR = sys.argv[6] == 'color'
+IS_DEV = True
 HAS_FUEL_GAUGE = False
 
 
