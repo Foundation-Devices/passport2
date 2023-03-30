@@ -15,11 +15,12 @@ class ViewSeedWordsFlow(Flow):
         import lvgl as lv
         import microns
         from pages import InfoPage
+        import stash
 
-        if self.external_key:
+        if self.external_key or not stash.bip39_passphrase:
             text = 'Passport is about to display your seed words.'
         else:
-            text = 'Passport is about to display your seed words and, if defined, your passphrase.'
+            text = 'Passport is about to display your seed words and passphrase.'
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=microns.Back, right_micron=microns.Forward).show()
