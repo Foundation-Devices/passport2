@@ -21,7 +21,6 @@ class RestoreSeedFlow(Flow):
         from pages import ChooserPage
 
         options = [{'label': '24 words', 'value': 24},
-                   {'label': '18 words', 'value': 18},
                    {'label': '12 words', 'value': 12}]
 
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
