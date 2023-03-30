@@ -1111,6 +1111,11 @@ def is_logged_in():
     return common.pa.is_logged_in
 
 
+def is_dev_build():
+    import passport
+    return passport.IS_DEV
+
+
 async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exception=None):
     """
     Shows a page and polls for user input while polling for SD card insertion/removal at the same time.

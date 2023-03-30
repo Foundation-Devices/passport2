@@ -294,22 +294,14 @@ def extensions_menu():
 
 
 def settings_menu():
-    from utils import is_logged_in
-    import passport
+    from utils import is_logged_in, is_dev_build
 
-    result = [
+    return [
         {'icon': lv.ICON_DEVICE, 'label': 'Device', 'submenu': device_menu},
         {'icon': lv.ICON_BACKUP, 'label': 'Backup', 'submenu': backup_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_FIRMWARE, 'label': 'Firmware', 'submenu': update_menu},
         {'icon': lv.ICON_BITCOIN, 'label': 'Bitcoin', 'submenu': bitcoin_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_ADVANCED, 'label': 'Advanced', 'submenu': advanced_menu, 'is_visible': is_logged_in},
         {'icon': lv.ICON_EXTENSIONS, 'label': 'Extensions', 'submenu': extensions_menu},
+        {'icon': lv.ICON_ADVANCED, 'label': 'Developer', 'submenu': developer_menu, 'is_visible': is_dev_build}
     ]
-
-    if passport.IS_DEV:
-        result.append({'icon': lv.ICON_ADVANCED,
-                       'label': 'Developer',
-                       'submenu': developer_menu,
-                       'is_visible': is_logged_in})
-
-    return result
