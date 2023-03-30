@@ -28,9 +28,8 @@ class NewDerivedKeyFlow(Flow):
         from pages import LongTextPage
         import microns
         text = '''\
-A passphrase is active. If you create a key while a passphrase is \
-active, you will need to apply the passphrase to retrieve the key \
-in the future. Do you want to continue?'''
+\n\nThis new key will be linked to your active passphrase. \
+It will only be displayed when this same passphrase is applied. Continue?'''
         result = await LongTextPage(text=text,
                                     left_micron=microns.Cancel,
                                     right_micron=microns.Checkmark,
