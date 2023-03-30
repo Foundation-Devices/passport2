@@ -26,9 +26,13 @@ class SaveToMicroSDFlow(Flow):
     async def save(self):
         from files import CardSlot, CardMissingError
         from pages import ErrorPage
-        from utils import spinner_task
+        from utils import spinner_task, ensure_folder_exists
+        from errors import Error
 
         written = False
+
+        if self.path:
+            ensure_folder_exists(self.path)
 
         for path in [self.path, None]:
             try:
@@ -39,9 +43,13 @@ class SaveToMicroSDFlow(Flow):
                             fd.write(self.data)
                         written = True
                     elif self.write_task:
-                        await spinner_task("Writing {}.".format(self.success_text),
-                                           self.write_task,
-                                           args=[self.out_full])
+                        error = await spinner_task("Writing {}.".format(self.success_text),
+                                                   self.write_task,
+                                                   args=[self.out_full])
+                        if error is Error.MICROSD_CARD_MISSING:
+                            raise CardMissingError()
+                        elif error is Error.FILE_WRITE_ERROR:
+                            raise Exception("write task failed")
                         written = True
                     if written:
                         break

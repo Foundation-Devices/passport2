@@ -120,9 +120,19 @@ class ExportSummaryFlow(Flow):
         self.body = generate_public_contents()
 
     async def write_task(self, on_done, filename):
-        with open(filename, 'wb') as fd:
-            for _idx, part in enumerate(self.body):
-                fd.write(part.encode())
+        from files import CardMissingError
+        from errors import Error
+
+        try:
+            with open(filename, 'wb') as fd:
+                for _idx, part in enumerate(self.body):
+                    fd.write(part.encode())
+        except CardMissingError:
+            await on_done(Error.MICROSD_CARD_MISSING)
+            return
+        except Exception as e:
+            await on_done(Error.FILE_WRITE_ERROR)
+            return
         await on_done(None)
 
     async def confirm_export(self):

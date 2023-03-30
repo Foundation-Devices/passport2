@@ -11,6 +11,7 @@ from .menu_flow import *
 from .main_flow import *
 from .login_flow import *
 from .save_to_microsd_flow import *
+from .backup_common_flow import *
 
 # QR Magic Scan flows
 from .magic_scan_import_multisig_flow import *

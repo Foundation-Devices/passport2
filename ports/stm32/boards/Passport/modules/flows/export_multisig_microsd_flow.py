@@ -13,4 +13,4 @@ class ExportMultisigMicrosdFlow(SaveToMicroSDFlow):
         ms = MultisigWallet.get_by_idx(context)  # context is multisig index
         data = ms.to_file()
         filename = "{}-multisig.txt".format(ms.name)
-        super().__init__(filename, data, success_text="multisig config")
+        super().__init__(filename=filename, data=data, success_text="multisig config")
