@@ -13,12 +13,13 @@ class BackupCommonFlow(SaveToMicroSDFlow):
 
         xfp = xfp2str(settings.get('root_xfp')).lower()
         filename = '{}-backup.7z'.format(xfp)
-        path = get_backups_folder_path() + '/'
+        path = get_backups_folder_path()
         self.backup_code = backup_code
         super().__init__(filename=filename,
                          path=path,
                          write_task=self.write_task,
-                         success_text="backup")
+                         success_text="backup",
+                         automatic=automatic)
 
     async def write_task(self, on_done, filename):
         import gc
@@ -30,7 +31,6 @@ class BackupCommonFlow(SaveToMicroSDFlow):
 
         body = render_backup_contents().encode()
         password = get_backup_code_as_password(self.backup_code)
-        print(password)
         zz = compat7z.Builder(password=password)
         zz.add_data(body)
         hdr, footer = zz.save('passport-backup.txt')

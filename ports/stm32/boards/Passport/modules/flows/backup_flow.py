@@ -107,23 +107,7 @@ class BackupFlow(Flow):
             self.back()
 
     async def do_backup(self):
-        # from utils import spinner_task
-        # from tasks import save_backup_task
-        # from pages import InsertMicroSDPage, SuccessPage, ErrorPage
         from flows import BackupCommonFlow
 
         result = await BackupCommonFlow(self.backup_code).run()
         self.set_result(result)
-
-        # TODO: Change from spinner to ProgressPage and pass on_progress instead of None below.
-        # (error,) = await spinner_task('Writing Backup', save_backup_task, args=[None, self.backup_code])
-        # if error is None:
-        #     await SuccessPage(text='Backup Complete!').show()
-        #     self.set_result(True)
-        # elif error is Error.MICROSD_CARD_MISSING:
-        #     result = await InsertMicroSDPage().show()
-        #     if not result:
-        #         self.set_result(False)
-        # elif error is Error.FILE_WRITE_ERROR:
-        #     await ErrorPage(text='Unable to write to backup file.').show()
-        #     self.set_result(False)

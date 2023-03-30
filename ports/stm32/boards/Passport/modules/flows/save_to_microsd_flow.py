@@ -13,7 +13,10 @@ class SaveToMicroSDFlow(Flow):
                  write_task=None,  # Custom task for writing, used instead of data
                  success_text="file",
                  path=None,
-                 mode=''):
+                 mode='',
+                 automatic=False):
+        import microns
+
         self.filename = filename.replace(' ', '_')
         self.data = data
         self.write_task = write_task
@@ -21,6 +24,9 @@ class SaveToMicroSDFlow(Flow):
         self.path = path
         self.mode = mode
         self.out_full = None
+        self.automatic = automatic
+        self.auto_timeout = 1000 if automatic else None
+        self.show_check = None if automatic else microns.Checkmark
         super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
 
     async def save(self):
@@ -38,6 +44,7 @@ class SaveToMicroSDFlow(Flow):
             try:
                 with CardSlot() as card:
                     self.out_full, _ = card.pick_filename(self.filename, path)
+
                     if self.data:
                         with open(self.out_full, 'w' + self.mode) as fd:
                             fd.write(self.data)
@@ -53,22 +60,33 @@ class SaveToMicroSDFlow(Flow):
                         written = True
                     if written:
                         break
+
             except CardMissingError:
-                self.goto(self.show_card_missing)
+                if not self.automatic:
+                    self.goto(self.show_card_missing)
+                else:
+                    self.set_result(False)
                 return
+
             except Exception as e:
-                await ErrorPage(text='Failed to write file: {}'.format(e)).show()
+                await ErrorPage(text='Failed to write file: {}'.format(e),
+                                right_micron=self.show_check) \
+                    .show(auto_close_timeout=self.auto_timeout)
                 self.set_result(False)
                 return
 
         if written:
             self.goto(self.success)
         else:
-            await ErrorPage("Failed to write file: no data or write task.").show()
+            await ErrorPage("Failed to write file: no data or write task.",
+                            right_micron=self.show_check) \
+                .show(auto_close_timeout=self.auto_timeout)
 
     async def success(self):
         from pages import SuccessPage
-        await SuccessPage(text='Saved {} as {}.'.format(self.success_text, self.out_full)).show()
+        await SuccessPage(text='Saved {} as {}.'.format(self.success_text, self.out_full),
+                          right_micron=self.show_check) \
+            .show(auto_close_timeout=self.auto_timeout)
         self.set_result(True)
 
     async def show_card_missing(self):

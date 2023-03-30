@@ -4,7 +4,6 @@
 # auto_backup_flow.py - Check to see if microSD is inserted and, if so, backup automatically
 
 from flows import Flow
-from pages import QuestionPage
 
 MSG_CLOSE_TIMEOUT = 1000
 
@@ -17,6 +16,7 @@ class AutoBackupFlow(Flow):
 
     async def check_for_microsd(self):
         from files import CardSlot, CardMissingError
+        from pages import QuestionPage
 
         try:
             with CardSlot() as card:
@@ -48,29 +48,7 @@ class AutoBackupFlow(Flow):
             self.set_result(False)
 
     async def do_backup(self):
-        from tasks import save_backup_task
-        from utils import spinner_task
-        from errors import Error
+        from flows import BackupCommonFlow
 
-        (error,) = await spinner_task(
-            'AutoBackup Running\nDon\'t remove microSD!',
-            save_backup_task,
-            args=[None, self.backup_code])
-        if error is None:
-            from pages import SuccessPage
-            await SuccessPage(text='AutoBackup Complete!').show(auto_close_timeout=MSG_CLOSE_TIMEOUT)
-            self.set_result(True)
-        elif error is Error.MICROSD_CARD_MISSING:
-            if self.offer:
-                from pages import InsertMicroSDPage
-
-                result = await InsertMicroSDPage().show()
-                if not result:
-                    self.set_result(False)
-            else:
-                # We tried to autobackup, but maybe the user pulled out the microSD
-                self.set_result(False)
-        elif error is Error.FILE_WRITE_ERROR:
-            from pages import ErrorPage
-            await ErrorPage(text='Unable to write to backup file.').show(auto_close_timeout=MSG_CLOSE_TIMEOUT)
-            self.set_result(False)
+        result = await BackupCommonFlow(self.backup_code, automatic=True).run()
+        self.set_result(result)
