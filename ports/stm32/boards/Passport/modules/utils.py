@@ -270,7 +270,7 @@ def get_file_list(path=None, include_folders=False, include_parent=False,
                 continue
 
             # Apply file filter, if given (only to files -- folder are included by default)
-            if not is_folder and filter_fn is not None and not filter_fn(filename):
+            if not is_folder and filter_fn is not None and not filter_fn(filename, path):
                 continue
 
             full_path = "{}/{}".format(path, filename)

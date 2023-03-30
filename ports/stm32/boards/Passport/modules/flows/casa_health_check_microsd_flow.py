@@ -8,7 +8,7 @@ from files import CardSlot, CardMissingError
 from pages.insert_microsd_page import InsertMicroSDPage
 
 
-def is_health_check(filename):
+def is_health_check(filename, path=None):
     filename = filename.lower()
 
     if '-signed' in filename:
