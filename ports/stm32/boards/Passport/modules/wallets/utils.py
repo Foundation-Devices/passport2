@@ -10,7 +10,7 @@ from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH,
 from utils import get_accounts, get_derived_keys
 
 
-# Dynamic find the next account number rather than storing it - we never want to skip an account number
+# Dynamically find the next account number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder if we exceeded the gap limit.
 def get_next_account_num():
     accts = get_accounts()
@@ -33,7 +33,7 @@ def get_next_account_num():
     return curr_acct_num
 
 
-# Dynamic find the next bip85 number rather than storing it - we never want to skip an account number
+# Dynamically find the next bip85 number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder.
 def get_next_derived_key_index(key_type, xfp):
     keys = get_derived_keys()
