@@ -17,17 +17,15 @@ class BackupCommonFlow(SaveToMicroSDFlow):
         self.backup_code = backup_code
         super().__init__(filename=filename,
                          path=path,
-                         write_task=self.write_task,
+                         write_fn=self.write_fn,
                          success_text="backup",
                          automatic=automatic)
 
-    async def write_task(self, on_done, filename):
+    def write_fn(self, filename):
         import gc
         import compat7z
         from utils import get_backup_code_as_password
         from export import render_backup_contents
-        from files import CardMissingError
-        from errors import Error
 
         body = render_backup_contents().encode()
         password = get_backup_code_as_password(self.backup_code)
@@ -36,18 +34,11 @@ class BackupCommonFlow(SaveToMicroSDFlow):
         hdr, footer = zz.save('passport-backup.txt')
         del body
         gc.collect()
-        try:
-            with open(filename, 'wb') as fd:
-                if zz:
-                    fd.write(hdr)
-                    fd.write(zz.body)
-                    fd.write(footer)
-                else:
-                    fd.write(body)
-        except CardMissingError:
-            await on_done(Error.MICROSD_CARD_MISSING)
-            return
-        except Exception as e:
-            await on_done(Error.FILE_WRITE_ERROR)
-            return
-        await on_done(None)
+
+        with open(filename, 'wb') as fd:
+            if zz:
+                fd.write(hdr)
+                fd.write(zz.body)
+                fd.write(footer)
+            else:
+                fd.write(body)

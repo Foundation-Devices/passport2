@@ -119,21 +119,10 @@ class ExportSummaryFlow(Flow):
         self.error = None
         self.body = generate_public_contents()
 
-    async def write_task(self, on_done, filename):
-        from files import CardMissingError
-        from errors import Error
-
-        try:
-            with open(filename, 'wb') as fd:
-                for _idx, part in enumerate(self.body):
-                    fd.write(part.encode())
-        except CardMissingError:
-            await on_done(Error.MICROSD_CARD_MISSING)
-            return
-        except Exception as e:
-            await on_done(Error.FILE_WRITE_ERROR)
-            return
-        await on_done(None)
+    def write_fn(self, filename):
+        with open(filename, 'wb') as fd:
+            for _idx, part in enumerate(self.body):
+                fd.write(part.encode())
 
     async def confirm_export(self):
         from pages import QuestionPage
@@ -147,5 +136,5 @@ class ExportSummaryFlow(Flow):
     async def do_export(self):
         from flows import SaveToMicroSDFlow
 
-        result = await SaveToMicroSDFlow(filename='public.txt', write_task=self.write_task).run()
+        result = await SaveToMicroSDFlow(filename='public.txt', write_fn=self.write_fn).run()
         self.set_result(result)

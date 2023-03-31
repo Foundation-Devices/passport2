@@ -10,7 +10,7 @@ class SaveToMicroSDFlow(Flow):
     def __init__(self,
                  filename,
                  data=None,
-                 write_task=None,  # Custom task for writing, used instead of data
+                 write_fn=None,  # Custom function for writing, used instead of data
                  success_text="file",
                  path=None,
                  mode='',
@@ -19,7 +19,7 @@ class SaveToMicroSDFlow(Flow):
 
         self.filename = filename.replace(' ', '_')
         self.data = data
-        self.write_task = write_task
+        self.write_fn = write_fn
         self.success_text = success_text
         self.path = path
         self.mode = mode
@@ -34,6 +34,7 @@ class SaveToMicroSDFlow(Flow):
         from pages import ErrorPage
         from utils import spinner_task, ensure_folder_exists
         from errors import Error
+        from tasks import custom_microsd_write_task
 
         written = False
 
@@ -49,10 +50,10 @@ class SaveToMicroSDFlow(Flow):
                         with open(self.out_full, 'w' + self.mode) as fd:
                             fd.write(self.data)
                         written = True
-                    elif self.write_task:
+                    elif self.write_fn:
                         error = await spinner_task("Writing {}.".format(self.success_text),
-                                                   self.write_task,
-                                                   args=[self.out_full])
+                                                   custom_microsd_write_task,
+                                                   args=[self.out_full, self.write_fn])
                         if error is Error.MICROSD_CARD_MISSING:
                             raise CardMissingError()
                         elif error is Error.FILE_WRITE_ERROR:

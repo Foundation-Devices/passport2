@@ -128,7 +128,7 @@ class SignPsbtMicroSDFlow(Flow):
             target_fname = base + '-signed.psbt'
 
         result_1 = await SaveToMicroSDFlow(filename=target_fname,
-                                           write_task=self.write_psbt_task,
+                                           write_fn=self.write_psbt_fn,
                                            success_text="psbt",
                                            path=orig_path,
                                            automatic=True).run()
@@ -140,7 +140,7 @@ class SignPsbtMicroSDFlow(Flow):
         if is_comp:
             target2_fname = base + '-final.txn'
             result_2 = await SaveToMicroSDFlow(filename=target2_fname,
-                                               write_task=self.write_final_task,
+                                               write_fn=self.write_final_fn,
                                                success_text="transaction",
                                                path=orig_path,
                                                automatic=True).run()
@@ -151,42 +151,21 @@ class SignPsbtMicroSDFlow(Flow):
         securely_blank_file(self.file_path)
         self.goto(self.show_success)
 
-    async def write_psbt_task(self, on_done, filename):
-        from files import CardMissingError
-        from errors import Error
-
+    def write_psbt_fn(self, filename):
         # Attempt to write-out the transaction
-        try:
-            with self.output_encoder(open(filename, 'wb')) as fd:
-                # save as updated PSBT
-                self.psbt.serialize(fd)
-        except CardMissingError:
-            await on_done(Error.MICROSD_CARD_MISSING)
-            return
-        except Exception as e:
-            await on_done(Error.FILE_WRITE_ERROR)
-            return
+        with self.output_encoder(open(filename, 'wb')) as fd:
+            # save as updated PSBT
+            self.psbt.serialize(fd)
         self.out_fn = filename
-        await on_done(None)
 
-    async def write_final_task(self, on_done, filename):
-        from files import CardMissingError
-        from errors import Error
+    def write_final_fn(self, filename):
         from utils import HexWriter
 
         # write out as hex too, if it's final
-        try:
-            with HexWriter(open(filename, 'w+t')) as fd:
-                # save transaction, in hex
-                self.txid = self.psbt.finalize(fd)
-        except CardMissingError:
-            await on_done(Error.MICROSD_CARD_MISSING)
-            return
-        except Exception as e:
-            await on_done(Error.FILE_WRITE_ERROR)
-            return
+        with HexWriter(open(filename, 'w+t')) as fd:
+            # save transaction, in hex
+            self.txid = self.psbt.finalize(fd)
         self.out2_fn = filename
-        await on_done(None)
 
     async def show_success(self):
         import microns
