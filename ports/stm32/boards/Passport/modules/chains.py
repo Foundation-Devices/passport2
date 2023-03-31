@@ -11,8 +11,8 @@
 #
 import trezorcrypto
 import tcc
-from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
-from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED
+from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2TR
+from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED, AFC_TAPROOT
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
@@ -66,6 +66,11 @@ class ChainsBase:
         return trezorcrypto.bip32.deserialize(text, cls.slip132[addr_fmt].pub, True)
 
     @classmethod
+    def taproot_construct(pubkey, scripts=None):
+        # source: https://github.com/btclib-org/btclib/blob/57c2516deea732eb84a75075370107f4b7263f81/btclib/b32.py
+        pass
+
+    @classmethod
     def p2sh_address(cls, addr_fmt, witdeem_script):
         # Multisig and general P2SH support
         # - witdeem => witness script for segwit, or redeem script otherwise
@@ -84,8 +89,12 @@ class ChainsBase:
             digest = hash160(witdeem_script)
 
         if addr_fmt & AFC_BECH32:
-            # bech32 encoded segwit p2sh
-            addr = tcc.codecs.bech32_encode(cls.bech32_hrp, 0, digest)
+            if addr_fmt & AFC_TAPROOT:
+                # bech32m encoded taproot
+                return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, digest, tcc.codecs.BECH32_ENCODING_BECH32M)
+            else:
+                # bech32 encoded segwit p2sh
+                addr = tcc.codecs.bech32_encode(cls.bech32_hrp, 0, digest)
         elif addr_fmt == AF_P2WSH_P2SH:
             # segwit p2wsh encoded as classic P2SH
             addr = tcc.codecs.b58_encode(cls.b58_script + hash160(b'\x00\x20' + digest))
@@ -104,7 +113,7 @@ class ChainsBase:
             assert len(cls.b58_addr) == 1
             return node.address(cls.b58_addr[0])
 
-        if addr_fmt & AFC_SCRIPT:
+        if addr_fmt & AFC_SCRIPT and not addr_fmt & AFC_TAPROOT:
             # use p2sh_address() instead.
             raise ValueError(hex(addr_fmt))
 
@@ -114,8 +123,12 @@ class ChainsBase:
         assert len(raw) == 20
 
         if addr_fmt & AFC_BECH32:
-            # bech32 encoded segwit p2pkh
-            return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
+            if addr_fmt & AFC_TAPROOT:
+                # bech32m encoded taproot
+                return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, raw, tcc.codecs.BECH32_ENCODING_BECH32M)
+            else:
+                # bech32 encoded segwit p2pkh
+                return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH
@@ -219,6 +232,7 @@ class BitcoinMain(ChainsBase):
         AF_P2WPKH: Slip132Version(0x04b24746, 0x04b2430c, 'z'),
         AF_P2WSH_P2SH: Slip132Version(0x0295b43f, 0x0295b005, 'Y'),
         AF_P2WSH: Slip132Version(0x02aa7ed3, 0x02aa7a99, 'Z'),
+        AF_P2TR: Slip132Version(0x0488B21E, 0x0488ADE4, 'x'),
     }
 
     bech32_hrp = 'bc'
@@ -242,6 +256,7 @@ class BitcoinTestnet(BitcoinMain):
         AF_P2WPKH: Slip132Version(0x045f1cf6, 0x045f18bc, 'v'),
         AF_P2WSH_P2SH: Slip132Version(0x024289ef, 0x024285b5, 'U'),
         AF_P2WSH: Slip132Version(0x02575483, 0x02575048, 'V'),
+        AF_P2TR: Slip132Version(0x043587cf, 0x04358394, 't'),
     }
 
     bech32_hrp = 'tb'

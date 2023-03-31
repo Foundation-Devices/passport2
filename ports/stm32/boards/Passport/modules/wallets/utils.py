@@ -6,7 +6,7 @@
 
 import chains
 import common
-from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH
+from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2TR
 from utils import get_accounts, get_derived_keys
 
 
@@ -56,10 +56,12 @@ def get_next_derived_key_index(key_tn, xfp):
 
     return curr_index
 
-# TODO: Make this a data table and drive these function from it
+
+# TODO: Make this a data table and derive these function from it
 # P2PKH / Classic  1    Single  Base58 check    x   m/44'/0'/{acct}
 # P2SH P2WPKH      3    Single  Base58 check    y   m/49'/0'/{acct}
 # P2WPKH           bc1  Single  Bech32          z   m/84'/0'/{acct}
+# P2TR             bc1p Single  Bech32m         z   m/86'/0'/{acct}
 
 
 def get_addr_type_from_address(address, is_multisig):
@@ -72,12 +74,19 @@ def get_addr_type_from_address(address, is_multisig):
         return AF_P2WSH_P2SH if is_multisig else AF_P2WPKH_P2SH
     elif (address[0] == 'b' and address[1] == 'c' and address[2] == '1') or \
          (address[0] == 't' and address[1] == 'b' and address[2] == '1'):
-        return AF_P2WSH if is_multisig else AF_P2WPKH
+        if address[3] == 'p':
+            return AF_P2TR
+        else:
+            return AF_P2WSH if is_multisig else AF_P2WPKH
 
     return None
 
 
 def get_bip_num_from_addr_type(addr_type, is_multisig):
+
+    if addr_type == AF_P2TR:
+        return 86
+
     if is_multisig:
         if addr_type == AF_P2WSH_P2SH:
             return 48
@@ -104,6 +113,8 @@ def get_addr_type_from_deriv(path):
         return AF_P2WPKH_P2SH
     elif type_str == '84':
         return AF_P2WPKH
+    elif type_str == '86':
+        return AF_P2TR
     elif type_str == '48':
         if subpath == '1':
             return AF_P2WSH_P2SH
@@ -141,6 +152,8 @@ def get_deriv_fmt_from_addr_type(addr_type, is_multisig):
     # print('get_deriv_fmt_from_addr_type(): addr_type={} is_multisig={}'.format(addr_type, is_multisig))
 
     # Map the address prefix to a standard derivation path and insert the account number
+    if addr_type == AF_P2TR:
+        return "m/86'/{coin_type}'/{acct}'"
     if is_multisig:
         if addr_type == AF_P2WSH_P2SH:
             return "m/48'/{coin_type}'/{acct}'/1'"

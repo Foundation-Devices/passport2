@@ -48,11 +48,11 @@ async def search_for_address_task(
 
                 for curr_idx in r:
                     addr_path = '{}/{}/{}'.format(path, is_change, curr_idx)  # Zero for non-change address
-                    # print('Singlesig: addr_path={}'.format(addr_path))
                     node = sv.derive_path(addr_path)
                     curr_address = sv.chain.address(node, addr_type)
                     # print('           curr_idx={}: path={} addr_type={} curr_address = {}'.format(curr_idx, addr_path,
                     #       addr_type, curr_address))
+                    print("true: {}\ncurr: {}\n".format(address, curr_address))
                     if curr_address == address:
                         await on_done(curr_idx, addr_path, None)
                         return
