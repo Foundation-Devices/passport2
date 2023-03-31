@@ -146,6 +146,7 @@ class SignPsbtMicroSDFlow(Flow):
                                                automatic=True).run()
             if not result_2:
                 await ErrorPage(text='Unable to save {} to MicroSD'.format(target2_fname)).show()
+                # Fall through
                 return
 
         securely_blank_file(self.file_path)
