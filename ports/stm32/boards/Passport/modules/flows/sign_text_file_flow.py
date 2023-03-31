@@ -100,7 +100,6 @@ class SignTextFileFlow(Flow):
         from public_constants import RFC_SIGNATURE_TEMPLATE
 
         orig_path, basename = self.file_path.rsplit('/', 1)
-        orig_path += '/'
         base, ext = basename.rsplit('.', 1)
         filename = base + '-signed' + '.' + ext
         sig = b2a_base64(self.signature).decode('ascii').strip()

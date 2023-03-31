@@ -72,7 +72,6 @@ class CasaHealthCheckMicrosdFlow(Flow):
         from flows import SaveToMicroSDFlow
 
         orig_path, basename = self.file_path.rsplit('/', 1)
-        orig_path += '/'
         base, ext = basename.rsplit('.', 1)
         filename = base + '-signed' + '.' + ext
         result = await SaveToMicroSDFlow(filename=filename,
