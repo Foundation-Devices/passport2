@@ -87,11 +87,9 @@ class ExportDerivedKeyFlow(Flow):
         self.set_result(True)
 
     async def save_to_sd(self):
-        from files import CardSlot, CardMissingError
-        from pages import ErrorPage
-        from utils import file_exists
         from utils import B2A
         from flows import GetSeedWordsFlow
+        from flows import SaveToMicroSDFlow
 
         if self.key_type['words']:
             words = await GetSeedWordsFlow(self.pk).run()
@@ -101,55 +99,11 @@ class ExportDerivedKeyFlow(Flow):
         else:
             text = B2A(self.pk)
 
-        key_num = 1
-
-        while True:
-            try:
-                with CardSlot() as card:
-                    path = card.get_sd_root()
-                    # Make a unique filename
-                    while True:
-                        self.file_path = '{}/{}-{}-{}.txt' \
-                                         .format(path,
-                                                 self.key_type['title'],
-                                                 self.key['name'],
-                                                 key_num)
-                        self.file_path = self.file_path.replace(' ', '_')
-                        # Ensure filename doesn't already exist
-                        if not file_exists(self.file_path):
-                            break
-
-                        # Ooops...that exists, so increment and try again
-                        key_num += 1
-
-                    # Do actual write
-                    with open(self.file_path, 'w') as fd:
-                        fd.write(text)
-                self.goto(self.show_success)
-                return
-
-            except CardMissingError:
-                self.goto(self.show_insert_microsd_error)
-                return
-            except Exception as e:
-                self.error = e.args[0]
-                await ErrorPage(text=self.error).show()
-                self.set_result(False)
-                return
-
-    async def show_insert_microsd_error(self):
-        from pages import InsertMicroSDPage
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            self.set_result(False)
-        else:
-            self.goto(self.save_to_sd)
-
-    async def show_success(self):
-        from pages import SuccessPage
-        await SuccessPage(text='Saved key as {}.'.format(self.file_path)).show()
-        self.set_result(True)
+        filename = '{}-{}.txt'.format(self.key_type['title'], self.key['name'])
+        result = await SaveToMicroSDFlow(filename=filename,
+                                         data=text,
+                                         success_text="key").run()
+        self.set_result(result)
 
     async def show_seed_words(self):
         from flows import ViewSeedWordsFlow
