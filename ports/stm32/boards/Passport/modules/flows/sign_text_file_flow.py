@@ -13,7 +13,7 @@ from public_constants import AF_CLASSIC, MSG_SIGNING_MAX_LENGTH, RFC_SIGNATURE_T
 import sys
 
 
-def is_signable(filename):
+def is_signable(filename, path=None):
     # print('is_signable: {}'.format(filename))
     if '-signed' in filename.lower():
         return False

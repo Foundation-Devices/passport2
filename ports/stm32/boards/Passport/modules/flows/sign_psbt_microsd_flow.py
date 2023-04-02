@@ -7,24 +7,28 @@ from flows import Flow
 from pages import InsertMicroSDPage, QuestionPage, LongTextPage
 
 
-def is_psbt(filename):
+def is_psbt(filename, path):
     from files import CardSlot
 
     # print('filenmame={}'.format(filename))
     if '-signed' in filename.lower():
         return False
 
-    sd_root = CardSlot.get_sd_root()
-    with open('{}/{}'.format(sd_root, filename), 'rb') as fd:
-        taste = fd.read(10)
-        # print('taste={}'.format(taste))
-        if taste[0:5] == b'psbt\xff':
-            return True
-        if taste[0:10] == b'70736274ff':        # hex-encoded
-            return True
-        if taste[0:6] == b'cHNidP':             # base64-encoded
-            return True
-        return False
+    try:
+        with CardSlot() as card:
+            with open('{}/{}'.format(path, filename), 'rb') as fd:
+                taste = fd.read(10)
+                # print('taste={}'.format(taste))
+                if taste[0:5] == b'psbt\xff':
+                    return True
+                if taste[0:10] == b'70736274ff':        # hex-encoded
+                    return True
+                if taste[0:6] == b'cHNidP':             # base64-encoded
+                    return True
+                return False
+    except Exception as e:
+        pass
+    return True
 
 
 class SignPsbtMicroSDFlow(Flow):
@@ -38,7 +42,7 @@ class SignPsbtMicroSDFlow(Flow):
         root_path = CardSlot.get_sd_root()
 
         result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=is_psbt).run()
+            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=None).run()
         if result is None:
             self.set_result(False)
             return
