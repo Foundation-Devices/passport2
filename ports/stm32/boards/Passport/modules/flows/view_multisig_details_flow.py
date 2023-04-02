@@ -27,9 +27,13 @@ class ViewMultisigDetailsFlow(Flow):
         self.goto(self.show_details)
 
     async def show_details(self):
+        import microns
         msg = self.ms.format_details()
 
-        result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
+        result = await LongTextPage(card_header={'title': self.ms.name},
+                                    text=msg,
+                                    right_micron=microns.Checkmark,
+                                    centered=True).show()
         if not result:
             self.back()
         else:

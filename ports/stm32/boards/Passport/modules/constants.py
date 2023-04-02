@@ -66,6 +66,7 @@ MAX_ACCOUNTS = 10
 
 DEFAULT_ACCOUNT_ENTRY = {'name': 'Primary', 'acct_num': 0}
 
+
 # Unit types for labeling conversions
 UNIT_TYPE_BTC = 0
 UNIT_TYPE_SATS = 1

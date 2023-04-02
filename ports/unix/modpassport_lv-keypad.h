@@ -220,7 +220,7 @@ STATIC mp_obj_t mod_passport_lv_Keypad_inject(mp_obj_t self_in, mp_obj_t _ch, mp
         keycode = 'r';
         break;
     case LV_KEY_ESC:
-        keycode = 'c';
+        keycode = 'x';
         break;
     case LV_KEY_ENTER:
         keycode = 'y';

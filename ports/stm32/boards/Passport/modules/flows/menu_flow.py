@@ -11,6 +11,8 @@ import common
 
 
 class MenuFlow(Flow):
+    latest_menu = None
+
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
                  card_header=None, statusbar=None, one_shot=False):
         self.menu = menu
@@ -23,6 +25,7 @@ class MenuFlow(Flow):
         self.card_header = card_header
         self.statusbar = statusbar
         self.one_shot = one_shot
+        MenuFlow.latest_menu = self
 
     async def show_menu(self):
         from common import ui
@@ -32,6 +35,7 @@ class MenuFlow(Flow):
         # This allows them to update if any state has changed since last running.
         assert(callable(self.menu))
         self.items = self.menu()
+        self.prev_statusbar = None
 
         # print('show_menu(): is_top_level() = {}'.format(common.ui.is_top_level()))
         result = await MenuPage(
@@ -59,7 +63,7 @@ class MenuFlow(Flow):
 
             if item.get('submenu') is not None:
                 # If it contains a submenu, then just call MenuFlow recursively
-                prev_statusbar = self.update_statusbar(item)
+                self.prev_statusbar = self.update_statusbar(item)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
@@ -67,8 +71,9 @@ class MenuFlow(Flow):
                 # print('MENUFLOW >>>>>>> args={}'.format(args))
                 submenu = item.get('submenu')
                 await MenuFlow(submenu, **args).run()
-                if prev_statusbar is not None:
-                    ui.set_statusbar(**prev_statusbar)
+                if self.prev_statusbar is not None:
+                    ui.set_statusbar(**self.prev_statusbar)
+                    self.prev_statusbar = None
 
                 # Trigger a card refresh, usually because an Extension was enabled or disabled
                 if self.is_top_level and ui.update_cards_pending:
@@ -89,14 +94,15 @@ class MenuFlow(Flow):
                 # If there is a flow, run it
                 flow = item.get('flow')
 
-                prev_statusbar = self.update_statusbar(item)
+                self.prev_statusbar = self.update_statusbar(item)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
                 # print('FLOW >>>>>>> args={}'.format(args))
                 await flow(**args).run()
-                if prev_statusbar is not None:
-                    ui.set_statusbar(**prev_statusbar)
+                if self.prev_statusbar is not None:
+                    ui.set_statusbar(**self.prev_statusbar)
+                    self.prev_statusbar = None
 
             elif item.get('action') is not None:
                 action = item.get('action')
@@ -171,3 +177,9 @@ class MenuFlow(Flow):
             return ui.set_statusbar(title=statusbar_title, icon=statusbar_icon)
 
         return None
+
+    def update_prev_statusbar(self, statusbar):
+        self.prev_statusbar = statusbar
+
+    def get_prev_statusbar(self):
+        return self.prev_statusbar

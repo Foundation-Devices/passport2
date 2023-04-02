@@ -892,6 +892,35 @@ def get_account_by_number(acct_num):
     return None
 
 
+def get_derived_keys():
+    from common import settings
+    keys = settings.get('derived_keys', [])
+    keys.sort(key=lambda a: (a.get('tn', 0), a.get('index', 0)))
+    return keys
+
+
+def get_derived_key_by_name(name, key_tn, xfp):
+    keys = get_derived_keys()
+    for key in keys:
+        if key['name'] == name and key['tn'] == key_tn and key['xfp'] == xfp:
+            return key
+
+    return None
+
+
+def get_derived_key_by_index(index, key_tn, xfp):
+    keys = get_derived_keys()
+    for key in keys:
+        if key['index'] == index and key['tn'] == key_tn and key['xfp'] == xfp:
+            return key
+
+    return None
+
+
+def get_width_from_num_words(num_words):
+    return (num_words - 1) * 11 // 8 + 1
+
+
 # Only call when there is an active account
 # def set_next_addr(new_addr):
 #     if not common.active_account:
@@ -1213,6 +1242,18 @@ def is_extension_enabled(ext_name):
     return common.settings.get(ext_path, False)
 
 
+def toggle_showing_hidden_keys():
+    from common import ui
+    showing = common.settings.get('showing_hidden_keys', False)
+    common.settings.set_volatile('showing_hidden_keys', not showing)
+    ui.update_cards_on_top_level()
+
+
+def are_hidden_keys_showing():
+    showing = common.settings.get('showing_hidden_keys', False)
+    return showing
+
+
 def is_passphrase_active():
     import stash
     return stash.bip39_passphrase != ''
@@ -1275,5 +1316,13 @@ async def clear_psbt_flash(psbt_len):
     from tasks import clear_psbt_from_external_flash_task
 
     await spinner_task(None, clear_psbt_from_external_flash_task, args=[psbt_len])
+
+
+def get_words_from_seed(seed):
+    try:
+        words = trezorcrypto.bip39.from_data(seed).split(' ')
+        return (words, None)
+    except Exception as e:
+        return (None, '{}'.format(e))
 
 # EOF

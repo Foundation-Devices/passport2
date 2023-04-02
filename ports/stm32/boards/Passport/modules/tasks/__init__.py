@@ -9,6 +9,7 @@ if passport.HAS_FUEL_GAUGE:
 
 from .apply_passphrase_task import apply_passphrase_task
 from .auto_shutdown_task import auto_shutdown_task
+from .bip85_seed_task import *
 from .calculate_file_sha256_task import calculate_file_sha256_task
 from .card_task import card_task
 from .change_pin_task import change_pin_task
@@ -30,19 +31,23 @@ from .generate_addresses_task import generate_addresses_task
 from .get_security_words_task import get_security_words_task
 from .get_seed_words_task import get_seed_words_task
 from .get_backup_code_task import get_backup_code_task
+from .hide_derived_key_task import hide_derived_key_task
 from .login_task import login_task
 from .lvgl_task import lvgl_task
 from .main_task import main_task
 from .make_microsd_file_system_task import make_microsd_file_system_task
 from .new_seed_task import new_seed_task
+from .nostr_key_task import nostr_key_task
 from .power_button_task import power_button_task
 from .read_file_task import read_file_task
 from .rename_account_task import rename_account_task
+from .rename_derived_key_task import rename_derived_key_task
 from .rename_multisig_task import rename_multisig_task
 from .restore_backup_task import restore_backup_task
 from .save_backup_task import save_backup_task
 from .save_multisig_wallet_task import save_multisig_wallet_task
 from .save_new_account_task import save_new_account_task
+from .save_new_derived_key_task import save_new_derived_key_task
 from .save_seed_task import save_seed_task
 from .save_wallet_export_to_microsd_task import save_wallet_export_to_microsd_task
 from .search_for_address_task import search_for_address_task

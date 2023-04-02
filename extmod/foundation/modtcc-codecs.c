@@ -156,10 +156,50 @@ STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modtcc_bech32_encode_obj, 3, 4, modtcc_bech32_encode);
 
+STATIC mp_obj_t modtcc_bech32_plain_encode(size_t n_args, const mp_obj_t *args) {
+    const char*    hrp            = mp_obj_str_get_str(args[0]);
+    uint32_t       bech32_version = BECH32_ENCODING_BECH32;
+
+    if (n_args == 3) {
+        bech32_version = mp_obj_int_get_checked(args[2]);
+    }
+
+    mp_buffer_info_t buf;
+    mp_get_buffer_raise(args[1], &buf, MP_BUFFER_READ);
+
+    // low-level bech32 functions want 5-bit data unpacked into bytes. first value is
+    // the version number (5 bits), and remainder is packed data.
+
+    size_t buf_size  = sw_convert_bits_buffer_size(5, buf.len, 8, true);
+    uint8_t *data    = m_new(uint8_t, buf_size);
+    size_t  data_len = 0;
+    int cv_ok        = sw_convert_bits(data, &data_len, 5, buf.buf, buf.len, 8, true, buf_size);
+
+    if (cv_ok != 1) {
+        m_del(uint8_t, data, buf_size);
+        mp_raise_ValueError(MP_ERROR_TEXT("pack fail"));
+    }
+
+    vstr_t vstr;
+    vstr_init_len(&vstr, strlen(hrp) + data_len + 8);
+
+    int rv = bech32_encode(vstr.buf, hrp, data, data_len, bech32_version);
+    if (rv != 1) {
+        m_del(uint8_t, data, buf_size);
+        mp_raise_ValueError(MP_ERROR_TEXT("encode fail"));
+    }
+    m_del(uint8_t, data, buf_size);
+    vstr.len = strlen(vstr.buf);
+
+    return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modtcc_bech32_plain_encode_obj, 2, 3, modtcc_bech32_plain_encode);
+
 STATIC const mp_rom_map_elem_t modtcc_codecs_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_codecs)},
     {MP_ROM_QSTR(MP_QSTR_b58_encode), MP_ROM_PTR(&modtcc_b58_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_bech32_encode), MP_ROM_PTR(&modtcc_bech32_encode_obj)},
+    {MP_ROM_QSTR(MP_QSTR_bech32_plain_encode), MP_ROM_PTR(&modtcc_bech32_plain_encode_obj)},
     {MP_ROM_QSTR(MP_QSTR_BECH32_ENCODING_BECH32), MP_ROM_INT(BECH32_ENCODING_BECH32)},
     {MP_ROM_QSTR(MP_QSTR_BECH32_ENCODING_BECH32M), MP_ROM_INT(BECH32_ENCODING_BECH32M)},
 };

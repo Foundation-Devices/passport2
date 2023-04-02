@@ -115,6 +115,82 @@ def backup_menu():
     ]
 
 
+def key_item_menu():
+    from flows import (
+        ViewDerivedKeyDetailsFlow,
+        RenameDerivedKeyFlow,
+        ExportDerivedKeyFlow,
+        HideDerivedKeyFlow)
+    return [
+        {'icon': lv.ICON_ONE_KEY, 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
+        {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow},
+        {'icon': lv.ICON_SCAN_QR, 'label': 'Export', 'flow': ExportDerivedKeyFlow},
+        {'icon': lv.ICON_ERASE, 'label': 'Toggle Hidden', 'flow': HideDerivedKeyFlow},
+    ]
+
+
+def new_key_menu():
+    from flows import NewDerivedKeyFlow
+    from derived_key import key_types
+
+    result = []
+    for key_type in key_types:
+        title = key_type['title']
+        icon = key_type['icon']
+        result.append({'icon': icon,
+                       'label': title,
+                       'flow': NewDerivedKeyFlow,
+                       'statusbar': {'title': 'New {}'.format(title),
+                                     'icon': icon},
+                       'args': {'context': key_type}})
+    return result
+
+
+def manage_keys():
+    from utils import toggle_showing_hidden_keys, are_hidden_keys_showing
+    return [
+        {'icon': lv.ICON_TWO_KEYS,
+         'label': 'Show Hidden',
+         'action': lambda item: toggle_showing_hidden_keys(),
+         'is_toggle': True,
+         'value': lambda: are_hidden_keys_showing()},
+    ]
+
+
+def key_manager_menu():
+    from flows import NewDerivedKeyFlow
+    from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
+    from derived_key import get_key_type_from_tn
+    from common import settings
+
+    result = []
+
+    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
+
+    keys = get_derived_keys()
+    xfp = settings.get('xfp')
+    showing_hidden = are_hidden_keys_showing()
+
+    for key in keys:
+        if len(key['name']) != 0 \
+                and key['xfp'] == xfp \
+                and (not key['hidden'] or showing_hidden):
+            key_type = get_key_type_from_tn(key['tn'])
+
+            if not key_type:
+                continue
+
+            result.append({'icon': key_type['icon'],
+                           'label': "{} ({})".format(key['name'], key['index']),
+                           'submenu': key_item_menu,
+                           'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
+                           'args': {'context': key}})
+
+    result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
+
+    return result
+
+
 def bitcoin_menu():
     from flows import SetChainFlow
     from pages import UnitsSettingPage
