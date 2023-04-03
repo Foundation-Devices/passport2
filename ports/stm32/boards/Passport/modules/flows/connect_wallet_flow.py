@@ -6,7 +6,7 @@
 import lvgl as lv
 from flows import Flow, ImportMultisigWalletFlow
 from pages import (
-    AddressTypeChooserPage,
+    ChooserPage,
     ExportModeChooserPage,
     ErrorPage,
     InfoPage,
@@ -192,25 +192,26 @@ class ConnectWalletFlow(Flow):
 
         self.infer_wallet_info()
 
-        # NOTE: Nothing uses this option at the moment, but leaving it here in case we need it for a
-        #       new wallet later.
-        if self.sw_wallet.get('options', {}).get('select_addr_type', False):
-            self.goto(self.choose_addr_type, save_curr=save_curr)
+        if self.sw_wallet.get('addr_options', None):
+            self.goto(self.choose_address_type, save_curr=save_curr)
         else:
             self.goto(self.choose_export_mode, save_curr=save_curr)
 
     async def choose_address_type(self):
-        result = await AddressTypeChooserPage(initial_value=self.addr_type).show()
+        save_curr = True
+        result = await ChooserPage(options=self.sw_wallet['addr_options'],
+                                   card_header={'title': 'Address Type'},
+                                   initial_value=self.addr_type).show()
         if result is None:
             if not self.back():
                 self.set_result(False)
             return
 
+        self.addr_type = result
         self.infer_wallet_info()
 
-        self.addr_type = result
         # print('addr_type={}'.format(self.addr_type))
-        self.goto(self.choose_export_mode)
+        self.goto(self.choose_export_mode, save_curr=save_curr)
 
     async def choose_export_mode(self):
         save_curr = True

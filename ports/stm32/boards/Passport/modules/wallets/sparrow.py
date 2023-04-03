@@ -8,9 +8,16 @@ from .generic_json_wallet import create_generic_json_wallet
 from .multisig_json import create_multisig_json_wallet
 from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
 from data_codecs.qr_type import QRType
+from public_constants import AF_P2WPKH, AF_P2TR, AF_P2WPKH_P2SH, AF_CLASSIC
 
 SparrowWallet = {
     'label': 'Sparrow',
+    'addr_options': [
+        {'label': 'Native Segwit', 'value': AF_P2WPKH},
+        {'label': 'Taproot (P2TR)', 'value': AF_P2TR},
+        {'label': 'P2SH-Segwit', 'value': AF_P2WPKH_P2SH},
+        {'label': 'Legacy (P2PKH)', 'value': AF_CLASSIC},
+    ],
     'sig_types': [
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_generic_json_wallet},
         {'id': 'multisig', 'label': 'Multisig', 'addr_type': None, 'create_wallet': create_multisig_json_wallet,
