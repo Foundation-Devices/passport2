@@ -15,7 +15,7 @@ import ujson
 import stash
 from utils import xfp2str, to_str
 from common import settings
-from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WSH
+from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WSH, AF_P2TR
 from data_codecs.qr_type import QRType
 from foundation import ur
 
@@ -46,6 +46,8 @@ def create_generic_json_wallet(sw_wallet=None,
             ('bip84', "m/84'/{coin_type}'/{acct}'", AF_P2WPKH, 'p2wpkh', False),
             ('bip48_1', "m/48'/{coin_type}'/{acct}'/1'", AF_P2WSH_P2SH, 'p2sh-p2wsh', True),
             ('bip48_2', "m/48'/{coin_type}'/{acct}'/2'", AF_P2WSH, 'p2wsh', True),
+            # TODO: test if this should be multisig or not, or if another entry is needed
+            ('bip86', "m/86'/{coin_type}'/{acct}'", AF_P2TR, 'p2tr', True),
         ]:
             dd = deriv.format(coin_type=chain.b44_cointype, acct=acct_num)
             node = sv.derive_path(dd)
