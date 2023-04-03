@@ -18,7 +18,7 @@ SparrowWallet = {
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-sparrow.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-sparrow-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-sparrow.json',
+         'filename_pattern_multisig': '{xfp}-sparrow-multisig.json'}
     ]
 }

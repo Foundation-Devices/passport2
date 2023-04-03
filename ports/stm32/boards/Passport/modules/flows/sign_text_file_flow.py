@@ -30,7 +30,7 @@ class SignTextFileFlow(Flow):
         super().__init__(initial_state=self.select_file, name='SignTextFileFlow')
 
     async def select_file(self):
-        result = await FilePickerFlow(title='Choose File to Sign', filter_fn=is_signable).run()
+        result = await FilePickerFlow(filter_fn=is_signable, show_folders=True).run()
         if result is None:
             self.set_result(False)
             return
@@ -93,62 +93,20 @@ class SignTextFileFlow(Flow):
             self.set_result(False)
             return
 
-    # TODO: Should this logic be in a task?  It's pretty fast, but should probably at least be a function for
-    #       unit test purposes.
     async def write_signed_file(self):
         # complete. write out result
         from ubinascii import b2a_base64
+        from flows import SaveToMicroSDFlow
+        from public_constants import RFC_SIGNATURE_TEMPLATE
+
         orig_path, basename = self.file_path.rsplit('/', 1)
-        orig_path += '/'
-        base = basename.rsplit('.', 1)[0]
-        out_fn = None
-
+        base, ext = basename.rsplit('.', 1)
+        filename = base + '-signed' + '.' + ext
         sig = b2a_base64(self.signature).decode('ascii').strip()
-
-        while 1:
-            # try to put back into same spot
-            # add -signed to end.
-            target_fname = base + '-signed.txt'
-
-            for path in [orig_path, None]:
-                try:
-                    with CardSlot() as card:
-                        out_full, out_fn = card.pick_filename(
-                            target_fname, path)
-                        out_path = path
-                        if out_full:
-                            break
-                except CardMissingError:
-                    prob = 'Missing card.\n\n'
-                    out_fn = None
-
-            if not out_fn:
-                # need them to insert a card
-                prob = ''
-            else:
-                # attempt write-out
-                try:
-                    with CardSlot() as card:
-                        with open(out_full, 'wt') as fd:
-                            # save in full RFC style
-                            fd.write(RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text,
-                                                                   blockchain='BITCOIN', sig=sig))
-
-                    # success and done!
-                    break
-
-                except OSError as exc:
-                    prob = 'Unable to write!\n\n%s\n\n' % exc
-                    sys.print_exception(exc)
-                    # fall thru to try again
-
-            # prompt them to input another card?
-            result = await InsertMicroSDPage()
-            if not result:
-                # Give up
-                self.set_result(False)
-                return
-
-        # Done
-        await SuccessPage(text='Signed filename:\n\n{}'.format(out_fn)).show()
-        self.set_result(True)
+        data = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
+        result = await SaveToMicroSDFlow(filename=filename,
+                                         data=data,
+                                         success_text="signed file",
+                                         path=orig_path,
+                                         mode='t').run()
+        self.set_result(result)

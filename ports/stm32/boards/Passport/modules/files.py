@@ -160,16 +160,16 @@ class CardSlot:
         assert self.active      # used out of context mgr
 
         # prefer SD card if we can
-        path = path or (self.get_sd_root() + '/')
+        path = path or (self.get_sd_root())
 
-        assert '/' not in pattern
-        assert '.' in pattern
+        assert '/' not in pattern, "Filenames must not contain '/'"
+        assert '.' in pattern, "Filenames must have an extension like '.txt'"
 
         basename, ext = pattern.rsplit('.', 1)
         ext = '.' + ext
 
         # try w/o any number first
-        fname = path + basename + ext
+        fname = path + '/' + basename + ext
         try:
             os.stat(fname)
         except OSError as e:
@@ -190,7 +190,7 @@ class CardSlot:
                 continue
             highest = max(highest, int(m.group(1)))
 
-        fname = path + basename + ('-%d' % (highest + 1)) + ext
+        fname = path + '/' + basename + ('-%d' % (highest + 1)) + ext
 
         return fname, fname[len(path):]
 

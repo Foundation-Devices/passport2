@@ -18,7 +18,7 @@ NunchukWallet = {
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-nunchuk.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-nunchuk-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-nunchuk.json',
+         'filename_pattern_multisig': '{xfp}-nunchuk-multisig.json'}
     ]
 }

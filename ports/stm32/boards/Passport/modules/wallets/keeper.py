@@ -18,7 +18,7 @@ KeeperWallet = {
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-keeper.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-keeper-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-keeper.json',
+         'filename_pattern_multisig': '{xfp}-keeper-multisig.json'}
     ]
 }
