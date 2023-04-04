@@ -57,6 +57,14 @@
 #define UR_ENCODER_MAX_STRING 535
 
 /**
+ * Minimum size of an encoded Uniform Resource.
+ *
+ * This value assumes a QR code of version of 7 with ECC L using
+ * alphanumeric characters.
+ */
+#define UR_ENCODER_MIN_STRING 224
+
+/**
  * `mainnet` network.
  */
 #define UR_NETWORK_MAINNET 0
@@ -342,6 +350,8 @@ typedef struct {
     };
   };
 } UR_Value;
+
+
 
 
 
