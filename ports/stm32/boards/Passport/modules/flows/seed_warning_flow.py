@@ -8,11 +8,9 @@ from flows import Flow
 
 class SeedWarningFlow(Flow):
     def __init__(self, mention_passphrase=False,
-                 action_text="display your seed words",
-                 display_text="Display"):
+                 action_text="display your seed words"):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text
-        self.display_text = display_text
         super().__init__(initial_state=self.show_intro, name='SeedWarningFlow')
 
     async def show_intro(self):
@@ -38,6 +36,5 @@ class SeedWarningFlow(Flow):
         from pages import QuestionPage
 
         result = await QuestionPage(
-            'Anyone who knows this information can control your funds.\n\n{} \
-this sensitive information?'.format(self.display_text)).show()
+            'Anyone who knows this information can control your funds.\n\nContinue?').show()
         self.set_result(result)
