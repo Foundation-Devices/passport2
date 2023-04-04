@@ -58,7 +58,7 @@ static camera_reg_t _camera_reg_init[] = {
     // Sensor   : OVM7690
 
 #if SCREEN_MODE_MONO
-    {REG0C, 0x06},
+    {REG0C, 0x96},
 #elif SCREEN_MODE_COLOR
     // Flip and invert the image due to the camera orientation on the board
     {REG0C, 0xD6},
