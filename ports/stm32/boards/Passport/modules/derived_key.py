@@ -24,7 +24,7 @@ key_types = [
     {'tn': 2,
      'title': 'Nostr Key',
      'icon': lv.ICON_NOSTR,
-     'indexed': False,
+     'indexed': True,
      'words': False,
      'task': nostr_key_task},
 ]
