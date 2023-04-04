@@ -171,10 +171,8 @@ def key_manager_menu():
     showing_hidden = are_hidden_keys_showing()
 
     for key in keys:
-        if len(key['name']) != 0 \
-                and key['xfp'] == xfp \
-                and (not key['hidden'] or showing_hidden):
-            key_type = get_key_type_from_tn(key['tn'])
+        if key['xfp'] == xfp and (not key['hidden'] or showing_hidden):
+            key_type = get_key_type_from_tn(key.get('tn', None))
 
             if not key_type:
                 continue
