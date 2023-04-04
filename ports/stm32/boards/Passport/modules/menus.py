@@ -158,8 +158,7 @@ def manage_keys():
 
 
 def key_manager_menu():
-    from flows import NewDerivedKeyFlow
-    from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
+    from utils import get_derived_keys, are_hidden_keys_showing
     from derived_key import get_key_type_from_tn
     from common import settings
 
