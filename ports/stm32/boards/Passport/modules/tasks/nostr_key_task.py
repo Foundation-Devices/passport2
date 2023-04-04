@@ -8,7 +8,7 @@ async def nostr_key_task(on_done, index):
     import stash
     import tcc
 
-    path = "m/44'/1237'/0'/0/{}".format(index)
+    path = "m/44'/1237'/{}'/0/0".format(index)
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(path)
         key = node.private_key()
