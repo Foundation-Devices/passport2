@@ -106,8 +106,7 @@ class ExportDerivedKeyFlow(Flow):
             text = B2A(self.pk)
 
         result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
-                                       .format(self.key_type['title']),
-                                       display_text="Copy").run()
+                                       .format(self.key_type['title'])).run()
 
         if not result:
             self.set_result(False)
