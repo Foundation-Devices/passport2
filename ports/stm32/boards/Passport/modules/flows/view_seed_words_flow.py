@@ -9,36 +9,18 @@ from flows import Flow
 class ViewSeedWordsFlow(Flow):
     def __init__(self, external_key=None):
         self.external_key = external_key
-        super().__init__(initial_state=self.show_intro, name='ViewSeedWordsFlow')
+        super().__init__(initial_state=self.show_warning, name='ViewSeedWordsFlow')
 
-    async def show_intro(self):
-        import lvgl as lv
-        import microns
-        from pages import InfoPage
-        import stash
+    async def show_warning(self):
+        from flows import SeedWarningFlow
 
-        if self.external_key or not stash.bip39_passphrase:
-            text = 'Passport is about to display your seed words.'
-        else:
-            text = 'Passport is about to display your seed words and passphrase.'
-        result = await InfoPage(
-            icon=lv.LARGE_ICON_SEED, text=text,
-            left_micron=microns.Back, right_micron=microns.Forward).show()
+        mention_passphrase = False if self.external_key else True
+        result = await SeedWarningFlow(mention_passphrase=mention_passphrase).run()
 
-        if result:
-            self.goto(self.confirm_show)
-        else:
+        if not result:
             self.set_result(False)
 
-    async def confirm_show(self):
-        from pages import QuestionPage
-
-        result = await QuestionPage(
-            'Anyone who knows these words can control your funds.\n\nDisplay this sensitive information?').show()
-        if result:
-            self.goto(self.show_seed_words)
-        else:
-            self.set_result(False)
+        self.goto(self.show_seed_words)
 
     async def show_seed_words(self):
         from flows import GetSeedWordsFlow

@@ -53,7 +53,7 @@ class ExportDerivedKeyFlow(Flow):
         self.goto(mode)
 
     async def show_qr_code(self):
-        from flows import GetSeedWordsFlow
+        from flows import GetSeedWordsFlow, SeedWarningFlow
         from pages import ShowQRPage, ChooserPage
         from utils import B2A
         from data_codecs.qr_type import QRType
@@ -83,13 +83,19 @@ class ExportDerivedKeyFlow(Flow):
                 self.set_result(False)
                 return
 
+        result = await SeedWarningFlow(action_text="display your {} as a QR code"
+                                       .format(self.key_type['title'])).run()
+
+        if not result:
+            self.set_result(False)
+            return
+
         await ShowQRPage(qr_type=qr_type, qr_data=qr_data, right_micron=microns.Checkmark).show()
         self.set_result(True)
 
     async def save_to_sd(self):
         from utils import B2A
-        from flows import GetSeedWordsFlow
-        from flows import SaveToMicroSDFlow
+        from flows import GetSeedWordsFlow, SaveToMicroSDFlow, SeedWarningFlow
 
         if self.key_type['words']:
             words = await GetSeedWordsFlow(self.pk).run()
@@ -98,6 +104,14 @@ class ExportDerivedKeyFlow(Flow):
             text = self.pk
         else:
             text = B2A(self.pk)
+
+        result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
+                                       .format(self.key_type['title']),
+                                       display_text="Copy").run()
+
+        if not result:
+            self.set_result(False)
+            return
 
         filename = '{}-{}.txt'.format(self.key_type['title'], self.key['name'])
         result = await SaveToMicroSDFlow(filename=filename,
@@ -108,5 +122,4 @@ class ExportDerivedKeyFlow(Flow):
     async def show_seed_words(self):
         from flows import ViewSeedWordsFlow
         await ViewSeedWordsFlow(external_key=self.pk).run()
-        self.goto(self.show_qr_code)
         self.set_result(True)
