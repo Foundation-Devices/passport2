@@ -46,7 +46,7 @@ static inline void memset4(uint32_t* dest, uint32_t value, uint32_t byte_len) {
 //
 // A C-runtime compatible env. is running, so do some work.
 //
-__attribute__((used)) int se_dispatch(
+int se_dispatch(
     int method_num, uint8_t* buf_io, int len_in, uint32_t arg2, uint32_t incoming_sp, uint32_t incoming_lr) {
     int rv = 0;
 
