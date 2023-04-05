@@ -203,9 +203,9 @@ class ShowQRPage(Page):
 
                 if self.qr_type == QRType.UR2:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['alphanumeric']
-                if self.qr_type == QRType.COMPACT_SEED_QR:
+                elif self.qr_type == QRType.COMPACT_SEED_QR:
                     self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['binary']
-                if self.qr_type == QRType.SEED_QR:
+                elif self.qr_type == QRType.SEED_QR:
                     self.curr_fragment_len = _SEEDQR_VERSIONS[self.qr_size_idx]['numeric']
                 else:
                     self.curr_fragment_len = _VERSIONS[self.qr_size_idx]['binary']
