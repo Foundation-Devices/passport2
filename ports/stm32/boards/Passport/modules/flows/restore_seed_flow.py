@@ -91,7 +91,7 @@ class RestoreSeedFlow(Flow):
     async def valid_seed(self):
         from foundation import bip39
 
-        entropy = bytearray(33)  # Includes and extra byte for the checksum bits
+        entropy = bytearray(33)  # Includes an extra byte for the checksum bits
 
         len = bip39.mnemonic_to_bits(self.mnemonic, entropy)
 
@@ -116,4 +116,4 @@ class RestoreSeedFlow(Flow):
                 self.set_result(True)
         else:
             # WIP: This is not complete - offer backup?
-            pass
+            await ErrorPage('Unable to save seed.').show()
