@@ -252,8 +252,9 @@ static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_
             uint8_t  gray   = grayscale[offset];
 
             // Mask the value in it
-            uint32_t mono_offset = (VIEWFINDER_X_OFFSET + x) >> 3;
-            uint8_t  bit         = (VIEWFINDER_X_OFFSET + x) % 8;
+            uint32_t flipped_x   = VIEWFINDER_WIDTH - x;
+            uint32_t mono_offset = (VIEWFINDER_X_OFFSET + flipped_x) >> 3;
+            uint8_t  bit         = (VIEWFINDER_X_OFFSET + flipped_x) % 8;
             uint8_t* p_byte      = &screen.lines[VIEWFINDER_Y_START + y].pixels[mono_offset];
 
             if (gray > 64) {
