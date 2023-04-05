@@ -30,7 +30,9 @@ async def save_seed_task(on_done, seed_bits):
 
         with stash.SensitiveValues() as sv:
             sv.capture_xpub()
+
     except Exception as e:
         await on_done(False)
+        return
 
     await on_done(None)
