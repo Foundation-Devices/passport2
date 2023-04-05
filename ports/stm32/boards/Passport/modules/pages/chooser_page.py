@@ -65,7 +65,7 @@ class ChooserPage(Page):
             with Stylize(self.icon_view) as default:
                 if self.icon_color is not None:
                     default.img_recolor(self.icon_color)
-                    default.pad(top=20, bottom=12)
+                    default.pad(top=12, bottom=12)
             self.add_child(self.icon_view)
 
         # Add text if provided
