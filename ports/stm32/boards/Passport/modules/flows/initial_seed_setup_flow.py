@@ -3,7 +3,6 @@
 #
 # initial_seed_setup_flow.py - Menu to let user choose seed setup method
 
-from flows.view_seed_words_flow import ViewSeedWordsFlow
 import lvgl as lv
 from flows import Flow
 
