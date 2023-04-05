@@ -21,8 +21,8 @@ _FRAME_TIME = const(300)
 #
 # Assumes ECC L for alphanumeric and binary capacity.
 _VERSIONS = [
-    {'alphanumeric': 154, 'binary': 106},  # Version 5
-    {'alphanumeric': 279, 'binary': 192},  # Version 8
+    {'alphanumeric': 224, 'binary': 154},  # Version 7
+    {'alphanumeric': 335, 'binary': 230},  # Version 9
     {'alphanumeric': 535, 'binary': 367},  # Version 12
 ]
 
