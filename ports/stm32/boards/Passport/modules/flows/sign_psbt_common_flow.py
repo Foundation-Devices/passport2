@@ -182,7 +182,7 @@ class SignPsbtCommonFlow(Flow):
         # - expects CTxOut object
         # - gives user-visible string
         #
-        val = ''.join(self.chain.render_value(o.nValue))
+        val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
 
         return '\n{}\n{}\n\n{}\n{}'.format(
