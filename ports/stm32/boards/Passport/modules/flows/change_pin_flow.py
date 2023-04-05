@@ -73,5 +73,5 @@ class ChangePINFlow(Flow):
             self.set_result(False)
 
     async def show_success(self):
-        await SuccessPage(text='PIN changed successfully!').show()
+        await SuccessPage(text='PIN changed successfully!\n\nIt will take effect after rebooting.').show()
         self.set_result(True)
