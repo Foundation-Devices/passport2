@@ -12,6 +12,7 @@ from utils import to_str, get_accounts
 from data_codecs.qr_type import QRType
 from public_constants import AF_CLASSIC, AF_P2WPKH
 from foundation import ur
+import passport
 
 # from .multisig_json import create_multisig_json_wallet
 # from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
@@ -69,7 +70,7 @@ def create_envoy_export(sw_wallet=None,
               xpub=xpub,
               acct_name=acct_name,
               acct_num=acct_num,
-              hw_version=1.2,
+              hw_version=1.2 if passport.IS_COLOR else 1,
               fw_version=fw_version,
               serial=serial_num)
 
