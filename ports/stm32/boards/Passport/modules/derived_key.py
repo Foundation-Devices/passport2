@@ -5,6 +5,7 @@
 
 import lvgl as lv
 from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_task
+from menus import nostr_menu
 
 # Each key generation task must take index as args, whether or not they use it.
 # tn stands for Type Number
@@ -27,7 +28,8 @@ key_types = [
      'indexed': True,
      'words': False,
      'task': nostr_key_task,
-     'continue_text': 'post on your behalf'},
+     'continue_text': 'post on your behalf',
+     'menu': nostr_menu},
 ]
 
 
