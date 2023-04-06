@@ -1330,4 +1330,20 @@ def get_words_from_seed(seed):
     except Exception as e:
         return (None, '{}'.format(e))
 
+
+def nostr_pubkey_from_pk(pk):
+    from trezorcrypto import secp256k1
+    return secp256k1.publickey(pk, True)[1:]
+
+
+def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
+    import tcc
+    return tcc.codecs.bech32_plain_encode(key_type, key)
+
+
+def nostr_sign(key, message):
+    from trezorcrypto import secp256k1
+    return secp256k1.sign(key, message)
+
+
 # EOF
