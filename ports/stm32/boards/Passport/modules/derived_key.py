@@ -8,6 +8,7 @@ from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_ta
 from menus import nostr_menu
 
 # Each key generation task must take index as args, whether or not they use it.
+# Each task must return ({'priv', <private key>, etc.}, None)
 # tn stands for Type Number
 key_types = [
     {'tn': 0,

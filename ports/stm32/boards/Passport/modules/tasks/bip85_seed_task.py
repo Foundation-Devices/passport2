@@ -23,4 +23,4 @@ async def bip85_seed_task(on_done, num_words, index):
         node = sv.derive_path(path)
         entropy = hmac(512, 'bip-entropy-from-k', node.private_key()).digest()
         seed = entropy[0:width]
-    await on_done(seed, None)
+    await on_done({'priv': seed}, None)
