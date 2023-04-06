@@ -7,7 +7,7 @@ from flows import Flow
 
 
 def created_at_helper(carrot, created_at, timezone):
-    from datetime import datetime
+    import utime
     created = [c for c in created_at if c.count(carrot)]
     assert len(created) <= 1, 'There must only be 1 "created {}" condition.'.format(
         'before' if carrot == '<' else 'after')
@@ -19,15 +19,27 @@ def created_at_helper(carrot, created_at, timezone):
 
     # TODO: this could be a util
     if timezone is not None:
-        datetime.timezone(datetime.timedelta(hours=int(timezone)))
-    created = datetime.fromtimestamp(created).strftime('%Y-%m-%d %H:%M')
+        # utime.timezone(int(timezone) * 3600)  # stored in hours, need seconds
+        created += int(timezone) * 3600
+    # TODO: time string is broken
+    time_tup = utime.gmtime(created)
+    created = "{}-{}-{} {}:{}".format(time_tup[3],  # Day
+                                      time_tup[2],  # Month
+                                      time_tup[1],  # Year
+                                      time_tup[4],  # Hour
+                                      time_tup[5],  # Minute
+                                      )
+
+    # created = utime.fromtimestamp(created).strftime('%Y-%m-%d %H:%M')
 
     # Ensure timezone string exists, prepend + if positive
     # TODO: this could be a util
     if timezone is None:
         timezone = "+0"
     elif int(timezone) >= 0:
-        timezone = "+" + timezone
+        timezone = "+" + str(timezone)
+    else:
+        timezone = str(timezone)
 
     return created + " GMT" + timezone
 
@@ -65,7 +77,7 @@ event_kind = {
 
 def parse_delegation_string(delegation_string):
     from ubinascii import unhexlify as a2b_hex
-    from utils import nostr_nip19_from_key
+    from utils import nostr_nip19_from_key, recolor
     import uio
     import re
     from common import settings
@@ -75,11 +87,12 @@ def parse_delegation_string(delegation_string):
     num_fields = len(fields)
     assert num_fields == 4, \
         'Invalid delegation string: must have 4 fields, found {}'.format(num_fields)
-    assert field[0] == 'nostr' and field[1] == 'delegation', \
+    assert fields[0] == 'nostr' and fields[1] == 'delegation', \
         'First 2 fields of delegation string must be "nostr:delegation:"'
 
     # exceptions handled by caller
-    delegatee = a2b_hex(field[2])
+    # TODO: make these exceptions prettier
+    delegatee = a2b_hex(fields[2])
 
     # TODO: check length before converting to npub
 
@@ -89,6 +102,8 @@ def parse_delegation_string(delegation_string):
     num_conditions = len(conditions)
     assert num_conditions > 0, \
         'Delegation conditions are required, found {}'.format(num_conditions)
+
+    assert len(set(conditions)) == len(conditions), "Duplicate conditions found"
 
     # TODO: what are the condition parsing rules? Can multiple kinds be given different
     # created_at rules within 1 delegation? I assume not for now. This means
@@ -106,6 +121,9 @@ def parse_delegation_string(delegation_string):
         else:
             break
 
+    # remove all found kinds from conditions before continuing
+    conditions = list(set(conditions) - set(kinds))
+
     # Get all created_at
     for c in conditions:
         if created_at_pattern.search(c):
@@ -122,8 +140,8 @@ def parse_delegation_string(delegation_string):
     created_after = created_at_helper('>', created_at, timezone)
 
     # len(kinds) + len(created_at) == len(conditions) iff all conditions are valid and
-    # all 'kinds' come before all 'created_at'
-    assert len(kinds) + len(created_at) == len(condtions), 'Invalid conditions found'
+    # all 'kinds' come before all 'created_at', but we already removed 'kinds'
+    assert len(created_at) == len(conditions), 'Invalid conditions found'
 
     # temp = []
     # for k in kinds:
@@ -138,26 +156,32 @@ def parse_delegation_string(delegation_string):
         recolor(HIGHLIGHT_TEXT_HEX, 'Delegating To:'),
         delegatee_npub))
 
+    details.write("\n\n")
+
     if created_after:
-        details.write("\n{}\n{}\n{}".format(
+        details.write("{}\n{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation Start Date:'),
             created_after,
             "Make sure this time isn't in the past!"))
     else:
-        details.write("\n{}\n{}".format(
+        details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Warning:'),
             "No start date, use caution!"))
 
+    details.write("\n\n")
+
     if created_before:
-        details.write("\n{}\n{}".format(
+        details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation End Date:'),
             created_before))
     else:
-        details.write("\n{}\n{}".format(
+        details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Warning:'),
             "No end date, use caution!"))
 
-    details.write("\n{}".format(
+    details.write("\n\n")
+
+    details.write("{}".format(
         recolor(HIGHLIGHT_TEXT_HEX, 'Event Types:')))
 
     for k in kinds:
@@ -181,11 +205,13 @@ class NostrDelegationFlow(Flow):
     async def export_npub(self):
         from utils import spinner_task
         from pages import ShowQRPage, ErrorPage
+        from ubinascii import unhexlify as a2b_hex
 
         (vals, error) = await spinner_task(text='Generating npub',
                                                 task=self.key_type['task'],
                                                 args=[self.key['index']])
         self.pk = vals['pk']
+        # self.pk = a2b_hex("ee35e8bb71131c02c1d7e73231daa48e9953d329a4b701f7133c8f46dd21139c")
         self.npub = vals['npub']
 
         if not self.pk or not self.npub:
@@ -248,12 +274,14 @@ class NostrDelegationFlow(Flow):
 
     async def sign_delegation(self):
         from serializations import sha256
-        from utils import nostr_sign
+        from utils import nostr_sign, B2A
         from pages import ShowQRPage
-        from ubinascii import hexlify as b2a_hex
 
+        print("pk: {}".format(B2A(self.pk)))
         sha = sha256(self.delegation_string)
+        print("sha: {}".format(B2A(sha)))
         sig = nostr_sign(self.pk, sha)
+        print("sig: {}".format(B2A(sig)))
 
-        await ShowQRPage(qr_data=b2a_hex(sig)).show()
+        await ShowQRPage(qr_data=B2A(sig)).show()
         self.set_result(True)
