@@ -118,7 +118,6 @@ def device_menu():
         {'icon': lv.ICON_BRIGHTNESS, 'label': 'Screen Brightness', 'page': BrightnessSettingPage},
         {'icon': lv.ICON_COUNTDOWN, 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': lv.ICON_PIN, 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
-        {'icon': lv.ICON_CLOCK, 'label': 'Change Timezone', 'flow': ChooseTimezoneFlow},
         {'icon': lv.ICON_INFO, 'label': 'About', 'flow': AboutFlow},
     ]
 

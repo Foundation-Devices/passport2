@@ -39,8 +39,9 @@ class ChooseTimezoneFlow(Flow):
             await ErrorPage('Timezones range from GMT-12 to GMT+12.').show()
             return
 
-        await SuccessPage(text='Time Zone Saved').show()
-        # TODO: auto backup?
-        # await AutoBackupFlow().run()
         settings.set('timezone', tz)
+
+        if tz != timezone:
+            await SuccessPage(text='Time Zone Saved').show()
+
         self.set_result(True)
