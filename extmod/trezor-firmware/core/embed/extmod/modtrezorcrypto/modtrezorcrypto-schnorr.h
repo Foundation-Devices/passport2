@@ -37,16 +37,15 @@ STATIC mp_obj_t mod_trezorcrypto_schnorr_sign(mp_obj_t pk_obj, mp_obj_t digest_o
     mp_get_buffer_raise(pk_obj, &pk, MP_BUFFER_READ);
     mp_get_buffer_raise(digest_obj, &digest, MP_BUFFER_READ);
 
-    vstr_t signature;
+    vstr_t signature = {0};
     vstr_init_len(&signature, SCHNORR_SIG_LENGTH);
 
     int rv = schnorr_sign_digest(&secp256k1, pk.buf, digest.buf, (uint8_t *)signature.buf);
     if (rv != 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("schnorr signature failed"));
     }
-    signature.len = strlen(signature.buf);
 
-    return mp_obj_new_str_from_vstr(&mp_type_str, &signature);
+    return mp_obj_new_str_from_vstr(&mp_type_bytes, &signature);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(
     mod_trezorcrypto_schnorr_sign_obj,
