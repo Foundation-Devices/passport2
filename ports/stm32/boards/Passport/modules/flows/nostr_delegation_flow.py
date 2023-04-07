@@ -7,7 +7,6 @@ from flows import Flow
 
 
 def created_at_helper(carrot, created_at):
-    from utils import timestamp_to_str
     created = [c for c in created_at if c.count(carrot)]
     assert len(created) <= 1, 'There must only be 1 "created {}" condition.'.format(
         'before' if carrot == '<' else 'after')
@@ -15,8 +14,7 @@ def created_at_helper(carrot, created_at):
     if len(created) == 0:
         return None
 
-    created = int(created[0].split(carrot)[1])
-    return timestamp_to_str(created)
+    return int(created[0].split(carrot)[1])
 
 
 event_kind = {
@@ -52,10 +50,8 @@ event_kind = {
 
 def parse_delegation_string(delegation_string):
     from ubinascii import unhexlify as a2b_hex
-    from utils import nostr_nip19_from_key, recolor
-    import uio
+    from utils import nostr_nip19_from_key
     import re
-    from styles.colors import HIGHLIGHT_TEXT_HEX
 
     fields = delegation_string.split(':')
     num_fields = len(fields)
@@ -64,20 +60,20 @@ def parse_delegation_string(delegation_string):
     assert fields[0] == 'nostr' and fields[1] == 'delegation', \
         'First 2 fields of delegation string must be "nostr:delegation:"'
 
-    # exceptions handled by caller
-    # TODO: make these exceptions prettier
-    delegatee = a2b_hex(fields[2])
+    try:
+        delegatee = a2b_hex(fields[2])
+    except Exception as e:
+        raise Exception('Invalid delegatee format')
 
-    # TODO: check length before converting to npub
-
+    assert len(delegatee) == 32, 'Invalid delegatee length'
     delegatee_npub = nostr_nip19_from_key(delegatee, "npub")
 
-    conditions = fields[3].split('&')
-    num_conditions = len(conditions)
-    assert num_conditions > 0, \
-        'Delegation conditions are required, found {}'.format(num_conditions)
+    assert len(fields[3]) > 0, \
+        'Delegation conditions are required, found none'
 
-    assert len(set(conditions)) == len(conditions), "Duplicate conditions found"
+    conditions = fields[3].split('&')
+
+    assert len(set(conditions)) == len(conditions), 'Duplicate conditions found'
 
     # TODO: what are the condition parsing rules? Can multiple kinds be given different
     # created_at rules within 1 delegation? I assume not for now. This means
@@ -96,7 +92,8 @@ def parse_delegation_string(delegation_string):
             break
 
     # remove all found kinds from conditions before continuing
-    conditions = list(set(conditions) - set(kinds))
+    for k in kinds:
+        conditions.remove(k)
 
     # Get all created_at
     for c in conditions:
@@ -107,18 +104,32 @@ def parse_delegation_string(delegation_string):
                 'All "kinds" must come before all "created_at" conditions.'
             break
 
-    assert len(created_at) <= 2, 'There must be at most 2 "created_at" conditions.'
-
+    # This throws an assertion if there are multiple of either condition
     created_before = created_at_helper('<', created_at)
     created_after = created_at_helper('>', created_at)
 
-    # len(kinds) + len(created_at) == len(conditions) iff all conditions are valid and
-    # all 'kinds' come before all 'created_at', but we already removed 'kinds'
-    assert len(created_at) == len(conditions), 'Invalid conditions found'
+    if created_before is not None and created_after is not None:
+        assert created_after < created_before, 'Start date must be before end date.'
+
+    # remove all created at to leave invalid condition and any following conditions
+    for c in created_at:
+        conditions.remove(c)
+
+    # any remaining conditions didn't match
+    conditions = list(set(conditions) - set(created_at))
+    assert len(conditions) == 0, \
+        'Invalid condition found:\n{}'.format(conditions[0])
 
     kinds = list(map(lambda k: int(k.split('=')[1]), kinds))
 
-    # All inputs checked, format description and warnings
+    # All inputs checked
+    return delegatee_npub, created_before, created_after, kinds
+
+
+def format_delegation_string(delegatee_npub, created_before, created_after, kinds):
+    from utils import timestamp_to_str, recolor
+    import uio
+    from styles.colors import HIGHLIGHT_TEXT_HEX
 
     details = uio.StringIO()
     details.write("\n{}\n{}".format(
@@ -130,7 +141,7 @@ def parse_delegation_string(delegation_string):
     if created_after is not None:
         details.write("{}\n{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation Start Date:'),
-            created_after,
+            timestamp_to_str(created_after),
             "Make sure this time isn't in the past!"))
     else:
         details.write("{}\n{}".format(
@@ -142,7 +153,7 @@ def parse_delegation_string(delegation_string):
     if created_before is not None:
         details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation End Date:'),
-            created_before))
+            timestamp_to_str(created_before)))
     else:
         details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Warning:'),
@@ -169,6 +180,10 @@ class NostrDelegationFlow(Flow):
         self.pk = None
         self.npub = None
         self.delegation_string = None
+        self.delegatee_npub = None
+        self.created_before = None
+        self.created_after = None
+        self.kinds = None
         super().__init__(initial_state=self.export_npub, name='NostrDelegationFlow')
 
     async def export_npub(self):
@@ -207,6 +222,15 @@ class NostrDelegationFlow(Flow):
             return
 
         self.delegation_string = result.data
+
+        try:
+            self.delegatee_npub, self.created_before, self.created_after, self.kinds = \
+                parse_delegation_string(self.delegation_string)
+        except Exception as e:
+            await ErrorPage('{}'.format(e)).show()
+            self.set_result(False)
+            return
+
         self.goto(self.display_details)
 
     async def display_details(self):
@@ -215,25 +239,28 @@ class NostrDelegationFlow(Flow):
         from flows import ChooseTimezoneFlow
         import microns
 
-        if settings.get('timezone', None) is None:
-            result = await InfoPage('Nostr delegation is time-sensitive. Please enter your timezone.',
-                                    left_micron=microns.Back,
-                                    right_micron=microns.Forward).show()
-            if not result:
-                self.back()
-                return
-            await ChooseTimezoneFlow().run()
-
-        try:
-            details = parse_delegation_string(self.delegation_string)
-        except Exception as e:
-            await ErrorPage('{}'.format(e)).show()
+        result = await InfoPage('Nostr delegation is time-sensitive. Please enter your timezone.',
+                                left_micron=microns.Cancel,
+                                right_micron=microns.Forward).show()
+        if not result:
             self.set_result(False)
             return
 
+        result = await ChooseTimezoneFlow().run()
+
+        if not result:
+            return  # Go back to previous page
+
+        details = format_delegation_string(self.delegatee_npub,
+                                           self.created_before,
+                                           self.created_after,
+                                           self.kinds)
+
         result = await LongTextPage(text=details,
                                     centered=True,
-                                    card_header={'title': 'Delegation Details'}).show()
+                                    card_header={'title': 'Delegation Details'},
+                                    left_micron=microns.Cancel,
+                                    right_micron=microns.Checkmark).show()
         if not result:
             self.set_result(False)
             return
@@ -252,5 +279,10 @@ class NostrDelegationFlow(Flow):
         sig = nostr_sign(self.pk, sha)
         print("sig: {}".format(B2A(sig)))
 
-        await ShowQRPage(qr_data=B2A(sig)).show()
+        result = await ShowQRPage(qr_data=B2A(sig)).show()
+
+        if not result:
+            self.back()
+            return
+
         self.set_result(True)
