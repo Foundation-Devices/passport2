@@ -5,24 +5,9 @@
 
 from flows import Flow
 
-months = {
-    1: 'January',
-    2: 'February',
-    3: 'March',
-    4: 'April',
-    5: 'May',
-    6: 'June',
-    7: 'July',
-    8: 'Aug',
-    9: 'September',
-    10: 'October',
-    11: 'November',
-    12: 'December',
-}
 
-
-def created_at_helper(carrot, created_at, timezone):
-    import utime
+def created_at_helper(carrot, created_at):
+    from utils import timestamp_to_str
     created = [c for c in created_at if c.count(carrot)]
     assert len(created) <= 1, 'There must only be 1 "created {}" condition.'.format(
         'before' if carrot == '<' else 'after')
@@ -31,31 +16,7 @@ def created_at_helper(carrot, created_at, timezone):
         return None
 
     created = int(created[0].split(carrot)[1])
-    print(created)
-
-    # TODO: this could be a util
-    if timezone is not None:
-        # utime.timezone(int(timezone) * 3600)  # stored in hours, need seconds
-        created += int(timezone) * 3600
-        print(created)
-
-    time_tup = utime.gmtime(created)
-    created = "{} {}, {}\n{}:{}".format(months[time_tup[1]],  # Month
-                                        time_tup[2],          # Day
-                                        time_tup[0],          # Year
-                                        time_tup[3],          # Hour
-                                        time_tup[4],          # Minute
-                                        )
-
-    # Ensure timezone string exists, prepend + if positive
-    if timezone is None:
-        timezone = "+0"
-    elif int(timezone) >= 0:
-        timezone = "+" + str(timezone)
-    else:
-        timezone = str(timezone)
-
-    return created + " GMT" + timezone
+    return timestamp_to_str(created)
 
 
 event_kind = {
@@ -94,7 +55,6 @@ def parse_delegation_string(delegation_string):
     from utils import nostr_nip19_from_key, recolor
     import uio
     import re
-    from common import settings
     from styles.colors import HIGHLIGHT_TEXT_HEX
 
     fields = delegation_string.split(':')
@@ -149,18 +109,13 @@ def parse_delegation_string(delegation_string):
 
     assert len(created_at) <= 2, 'There must be at most 2 "created_at" conditions.'
 
-    timezone = settings.get('timezone', None)
-    created_before = created_at_helper('<', created_at, timezone)
-    created_after = created_at_helper('>', created_at, timezone)
+    created_before = created_at_helper('<', created_at)
+    created_after = created_at_helper('>', created_at)
 
     # len(kinds) + len(created_at) == len(conditions) iff all conditions are valid and
     # all 'kinds' come before all 'created_at', but we already removed 'kinds'
     assert len(created_at) == len(conditions), 'Invalid conditions found'
 
-    # temp = []
-    # for k in kinds:
-    #     temp.append(int(k.split('=')[1]))
-    # kinds = temp
     kinds = list(map(lambda k: int(k.split('=')[1]), kinds))
 
     # All inputs checked, format description and warnings
@@ -172,7 +127,7 @@ def parse_delegation_string(delegation_string):
 
     details.write("\n\n")
 
-    if created_after:
+    if created_after is not None:
         details.write("{}\n{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation Start Date:'),
             created_after,
@@ -184,7 +139,7 @@ def parse_delegation_string(delegation_string):
 
     details.write("\n\n")
 
-    if created_before:
+    if created_before is not None:
         details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation End Date:'),
             created_before))
