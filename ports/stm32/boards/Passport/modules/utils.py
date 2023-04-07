@@ -1346,4 +1346,47 @@ def nostr_sign(key, message):
     return schnorr.sign(key, message)
 
 
+months = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'Aug',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+}
+
+
+def timestamp_to_str(time):
+    import utime
+    from common import settings
+
+    timezone = settings.get('timezone', None)
+    if timezone is not None:
+        time += int(timezone) * 3600
+
+    time_tup = utime.gmtime(time)
+    time = "{} {}, {}\n{}:{}".format(months[time_tup[1]],  # Month
+                                     time_tup[2],          # Day
+                                     time_tup[0],          # Year
+                                     time_tup[3],          # Hour
+                                     time_tup[4],          # Minute
+                                     )
+
+    # Ensure timezone string exists, prepend + if positive
+    if timezone is None:
+        timezone = "+0"
+    elif int(timezone) >= 0:
+        timezone = "+" + str(timezone)
+    else:
+        timezone = str(timezone)
+
+    return time + " GMT" + timezone
+
+
 # EOF
