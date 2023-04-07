@@ -5,6 +5,21 @@
 
 from flows import Flow
 
+months = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'Aug',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+}
+
 
 def created_at_helper(carrot, created_at, timezone):
     import utime
@@ -16,24 +31,23 @@ def created_at_helper(carrot, created_at, timezone):
         return None
 
     created = int(created[0].split(carrot)[1])
+    print(created)
 
     # TODO: this could be a util
     if timezone is not None:
         # utime.timezone(int(timezone) * 3600)  # stored in hours, need seconds
         created += int(timezone) * 3600
-    # TODO: time string is broken
-    time_tup = utime.gmtime(created)
-    created = "{}-{}-{} {}:{}".format(time_tup[3],  # Day
-                                      time_tup[2],  # Month
-                                      time_tup[1],  # Year
-                                      time_tup[4],  # Hour
-                                      time_tup[5],  # Minute
-                                      )
+        print(created)
 
-    # created = utime.fromtimestamp(created).strftime('%Y-%m-%d %H:%M')
+    time_tup = utime.gmtime(created)
+    created = "{} {}, {}\n{}:{}".format(months[time_tup[1]],  # Month
+                                        time_tup[2],          # Day
+                                        time_tup[0],          # Year
+                                        time_tup[3],          # Hour
+                                        time_tup[4],          # Minute
+                                        )
 
     # Ensure timezone string exists, prepend + if positive
-    # TODO: this could be a util
     if timezone is None:
         timezone = "+0"
     elif int(timezone) >= 0:
@@ -246,7 +260,7 @@ class NostrDelegationFlow(Flow):
         from flows import ChooseTimezoneFlow
         import microns
 
-        if not settings.get('timezone', None):
+        if settings.get('timezone', None) is None:
             result = await InfoPage('Nostr delegation is time-sensitive. Please enter your timezone.',
                                     left_micron=microns.Back,
                                     right_micron=microns.Forward).show()
