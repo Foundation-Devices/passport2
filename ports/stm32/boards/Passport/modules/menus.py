@@ -158,8 +158,7 @@ def manage_keys():
 
 
 def key_manager_menu():
-    from flows import NewDerivedKeyFlow
-    from utils import get_derived_keys, toggle_showing_hidden_keys, are_hidden_keys_showing
+    from utils import get_derived_keys, are_hidden_keys_showing
     from derived_key import get_key_type_from_tn
     from common import settings
 
@@ -172,10 +171,8 @@ def key_manager_menu():
     showing_hidden = are_hidden_keys_showing()
 
     for key in keys:
-        if len(key['name']) != 0 \
-                and key['xfp'] == xfp \
-                and (not key['hidden'] or showing_hidden):
-            key_type = get_key_type_from_tn(key['tn'])
+        if key['xfp'] == xfp and (not key['hidden'] or showing_hidden):
+            key_type = get_key_type_from_tn(key.get('tn', None))
 
             if not key_type:
                 continue
