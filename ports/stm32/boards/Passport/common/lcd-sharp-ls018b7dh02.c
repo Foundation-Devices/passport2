@@ -240,7 +240,7 @@ static void _lcd_set_pixel(uint32_t x, uint32_t y) {
 }
 
 // A very hard-coded function to resize the grayscale camera image to the viewfinder size, and convert from
-// grayscle to mono as quickly as possible.
+// grayscale to mono as quickly as possible.
 static void _lcd_resize_and_render_viewfinder_direct(uint8_t* grayscale, uint32_t gray_hor_res, uint32_t gray_ver_res) {
     float scale = (float)gray_ver_res / (float)VIEWFINDER_HEIGHT;
 
