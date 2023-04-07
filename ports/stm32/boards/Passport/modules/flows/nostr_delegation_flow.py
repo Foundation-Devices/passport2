@@ -91,6 +91,8 @@ def parse_delegation_string(delegation_string):
         else:
             break
 
+    assert len(kinds) > 0, 'Event kinds are required.'
+
     # remove all found kinds from conditions before continuing
     for k in kinds:
         conditions.remove(k)
