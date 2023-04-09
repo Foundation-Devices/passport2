@@ -205,7 +205,7 @@ def bitcoin_menu():
 
 
 def security_menu():
-    from flows import ChangePINFlow, SignTextFileFlow, ViewSeedWordsFlow, NewSeedFlow, RestoreSeedFlow
+    from flows import ChangePINFlow, SignTextFileFlow, NewSeedFlow, RestoreSeedFlow
 
     return [
         {'icon': lv.ICON_SEED, 'label': 'Restore Seed', 'flow': RestoreSeedFlow, 'is_visible': lambda: not has_seed(),
@@ -302,7 +302,8 @@ def advanced_menu():
     return [
         {'icon': lv.ICON_SETTINGS, 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
         {'icon': lv.ICON_SEED, 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
-         'statusbar': {'title': 'SEED WORDS', 'icon': lv.ICON_SEED}},
+         'statusbar': {'title': 'SEED WORDS', 'icon': lv.ICON_SEED},
+         'args': {'external_key': None, 'qr_option': True}},
         {'icon': lv.ICON_ONE_KEY, 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': lv.ICON_MICROSD, 'label': 'microSD', 'submenu': microsd_menu},
