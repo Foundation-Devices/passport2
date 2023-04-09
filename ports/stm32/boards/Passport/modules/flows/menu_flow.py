@@ -37,7 +37,7 @@ class MenuFlow(Flow):
         self.items = self.menu()
         if self.dynamic:
             assert(callable(self.dynamic))
-            self.items.extend(self.dynamic())
+            self.items[:0] = self.dynamic()
         self.prev_statusbar = None
         self.prev_card_header = None
 
