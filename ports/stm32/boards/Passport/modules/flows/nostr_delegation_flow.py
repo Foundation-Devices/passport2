@@ -186,12 +186,25 @@ class NostrDelegationFlow(Flow):
         self.created_before = None
         self.created_after = None
         self.kinds = None
-        super().__init__(initial_state=self.export_npub, name='NostrDelegationFlow')
+        super().__init__(initial_state=self.show_warning, name='NostrDelegationFlow')
+
+    async def show_warning(self):
+        from flows import SeedWarningFlow
+
+        result = await SeedWarningFlow(action_text="sign a Nostr delegation"
+                                       .format(self.key_type['title']),
+                                       funds_text="post on your behalf").run()
+        if not result:
+            self.set_result(False)
+            return
+
+        self.goto(self.export_npub)
 
     async def export_npub(self):
         from utils import spinner_task
-        from pages import ShowQRPage, ErrorPage
+        from pages import ShowQRPage, ErrorPage, InfoPage
         from ubinascii import unhexlify as a2b_hex
+        import microns
 
         (vals, error) = await spinner_task(text='Generating npub',
                                                 task=self.key_type['task'],
@@ -205,23 +218,35 @@ class NostrDelegationFlow(Flow):
             self.set_result(False)
             return
 
-        await ShowQRPage(qr_data=self.npub).show()
+        result = await ShowQRPage(qr_data=self.npub,
+                                  left_micron=microns.Cancel,
+                                  caption='Scan this npub QR code with your Nostr client.').show()
+        if not result:
+            self.set_result(False)
+            return
+
         self.goto(self.scan_delegation_string)
 
     async def scan_delegation_string(self):
-        from pages import ScanQRPage, ErrorPage
+        from pages import ScanQRPage, ErrorPage, InfoPage
+        import microns
 
-        # TODO: replace with ScanQRFlow
-        result = await ScanQRPage().show()
+        result = await InfoPage('On the next screen, scan the delegation details QR from your Nostr client.',
+                                left_micron=microns.Cancel).show()
 
         if not result:
             self.set_result(False)
             return
 
+        # TODO: replace with ScanQRFlow
+        result = await ScanQRPage().show()
+
+        if not result:
+            return  # return to InfoPage
+
         if result.is_failure():
             await ErrorPage('Unable to scan QR code.').show()
-            self.set_result(False)
-            return
+            return  # return to InfoPage
 
         self.delegation_string = result.data
 
@@ -230,14 +255,12 @@ class NostrDelegationFlow(Flow):
                 parse_delegation_string(self.delegation_string)
         except Exception as e:
             await ErrorPage('{}'.format(e)).show()
-            self.set_result(False)
-            return
+            return  # return to InfoPage
 
-        self.goto(self.display_details)
+        self.goto(self.request_tz)
 
-    async def display_details(self):
-        from pages import ErrorPage, InfoPage, LongTextPage
-        from common import settings
+    async def request_tz(self):
+        from pages import InfoPage
         from flows import ChooseTimezoneFlow
         import microns
 
@@ -252,6 +275,12 @@ class NostrDelegationFlow(Flow):
 
         if not result:
             return  # Go back to previous page
+
+        self.goto(self.display_details)
+
+    async def display_details(self):
+        from pages import LongTextPage
+        import microns
 
         details = format_delegation_string(self.delegatee_npub,
                                            self.created_before,
@@ -268,12 +297,12 @@ class NostrDelegationFlow(Flow):
             return
 
         self.goto(self.sign_delegation)
-        return
 
     async def sign_delegation(self):
         from serializations import sha256
         from utils import nostr_sign, B2A
         from pages import ShowQRPage
+        import microns
 
         print("pk: {}".format(B2A(self.pk)))
         sha = sha256(self.delegation_string)
@@ -281,7 +310,9 @@ class NostrDelegationFlow(Flow):
         sig = nostr_sign(self.pk, sha)
         print("sig: {}".format(B2A(sig)))
 
-        result = await ShowQRPage(qr_data=B2A(sig)).show()
+        result = await ShowQRPage(qr_data=B2A(sig),
+                                  right_micron=microns.Checkmark,
+                                  caption='Scan this final QR code with your Nostr client.').show()
 
         if not result:
             self.back()
