@@ -162,9 +162,8 @@ def key_manager_menu():
     from derived_key import get_key_type_from_tn
     from common import settings
 
-    result = []
-
-    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
+    result = [{'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu},
+              {'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys}]
 
     keys = get_derived_keys()
     xfp = settings.get('xfp')
@@ -177,7 +176,8 @@ def key_manager_menu():
             if not key_type:
                 continue
 
-            result.append({'icon': key_type['icon'],
+            result.insert(len(result) - 1,
+                          {'icon': key_type['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
                            'card_header': {'title': "{} ({})".format(key['name'], key['index']),
@@ -185,8 +185,6 @@ def key_manager_menu():
                            'statusbar': {'title': 'KEY MANAGER'},
                            'args': {'context': key},
                            'auto_card_header': False})
-
-    result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 
     return result
 
