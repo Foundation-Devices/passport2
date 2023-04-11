@@ -149,10 +149,10 @@ class Flow():
         except Exception as e:
             handle_fatal_error(e)
 
-    async def show_card_missing(self, automatic=False):
+    async def show_card_missing(self):
         from pages import InsertMicroSDPage
 
-        if automatic:
+        if hasattr(self, 'automatic') and self.automatic:
             self.set_result(False)
             return
 

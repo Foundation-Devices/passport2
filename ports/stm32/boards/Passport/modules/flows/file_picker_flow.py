@@ -47,7 +47,8 @@ class FilePickerFlow(Flow):
         else:
             self.reset_paths()
             self.status_page.set_result(None)
-            self.goto(self.show_insert_microsd_error)
+            # show_card_missing is a global flow state
+            self.goto(self.show_card_missing)
             return False
 
     async def on_empty_result(self, res):
@@ -61,7 +62,8 @@ class FilePickerFlow(Flow):
     def on_file_sd_card_change(self, sd_card_present):
         if not sd_card_present:
             self.reset_paths()
-            self.goto(self.show_insert_microsd_error)
+            # show_card_missing is a global flow state
+            self.goto(self.show_card_missing)
             return True
 
     async def on_file_result(self, res):
@@ -108,7 +110,8 @@ class FilePickerFlow(Flow):
 
             except CardMissingError:
                 self.reset_paths()
-                self.goto(self.show_insert_microsd_error)
+                # show_card_missing is a global flow state
+                self.goto(self.show_card_missing)
                 return
 
             is_root = active_path == CardSlot.get_sd_root()
@@ -158,13 +161,6 @@ class FilePickerFlow(Flow):
 
                 if self.finished:
                     return
-
-    async def show_insert_microsd_error(self):
-        result = await InsertMicroSDPage().show()
-        if not result:
-            self.set_result(None)
-        else:
-            self.goto(self.show_file_picker)
 
     def reset_paths(self):
         self.paths = [self.initial_path]
