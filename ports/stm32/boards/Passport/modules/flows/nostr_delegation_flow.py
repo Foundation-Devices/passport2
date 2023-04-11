@@ -186,6 +186,7 @@ class NostrDelegationFlow(Flow):
         self.created_before = None
         self.created_after = None
         self.kinds = None
+        self.use_qr = None
         super().__init__(initial_state=self.show_warning, name='NostrDelegationFlow')
 
     async def show_warning(self):
@@ -198,11 +199,27 @@ class NostrDelegationFlow(Flow):
             self.set_result(False)
             return
 
+        self.goto(self.choose_mode)
+
+    async def choose_mode(self):
+        from pages import ChooserPage
+
+        options = [{'label': 'Delegate via QR', 'value': True},
+                   {'label': 'Delegate via microSD', 'value': False}]
+
+        mode = await ChooserPage(card_header={'title': 'Export Mode'}, options=options).show()
+
+        if mode is None:
+            self.set_result(False)
+            return
+
+        self.use_qr = mode
         self.goto(self.export_npub)
 
     async def export_npub(self):
         from utils import spinner_task
         from pages import ShowQRPage, ErrorPage, InfoPage
+        from flows import SaveToMicroSDFlow
         from ubinascii import unhexlify as a2b_hex
         import microns
 
@@ -218,9 +235,23 @@ class NostrDelegationFlow(Flow):
             self.set_result(False)
             return
 
-        result = await ShowQRPage(qr_data=self.npub,
-                                  left_micron=microns.Cancel,
-                                  caption='Scan this npub QR code with your Nostr client.').show()
+        if self.use_qr:
+            result = await ShowQRPage(caption='Scan this npub QR code with your Nostr client.',
+                                      qr_data=self.npub,
+                                      left_micron=microns.Cancel).show()
+        else:
+            result = await InfoPage('Copy the following npub into your Nostr client.',
+                                    left_micron=microns.Cancel).show()
+
+            if not result:
+                self.set_result(False)
+                return
+
+            filename = '{}-{}-npub.txt'.format(self.key_type['title'], self.key['name'])
+            result = await SaveToMicroSDFlow(filename=filename,
+                                             data=self.npub,
+                                             success_text="Nostr npub").run()
+
         if not result:
             self.set_result(False)
             return
@@ -230,25 +261,48 @@ class NostrDelegationFlow(Flow):
     async def scan_delegation_string(self):
         from pages import ScanQRPage, ErrorPage, InfoPage
         import microns
+        from flows import FilePickerFlow
+        from utils import spinner_task
+        from tasks import read_file_task
 
-        result = await InfoPage('On the next screen, scan the delegation details QR from your Nostr client.',
-                                left_micron=microns.Cancel).show()
+        if self.use_qr:
+            info_text = 'On the next screen, scan the delegation details QR from your Nostr client.'
+        else:
+            info_text = 'Next, select the delegation details file from your SD card.'
+        result = await InfoPage(text=info_text, left_micron=microns.Cancel).show()
 
         if not result:
             self.set_result(False)
             return
 
-        # TODO: replace with ScanQRFlow
-        result = await ScanQRPage().show()
+        if self.use_qr:
+            result = await ScanQRPage().show()
 
-        if not result:
-            return  # return to InfoPage
+            if not result:
+                return  # return to InfoPage
 
-        if result.is_failure():
-            await ErrorPage('Unable to scan QR code.').show()
-            return  # return to InfoPage
+            if result.is_failure():
+                await ErrorPage('Unable to scan QR code.').show()
+                return  # return to InfoPage
 
-        self.delegation_string = result.data
+            self.delegation_string = result.data
+        else:
+            result = await FilePickerFlow(show_folders=True).run()
+
+            if result is None:
+                return  # return to InfoPage
+
+            # TODO: replace with read file flow
+            filename, full_path, is_folder = result
+            (data, error) = await spinner_task('Reading File',
+                                               read_file_task,
+                                               args=[full_path, False])
+
+            if error or data is None:
+                await ErrorPage('Unable to read file.').show()
+                return  # return to InfoPage
+
+            self.delegation_string = data.strip()
 
         try:
             self.delegatee_npub, self.created_before, self.created_after, self.kinds = \
@@ -301,21 +355,34 @@ class NostrDelegationFlow(Flow):
     async def sign_delegation(self):
         from serializations import sha256
         from utils import nostr_sign, B2A
-        from pages import ShowQRPage
+        from pages import ShowQRPage, InfoPage
         import microns
+        from flows import SaveToMicroSDFlow
 
         print("pk: {}".format(B2A(self.pk)))
         sha = sha256(self.delegation_string)
         print("sha: {}".format(B2A(sha)))
-        sig = nostr_sign(self.pk, sha)
-        print("sig: {}".format(B2A(sig)))
+        sig = B2A(nostr_sign(self.pk, sha))
+        print("sig: {}".format(sig))
 
-        result = await ShowQRPage(qr_data=B2A(sig),
-                                  right_micron=microns.Checkmark,
-                                  caption='Scan this final QR code with your Nostr client.').show()
+        if self.use_qr:
+            result = await ShowQRPage(caption='Scan this final QR code with your Nostr client.',
+                                      qr_data=sig,
+                                      right_micron=microns.Checkmark).show()
+            if not result:
+                self.back()
+                return
+        else:
+            result = await InfoPage('Copy the following delegation code into your Nostr client.',
+                                    left_micron=microns.Back).show()
 
-        if not result:
-            self.back()
-            return
+            if not result:
+                self.back()
+                return
+
+            filename = '{}-{}-delegation.txt'.format(self.key_type['title'], self.key['name'])
+            result = await SaveToMicroSDFlow(filename=filename,
+                                             data=sig,
+                                             success_text="Nostr delegation").run()
 
         self.set_result(True)
