@@ -98,16 +98,6 @@ class SignPsbtMicroSDFlow(Flow):
             self.psbt = result
             self.goto(self.write_signed_transaction)
 
-    async def show_card_missing(self):
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            result = QuestionPage(text='Cancel signing this transaction?').show()
-            if result:
-                self.set_result(None)
-
-        self.goto(self.write_signed_transaction)
-
     async def write_signed_transaction(self):
         from files import securely_blank_file
         from pages import ErrorPage
