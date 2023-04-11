@@ -61,7 +61,7 @@ class ExportDerivedKeyFlow(Flow):
 
         if self.key_type['words']:
             options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
-                       {'label': 'SeedQr', 'value': QRType.SEED_QR}]
+                       {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
             qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()
         else:
