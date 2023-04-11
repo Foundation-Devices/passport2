@@ -51,6 +51,7 @@ from .new_account_flow import *
 from .new_derived_key_flow import *
 from .new_seed_flow import *
 from .connect_wallet_flow import *
+from .read_file_flow import *
 from .remove_dev_pubkey_flow import *
 from .rename_account_flow import *
 from .rename_derived_key_flow import *

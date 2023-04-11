@@ -4,8 +4,6 @@
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
 from flows import Flow
-from files import CardSlot, CardMissingError
-from pages.insert_microsd_page import InsertMicroSDPage
 
 
 def is_health_check(filename, path=None):
@@ -40,24 +38,16 @@ class CasaHealthCheckMicrosdFlow(Flow):
             self.goto(self.parse_message)
 
     async def parse_message(self):
-        from files import CardSlot
-        from pages import ErrorPage
+        from flows import ReadFileFlow
 
-        try:
-            with CardSlot() as _card:
-                with open(self.file_path, 'r') as fd:
-                    try:
-                        self.lines = fd.read().split('\n')
-                    except Exception as e:
-                        await ErrorPage(text='Health check format is invalid.').show()
-                        self.set_result(False)
-                        return
+        data = await ReadFileFlow(self.file_path, binary=False).run()
 
-                    self.goto(self.common_flow)
-        except CardMissingError:
-            result = await InsertMicroSDPage().show()
-            if not result:
-                self.back()
+        if not data:
+            self.set_result(False)
+            return
+
+        self.lines = data.split('\n')
+        self.goto(self.common_flow)
 
     async def common_flow(self):
         from flows import CasaHealthCheckCommonFlow
