@@ -148,3 +148,16 @@ class Flow():
             return self.result
         except Exception as e:
             handle_fatal_error(e)
+
+    async def show_card_missing(self, automatic=False):
+        from pages import InsertMicroSDPage
+
+        if automatic:
+            self.set_result(False)
+            return
+
+        result = await InsertMicroSDPage().show()
+        if not result:
+            self.set_result(False)
+        else:
+            self.back()
