@@ -63,7 +63,7 @@ class SaveToMicroSDFlow(Flow):
 
             except CardMissingError:
                 # show_card_missing is a global flow state
-                self.goto(self.show_card_missing, self.automatic)
+                self.goto(self.show_card_missing)
                 return
 
             except Exception as e:
