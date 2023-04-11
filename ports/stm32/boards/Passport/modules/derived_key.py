@@ -26,7 +26,8 @@ key_types = [
      'icon': lv.ICON_NOSTR,
      'indexed': True,
      'words': False,
-     'task': nostr_key_task},
+     'task': nostr_key_task,
+     'funds_text': 'post on your behalf'},
 ]
 
 
