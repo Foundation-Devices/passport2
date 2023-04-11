@@ -180,8 +180,11 @@ def key_manager_menu():
             result.append({'icon': key_type['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
-                           'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
-                           'args': {'context': key}})
+                           'card_header': {'title': "{} ({})".format(key['name'], key['index']),
+                                           'right_icon': key_type['icon']},
+                           'statusbar': {'title': 'Key Manager'},
+                           'args': {'context': key},
+                           'auto_card_header': False})
 
     result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 
