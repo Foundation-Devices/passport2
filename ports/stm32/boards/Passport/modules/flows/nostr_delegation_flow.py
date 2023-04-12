@@ -261,9 +261,7 @@ class NostrDelegationFlow(Flow):
     async def scan_delegation_string(self):
         from pages import ScanQRPage, ErrorPage, InfoPage
         import microns
-        from flows import FilePickerFlow
-        from utils import spinner_task
-        from tasks import read_file_task
+        from flows import FilePickerFlow, ReadFileFlow
 
         if self.use_qr:
             info_text = 'On the next screen, scan the delegation details QR from your Nostr client.'
@@ -292,14 +290,10 @@ class NostrDelegationFlow(Flow):
             if result is None:
                 return  # return to InfoPage
 
-            # TODO: replace with read file flow
             filename, full_path, is_folder = result
-            (data, error) = await spinner_task('Reading File',
-                                               read_file_task,
-                                               args=[full_path, False])
+            data = await ReadFileFlow(file_path=full_path, binary=False).run()
 
-            if error or data is None:
-                await ErrorPage('Unable to read file.').show()
+            if data is None:
                 return  # return to InfoPage
 
             self.delegation_string = data.strip()
