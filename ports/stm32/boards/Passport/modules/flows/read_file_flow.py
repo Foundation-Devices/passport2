@@ -22,7 +22,6 @@ class ReadFileFlow(Flow):
         from errors import Error
         from pages import ErrorPage
 
-        # TODO: make custom read task support for InstallDevPubkeyFLow and SignTextFileFlow
         (data, error) = await spinner_task('Reading File',
                                            read_file_task,
                                            args=[self.file_path, self.binary, self.read_fn])
