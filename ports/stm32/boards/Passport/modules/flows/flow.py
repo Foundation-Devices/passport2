@@ -158,6 +158,7 @@ class Flow():
 
         result = await InsertMicroSDPage().show()
         if not result:
+            # TODO: make result consistent with subclass return type
             self.set_result(False)
         else:
             self.back()
