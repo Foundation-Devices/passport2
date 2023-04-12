@@ -7,10 +7,11 @@ from flows import Flow
 
 
 class ReadFileFlow(Flow):
-    def __init__(self, file_path, binary=True, automatic=False):
+    def __init__(self, file_path, binary=True, automatic=False, read_fn=None):
         self.file_path = file_path
         self.binary = binary
         self.automatic = automatic
+        self.read_fn = read_fn
         super().__init__(initial_state=self.read_file, name='ReadFileFlow')
 
     async def read_file(self):
@@ -22,7 +23,7 @@ class ReadFileFlow(Flow):
         # TODO: make custom read task support for InstallDevPubkeyFLow and SignTextFileFlow
         (data, error) = await spinner_task('Reading File',
                                            read_file_task,
-                                           args=[self.file_path, self.binary])
+                                           args=[self.file_path, self.binary, self.read_fn])
 
         if error is Error.MICROSD_CARD_MISSING:
             # show_card_missing is a global flow state

@@ -37,12 +37,8 @@ class SignPsbtMicroSDFlow(Flow):
 
     async def choose_file(self):
         from flows import FilePickerFlow
-        from files import CardSlot
 
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=None).run()
+        result = await FilePickerFlow(show_folders=True, suffix='psbt', filter_fn=None).run()
         if result is None:
             self.set_result(False)
             return
