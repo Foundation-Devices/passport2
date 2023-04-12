@@ -48,7 +48,6 @@ class SaveToMicroSDFlow(Flow):
                     self.out_full, _ = card.pick_filename(self.filename, path)
 
                     if self.data:
-                        # TODO: turn this into the default write_fn
                         with open(self.out_full, 'w' + self.mode) as fd:
                             fd.write(self.data)
                         written = True
