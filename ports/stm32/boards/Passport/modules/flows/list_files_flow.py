@@ -3,7 +3,6 @@
 #
 # list_files_flow.py - Flow to let user view microSD card files and view the SHA256 of the chosen file
 
-from files import CardSlot
 from flows import Flow, FilePickerFlow
 from pages import SuccessPage, ErrorPage, ProgressPage, InsertMicroSDPage
 from tasks import calculate_file_sha256_task
@@ -24,9 +23,7 @@ class ListFilesFlow(Flow):
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(initial_path=root_path, show_folders=True, select_text='Info').run()
+        result = await FilePickerFlow(show_folders=True, select_text='Info').run()
         if result is None:
             self.set_result(False)
             return
