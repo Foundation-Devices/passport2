@@ -27,6 +27,8 @@ class SaveToMicroSDFlow(Flow):
         self.automatic = automatic
         self.auto_timeout = 1000 if automatic else None
         self.show_check = None if automatic else microns.Checkmark
+        # return_bool attribute required to use show_card_missing
+        self.return_bool = True
         super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
 
     async def save(self):
