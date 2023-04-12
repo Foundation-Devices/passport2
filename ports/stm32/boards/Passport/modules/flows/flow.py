@@ -152,13 +152,20 @@ class Flow():
     async def show_card_missing(self):
         from pages import InsertMicroSDPage
 
+        # This makes the return type consistent with the subclass
+        if hasattr(self, 'return_bool') and self.return_bool:
+            print("returning False")
+            result = False
+        else:
+            print("returning None")
+            result = None
+
         if hasattr(self, 'automatic') and self.automatic:
-            self.set_result(False)
+            self.set_result(result)
             return
 
-        result = await InsertMicroSDPage().show()
-        if not result:
-            # TODO: make result consistent with subclass return type
-            self.set_result(False)
+        retry = await InsertMicroSDPage().show()
+        if not retry:
+            self.set_result(result)
         else:
             self.back()

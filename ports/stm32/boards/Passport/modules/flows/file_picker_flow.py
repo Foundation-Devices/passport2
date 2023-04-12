@@ -40,6 +40,8 @@ class FilePickerFlow(Flow):
         self.status_page = None
         self.empty_result = None
         self.finished = False
+        # return_bool attribute required to use show_card_missing
+        self.return_bool = False
 
     def on_empty_sd_card_change(self, sd_card_present):
         if sd_card_present:

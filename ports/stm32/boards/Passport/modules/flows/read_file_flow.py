@@ -12,6 +12,8 @@ class ReadFileFlow(Flow):
         self.binary = binary
         self.automatic = automatic
         self.read_fn = read_fn
+        # return_bool attribute required to use show_card_missing
+        self.return_bool = False
         super().__init__(initial_state=self.read_file, name='ReadFileFlow')
 
     async def read_file(self):
