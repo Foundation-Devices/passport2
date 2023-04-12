@@ -9,10 +9,10 @@ from flows import Flow
 class SeedWarningFlow(Flow):
     def __init__(self, mention_passphrase=False,
                  action_text="display your seed words",
-                 funds_text=None):
+                 continue_text=None):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text
-        self.funds_text = funds_text or "control your funds"
+        self.continue_text = continue_text or "control your funds"
         super().__init__(initial_state=self.show_intro, name='SeedWarningFlow')
 
     async def show_intro(self):
@@ -38,5 +38,5 @@ class SeedWarningFlow(Flow):
         from pages import QuestionPage
 
         result = await QuestionPage(
-            'Anyone who knows this information can {}.\n\nContinue?'.format(self.funds_text)).show()
+            'Anyone who knows this information can {}.\n\nContinue?'.format(self.continue_text)).show()
         self.set_result(result)

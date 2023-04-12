@@ -27,7 +27,7 @@ key_types = [
      'indexed': True,
      'words': False,
      'task': nostr_key_task,
-     'funds_text': 'post on your behalf'},
+     'continue_text': 'post on your behalf'},
 ]
 
 
