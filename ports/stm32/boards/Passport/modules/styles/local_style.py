@@ -5,7 +5,6 @@
 
 import lvgl as lv
 from .font_sizes import *
-from .colors import COPPER, LIGHT_COPPER
 
 
 class LocalStyle():
