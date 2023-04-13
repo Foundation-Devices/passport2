@@ -63,11 +63,14 @@ class ChooserPage(Page):
         # Add icon if provided
         if icon is not None:
             from views import Icon
+            import passport
+
             self.icon_view = Icon(self.icon)
             with Stylize(self.icon_view) as default:
                 if self.icon_color is not None:
                     default.img_recolor(self.icon_color)
-                    default.pad(top=12, bottom=12)
+                    top = 20 if passport.IS_COLOR else 12
+                    default.pad(top=top, bottom=12)
             self.add_child(self.icon_view)
 
         # Add text if provided
