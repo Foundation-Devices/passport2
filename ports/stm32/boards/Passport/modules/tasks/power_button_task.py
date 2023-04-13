@@ -32,6 +32,7 @@ async def power_button_task():
     import common
     import passport
     from uasyncio import sleep_ms
+    from keypad import feedback
 
     if not passport.IS_SIMULATOR:
         from micropython import alloc_emergency_exception_buf
@@ -49,6 +50,7 @@ async def power_button_task():
             # Wait for a power button pin interrupt.
             await pwr_btn_int_event.wait()
 
+        feedback()
         if common.ui.get_active_card() is not None:
             # Remember what the current page was
             last_active_page = common.ui.get_active_page()

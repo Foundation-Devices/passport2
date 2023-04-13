@@ -13,7 +13,7 @@ import passport
 from passport_lv import Keypad as _Keypad
 
 
-def feedback(e, f):
+def feedback(e=None, f=None):
     from utils import get_screen_brightness
     import common
     common.last_interaction_time = utime.ticks_ms()
@@ -28,7 +28,7 @@ def feedback(e, f):
 def global_key_cb(key, is_pressed):
     if common.keypad.intercept_key_cb is not None:
         common.keypad.intercept_key_cb(key, is_pressed)
-        feedback(None, None)
+        feedback()
 
     common.keypad.key_cb(key, is_pressed)
 
