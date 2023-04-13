@@ -177,8 +177,12 @@ def key_manager_menu():
             if not key_type:
                 continue
 
+            title = "{} ({})".format(key['name'], key['index'])
+            # if len(title) > 18:
+            #     title = (title[:17] + '...')
+
             result.append({'icon': key_type['icon'],
-                           'label': "{} ({})".format(key['name'], key['index']),
+                           'label': title,
                            'submenu': key_item_menu,
                            'card_header': {'title': "{} ({})".format(key['name'], key['index']),
                                            'right_icon': key_type['icon']},
