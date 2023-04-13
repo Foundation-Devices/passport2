@@ -23,4 +23,5 @@ class AutoShutdownSettingPage(SettingPage):
             statusbar=statusbar,
             setting_name='shutdown_timeout',
             options=self.OPTIONS,
-            default_value=self.OPTIONS[2].get('value'))
+            default_value=self.OPTIONS[2].get('value'),
+            scroll_fix=True)

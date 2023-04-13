@@ -9,7 +9,7 @@ import common
 
 class SettingPage(ChooserPage):
     def __init__(self, card_header=None, statusbar=None, options=[],
-                 setting_name=None, default_value=None, on_change=None):
+                 setting_name=None, default_value=None, on_change=None, scroll_fix=False):
         self.setting_name = setting_name
         self.default_value = default_value
 
@@ -18,7 +18,8 @@ class SettingPage(ChooserPage):
             statusbar=statusbar,
             options=options,
             initial_value=self.get_setting(),
-            on_change=self._on_setting_change)
+            on_change=self._on_setting_change,
+            scroll_fix=scroll_fix)
 
         self.on_setting_change = on_change
 
