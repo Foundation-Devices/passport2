@@ -7,12 +7,18 @@ from errors import Error
 from files import CardSlot, CardMissingError
 
 
-async def read_file_task(on_done, file_path):
+def default_read_fn(fd):
+    return fd.read()
+
+
+async def read_file_task(on_done, file_path, binary=True, read_fn=None):
     ''' NOTE: Assumes that that path above the leaf filename already exists.'''
+    mode = 'b' if binary else ''
+    read_fn = read_fn or default_read_fn
     try:
         with CardSlot() as _card:
-            with open(file_path, 'rb') as fd:
-                data = fd.read()
+            with open(file_path, 'r' + mode) as fd:
+                data = read_fn(fd)
                 await on_done(data, None)
 
     except CardMissingError:

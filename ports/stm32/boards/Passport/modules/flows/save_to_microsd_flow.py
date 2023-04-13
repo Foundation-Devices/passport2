@@ -27,6 +27,8 @@ class SaveToMicroSDFlow(Flow):
         self.automatic = automatic
         self.auto_timeout = 1000 if automatic else None
         self.show_check = None if automatic else microns.Checkmark
+        # return_bool attribute required to use show_card_missing
+        self.return_bool = True
         super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
 
     async def save(self):
@@ -63,10 +65,8 @@ class SaveToMicroSDFlow(Flow):
                         break
 
             except CardMissingError:
-                if not self.automatic:
-                    self.goto(self.show_card_missing)
-                else:
-                    self.set_result(False)
+                # show_card_missing is a global flow state
+                self.goto(self.show_card_missing)
                 return
 
             except Exception as e:
@@ -89,12 +89,3 @@ class SaveToMicroSDFlow(Flow):
                           right_micron=self.show_check) \
             .show(auto_close_timeout=self.auto_timeout)
         self.set_result(True)
-
-    async def show_card_missing(self):
-        from pages import InsertMicroSDPage
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            self.set_result(False)
-        else:
-            self.goto(self.save)

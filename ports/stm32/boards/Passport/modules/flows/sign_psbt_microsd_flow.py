@@ -37,12 +37,8 @@ class SignPsbtMicroSDFlow(Flow):
 
     async def choose_file(self):
         from flows import FilePickerFlow
-        from files import CardSlot
 
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=None).run()
+        result = await FilePickerFlow(show_folders=True, suffix='psbt', filter_fn=None).run()
         if result is None:
             self.set_result(False)
             return
@@ -97,16 +93,6 @@ class SignPsbtMicroSDFlow(Flow):
         else:
             self.psbt = result
             self.goto(self.write_signed_transaction)
-
-    async def show_card_missing(self):
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            result = QuestionPage(text='Cancel signing this transaction?').show()
-            if result:
-                self.set_result(None)
-
-        self.goto(self.write_signed_transaction)
 
     async def write_signed_transaction(self):
         from files import securely_blank_file
