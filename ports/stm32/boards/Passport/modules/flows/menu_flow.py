@@ -36,6 +36,7 @@ class MenuFlow(Flow):
         assert(callable(self.menu))
         self.items = self.menu()
         self.prev_statusbar = None
+        self.prev_card_header = None
 
         # print('show_menu(): is_top_level() = {}'.format(common.ui.is_top_level()))
         result = await MenuPage(
@@ -62,8 +63,10 @@ class MenuFlow(Flow):
             item = self.selected_item
 
             if item.get('submenu') is not None:
+                # TODO: this and the flow case have a lot in common
                 # If it contains a submenu, then just call MenuFlow recursively
-                self.prev_statusbar = self.update_statusbar(item)
+                auto = item.get('auto_card_header', True)
+                self.update_headers(item, auto)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
@@ -71,9 +74,7 @@ class MenuFlow(Flow):
                 # print('MENUFLOW >>>>>>> args={}'.format(args))
                 submenu = item.get('submenu')
                 await MenuFlow(submenu, **args).run()
-                if self.prev_statusbar is not None:
-                    ui.set_statusbar(**self.prev_statusbar)
-                    self.prev_statusbar = None
+                self.revert_headers(auto)
 
                 # Trigger a card refresh, usually because an Extension was enabled or disabled
                 if self.is_top_level and ui.update_cards_pending:
@@ -94,15 +95,14 @@ class MenuFlow(Flow):
                 # If there is a flow, run it
                 flow = item.get('flow')
 
-                self.prev_statusbar = self.update_statusbar(item)
+                auto = item.get('auto_card_header', True)
+                self.update_headers(item, auto)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
                 # print('FLOW >>>>>>> args={}'.format(args))
                 await flow(**args).run()
-                if self.prev_statusbar is not None:
-                    ui.set_statusbar(**self.prev_statusbar)
-                    self.prev_statusbar = None
+                self.revert_headers(auto)
 
             elif item.get('action') is not None:
                 action = item.get('action')
@@ -151,14 +151,11 @@ class MenuFlow(Flow):
         if card_header is not None:
             card_title = card_header.get('title', None)
             card_icon = card_header.get('icon', None)
-        else:
-            card_title = item.get('label', None)
-            card_icon = item.get('icon', None)
+            card_right_icon = card_header.get('right_icon', None)
 
-        if card_title is not None or card_icon is not None:
-            return ui.set_card_header(title=card_title, icon=card_icon)
+            return ui.set_card_header(title=card_title, icon=card_icon, right_icon=card_right_icon)
 
-        return None
+        return ui.get_card_header()
 
     # Automatically assign screen header to menu label and icon unless
     # auto_screen_header is present and False.
@@ -183,3 +180,28 @@ class MenuFlow(Flow):
 
     def get_prev_statusbar(self):
         return self.prev_statusbar
+
+    def update_prev_card_header(self, card_header):
+        self.prev_card_header = card_header
+
+    def get_prev_card_header(self):
+        return self.prev_card_header
+
+    def revert_headers(self, auto=True):
+        from common import ui
+        if self.prev_statusbar is not None:
+            ui.set_statusbar(**self.prev_statusbar)
+            self.prev_statusbar = None
+
+        if not auto and self.prev_card_header is not None:
+            ui.set_card_header(**self.prev_card_header)
+            self.prev_card_header = None
+
+    def update_headers(self, item, auto=True):
+        from common import ui
+
+        self.prev_statusbar = self.update_statusbar(item)
+        if not auto:
+            self.prev_card_header = self.update_card_header(item)
+        else:
+            self.prev_card_header = ui.get_card_header()

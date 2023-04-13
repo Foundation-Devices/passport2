@@ -123,7 +123,7 @@ def key_item_menu():
         HideDerivedKeyFlow)
     return [
         {'icon': lv.ICON_ONE_KEY, 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
-        {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow},
+        {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': lv.ICON_SCAN_QR, 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': lv.ICON_ERASE, 'label': 'Toggle Hidden', 'flow': HideDerivedKeyFlow},
     ]
@@ -140,7 +140,7 @@ def new_key_menu():
         result.append({'icon': icon,
                        'label': title,
                        'flow': NewDerivedKeyFlow,
-                       'statusbar': {'title': 'New {}'.format(title),
+                       'statusbar': {'title': 'NEW {}'.format(title.upper()),
                                      'icon': icon},
                        'args': {'context': key_type}})
     return result
@@ -180,8 +180,11 @@ def key_manager_menu():
             result.append({'icon': key_type['icon'],
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
-                           'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
-                           'args': {'context': key}})
+                           'card_header': {'title': "{} ({})".format(key['name'], key['index']),
+                                           'right_icon': key_type['icon']},
+                           'statusbar': {'title': 'KEY MANAGER'},
+                           'args': {'context': key},
+                           'auto_card_header': False})
 
     result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 
