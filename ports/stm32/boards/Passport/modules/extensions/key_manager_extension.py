@@ -7,7 +7,7 @@ import lvgl as lv
 from flows import MenuFlow
 from menus import key_manager_menu
 from utils import is_extension_enabled, toggle_extension_enabled
-from styles.colors import BITCOIN_ORANGE, LIGHT_GREY, LIGHT_TEXT, WHITE
+from styles.colors import LIGHT_COPPER, LIGHT_GREY, LIGHT_TEXT, WHITE
 import microns
 
 
@@ -31,7 +31,7 @@ KeyManagerExtension = {
         'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_EXTENSIONS, 'fg_color': WHITE},
         'title': label,
         'page_micron': microns.PageDot,
-        'bg_color': BITCOIN_ORANGE,
+        'bg_color': LIGHT_COPPER,
         'flow': MenuFlow,
         'args': {'menu': key_manager_menu, 'is_top_level': True},
     },
