@@ -6,6 +6,7 @@
 
 from pages import SettingPage
 from utils import get_screen_brightness, set_screen_brightness
+import passport
 import common
 
 
@@ -25,7 +26,8 @@ class BrightnessSettingPage(SettingPage):
             setting_name='screen_brightness',  # NOTE: Not actually used for this setting as we store it in EEPROM
             options=self.OPTIONS,
             default_value=self.OPTIONS[4].get('value'),
-            on_change=self.on_change)
+            on_change=self.on_change,
+            scroll_fix=not passport.IS_COLOR)
 
     def on_change(self, new_value):
         common.display.set_brightness(new_value)
