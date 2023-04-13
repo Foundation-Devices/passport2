@@ -178,13 +178,11 @@ def key_manager_menu():
                 continue
 
             title = "{} ({})".format(key['name'], key['index'])
-            # if len(title) > 18:
-            #     title = (title[:17] + '...')
 
             result.append({'icon': key_type['icon'],
                            'label': title,
                            'submenu': key_item_menu,
-                           'card_header': {'title': "{} ({})".format(key['name'], key['index']),
+                           'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
                            'args': {'context': key},
