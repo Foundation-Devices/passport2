@@ -13,6 +13,7 @@ import common
 import passport
 from uasyncio import sleep_ms
 from pincodes import BootloaderError
+import stash
 
 
 async def login_task(on_done, pin):
@@ -37,6 +38,11 @@ async def login_task(on_done, pin):
             # else:
             #     return
             # print('PIN is correct!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11')
+
+            # This should run once on devices that don't have the xfp saved to flash
+            if common.settings.get('xfp', None) is None:
+                with stash.SensitiveValues() as sv:
+                    sv.capture_xpub(save=True)
             await on_done(True, None)
 
     except BootloaderError as err:
