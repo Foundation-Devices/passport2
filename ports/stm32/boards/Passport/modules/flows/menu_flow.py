@@ -152,15 +152,10 @@ class MenuFlow(Flow):
             card_title = card_header.get('title', None)
             card_icon = card_header.get('icon', None)
             card_right_icon = card_header.get('right_icon', None)
-        else:
-            card_title = item.get('label', None)
-            card_icon = item.get('icon', None)
-            card_right_icon = item.get('right_icon', None)
 
-        if card_title is not None or card_icon is not None or card_right_icon is not None:
             return ui.set_card_header(title=card_title, icon=card_icon, right_icon=card_right_icon)
 
-        return None
+        return ui.get_card_header()
 
     # Automatically assign screen header to menu label and icon unless
     # auto_screen_header is present and False.
@@ -203,6 +198,10 @@ class MenuFlow(Flow):
             self.prev_card_header = None
 
     def update_headers(self, item, auto=True):
+        from common import ui
+
         self.prev_statusbar = self.update_statusbar(item)
         if not auto:
             self.prev_card_header = self.update_card_header(item)
+        else:
+            self.prev_card_header = ui.get_card_header()

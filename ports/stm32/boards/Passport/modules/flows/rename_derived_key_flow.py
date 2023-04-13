@@ -63,10 +63,10 @@ class RenameDerivedKeyFlow(Flow):
                                       args=[self.key, self.key_name])
         if error is None:
             if MenuFlow.latest_menu is not None:
-                statusbar = MenuFlow.latest_menu.get_prev_statusbar()
-                statusbar['title'] = "{} ({})".format(self.key_name, self.key['index'])
-                MenuFlow.latest_menu.update_prev_statusbar(statusbar)
-
+                card_header = MenuFlow.latest_menu.get_prev_card_header()
+                if card_header is not None:
+                    card_header['title'] = "{} ({})".format(self.key_name, self.key['index'])
+                    MenuFlow.latest_menu.update_prev_card_header(card_header)
             await AutoBackupFlow().run()
             self.set_result(True)
         else:
