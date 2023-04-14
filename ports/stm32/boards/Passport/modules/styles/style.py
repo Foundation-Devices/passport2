@@ -6,7 +6,6 @@
 import lvgl as lv
 import common
 import passport
-from .colors import COPPER, LIGHT_COPPER
 from .font_sizes import *
 
 
