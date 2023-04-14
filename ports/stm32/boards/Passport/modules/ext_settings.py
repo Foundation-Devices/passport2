@@ -212,6 +212,8 @@ class ExtSettings:
             # Special case for xfp and xpub -- make sure they exist and create if not
             if kn not in self.current:
                 if kn == 'xfp' or kn == 'xpub' or kn == 'root_xfp':
+                    kn == 'root_xfp' and 'xfp' in self.current:
+                        return self.current.get('xfp', default)
                     try:
                         # Update xpub/xfp in settings after creating new wallet
                         import stash

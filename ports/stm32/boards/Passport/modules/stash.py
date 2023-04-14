@@ -226,7 +226,9 @@ class SensitiveValues:
             settings.set_volatile('root_xfp', xfp)
             if save:
                 settings.set('xfp', xfp)
+                settings.set('xpub', xpub)
                 settings.save()
+
         settings.set_volatile('xfp', xfp)
         settings.set_volatile('xpub', xpub)
 
