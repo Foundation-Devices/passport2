@@ -117,6 +117,21 @@ sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     cosign -t {{lowercase(screen)}} -f $SIGNED_FILE -p
     echo -e "\nSigning Complete!"
 
+sign-beta version="1.0.0" beta-num="1":
+    @mkdir -p "{{version}}-beta-{{beta-num}}"
+    just clean
+    just sign {{version}} "color"
+    cp "build-Passport/v{{version}}-passport-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-color.bin"
+    just clean
+    just sign {{version}} "color" "dev"
+    cp "build-Passport/v{{version}}-passport-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-color-dev.bin"
+    just sign {{version}} "mono"
+    cp "build-Passport/v{{version}}-passport-fe-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-mono.bin"
+    just clean
+    just sign {{version}} "mono" "dev"
+    cp "build-Passport/v{{version}}-passport-fe-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-mono-dev.bin"
+
+
 # Build, sign and flash the firmware with the specified version
 flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext) && (reset)
     #!/usr/bin/env bash
