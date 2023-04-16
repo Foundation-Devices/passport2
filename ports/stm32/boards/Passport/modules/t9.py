@@ -94,9 +94,10 @@ class T9:
         return self.max_length and len(self.text) >= self.max_length
 
     def insert(self, ch):
-        self.text.insert(self.cursor_pos, ch)
-        self.advance_cursor()
-        self.ready()
+        if not self.is_maxed_out():
+            self.text.insert(self.cursor_pos, ch)
+            self.advance_cursor()
+            self.ready()
 
     def on_key(self, key):
         # print('t9.on_key({})'.format(key))
