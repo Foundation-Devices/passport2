@@ -28,6 +28,6 @@ async def save_seed_task(on_done, seed_bits):
     pa.login()
 
     with stash.SensitiveValues() as sv:
-        sv.capture_xpub()
+        sv.capture_xpub(save=True)
 
     await on_done(None)
