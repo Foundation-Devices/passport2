@@ -15,13 +15,19 @@ class RestoreSeedFlow(Flow):
     def __init__(self, refresh_cards_when_done=False):
         super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
+        self.seed_format = None
+        self.seed_length = None
+        self.validate_text = None
         self.seed_words = []
 
     async def choose_restore_method(self):
         from pages import ChooserPage
+        from data_codecs.qr_type import QRType
 
         options = [{'label': '24 words', 'value': 24},
-                   {'label': '12 words', 'value': 12}]
+                   {'label': '12 words', 'value': 12},
+                   {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                   {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
 
@@ -29,17 +35,47 @@ class RestoreSeedFlow(Flow):
             self.set_result(False)
             return
 
-        if isinstance(choice, int):
+        self.seed_format = choice
+        if self.seed_format in [12, 24]:
             self.seed_length = choice
+            self.validate_text = 'Seed phrase'
             self.goto(self.explain_input_method)
         else:
-            self.goto(choice)
+            self.validate_text = 'SeedQR'
+            self.goto(self.scan_qr)
 
     async def scan_qr(self):
-        from flows import ScanPrivateKeyQRFlow
-        result = await ScanPrivateKeyQRFlow(
-            refresh_cards_when_done=self.refresh_cards_when_done).run()
-        self.set_result(result)
+        from flows import ScanQRFlow
+        from pages import InfoPage, SeedWordsListPage
+        import microns
+        from data_codecs.qr_type import QRType
+
+        compact_label = 'Compact ' if self.seed_format == QRType.COMPACT_SEED_QR else ''
+        result = await ScanQRFlow(explicit_type=self.seed_format,
+                                  data_description='{}SeedQR'
+                                  .format(compact_label)).run()
+
+        if result is None:
+            self.back()
+            return
+
+        self.seed_words
+
+        plural_label = 's' if len(result) == 24 else ''
+        result = await InfoPage('Confirm the seed words in the following page{}.'.format(plural_label)).show()
+
+        if not result:
+            self.back()
+            return
+
+        # TODO: check that microns work right in this page
+        result = await SeedWordsListPage(words=self.seed_words, left_micron=microns.Cancel).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.validate_seed_words)
 
     async def explain_input_method(self):
         from pages import InfoPage
@@ -76,7 +112,8 @@ class RestoreSeedFlow(Flow):
             self.goto(self.valid_seed)
 
     async def invalid_seed(self):
-        result = await ErrorPage(text='Seed phrase is invalid. One or more of your seed words is incorrect.',
+        result = await ErrorPage(text='{} is invalid. One or more of your seed words is incorrect.'
+                                      .format(self.validate_text),
                                  left_micron=microns.Cancel, right_micron=microns.Retry).show()
         if result is None:
             cancel = await QuestionPage(

@@ -175,6 +175,8 @@ class SeedWordsListPage(Page):
                 # Go back a page
                 self.page_idx -= 1
                 self.update()
+            else:
+                self.set_result(False)
 
     def right_action(self, is_pressed):
         if not is_pressed:
