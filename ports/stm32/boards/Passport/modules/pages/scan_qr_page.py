@@ -26,7 +26,8 @@ class ScanQRPage(Page):
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
-                 right_micron=None):
+                 right_micron=None,
+                 qr_type=None):
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
@@ -36,7 +37,8 @@ class ScanQRPage(Page):
 
         self.prev_card_header = None
         self.timer = None
-        self.camera = CameraQRScanner()
+        self.camera = CameraQRScanner(qr_type)
+        self.qr_type = qr_type
 
         # TODO:
         #   lv.pct(100) just makes the widget inside the camera view to return
