@@ -130,7 +130,7 @@ sign-beta version="1.0.0" beta-num="1":
         for build in "${builds[@]}"; do
             just clean
             just sign {{version}} $screen
-            cp "build-Passport/v{{version}}-${paths[$i]}.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build}.bin"
+            cp "build-Passport/v{{version}}-${paths[$i]}.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build}-passport.bin"
         done
         i=$((i + 1))
     done
