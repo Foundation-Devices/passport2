@@ -48,7 +48,6 @@ TAGS
 ######################
 build/
 build-*/
-*-beta-*/
 
 # Test failure outputs
 ######################
