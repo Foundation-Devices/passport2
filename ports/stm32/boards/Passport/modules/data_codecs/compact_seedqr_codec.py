@@ -32,7 +32,7 @@ class CompactSeedQRDecoder(DataDecoder):
         return self.data
 
     def qr_type(self):
-        return QRType.QR
+        return QRType.COMPACT_SEED_QR
 
 
 class CompactSeedQREncoder(DataEncoder):
