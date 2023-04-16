@@ -14,6 +14,7 @@ class ScanQRFlow(Flow):
                  auto_close_timeout=None,
                  qr_types=None,
                  ur_types=None,
+                 explicit_type=None,
                  data_description=None):
         """
         Initialize the scan QR flow.
@@ -28,8 +29,13 @@ class ScanQRFlow(Flow):
         super().__init__(initial_state=self.scan, name='ScanQRFlow')
 
         self.auto_close_timeout = auto_close_timeout
+
+        if explicit_type is not None and (qr_types is not None or ur_types is not None):
+            raise ValueError('No QR or UR types may be provided along with an explicit type')
+
         self.qr_types = [QRType.QR] if qr_types is None else qr_types
         self.ur_types = [] if ur_types is None else ur_types
+        self.explicit_type = explicit_type
         self.data_description = data_description
         self.data = None
 
@@ -43,7 +49,7 @@ class ScanQRFlow(Flow):
             raise ValueError('Data description must be provided')
 
     async def scan(self):
-        result = await ScanQRPage().show(auto_close_timeout=self.auto_close_timeout)
+        result = await ScanQRPage(qr_type=self.explicit_type).show(auto_close_timeout=self.auto_close_timeout)
 
         if result is None:
             self.set_result(None)
@@ -61,14 +67,14 @@ class ScanQRFlow(Flow):
             self.goto(self.handle_qr)
 
     async def handle_ur(self):
-        if QRType.UR2 not in self.qr_types:
+        if QRType.UR2 not in self.qr_types and QRType.UR2 != self.explicit_type:
             await ErrorPage(text='Scan failed.\n'
                                  'Expected to scan a QR code containing '
                                  '{}.'.format(self.data_description)).show()
             self.set_result(None)
             return
 
-        if self.data.ur_type() not in self.ur_types:
+        if self.data.ur_type() not in self.ur_types and self.data.ur_type() != self.explicit_type:
             await ErrorPage(text='Scan failed.\n'
                                  'This type of UR is not expected in this context. '
                                  '{}.'.format(self.data_description)).show()
@@ -79,7 +85,7 @@ class ScanQRFlow(Flow):
         self.set_result(self.data)
 
     async def handle_qr(self):
-        if QRType.QR not in self.qr_types:
+        if QRType.QR not in self.qr_types and QRType.QR != self.explicit_type:
             await ErrorPage(text='Scan. failed.\n'
                                  'Expected to scan a Uniform Resource containing '
                                  '{}.'.format(self.data_description)).show()

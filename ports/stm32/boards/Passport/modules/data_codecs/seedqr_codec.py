@@ -32,7 +32,7 @@ class SeedQRDecoder(DataDecoder):
         return self.data
 
     def qr_type(self):
-        return QRType.QR
+        return QRType.SEED_QR
 
 
 class SeedQREncoder(DataEncoder):
