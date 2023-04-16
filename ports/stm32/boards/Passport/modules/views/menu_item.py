@@ -28,12 +28,12 @@ class MenuItem(View):
             default.bg_transparent()
             default.text_color(NORMAL_TEXT)
             right_pad = 8 if self.is_toggle else 0
-            default.pad(top=0, right=right_pad, bottom=0, left=9)
+            default.pad(top=10, right=right_pad, bottom=10, left=10)
             default.flex_align(track=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
             default.img_recolor(NORMAL_TEXT)
 
         self.set_width(lv.pct(100))
-        self.set_height(40)
+        self.set_height(lv.SIZE.CONTENT)
 
         # Focus style
         with Stylize(self, selector=lv.STATE.FOCUS_KEY) as focus:

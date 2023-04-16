@@ -177,10 +177,12 @@ def key_manager_menu():
             if not key_type:
                 continue
 
+            title = "{} ({})".format(key['name'], key['index'])
+
             result.append({'icon': key_type['icon'],
-                           'label': "{} ({})".format(key['name'], key['index']),
+                           'label': title,
                            'submenu': key_item_menu,
-                           'card_header': {'title': "{} ({})".format(key['name'], key['index']),
+                           'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
                            'args': {'context': key},
