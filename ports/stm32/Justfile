@@ -117,20 +117,23 @@ sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     cosign -t {{lowercase(screen)}} -f $SIGNED_FILE -p
     echo -e "\nSigning Complete!"
 
+# Build and sign all beta versions
 sign-beta version="1.0.0" beta-num="1":
-    @mkdir -p "{{version}}-beta-{{beta-num}}"
-    just clean
-    just sign {{version}} "color"
-    cp "build-Passport/v{{version}}-passport-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-color.bin"
-    just clean
-    just sign {{version}} "color" "dev"
-    cp "build-Passport/v{{version}}-passport-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-color-dev.bin"
-    just sign {{version}} "mono"
-    cp "build-Passport/v{{version}}-passport-fe-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-mono.bin"
-    just clean
-    just sign {{version}} "mono" "dev"
-    cp "build-Passport/v{{version}}-passport-fe-key-user.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-mono-dev.bin"
-
+    #!/usr/bin/env bash
+    rm -rf "{{version}}-beta-{{beta-num}}"
+    mkdir -p "{{version}}-beta-{{beta-num}}"
+    screens=("color" "mono")
+    paths=("passport-key-user" "passport-fe-key-user")
+    builds=("" "-dev")
+    i=0
+    for screen in "${screens[@]}"; do
+        for build in "${builds[@]}"; do
+            just clean
+            just sign {{version}} $screen
+            cp "build-Passport/v{{version}}-${paths[$i]}.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build}.bin"
+        done
+        i=$((i + 1))
+    done
 
 # Build, sign and flash the firmware with the specified version
 flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext) && (reset)
