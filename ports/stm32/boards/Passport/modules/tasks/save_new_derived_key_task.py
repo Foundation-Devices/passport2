@@ -14,7 +14,6 @@ async def save_new_derived_key_task(on_done, index, key_name, key_tn, xfp):
                  'tn': key_tn,
                  'xfp': xfp,
                  'hidden': False})
-    keys.sort(key=lambda a: (a.get('tn', 0), a.get('index', 0)))
     settings.set('derived_keys', keys)
     settings.save()
     # TODO: This can fail, so may need a try/except handler here
