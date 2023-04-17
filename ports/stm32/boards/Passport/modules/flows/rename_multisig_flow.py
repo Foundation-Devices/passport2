@@ -70,8 +70,7 @@ class RenameMultisigFlow(Flow):
 
             self.set_result(True)
 
-            # Back out of the Delete menu too
-            keypad.inject(lv.KEY.ESC)
+            # TODO: is it necessary to back out of the menu here?
 
         else:
             await ErrorPage(text='Multisig config NOT renamed: {}'.format(self.error)).show()

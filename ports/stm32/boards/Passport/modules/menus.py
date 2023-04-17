@@ -142,7 +142,8 @@ def new_key_menu():
                        'flow': NewDerivedKeyFlow,
                        'statusbar': {'title': 'NEW {}'.format(title.upper()),
                                      'icon': icon},
-                       'args': {'context': key_type}})
+                       'args': {'context': key_type},
+                       'one_shot_item': True})
     return result
 
 
@@ -248,8 +249,8 @@ def multisig_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
          'statusbar': {'title': 'EXPORT'}},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow, 'one_shot_item': True},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow, 'one_shot_item': True},
     ]
 
 

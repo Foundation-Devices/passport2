@@ -126,4 +126,3 @@ It will only be displayed when this same passphrase is applied. Continue?'''
         else:
             await ErrorPage(text='New Seed Details not saved: {}'.format(error)).show()
             self.set_result(False)
-        keypad.inject(lv.KEY.ESC)
