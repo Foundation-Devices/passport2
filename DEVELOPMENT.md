@@ -85,6 +85,9 @@ If you just want to build without signing, use one of the following commands:
 
 There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
 
+    just flash 2.1.0 color <dev>
+    just sign-beta 2.1.0 3
+
 #### Building the Simulator
 First, install xterm
 
