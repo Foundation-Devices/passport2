@@ -7,6 +7,27 @@ import lvgl as lv
 from utils import has_seed
 # from pages import ColorPickerPage
 
+########################################################################################
+# Menu Item Fields
+########################################################################################
+# field            # type          # description
+########################################################################################
+# icon             # lv.ICON*      # icon
+# label            # string        # label
+# submenu          # menu function # a function that returns a list of menu items
+# page             # Page          # page to display
+# flow             # Flow          # flow to run
+# args             # dict          # list of args passed to the submenu, page, or flow
+# context          # any           # a specific arg that persists into deeper menus
+# card_header      # dict          # specification of the item's card header
+# statusbar        # dict          # specification of the item's statusbar
+# auto_card_header # boolean       # set False to manipulate card headers manually
+# one_shot         # boolean       # a submenu arg, set True to exit menu upon selection
+# one_shot_item    # booolean      # exit menu if this item is selected and returns True
+# initial_selected_index # int     # a submenu arg
+# is_top_level     # boolean       # a submenu arg
+########################################################################################
+
 
 def manage_account_menu():
     from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow
