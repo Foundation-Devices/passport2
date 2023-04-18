@@ -18,7 +18,7 @@ class BackupCommonFlow(SaveToMicroSDFlow):
         super().__init__(filename=filename,
                          path=path,
                          write_fn=self.write_fn,
-                         success_text="backup",
+                         success_text="Backup",
                          automatic=automatic)
 
     def write_fn(self, filename):

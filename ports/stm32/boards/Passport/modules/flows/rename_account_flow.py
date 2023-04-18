@@ -58,7 +58,7 @@ class RenameAccountFlow(Flow):
             from flows import AutoBackupFlow
 
             ui.set_card_header(title=self.new_account_name)
-            await SuccessPage(text='Account renamed').show()
+            await SuccessPage(text='Account Renamed').show()
 
             await AutoBackupFlow().run()
 
