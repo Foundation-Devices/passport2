@@ -10,33 +10,49 @@ class NewDerivedKeyFlow(Flow):
     def __init__(self, context=None):
         from wallets.utils import get_next_derived_key_index
         from common import settings
-        import stash
+
         self.index = None
         self.num_words = None
         self.key_name = None
         self.key_type = context
         self.xfp = settings.get('xfp')
         self.next_index = get_next_derived_key_index(self.key_type['tn'], self.xfp)
+        super().__init__(initial_state=self.key_limit_warning, name="NewDerivedKeyFlow")
 
-        self.initial_state = self.enter_index
-        if len(stash.bip39_passphrase) > 0:
-            self.initial_state = self.passphrase_warning
+    async def key_limit_warning(self):
+        from utils import get_derived_keys
+        from constants import MAX_DERIVED_KEYS
+        from pages import ErrorPage
 
-        super().__init__(initial_state=self.initial_state, name="NewDerivedKeyFlow")
+        keys = get_derived_keys()
+        xfp_keys = [key for key in keys if key['xfp'] == self.xfp]
+
+        if len(xfp_keys) >= MAX_DERIVED_KEYS:
+            text = 'You\'ve reached the limit of {} keys in this wallet. \
+Apply a passphrase to make more.'.format(MAX_DERIVED_KEYS)
+            await ErrorPage(text).show()
+            self.set_result(False)
+            return
+
+        self.goto(self.passphrase_warning)
 
     async def passphrase_warning(self):
         from pages import LongTextPage
         import microns
-        text = '''\
+        import stash
+
+        if len(stash.bip39_passphrase) > 0:
+            text = '''\
 \n\nThis new key will be linked to your active passphrase. \
 It will only be displayed when this same passphrase is applied. Continue?'''
-        result = await LongTextPage(text=text,
-                                    left_micron=microns.Cancel,
-                                    right_micron=microns.Checkmark,
-                                    centered=True).show()
-        if not result:
-            self.set_result(False)
-            return
+            result = await LongTextPage(text=text,
+                                        left_micron=microns.Cancel,
+                                        right_micron=microns.Checkmark,
+                                        centered=True).show()
+            if not result:
+                self.set_result(False)
+                return
+
         self.goto(self.enter_index)
 
     async def enter_index(self):
