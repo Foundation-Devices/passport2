@@ -14,7 +14,7 @@ class MenuFlow(Flow):
     latest_menu = None
 
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
-                 card_header=None, statusbar=None, one_shot=False):
+                 card_header=None, statusbar=None):
         self.menu = menu
 
         super().__init__(initial_state=self.show_menu, name='MenuFlow')
@@ -24,7 +24,6 @@ class MenuFlow(Flow):
         self.context = context
         self.card_header = card_header
         self.statusbar = statusbar
-        self.one_shot = one_shot
         MenuFlow.latest_menu = self
 
     async def show_menu(self):
@@ -76,7 +75,7 @@ class MenuFlow(Flow):
                 result = await MenuFlow(submenu, **args).run()
                 self.revert_headers(auto)
 
-                if result and item.get('one_shot_item', False):
+                if result and item.get('exit_on_success', False):
                     # User picked this item, which invalidates this menu
                     self.set_result(True)
 
@@ -94,7 +93,7 @@ class MenuFlow(Flow):
                 # if prev_card_header is not None:
                 #     ui.set_card_header(**prev_card_header)
 
-                if result and item.get('one_shot_item', False):
+                if result and item.get('exit_on_success', False):
                     # User picked this item, which invalidates this menu
                     self.set_result(True)
 
@@ -113,7 +112,7 @@ class MenuFlow(Flow):
 
                 self.revert_headers(auto)
 
-                if result and item.get('one_shot_item', False):
+                if result and item.get('exit_on_success', False):
                     # User picked this item, which invalidates this menu
                     self.set_result(True)
 
@@ -123,10 +122,6 @@ class MenuFlow(Flow):
                     action(item)
 
             self.cleanup()
-
-            if self.one_shot:
-                # User picked an item, so now return
-                self.set_result(True)
 
     def apply_page_args(self, item):
         args = item.get('args', {})

@@ -22,8 +22,7 @@ from utils import has_seed
 # card_header      # dict          # specification of the item's card header
 # statusbar        # dict          # specification of the item's statusbar
 # auto_card_header # boolean       # set False to manipulate card headers manually
-# one_shot         # boolean       # a submenu arg, set True to exit menu upon selection
-# one_shot_item    # booolean      # exit menu if this item is selected and returns True
+# exit_on_success  # booolean      # exit menu if this item is selected and returns True
 # initial_selected_index # int     # a submenu arg
 # is_top_level     # boolean       # a submenu arg
 ########################################################################################
@@ -164,7 +163,7 @@ def new_key_menu():
                        'statusbar': {'title': 'NEW {}'.format(title.upper()),
                                      'icon': icon},
                        'args': {'context': key_type},
-                       'one_shot_item': True})
+                       'exit_on_success': True})
     return result
 
 
@@ -270,8 +269,8 @@ def multisig_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
          'statusbar': {'title': 'EXPORT'}},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow, 'one_shot_item': True},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow, 'one_shot_item': True},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
     ]
 
 
