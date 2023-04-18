@@ -13,6 +13,9 @@ except ImportError:
 
 from constants import PSBT_MAX_SIZE
 
+# Seed phrase lengths accepted
+SEED_LENGTHS = [12, 24]
+
 # Max PSBT txn we support (896k as PSBT)
 # - the max on the wire for mainnet is 100k
 # - but a PSBT might contain a full txn for each input
