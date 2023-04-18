@@ -29,7 +29,14 @@ class CompactSeedQRDecoder(DataDecoder):
         return self.data is not None
 
     def decode(self, **kwargs):
-        return self.data
+        from utils import get_words_from_seed
+
+        (seed_phrase, error) = get_words_from_seed(self.data)
+
+        if error is not None or seed_phrase is None:
+            return None
+
+        return seed_phrase
 
     def qr_type(self):
         return QRType.COMPACT_SEED_QR
@@ -83,4 +90,4 @@ class CompactSeedQRSampler(DataSampler):
     # Number of bytes required to successfully recognize this format
     @classmethod
     def min_sample_size(cls):
-        return 1
+        return 16
