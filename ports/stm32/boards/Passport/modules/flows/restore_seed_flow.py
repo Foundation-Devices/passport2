@@ -9,6 +9,7 @@ import microns
 from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task
 from tasks import save_seed_task
+from public_constants import SEED_LENGTHS
 
 
 class RestoreSeedFlow(Flow):
@@ -36,7 +37,7 @@ class RestoreSeedFlow(Flow):
             return
 
         self.seed_format = choice
-        if self.seed_format in [12, 24]:
+        if self.seed_format in SEED_LENGTHS:
             self.seed_length = choice
             self.validate_text = 'Seed phrase'
             self.goto(self.explain_input_method)
@@ -46,7 +47,7 @@ class RestoreSeedFlow(Flow):
 
     async def scan_qr(self):
         from flows import ScanQRFlow
-        from pages import InfoPage, SeedWordsListPage
+        from pages import InfoPage, SeedWordsListPage, ErrorPage
         import microns
         from data_codecs.qr_type import QRType
 
@@ -56,10 +57,12 @@ class RestoreSeedFlow(Flow):
                                   .format(compact_label)).run()
 
         if result is None:
+            await ErrorPage("Invalid {}SeedQR detected. Make sure you're using the right format."
+                            .format(compact_label)).show()
             self.back()
             return
 
-        self.seed_words
+        self.seed_words = result
 
         plural_label = 's' if len(result) == 24 else ''
         result = await InfoPage('Confirm the seed words in the following page{}.'.format(plural_label)).show()

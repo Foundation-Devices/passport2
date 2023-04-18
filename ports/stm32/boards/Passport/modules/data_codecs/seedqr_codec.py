@@ -13,6 +13,7 @@ from .data_encoder import DataEncoder
 from .data_decoder import DataDecoder
 from .data_sampler import DataSampler
 from .qr_type import QRType
+from public_constants import SEED_LENGTHS
 
 
 class SeedQRDecoder(DataDecoder):
@@ -29,7 +30,21 @@ class SeedQRDecoder(DataDecoder):
         return self.data is not None
 
     def decode(self, **kwargs):
-        return self.data
+        import trezorcrypto
+
+        try:
+            seed_phrase = []
+            num_words = int(len(self.data) / 4)
+            for i in range(0, num_words):
+                index = int(self.data[i * 4: (i * 4) + 4])
+                word = trezorcrypto.bip39.get_word(index)
+                seed_phrase.append(word)
+            if len(seed_phrase) in SEED_LENGTHS:
+                return seed_phrase
+            else:
+                return None
+        except Exception as e:
+            return None
 
     def qr_type(self):
         return QRType.SEED_QR
@@ -65,4 +80,4 @@ class SeedQRSampler(DataSampler):
     # Number of bytes required to successfully recognize this format
     @classmethod
     def min_sample_size(cls):
-        return 1
+        return 48
