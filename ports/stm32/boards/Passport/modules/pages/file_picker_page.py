@@ -76,7 +76,7 @@ class FilePickerPage(Page):
         self.scroll_container.set_scroll_dir(lv.DIR.VER)
 
         # Setup gridnav for the layout
-        lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.NONE)
+        lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER)
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
     def detach(self):
