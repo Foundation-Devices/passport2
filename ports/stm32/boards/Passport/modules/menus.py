@@ -140,7 +140,7 @@ def new_key_menu():
         result.append({'icon': icon,
                        'label': title,
                        'flow': NewDerivedKeyFlow,
-                       'statusbar': {'title': 'NEW {}'.format(title.upper()),
+                       'statusbar': {'title': title.upper(),
                                      'icon': icon},
                        'args': {'context': key_type}})
     return result
