@@ -28,6 +28,7 @@ class ProgressPage(StatusPage):
     def attach(self, group):
         import common
 
+        super().attach(group)
         # Never auto-shutdown during progress
         common.settings.set_volatile('shutdown_timeout', 0)
 
@@ -38,3 +39,4 @@ class ProgressPage(StatusPage):
         # reset auto-shutdown timer before returning to normal setting
         feedback()
         common.settings.clear_volatile('shutdown_timeout')
+        super().detach()
