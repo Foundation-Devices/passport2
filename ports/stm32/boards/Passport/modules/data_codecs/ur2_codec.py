@@ -20,12 +20,13 @@ class UR2Decoder(DataDecoder):
     def __init__(self):
         ur.decoder_clear()
         self.value = None
+        self.frames = None
 
     def add_data(self, data):
         data = data.lower()
 
         try:
-            ur.decoder_receive(data)
+            self.frames = ur.decoder_receive(data)
         except ur.NotMultiPartError as exc:
             if ur.decoder_is_empty():
                 try:
@@ -69,7 +70,7 @@ Received single-part UR when multi-part reception was already in place""")
         return QRType.UR2
 
     def num_frames(self):
-        return ur.decoder_num_frames()
+        return self.frames
 
 
 class UR2Encoder(DataEncoder):

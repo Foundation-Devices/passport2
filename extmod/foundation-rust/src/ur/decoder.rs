@@ -83,6 +83,7 @@ pub unsafe extern "C" fn ur_decoder_receive(
     ur: *const u8,
     ur_len: usize,
     error: &mut UR_Error,
+    num_frames: &mut u32,
 ) -> bool {
     // SAFETY: ur and ur_len are assumed to be valid.
     let ur = unsafe { slice::from_raw_parts(ur, ur_len) };
@@ -109,6 +110,8 @@ pub unsafe extern "C" fn ur_decoder_receive(
         }
     };
 
+    let sequence_count = ur.sequence_count();
+
     let result = decoder.inner.receive(ur).map_err(|e| match e {
         Error::NotMultiPart => unsafe {
             UR_Error::new(&e, super::UR_ErrorKind::UR_ERROR_KIND_NOT_MULTI_PART)
@@ -117,7 +120,14 @@ pub unsafe extern "C" fn ur_decoder_receive(
     });
 
     match result {
-        Ok(_) => true,
+        Ok(_) => {
+            *num_frames = match sequence_count {
+                Some(n) => n,
+                None => 0,
+            };
+
+            true
+        }
         Err(e) => {
             *error = e;
             false
@@ -137,14 +147,6 @@ pub extern "C" fn ur_decoder_estimated_percent_complete(
     decoder: &mut UR_Decoder,
 ) -> u32 {
     (decoder.inner.estimated_percent_complete() * 100.0) as u32
-}
-
-/// Returns the expected number of frames.
-#[no_mangle]
-pub extern "C" fn ur_decoder_num_frames(
-    decoder: &mut UR_Decoder,
-) -> u32 {
-    decoder.inner.expected_part_count() as u32
 }
 
 /// Clear the decoder in order so a new message can be received.

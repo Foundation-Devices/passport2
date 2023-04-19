@@ -375,7 +375,8 @@ extern UR_Encoder UR_ENCODER;
 bool ur_decoder_receive(UR_Decoder *decoder,
                         const uint8_t *ur,
                         size_t ur_len,
-                        UR_Error *error);
+                        UR_Error *error,
+                        uint32_t *num_frames);
 
 /**
  * Returns `true` if the decoder is complete and no more data is needed.
@@ -386,11 +387,6 @@ bool ur_decoder_is_complete(UR_Decoder *decoder);
  * Returns the calculated estimated percentage of completion.
  */
 uint32_t ur_decoder_estimated_percent_complete(UR_Decoder *decoder);
-
-/**
- * Returns the number of expected parts.
- */
-uint32_t ur_decoder_num_frames(UR_Decoder *decoder);
 
 /**
  * Clear the decoder in order so a new message can be received.

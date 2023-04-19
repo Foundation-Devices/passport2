@@ -555,12 +555,14 @@ STATIC mp_obj_t mod_foundation_ur_decoder_receive(mp_obj_t ur_obj)
 
     mp_check_self(mp_obj_is_str(ur_obj));
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
+
+    uint32_t num_frames = 0;
     
-    if (!ur_decoder_receive(&UR_DECODER, ur, ur_len, &error)) {
+    if (!ur_decoder_receive(&UR_DECODER, ur, ur_len, &error, &num_frames)) {
         mod_foundation_ur_raise(&error);
     }
 
-    return mp_const_none;
+    return mp_obj_new_int(num_frames);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_decoder_receive_obj,
                                  mod_foundation_ur_decoder_receive);
@@ -584,16 +586,6 @@ STATIC mp_obj_t mod_foundation_ur_decoder_estimated_percent_complete(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_foundation_ur_decoder_estimated_percent_complete_obj,
                                  mod_foundation_ur_decoder_estimated_percent_complete);
-
-/// def decoder_num_frames() -> int:
-///     """
-///     """
-STATIC mp_obj_t mod_foundation_ur_decoder_num_frames(void)
-{
-    return mp_obj_new_int(ur_decoder_num_frames(&UR_DECODER));
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_foundation_ur_decoder_num_frames_obj,
-                                 mod_foundation_ur_decoder_num_frames);
 
 
 /// def decoder_clear() -> None:
@@ -694,7 +686,6 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_decoder_receive), MP_ROM_PTR(&mod_foundation_ur_decoder_receive_obj)},
     {MP_ROM_QSTR(MP_QSTR_decoder_is_complete), MP_ROM_PTR(&mod_foundation_ur_decoder_is_complete_obj)},
     {MP_ROM_QSTR(MP_QSTR_decoder_estimated_percent_complete), MP_ROM_PTR(&mod_foundation_ur_decoder_estimated_percent_complete_obj)},
-    {MP_ROM_QSTR(MP_QSTR_decoder_num_frames), MP_ROM_PTR(&mod_foundation_ur_decoder_num_frames_obj)},
     {MP_ROM_QSTR(MP_QSTR_decoder_clear), MP_ROM_PTR(&mod_foundation_ur_decoder_clear_obj)},
     {MP_ROM_QSTR(MP_QSTR_decoder_is_empty), MP_ROM_PTR(&mod_foundation_ur_decoder_is_empty_obj)},
     {MP_ROM_QSTR(MP_QSTR_decoder_decode_message), MP_ROM_PTR(&mod_foundation_ur_decoder_decode_message_obj)},
