@@ -16,58 +16,49 @@ from foundation import ur
 class CasaHealthCheckQRFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.scan_qr, name='CasaHealthCheckQRFlow')
-        self.lines = None
+
+        self.text = None
+        self.subpath = None
 
     async def scan_qr(self):
-        from pages import ScanQRPage, ErrorPage
-        import microns
+        from pages import ErrorPage
+        from flows import ScanQRFlow
 
-        result = await ScanQRPage(right_micron=microns.Checkmark).show()
-
+        result = await ScanQRFlow(qr_types=[QRType.UR2],
+                                  ur_types=[ur.Value.BYTES],
+                                  data_description='a Casa health check').run()
         if result is None:
-            # User canceled the scan
             self.set_result(False)
-        else:
-            # Got a scan result (aka QRScanResult).
-            if result.is_failure():
-                await ErrorPage(text='Unable to scan QR code.\n\n{}'.format(result.error)).show()
+            return
+
+        try:
+            data = result.unwrap_bytes().decode('utf-8')
+            lines = data.split('\n')
+            if len(lines) != 2:
+                await ErrorPage('Health check format is invalid.').show()
                 self.set_result(False)
-            else:
-                if not isinstance(result.data, ur.Value):
-                    await ErrorPage(text='Unable to scan QR code.\n\nNot a Uniform Resource.').show()
-                    self.set_result(False)
-                    return
+                return
 
-                try:
-                    data = result.data.unwrap_bytes()
-                    self.lines = data.decode('utf-8').split('\n')
-                except Exception as e:
-                    await ErrorPage('Health check format is invalid.').show()
-                    return
-                if len(self.lines) != 2:
-                    await ErrorPage('Health check format is invalid.').show()
-                    self.set_result(False)
-                    return
+            self.text = lines[0]
+            self.subpath = lines[1]
+        except Exception as e:
+            await ErrorPage('Health check format is invalid.').show()
+            self.set_result(False)
+            return
 
-                # Common function to validate the message
-                self.text = self.lines[0]
-                self.subpath = self.lines[1]
-                # print('text={}'.format(self.text))
-                # print('subpath={}'.format(self.subpath))
+        # Validate
+        (subpath, error) = validate_sign_text(self.text, self.subpath)
+        if error is not None:
+            await ErrorPage(text=error).show()
+            self.set_result(False)
+            return
 
-                # Validate
-                (subpath, error) = validate_sign_text(self.text, self.subpath)
-                if error is not None:
-                    await ErrorPage(text=error).show()
-                    self.set_result(False)
-                    return
-
-                self.subpath = subpath
-
-                self.goto(self.sign_health_check)
+        self.subpath = subpath
+        self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
-        (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
+        (signature, address, error) = await spinner_task('Performing Health Check',
+                                                         sign_text_file_task,
                                                          args=[self.text, self.subpath, AF_CLASSIC])
         if error is None:
             self.signature = signature
