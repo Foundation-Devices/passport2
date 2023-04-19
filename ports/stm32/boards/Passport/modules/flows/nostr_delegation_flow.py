@@ -141,7 +141,7 @@ def format_delegation_string(delegatee_npub, created_before, created_after, kind
     details.write("\n\n")
 
     if created_after is not None:
-        details.write("{}\n{}\n{}".format(
+        details.write("{}\n{} UTC\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation Start Date:'),
             timestamp_to_str(created_after),
             "Make sure this time isn't in the past!"))
@@ -153,7 +153,7 @@ def format_delegation_string(delegatee_npub, created_before, created_after, kind
     details.write("\n\n")
 
     if created_before is not None:
-        details.write("{}\n{}".format(
+        details.write("{}\n{} UTC".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation End Date:'),
             timestamp_to_str(created_before)))
     else:
@@ -304,25 +304,6 @@ class NostrDelegationFlow(Flow):
         except Exception as e:
             await ErrorPage('{}'.format(e)).show()
             return  # return to InfoPage
-
-        self.goto(self.request_tz)
-
-    async def request_tz(self):
-        from pages import InfoPage
-        from flows import ChooseTimezoneFlow
-        import microns
-
-        result = await InfoPage('Nostr delegation is time-sensitive. Please enter your timezone.',
-                                left_micron=microns.Cancel,
-                                right_micron=microns.Forward).show()
-        if not result:
-            self.set_result(False)
-            return
-
-        result = await ChooseTimezoneFlow().run()
-
-        if not result:
-            return  # Go back to previous page
 
         self.goto(self.display_details)
 
