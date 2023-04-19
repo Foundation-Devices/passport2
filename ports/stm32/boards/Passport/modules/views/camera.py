@@ -200,5 +200,5 @@ class CameraQRScanner(Camera):
 
     def num_frames(self):
         if self.qr_decoder is not None:
-            return self.qr_decoder.num_frames()
+            return self.qr_decoder.num_frames() or 0
         return 0
