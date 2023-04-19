@@ -11,6 +11,7 @@ from .menu_flow import *
 from .main_flow import *
 from .login_flow import *
 from .save_to_microsd_flow import *
+from .scan_qr_flow import *
 from .backup_common_flow import *
 from .seed_warning_flow import *
 
@@ -36,7 +37,6 @@ from .export_derived_key_flow import *
 from .export_multisig_microsd_flow import *
 from .export_multisig_qr_flow import *
 from .export_summary_flow import *
-# from .fcc_test_flow import *
 from .selected_file_flow import *
 from .file_picker_flow import *
 from .format_microsd_flow import *
