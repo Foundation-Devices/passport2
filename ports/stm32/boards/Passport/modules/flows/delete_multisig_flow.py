@@ -52,8 +52,6 @@ class DeleteMultisigFlow(Flow):
 
             self.set_result(True)
 
-            # Back out of the Delete menu too
-            keypad.inject(lv.KEY.ESC)
         else:
             self.error = 'Multisig config NOT deleted: {}'.format(error)
             self.goto(self.show_error)

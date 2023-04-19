@@ -7,6 +7,26 @@ import lvgl as lv
 from utils import has_seed
 # from pages import ColorPickerPage
 
+########################################################################################
+# Menu Item Fields
+########################################################################################
+# field            # type          # description
+########################################################################################
+# icon             # lv.ICON*      # icon
+# label            # string        # label
+# submenu          # menu function # a function that returns a list of menu items
+# page             # Page          # page to display
+# flow             # Flow          # flow to run
+# args             # dict          # list of args passed to the submenu, page, or flow
+# context          # any           # a specific arg that persists into deeper menus
+# card_header      # dict          # specification of the item's card header
+# statusbar        # dict          # specification of the item's statusbar
+# auto_card_header # boolean       # set False to manipulate card headers manually
+# exit_on_success  # booolean      # exit menu if this item is selected and returns True
+# initial_selected_index # int     # a submenu arg
+# is_top_level     # boolean       # a submenu arg
+########################################################################################
+
 
 def manage_account_menu():
     from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow
@@ -142,7 +162,8 @@ def new_key_menu():
                        'flow': NewDerivedKeyFlow,
                        'statusbar': {'title': title.upper(),
                                      'icon': icon},
-                       'args': {'context': key_type}})
+                       'args': {'context': key_type},
+                       'exit_on_success': True})
     return result
 
 
@@ -248,8 +269,8 @@ def multisig_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': lv.ICON_MICROSD, 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
          'statusbar': {'title': 'EXPORT'}},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow},
-        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
+        {'icon': lv.ICON_TWO_KEYS, 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
     ]
 
 

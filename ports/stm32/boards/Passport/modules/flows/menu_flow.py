@@ -14,7 +14,7 @@ class MenuFlow(Flow):
     latest_menu = None
 
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
-                 card_header=None, statusbar=None, one_shot=False):
+                 card_header=None, statusbar=None):
         self.menu = menu
 
         super().__init__(initial_state=self.show_menu, name='MenuFlow')
@@ -24,7 +24,6 @@ class MenuFlow(Flow):
         self.context = context
         self.card_header = card_header
         self.statusbar = statusbar
-        self.one_shot = one_shot
         MenuFlow.latest_menu = self
 
     async def show_menu(self):
@@ -73,8 +72,12 @@ class MenuFlow(Flow):
 
                 # print('MENUFLOW >>>>>>> args={}'.format(args))
                 submenu = item.get('submenu')
-                await MenuFlow(submenu, **args).run()
+                result = await MenuFlow(submenu, **args).run()
                 self.revert_headers(auto)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
                 # Trigger a card refresh, usually because an Extension was enabled or disabled
                 if self.is_top_level and ui.update_cards_pending:
@@ -86,9 +89,13 @@ class MenuFlow(Flow):
 
                 # prev_card_header = self.update_card_header(item)
                 # print('PAGE >>>>>>> args={}'.format(args))
-                await PageFlow(args).run()
+                result = await PageFlow(args).run()
                 # if prev_card_header is not None:
                 #     ui.set_card_header(**prev_card_header)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
             elif item.get('flow') is not None:
 
@@ -101,8 +108,13 @@ class MenuFlow(Flow):
                 if self.context is not None:
                     args['context'] = self.context
                 # print('FLOW >>>>>>> args={}'.format(args))
-                await flow(**args).run()
+                result = await flow(**args).run()
+
                 self.revert_headers(auto)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
             elif item.get('action') is not None:
                 action = item.get('action')
@@ -110,9 +122,6 @@ class MenuFlow(Flow):
                     action(item)
 
             self.cleanup()
-            if self.one_shot:
-                # User picked an item, so now return
-                self.set_result(True)
 
     def apply_page_args(self, item):
         args = item.get('args', {})
