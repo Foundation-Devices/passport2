@@ -28,6 +28,7 @@ class SeedWordsListPage(Page):
         self.page_idx = 0
         self.prev_card_descs = None
         self.prev_card_idx = None
+        self.left_micron = left_micron
 
         if len(self.words) == 24:
             self.num_pages = 2
@@ -137,13 +138,13 @@ class SeedWordsListPage(Page):
         # Update microns
         if self.num_pages > 1:
             if self.page_idx == 0:
-                common.ui.set_left_micron(None)
+                common.ui.set_left_micron(self.left_micron)
                 common.ui.set_right_micron(microns.Forward)
             else:
                 common.ui.set_left_micron(microns.Back)
                 common.ui.set_right_micron(microns.Checkmark)
         else:
-            common.ui.set_left_micron(None)
+            common.ui.set_left_micron(self.left_micron)
             common.ui.set_right_micron(microns.Checkmark)
 
     def attach(self, group):
