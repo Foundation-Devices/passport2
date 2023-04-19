@@ -42,7 +42,10 @@ class RestoreSeedFlow(Flow):
             self.validate_text = 'Seed phrase'
             self.goto(self.explain_input_method)
         else:
-            self.validate_text = 'SeedQR'
+            if self.seed_format == QRType.SEED_QR:
+                self.validate_text = 'SeedQR'
+            else:
+                self.validate_text = 'Compact SeedQR'
             self.goto(self.scan_qr)
 
     async def scan_qr(self):
@@ -51,14 +54,12 @@ class RestoreSeedFlow(Flow):
         import microns
         from data_codecs.qr_type import QRType
 
-        compact_label = 'Compact ' if self.seed_format == QRType.COMPACT_SEED_QR else ''
         result = await ScanQRFlow(explicit_type=self.seed_format,
-                                  data_description='{}SeedQR'
-                                  .format(compact_label)).run()
+                                  data_description=self.validate_text).run()
 
         if result is None:
-            await ErrorPage("Invalid {}SeedQR detected. Make sure you're using the right format."
-                            .format(compact_label)).show()
+            await ErrorPage("Invalid {} detected. Make sure you're using the right format."
+                            .format(self.validate_text)).show()
             self.back()
             return
 
@@ -71,7 +72,6 @@ class RestoreSeedFlow(Flow):
             self.back()
             return
 
-        # TODO: check that microns work right in this page
         result = await SeedWordsListPage(words=self.seed_words, left_micron=microns.Cancel).show()
 
         if not result:
