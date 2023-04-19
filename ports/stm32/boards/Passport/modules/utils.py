@@ -1364,29 +1364,14 @@ months = {
 
 def timestamp_to_str(time):
     import utime
-    from common import settings
-
-    timezone = settings.get('timezone', None)
-    if timezone is not None:
-        time += int(timezone) * 3600
 
     time_tup = utime.gmtime(time)
-    time = "{} {}, {}\n{}:{:02d}".format(months[time_tup[1]],  # Month
+    return "{} {}, {}\n{}:{:02d}".format(months[time_tup[1]],  # Month
                                          time_tup[2],          # Day
                                          time_tup[0],          # Year
                                          time_tup[3],          # Hour
                                          time_tup[4],          # Minute
                                          )
-
-    # Ensure timezone string exists, prepend + if positive
-    if timezone is None:
-        timezone = "+0"
-    elif int(timezone) >= 0:
-        timezone = "+" + str(timezone)
-    else:
-        timezone = str(timezone)
-
-    return time + " GMT" + timezone
 
 
 # EOF
