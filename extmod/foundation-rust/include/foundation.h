@@ -388,6 +388,11 @@ bool ur_decoder_is_complete(UR_Decoder *decoder);
 uint32_t ur_decoder_estimated_percent_complete(UR_Decoder *decoder);
 
 /**
+ * Returns the number of expected parts.
+ */
+uint32_t ur_decoder_num_frames(UR_Decoder *decoder);
+
+/**
  * Clear the decoder in order so a new message can be received.
  */
 void ur_decoder_clear(UR_Decoder *decoder);

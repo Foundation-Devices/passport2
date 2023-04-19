@@ -15,7 +15,9 @@ class ScanQRFlow(Flow):
                  qr_types=None,
                  ur_types=None,
                  explicit_type=None,
-                 data_description=None):
+                 data_description=None,
+                 max_frames=None,
+                 max_frames_text=None):
         """
         Initialize the scan QR flow.
 
@@ -38,6 +40,8 @@ class ScanQRFlow(Flow):
         self.explicit_type = explicit_type
         self.data_description = data_description
         self.data = None
+        self.max_frames = max_frames
+        self.max_frames_text = max_frames_text
 
         if len(self.qr_types) == 0:
             raise ValueError('At least one QR type must be provided')
@@ -49,7 +53,9 @@ class ScanQRFlow(Flow):
             raise ValueError('Data description must be provided')
 
     async def scan(self):
-        result = await ScanQRPage(qr_type=self.explicit_type).show(auto_close_timeout=self.auto_close_timeout)
+        from pages import QuestionPage
+
+        result = await ScanQRPage(max_frames=self.max_frames, qr_type=self.explicit_type).show(auto_close_timeout=self.auto_close_timeout)
 
         if result is None:
             self.set_result(None)
@@ -58,6 +64,15 @@ class ScanQRFlow(Flow):
         if result.is_failure():
             await ErrorPage(text='Unable to scan QR code.\n\n{}'.format(result.error)).show()
             self.set_result(None)
+            return
+
+        if result.is_too_large():
+            result = await QuestionPage(self.max_frames_text).show()
+
+            if result:
+                self.set_result(None)
+            else:
+                self.max_frames = None
             return
 
         self.data = result.data

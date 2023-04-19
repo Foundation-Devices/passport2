@@ -139,6 +139,14 @@ pub extern "C" fn ur_decoder_estimated_percent_complete(
     (decoder.inner.estimated_percent_complete() * 100.0) as u32
 }
 
+/// Returns the expected number of frames.
+#[no_mangle]
+pub extern "C" fn ur_decoder_num_frames(
+    decoder: &mut UR_Decoder,
+) -> u32 {
+    decoder.inner.expected_part_count() as u32
+}
+
 /// Clear the decoder in order so a new message can be received.
 #[no_mangle]
 pub extern "C" fn ur_decoder_clear(decoder: &mut UR_Decoder) {

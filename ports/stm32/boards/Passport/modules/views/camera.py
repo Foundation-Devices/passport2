@@ -197,3 +197,8 @@ class CameraQRScanner(Camera):
         if self.qr_decoder is not None:
             return self.qr_decoder.is_complete()
         return False
+
+    def num_frames(self):
+        if self.qr_decoder is not None:
+            return self.qr_decoder.num_frames()
+        return 0
