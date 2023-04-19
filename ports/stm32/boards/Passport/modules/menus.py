@@ -185,8 +185,6 @@ def key_manager_menu():
 
     result = []
 
-    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
-
     keys = get_derived_keys()
     xfp = settings.get('xfp')
     showing_hidden = are_hidden_keys_showing()
@@ -209,6 +207,7 @@ def key_manager_menu():
                            'args': {'context': key},
                            'auto_card_header': False})
 
+    result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})
     result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 
     return result
