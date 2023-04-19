@@ -24,3 +24,19 @@ class ProgressPage(StatusPage):
             statusbar=statusbar,
             left_micron=left_micron,
             right_micron=right_micron)
+
+    def attach(self, group):
+        import common
+
+        super().attach(group)
+        # Never auto-shutdown during progress
+        common.settings.set_volatile('shutdown_timeout', 0)
+
+    def detach(self):
+        import common
+        from keypad import feedback
+
+        # reset auto-shutdown timer before returning to normal setting
+        feedback()
+        common.settings.clear_volatile('shutdown_timeout')
+        super().detach()
