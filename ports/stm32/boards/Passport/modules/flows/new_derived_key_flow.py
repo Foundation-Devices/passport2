@@ -28,8 +28,7 @@ class NewDerivedKeyFlow(Flow):
         xfp_keys = [key for key in keys if key['xfp'] == self.xfp]
 
         if len(xfp_keys) >= MAX_DERIVED_KEYS:
-            text = 'You\'ve reached the limit of {} keys in this wallet. \
-Apply a passphrase to make more.'.format(MAX_DERIVED_KEYS)
+            text = 'You\'ve reached the limit of {} keys in this wallet.'.format(MAX_DERIVED_KEYS)
             await ErrorPage(text).show()
             self.set_result(False)
             return
