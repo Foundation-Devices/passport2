@@ -33,12 +33,14 @@ class ScanQRPage(Page):
                          statusbar=statusbar,
                          left_micron=left_micron,
                          right_micron=right_micron,
-                         extend_timeout=True)
+                         extend_timeout=True,
+                         max_frames=None)
 
         self.prev_card_header = None
         self.timer = None
         self.camera = CameraQRScanner(qr_type)
         self.qr_type = qr_type
+        self.max_frames = max_frames
 
         # TODO:
         #   lv.pct(100) just makes the widget inside the camera view to return
@@ -107,6 +109,13 @@ class ScanQRPage(Page):
                 self.camera.update()
 
                 self.progress_label.set_text(progress_text(self.camera.estimated_percent_complete()))
+
+                num_frames = self.camera.num_frames()
+                if self.max_frames is not None and num_frames > self.max_frames:
+                    self.set_result(QRScanResult(num_frames=num_frames,
+                                                 max_frames=self.max_frames))
+                    return
+
                 if self.camera.is_complete():
                     data = self.camera.qr_decoder.decode()
                     qr_type = self.camera.qr_decoder.qr_type()
@@ -134,10 +143,15 @@ class QRScanResult:
     and between a cancelled result (`None` returned by ScanQRPage).
     """
 
-    def __init__(self, data=None, error=None, qr_type=None):
+    def __init__(self, data=None, error=None, qr_type=None, num_frames=None, max_frames=None):
         self.data = data
         self.error = error
         self.qr_type = qr_type
+        self.num_frames = num_frames
+        self.max_frames = max_frames
 
     def is_failure(self):
         return self.error is not None
+
+    def is_too_large(self):
+        return self.max_frames is not None and self.num_frames > self.max_frames

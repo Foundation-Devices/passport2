@@ -68,6 +68,9 @@ Received single-part UR when multi-part reception was already in place""")
     def qr_type(self):
         return QRType.UR2
 
+    def num_frames(self):
+        return ur.decoder_num_frames()
+
 
 class UR2Encoder(DataEncoder):
     def encode(self, value, max_fragment_len=200):

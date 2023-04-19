@@ -15,15 +15,19 @@ class SignPsbtQRFlow(Flow):
         self.txid = None
         self.out_fn = None
         self.signed_bytes = None
+        self.max_frames = 5
 
     async def scan_transaction(self):
         from foundation import ur
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow
 
+        text = "This PSBT is very large. Would you like to cancel and sign with microSD?"
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
-                                  data_description='a PSBT file').run()
+                                  data_description='a PSBT file',
+                                  max_frames=self.max_frames,
+                                  max_frames_text=text).run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
