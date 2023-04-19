@@ -22,10 +22,20 @@ class NewDerivedKeyFlow(Flow):
     async def key_limit_warning(self):
         from utils import get_derived_keys
         from constants import MAX_DERIVED_KEYS
-        from pages import ErrorPage
+        from pages import ErrorPage, InfoPage
+        import microns
 
         keys = get_derived_keys()
         xfp_keys = [key for key in keys if key['xfp'] == self.xfp]
+
+        if len(xfp_keys) == 0:
+            text = 'There is space for {} keys per wallet, \
+and keys can not be deleted. Create keys wisely.'.format(MAX_DERIVED_KEYS)
+            result = await InfoPage(text, left_micron=microns.Back).show()
+
+            if not result:
+                self.set_result(False)
+                return
 
         if len(xfp_keys) >= MAX_DERIVED_KEYS:
             text = 'You\'ve reached the limit of {} keys in this wallet.'.format(MAX_DERIVED_KEYS)
