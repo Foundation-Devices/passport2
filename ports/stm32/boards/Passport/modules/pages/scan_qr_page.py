@@ -27,14 +27,14 @@ class ScanQRPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=None,
-                 qr_type=None):
+                 qr_type=None,
+                 max_frames=None):
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
                          right_micron=right_micron,
-                         extend_timeout=True,
-                         max_frames=None)
+                         extend_timeout=True)
 
         self.prev_card_header = None
         self.timer = None
@@ -112,6 +112,7 @@ class ScanQRPage(Page):
 
                 num_frames = self.camera.num_frames()
                 if self.max_frames is not None and num_frames > self.max_frames:
+                    print("num_frames: {}, max_frames: {}".format(self.max_frames, num_frames))
                     self.set_result(QRScanResult(num_frames=num_frames,
                                                  max_frames=self.max_frames))
                     return
