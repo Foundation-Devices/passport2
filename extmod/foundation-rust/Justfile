@@ -13,7 +13,7 @@ generate: build
 
 # Build the crate.
 build:
-    cargo build --target thumbv7em-none-eabihf --release
+    cargo +nightly build --target thumbv7em-none-eabihf --release
 
 # Lint the crate.
 lint:

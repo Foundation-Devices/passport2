@@ -24,6 +24,8 @@
 #include "uECC.h"
 #include "utils.h"
 
+#include "foundation.h"
+
 #include "modfoundation-bip39.h"
 #include "modfoundation-qr.h"
 #include "modfoundation-ur.h"
@@ -260,17 +262,34 @@ STATIC const mp_obj_type_t mp_type_fixedbytesio = {
     .locals_dict = (mp_obj_dict_t *)&fixedbytesio_locals_dict,
 };
 
-/* Module Global configuration */
-/* Define all properties of the module.
- * Table entries are key/value pairs of the attribute name (a string)
- * and the MicroPython object reference.
- * All identifiers and strings are written as MP_QSTR_xxx and will be
- * optimized to word-sized integers by the build system (interned strings).
- */
+typedef struct _mp_obj_secp256k1_t {
+    mp_obj_base_t base;
+    const secp256k1_t *secp;
+} mp_obj_secp256k1_t;
+
+
+STATIC mp_obj_t secp256k1_sign_schnorr(mp_obj_t self_in) {
+    mp_obj_secp256k1_t *self = MP_OBJ_TO_PTR(self_in);
+    foundation_secp256k1_sign_schnorr(self->secp, NULL);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(secp256k1_sign_schnorr_obj, secp256k1_sign_schnorr);
+
+STATIC const mp_rom_map_elem_t secp256k1_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_sign_schnorr), MP_ROM_PTR(&secp256k1_sign_schnorr_obj) },
+};
+STATIC MP_DEFINE_CONST_DICT(secp256k1_locals_dict, secp256k1_locals_dict_table);
+
+STATIC const mp_obj_type_t mp_type_secp256k1 = {
+    { &mp_type_type },
+    .name = MP_QSTR_Secp256k1,
+    .locals_dict = (mp_obj_dict_t *)&secp256k1_locals_dict,
+};
 
 STATIC const mp_rom_map_elem_t foundation_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_foundation)},
     {MP_ROM_QSTR(MP_QSTR_FixedBytesIO), MP_ROM_PTR(&mp_type_fixedbytesio)},
+    {MP_ROM_QSTR(MP_QSTR_Secp56k1), MP_ROM_PTR(&mp_type_secp256k1)},
     {MP_ROM_QSTR(MP_QSTR_bip39), MP_ROM_PTR(&mod_foundation_bip39_module)},
     {MP_ROM_QSTR(MP_QSTR_qr), MP_ROM_PTR(&mod_foundation_qr_module)},
     {MP_ROM_QSTR(MP_QSTR_ur), MP_ROM_PTR(&mod_foundation_ur_module)},

@@ -113,6 +113,10 @@ typedef struct UR_Decoder UR_Decoder;
  */
 typedef struct UR_Encoder UR_Encoder;
 
+typedef struct secp256k1_keypair_t secp256k1_keypair_t;
+
+typedef struct secp256k1_t secp256k1_t;
+
 typedef struct {
   UR_ErrorKind kind;
   const char *message;
@@ -493,6 +497,9 @@ void ur_registry_new_passport_response(UR_Value *value,
                                        UR_PassportModel passport_model,
                                        const char *passport_firmware_version,
                                        size_t passport_firmware_version_len);
+
+void foundation_secp256k1_sign_schnorr(const secp256k1_t *secp,
+                                       const secp256k1_keypair_t *keypair);
 
 #ifdef __cplusplus
 } // extern "C"
