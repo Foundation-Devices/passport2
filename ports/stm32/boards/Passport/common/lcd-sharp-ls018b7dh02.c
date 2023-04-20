@@ -226,7 +226,7 @@ void lcd_update_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* da
 
 #define VIEWFINDER_WIDTH 188
 #define VIEWFINDER_HEIGHT 188
-#define VIEWFINDER_Y_START 47
+#define VIEWFINDER_Y_START 49
 #define VIEWFINDER_X_OFFSET (SCREEN_WIDTH - VIEWFINDER_WIDTH) / 2
 
 // Force the specified pixel to white
