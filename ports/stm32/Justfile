@@ -125,12 +125,17 @@ sign-beta version="1.0.0" beta-num="1":
     screens=("color" "mono")
     paths=("passport-key-user" "passport-fe-key-user")
     builds=("" "dev")
+    build_names=("" "-dev")
     i=0
     for screen in "${screens[@]}"; do
+        j=0
         for build in "${builds[@]}"; do
             just clean
             just sign {{version}} $screen $build
-            cp "build-Passport/v{{version}}-${paths[$i]}.bin" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}-${build}-passport.bin"
+            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin"
+            just hash "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-notes.md"
+            cp build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
+            j=$((j + 1))
         done
         i=$((i + 1))
     done
@@ -326,8 +331,14 @@ secrets screen="mono":
     echo -e "Passport ROM Secrets:\n$secrets"
 
 # Calculate all hashes and format it all for GitHub release notes
-hash filepath:
+hash filepath screen="mono" output_file="":
     #!/usr/bin/env bash
+
+    if [ "{{screen}}" != "mono" ] && [ "{{screen}}" != "color" ]; then
+        echo "Screen must be either 'mono' or 'color', the default value is 'mono'."
+        exit 1
+    fi
+
     set -e
     filename=`basename {{filepath}}`
     directory=`dirname {{filepath}}`
@@ -343,12 +354,23 @@ hash filepath:
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
-    build_hash=`cosign -t color -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
+    build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
-    echo -e "## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n"
-    echo -e "SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum v2.0.5-passport.bin\` or \`md5sum v2.0.5-passport.bin\`\n"
-    echo -e "### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
+    output="## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
+
+    if [ -n "{{output_file}}" ]; then
+        output+="### $filename:\n\n"
+    fi
+
+    output+="SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum $filename\` or \`md5sum $filename\`\n\n"
+    output+="### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
+
+    if [ -z "{{output_file}}" ]; then
+        echo -e "$output"
+    else
+        echo -e "$output" > "{{output_file}}"
+    fi
 
 # Format the project's .py files under boards/Passport/modules
 fmt-py:
