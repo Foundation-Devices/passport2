@@ -2,6 +2,12 @@
 # SPDX-FileCopyrightText: 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+branch=`git symbolic-ref HEAD`
+if [ "$branch" = "refs/heads/main" ] || [[ "$branch" == refs/heads/dev-v* ]]; then
+    echo "Direct commits to the main and dev branches are not allowed."
+    exit 1
+fi
+
 RESULTS=$(find . -name '*.py' -exec grep -H fake_it[\ ]*=[\ ]*True {} +)
 LEN=`expr length "$RESULTS"`
 echo $RESULTS
