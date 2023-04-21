@@ -53,7 +53,8 @@ class ScanQRFlow(Flow):
             raise ValueError('Data description must be provided')
 
     async def scan(self):
-        from pages import QuestionPage
+        from pages import LongTextPage
+        import microns
 
         result = await ScanQRPage(max_frames=self.max_frames, qr_type=self.explicit_type).show(auto_close_timeout=self.auto_close_timeout)
 
@@ -67,7 +68,10 @@ class ScanQRFlow(Flow):
             return
 
         if result.is_too_large():
-            result = await QuestionPage(self.max_frames_text).show()
+            result = await LongTextPage(text=self.max_frames_text,
+                                        centered=True,
+                                        left_micron=microns.Cancel,
+                                        right_micron=microns.Checkmark).show()
 
             if result:
                 self.set_result(None)

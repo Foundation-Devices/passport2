@@ -22,7 +22,8 @@ class SignPsbtQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow
 
-        text = "This PSBT is very large. Would you like to cancel and sign with microSD?"
+        text = "\nThis transaction is quite large, and may take some time to scan. \
+Would you like to sign with microSD instead?"
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
