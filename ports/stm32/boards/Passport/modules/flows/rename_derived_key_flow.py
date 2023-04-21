@@ -59,7 +59,7 @@ class RenameDerivedKeyFlow(Flow):
         from utils import spinner_task
         from flows import AutoBackupFlow, MenuFlow
 
-        (error,) = await spinner_task('Renaming Key', rename_derived_key_task,
+        (error,) = await spinner_task('Renaming key', rename_derived_key_task,
                                       args=[self.key, self.key_name])
         if error is None:
             if MenuFlow.latest_menu is not None:

@@ -37,13 +37,13 @@ class AutoBackupFlow(Flow):
         from utils import spinner_task
 
         (self.backup_code, error) = await spinner_task(
-            'AutoBackup Running\nDon\'t remove microSD!',
+            'AutoBackup running.\nDon\'t remove microSD!',
             get_backup_code_task)
         if error is None:
             self.goto(self.do_backup, save_curr=False)
         else:
             from pages import ErrorPage
-            await ErrorPage(text='Unable to retrieve Backup Code: {}'.format(error)).show(
+            await ErrorPage(text='Unable to retrieve backup code: {}'.format(error)).show(
                 auto_close_timeout=MSG_CLOSE_TIMEOUT)
             self.set_result(False)
 

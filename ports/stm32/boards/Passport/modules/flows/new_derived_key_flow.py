@@ -137,7 +137,7 @@ It will only be displayed when this same passphrase is applied. Continue?'''
         from utils import spinner_task
         from common import keypad
         import lvgl as lv
-        (error,) = await spinner_task('Saving New Key Details', save_new_derived_key_task,
+        (error,) = await spinner_task('Saving new key details', save_new_derived_key_task,
                                       args=[self.index,
                                             self.key_name,
                                             self.key_type['tn'],
@@ -145,9 +145,9 @@ It will only be displayed when this same passphrase is applied. Continue?'''
         if error is None:
             from flows import AutoBackupFlow
 
-            await SuccessPage(text='New Seed Details Saved').show()
+            await SuccessPage(text='New key details saved').show()
             await AutoBackupFlow().run()
             self.set_result(True)
         else:
-            await ErrorPage(text='New Seed Details not saved: {}'.format(error)).show()
+            await ErrorPage(text='New key details not saved: {}'.format(error)).show()
             self.set_result(False)
