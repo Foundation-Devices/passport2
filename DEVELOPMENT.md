@@ -85,6 +85,10 @@ If you just want to build without signing, use one of the following commands:
 
 There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
 
+    just clean                    # Cleans exisiting compiled binaries
+    just flash 2.1.0 color <dev>  # Builds, signs, and flashes firmware to a device using a connected STLink
+    just sign-beta 2.1.0 3        # Builds and signs all combinations of color, mono, normal, and dev firmwares, with a beta number
+
 #### Building the Simulator
 First, install xterm
 
