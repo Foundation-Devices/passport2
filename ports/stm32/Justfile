@@ -140,21 +140,6 @@ sign-beta version="1.0.0" beta-num="1":
         i=$((i + 1))
     done
 
-# Build and sign all release versions
-sign-release version="1.0.0":
-    #!/usr/bin/env bash
-    rm -rf "{{version}}-release"
-    mkdir -p "{{version}}-release"
-    screens=("color" "mono")
-    paths=("passport-key-user" "passport-fe-key-user")
-    i=0
-    for screen in "${screens[@]}"; do
-        just clean
-        just sign {{version}} $screen
-        cp "build-Passport/v{{version}}-${paths[$i]}.bin" "{{version}}-release/v{{version}}-${screen}-passport.bin"
-        i=$((i + 1))
-    done
-
 # Build, sign and flash the firmware with the specified version
 flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext) && (reset)
     #!/usr/bin/env bash
