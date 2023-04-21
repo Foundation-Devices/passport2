@@ -74,7 +74,7 @@ class ScanQRPage(Page):
                 default.pad(bottom=8)
             else:
                 # self.progress_label.set_y(0)
-                default.pad(bottom=0)
+                default.pad(bottom=0, top=-2)
 
         self.set_children([self.camera, self.progress_label])
 
