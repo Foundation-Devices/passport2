@@ -31,6 +31,10 @@ class SaveToMicroSDFlow(Flow):
         self.return_bool = True
         super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
 
+    async def default_write_fn(self, filename):
+        with open(self.out_full, 'w' + self.mode) as fd:
+            fd.write(self.data)
+
     async def save(self):
         from files import CardSlot, CardMissingError
         from pages import ErrorPage
@@ -38,31 +42,30 @@ class SaveToMicroSDFlow(Flow):
         from errors import Error
         from tasks import custom_microsd_write_task
 
-        written = False
+        if (not self.data and not self.write_fn) or (self.data and self.write_fn):
+            await ErrorPage("Either data or a write function is required to save a file.").show()
+            self.set_result(False)
+            return
 
-        if self.path:
-            ensure_folder_exists(self.path)
+        if self.data:
+            self.write_fn = self.default_write_fn
+
+        written = False
 
         for path in [self.path, None]:
             try:
                 with CardSlot() as card:
+                    ensure_folder_exists(self.path)
                     self.out_full, _ = card.pick_filename(self.filename, path)
-
-                    if self.data:
-                        with open(self.out_full, 'w' + self.mode) as fd:
-                            fd.write(self.data)
-                        written = True
-                    elif self.write_fn:
-                        error = await spinner_task("Writing {}.".format(self.success_text),
-                                                   custom_microsd_write_task,
-                                                   args=[self.out_full, self.write_fn])
-                        if error is Error.MICROSD_CARD_MISSING:
-                            raise CardMissingError()
-                        elif error is Error.FILE_WRITE_ERROR:
-                            raise Exception("write task failed")
-                        written = True
-                    if written:
-                        break
+                    error = await spinner_task("Writing {}.".format(self.success_text),
+                                               custom_microsd_write_task,
+                                               args=[self.out_full, self.write_fn])
+                    if error is Error.MICROSD_CARD_MISSING:
+                        raise CardMissingError()
+                    elif error is Error.FILE_WRITE_ERROR:
+                        raise Exception("write task failed")
+                    written = True
+                    break
 
             except CardMissingError:
                 # show_card_missing is a global flow state
@@ -79,7 +82,7 @@ class SaveToMicroSDFlow(Flow):
         if written:
             self.goto(self.success)
         else:
-            await ErrorPage("Failed to write file: no data or write task.",
+            await ErrorPage("Failed to write file.",
                             right_micron=self.show_check) \
                 .show(auto_close_timeout=self.auto_timeout)
 
