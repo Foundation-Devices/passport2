@@ -93,9 +93,10 @@ class ApplyPassphraseFlow(Flow):
         from utils import start_task, xfp2str
 
         # Make a success page
-        if len(self.passphrase) == 0:
+        if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
             await SuccessPage(
-                text='Passphrase cleared\n\nFingerprint:\n\n{}'.format(
+                text='Passphrase {}ed\n\nFingerprint:\n\n{}'.format(
+                    self.msg.lower()
                     xfp2str(common.settings.get('xfp', '---')))
             ).show()
         else:
@@ -104,6 +105,7 @@ class ApplyPassphraseFlow(Flow):
                 text='Passphrase applied\n\nFingerprint correct?\n\n{}'.format(
                     xfp2str(common.settings.get('xfp', '---')))
             ).show()
+
             if result is False:
                 self.goto(self.enter_passphrase)
                 return
