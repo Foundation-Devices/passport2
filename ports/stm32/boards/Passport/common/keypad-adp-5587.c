@@ -160,6 +160,9 @@ uint8_t get_kbd_addr(void) {
             printf("keypad: using rev B keypad controller address\r\n");
         } else {
             printf("ERROR: Unable to determine keypad controller address\r\n");
+
+            // Fallback to rev A by default
+            return KBD_ADDR_REV_A;
         }
     }
 
