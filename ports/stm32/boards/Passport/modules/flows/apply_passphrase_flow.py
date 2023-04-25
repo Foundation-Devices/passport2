@@ -100,7 +100,7 @@ class ApplyPassphraseFlow(Flow):
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
             await SuccessPage(
                 text='Passphrase {}ed\n\nFingerprint:\n\n{}'.format(
-                    self.msg.lower(),
+                    self.msg.lower(),  # this is either 'revert' or 'clear' at this point
                     xfp2str(common.settings.get('xfp', '---')))
             ).show()
         else:
