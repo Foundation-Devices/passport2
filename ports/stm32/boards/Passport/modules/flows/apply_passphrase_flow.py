@@ -15,7 +15,7 @@ class ApplyPassphraseFlow(Flow):
 
         # Caller wants to set this passphrase
         self.attempted = False
-        self.prev_passphrase = stash.bip39_passphrasea
+        self.prev_passphrase = stash.bip39_passphrase
         self.passphrase = passphrase
         self.msg = 'Apply'
         if self.passphrase is not None:
@@ -29,7 +29,7 @@ class ApplyPassphraseFlow(Flow):
     def check_attempt(self):
         if self.attempted:
             self.passphrase = self.prev_passphrase
-            self.msg = 'Clear' if len(self.passphrase == 0) else 'Revert'
+            self.msg = 'Clear' if len(self.passphrase) == 0 else 'Revert'
             self.goto(self.apply_passphrase)
         else:
             self.set_result(False)
@@ -38,7 +38,7 @@ class ApplyPassphraseFlow(Flow):
         from pages import TextInputPage
 
         passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'},
-                                         initial_text=self.passphrase,
+                                         initial_text=self.passphrase or '',
                                          max_length=MAX_PASSPHRASE_LENGTH).show()
 
         # Exit text input, means we want to go back, and no need to prompt for reverting to no passphrase
@@ -69,6 +69,7 @@ class ApplyPassphraseFlow(Flow):
             return
 
         self.msg = 'Clear'
+        self.passphrase = ''
         self.goto(self.apply_passphrase)
 
     async def apply_passphrase(self):
@@ -81,8 +82,11 @@ class ApplyPassphraseFlow(Flow):
                                       apply_passphrase_task,
                                       args=[self.passphrase])
 
-        if error is Error.NOT_BIP39_MODE:
-            await ErrorPage(text='Unable to {} passphrase. Not in BIP39 mode.'.format(self.msg.lower())).show()
+        if error is not None:
+            if error is Error.NOT_BIP39_MODE:
+                await ErrorPage(text='Unable to {} passphrase. Not in BIP39 mode.'.format(self.msg.lower())).show()
+            else:
+                await ErrorPage(text='Unable to {} passphrase.'.format(self.msg.lower())).show()
             self.set_result(False)
             return
 
@@ -96,7 +100,7 @@ class ApplyPassphraseFlow(Flow):
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
             await SuccessPage(
                 text='Passphrase {}ed\n\nFingerprint:\n\n{}'.format(
-                    self.msg.lower()
+                    self.msg.lower(),
                     xfp2str(common.settings.get('xfp', '---')))
             ).show()
         else:
