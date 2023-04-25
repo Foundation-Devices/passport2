@@ -13,6 +13,7 @@
 #include "keypad-adp-5587.h"
 
 static I2C_HandleTypeDef* hi2c = NULL;
+static uint8_t keypad_addr = 0;
 
 static void keypad_reset(void) {
     int i;
@@ -146,16 +147,24 @@ bool keypad_poll_key(uint8_t* key) {
 }
 
 uint8_t get_kbd_addr(void) {
-    keypad_driver_rev_t rev = get_keypad_driver_rev();
+    const uint32_t NUM_TRIES = 1;
+    const uint32_t TIMEOUT   = 100;
 
-    switch (rev) {
-        case REV_A:
-        return KBD_ADDR_REV_A;
+    // Check corresponding revision keypad controller address and remember that
+    if (!keypad_addr) {
+        if (HAL_I2C_IsDeviceReady(hi2c, KBD_ADDR_REV_A, NUM_TRIES, TIMEOUT) == HAL_OK) {
+            keypad_addr = KBD_ADDR_REV_A;
+            printf("keypad: using rev A keypad controller address\r\n");
+        } else if (HAL_I2C_IsDeviceReady(hi2c, KBD_ADDR_REV_B, NUM_TRIES, TIMEOUT) == HAL_OK) {
+            keypad_addr = KBD_ADDR_REV_B;
+            printf("keypad: using rev B keypad controller address\r\n");
+        } else {
+            printf("ERROR: Unable to determine keypad controller address\r\n");
 
-        case REV_B:
-        return KBD_ADDR_REV_B;
-
-        default:
-        return KBD_ADDR_REV_A;
+            // Fallback to rev A by default
+            return KBD_ADDR_REV_A;
+        }
     }
+
+    return keypad_addr;
 }
