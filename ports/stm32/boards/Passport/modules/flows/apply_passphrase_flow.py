@@ -4,9 +4,6 @@
 # apply_passphrase_flow.py - Ask user to enter a passphrase, then apply it.
 
 from flows import Flow
-from pages import SuccessPage, QuestionPage
-from translations import t, T
-from constants import MAX_PASSPHRASE_LENGTH
 
 
 class ApplyPassphraseFlow(Flow):
@@ -36,6 +33,7 @@ class ApplyPassphraseFlow(Flow):
 
     async def enter_passphrase(self):
         from pages import TextInputPage
+        from constants import MAX_PASSPHRASE_LENGTH
 
         passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'},
                                          initial_text=self.passphrase or '',
@@ -95,6 +93,7 @@ class ApplyPassphraseFlow(Flow):
     async def confirm_xfp(self):
         import common
         from utils import start_task, xfp2str
+        from pages import QuestionPage, SuccessPage
 
         # Make a success page
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
