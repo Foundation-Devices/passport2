@@ -148,7 +148,7 @@ bool keypad_poll_key(uint8_t* key) {
 
 uint8_t get_kbd_addr(void) {
     const uint32_t NUM_TRIES = 1;
-    const uint32_t TIMEOUT = 1000;
+    const uint32_t TIMEOUT   = 100;
 
     // Check corresponding revision keypad controller address and remember that
     if (!keypad_addr) {
