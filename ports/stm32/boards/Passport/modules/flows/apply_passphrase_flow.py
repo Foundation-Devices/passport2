@@ -21,7 +21,7 @@ class ApplyPassphraseFlow(Flow):
             else:
                 super().__init__(initial_state=self.apply_passphrase, name='ApplyPassphraseFlow')
         else:
-            super().__init__(initial_state=self.enter_passphrase, name='ApplyPassphraseFlow')
+            super().__init__(initial_state=self.explainer, name='ApplyPassphraseFlow')
 
     def check_attempt(self):
         if self.attempted:
@@ -30,6 +30,19 @@ class ApplyPassphraseFlow(Flow):
             self.goto(self.apply_passphrase)
         else:
             self.set_result(False)
+
+    async def explainer(self):
+        from pages import InfoPage
+        import microns
+
+        result = await InfoPage(text='All passphrases are valid, and passphrases are forgotten upon shutdown.',
+                                left_micron=microns.Back).show()
+
+        if not result:
+            self.set_result(False)
+            return
+
+        self.goto(self.enter_passphrase)
 
     async def enter_passphrase(self):
         from pages import TextInputPage
