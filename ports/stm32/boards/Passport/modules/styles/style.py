@@ -33,7 +33,7 @@ class Stylize():
 
 def Style(selector=0):
     if passport.IS_COLOR:
-        if common.is_dark_theme:
+        if not common.settings.get('light_mode', common.is_dark_theme):
             return ColorDarkTheme(selector=selector)
         else:
             return ColorLightTheme(selector=selector)

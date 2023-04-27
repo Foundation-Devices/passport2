@@ -59,14 +59,15 @@ class UI():
 
     # Set the theme to color or mono in light or dark mode
     def set_theme(self, theme_name, is_dark_mode):
-        from styles.colors import WHITE, MEDIUM_GREY
+        from styles.colors import WHITE, MEDIUM_GREY, BLACK
         if theme_name == 'color':
+            light_theme = common.settings.get('light_mode', is_dark_mode)
             curr_theme = lv.theme_get_from_obj(lv.scr_act())
             new_theme = lv.theme_default_init(
                 lv.disp_get_default(),
-                WHITE,
+                WHITE if light_theme else BLACK,
                 MEDIUM_GREY,
-                is_dark_mode,
+                light_theme,
                 curr_theme.font_small)
         elif theme_name == 'mono':
             curr_theme = lv.theme_get_from_obj(lv.scr_act())

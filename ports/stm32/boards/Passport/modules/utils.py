@@ -1254,6 +1254,20 @@ def are_hidden_keys_showing():
     return showing
 
 
+def toggle_dark_mode():
+    from common import settings
+    from common import ui
+
+    light = common.settings.get('light_mode', True)
+    common.settings.set('light_mode', not light)
+    ui.set_theme('color', not light)
+
+
+def is_dark_mode_enabled():
+    from common import settings
+    return not common.settings.get('light_mode', True)
+
+
 def is_passphrase_active():
     import stash
     return stash.bip39_passphrase != ''
