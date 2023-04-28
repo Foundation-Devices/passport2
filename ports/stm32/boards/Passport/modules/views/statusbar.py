@@ -76,7 +76,7 @@ class StatusBar(View):
             self.icon_view = View(flex_flow=None)
             self.icon_view.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             with Stylize(self.icon_view) as default:
-                default.bg_color(BLACK)
+                # default.bg_color(BLACK)
                 default.pad_all(2)
                 default.radius(4)
                 default.align(lv.ALIGN.CENTER)
