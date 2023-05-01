@@ -93,11 +93,17 @@ def device_menu():
     from flows import AboutFlow, ChangePINFlow
     from pages import AutoShutdownSettingPage, BrightnessSettingPage
     from utils import is_logged_in
+    from utils import toggle_continuous_scroll, is_continuous_scroll
 
     return [
         {'icon': lv.ICON_BRIGHTNESS, 'label': 'Screen Brightness', 'page': BrightnessSettingPage},
         {'icon': lv.ICON_COUNTDOWN, 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': lv.ICON_PIN, 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_HAMBURGER,
+         'label': 'Continuous Scroll',
+         'action': lambda item: toggle_continuous_scroll(),
+         'is_toggle': True,
+         'value': lambda: is_continuous_scroll()},
         {'icon': lv.ICON_INFO, 'label': 'About', 'flow': AboutFlow},
     ]
 

@@ -77,6 +77,8 @@ class MenuPage(Page):
             common.ui.set_is_top_level(False)
 
     def attach(self, group):
+        from common import settings
+
         super().attach(group)
 
         # Attach child views
@@ -92,7 +94,8 @@ class MenuPage(Page):
             self.focus_idx = num_items - 1
 
         initial_focus = self.visible_items[self.focus_idx].get_lvgl_root()
-        lv.gridnav_add(self.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER)
+        control = lv.GRIDNAV_CTRL.NONE if not settings.get('continuous_scroll', False) else lv.GRIDNAV_CTRL.ROLLOVER
+        lv.gridnav_add(self.lvgl_root, control)
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
         lv.gridnav_set_focused(self.lvgl_root, initial_focus, False)
 

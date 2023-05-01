@@ -70,13 +70,16 @@ class FilePickerPage(Page):
         await super().display()
 
     def attach(self, group):
+        from common import settings
+
         super().attach(group)
 
         # Ensure scrollbars are enabled again
         self.scroll_container.set_scroll_dir(lv.DIR.VER)
 
         # Setup gridnav for the layout
-        lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER)
+        control = lv.GRIDNAV_CTRL.NONE if not settings.get('continuous_scroll', False) else lv.GRIDNAV_CTRL.ROLLOVER
+        lv.gridnav_add(self.scroll_container.lvgl_root, control)
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
     def detach(self):

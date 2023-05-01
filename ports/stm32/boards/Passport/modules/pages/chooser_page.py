@@ -106,6 +106,8 @@ class ChooserPage(Page):
         self.add_child(self.scroll_container)
 
     def attach(self, group):
+        from common import settings
+
         super().attach(group)
 
         # Ensure scrollbars are enabled again
@@ -113,7 +115,8 @@ class ChooserPage(Page):
 
         # Setup gridnav for the layout
         initial_focus = self.scroll_container.children[self.selected_idx].get_lvgl_root()
-        lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.ROLLOVER)
+        control = lv.GRIDNAV_CTRL.NONE if not settings.get('continuous_scroll', False) else lv.GRIDNAV_CTRL.ROLLOVER
+        lv.gridnav_add(self.scroll_container.lvgl_root, control)
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
         if initial_focus is not None:
             lv.gridnav_set_focused(self.scroll_container.lvgl_root, initial_focus, False)

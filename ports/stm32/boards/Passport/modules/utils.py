@@ -1254,6 +1254,17 @@ def are_hidden_keys_showing():
     return showing
 
 
+def toggle_continuous_scroll():
+    from common import ui
+    continuous = common.settings.get('continuous_scroll', False)
+    common.settings.set('continuous_scroll', not continuous)
+    ui.update_cards_on_top_level()
+
+
+def is_continuous_scroll():
+    return common.settings.get('continuous_scroll', False)
+
+
 def is_passphrase_active():
     import stash
     return stash.bip39_passphrase != ''
