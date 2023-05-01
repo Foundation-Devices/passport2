@@ -11,6 +11,7 @@ class ExportDerivedKeyFlow(Flow):
         self.key = context
         self.key_type = None
         self.pk = None
+        self.qr_data = None
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
@@ -73,13 +74,13 @@ class ExportDerivedKeyFlow(Flow):
 
         if qr_type is QRType.QR:
             if isinstance(self.pk, str):
-                qr_data = self.pk
+                self.qr_data = self.pk
             else:
-                qr_data = B2A(self.pk)
+                self.qr_data = B2A(self.pk)
         else:  # SeedQR or Compact SeedQR
-            qr_data = await GetSeedWordsFlow(self.pk).run()
+            self.qr_data = await GetSeedWordsFlow(self.pk).run()
 
-            if qr_data is None:
+            if self.qr_data is None:
                 self.set_result(False)
                 return
 
@@ -91,7 +92,31 @@ class ExportDerivedKeyFlow(Flow):
             self.set_result(False)
             return
 
-        await ShowQRPage(qr_type=qr_type, qr_data=qr_data, right_micron=microns.Checkmark).show()
+        await ShowQRPage(qr_type=qr_type, qr_data=self.qr_data, right_micron=microns.Checkmark).show()
+
+        if qr_type in [QRType.COMPACT_SEED_QR, QRType.SEED_QR]:
+            self.goto(self.confirm_seedqr)
+            return
+
+        self.set_result(True)
+
+    async def confirm_seedqr(self):
+        from pages import InfoPage, SeedWordsListPage
+        import microns
+
+        plural_label = 's' if len(self.qr_data) == 24 else ''
+        text = 'Confirm the seed words in the following page{}.'.format(plural_label)
+        result = await InfoPage(text=text, left_micron=microns.Back).show()
+
+        if not result:
+            self.back()
+            return
+
+        result = await SeedWordsListPage(words=self.qr_data, left_micron=microns.Back).show()
+
+        if not result:
+            return
+
         self.set_result(True)
 
     async def save_to_sd(self):
