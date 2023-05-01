@@ -77,7 +77,7 @@ class LoginFlow(Flow):
 
         msg = '''This Passport is now permanently disabled.
 
-Restore a microSD backup or seed phrase onto a new Passport to recover your funds.''' % pa.num_fails
+Restore a microSD backup or seed phrase onto a new Passport to recover your funds.'''
 
         result = await ErrorPage(text=msg,
                                  left_micron=microns.Shutdown,
