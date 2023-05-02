@@ -110,7 +110,7 @@ pub unsafe extern "C" fn ur_decoder_receive(
         }
     };
 
-    let sequence_count = ur.sequence_count();
+    *num_frames = ur.sequence_count().unwrap_or(0);
 
     let result = decoder.inner.receive(ur).map_err(|e| match e {
         Error::NotMultiPart => unsafe {
@@ -121,11 +121,6 @@ pub unsafe extern "C" fn ur_decoder_receive(
 
     match result {
         Ok(_) => {
-            *num_frames = match sequence_count {
-                Some(n) => n,
-                None => 0,
-            };
-
             true
         }
         Err(e) => {
