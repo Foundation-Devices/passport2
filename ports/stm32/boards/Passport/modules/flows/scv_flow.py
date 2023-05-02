@@ -132,12 +132,10 @@ class ScvFlow(Flow):
     async def show_manual_response(self):
         from pages import ShieldPage
 
-        words = ''
-        for idx, word in enumerate(self.words):
-            words += '               {}. {}\n'.format(idx + 1, word)
-        words = words[:-1]
+        lines = ['{}. {}\n'.format(idx + 1, word) for idx, word in enumerate(self.words)]
+        words = ''.join(lines)
 
-        result = await ShieldPage(text=words, card_header={'title': 'Security Check'}, centered=False,
+        result = await ShieldPage(text=words, card_header={'title': 'Security Check'},
                                   left_micron=microns.Retry, right_micron=microns.Forward).show()
         if not result:
             self.back()
