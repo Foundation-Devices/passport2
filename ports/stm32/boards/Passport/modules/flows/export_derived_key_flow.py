@@ -69,7 +69,7 @@ class ExportDerivedKeyFlow(Flow):
 
     async def show_qr_code(self):
         from pages import ShowQRPage
-        from flows import SaveToMicroSDFlow, SeedWarningFlow
+        from flows import SeedWarningFlow
         import microns
 
         result = await SeedWarningFlow(action_text="display your {} as a QR code"
