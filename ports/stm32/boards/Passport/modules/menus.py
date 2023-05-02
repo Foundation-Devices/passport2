@@ -309,7 +309,7 @@ def advanced_menu():
         {'icon': lv.ICON_MICROSD, 'label': 'microSD', 'submenu': microsd_menu},
         {'icon': lv.ICON_ERASE, 'label': 'Erase Passport', 'flow': ErasePassportFlow},
         {'icon': lv.ICON_SHIELD, 'label': 'Security Check', 'flow': ScvFlow,
-         'args': {'envoy': False, 'ask_to_skip': False}},
+         'args': {'envoy': False}},
     ]
 
 
