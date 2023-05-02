@@ -35,7 +35,9 @@ class ApplyPassphraseFlow(Flow):
         from pages import InfoPage
         import microns
 
-        result = await InfoPage(text='All passphrases are valid, and passphrases are forgotten upon shutdown.',
+        text = '''Type with care. All passphrases are valid.\n
+Passport will clear your passphrase upon shutdown.'''
+        result = await InfoPage(text=text,
                                 left_micron=microns.Back).show()
 
         if not result:
