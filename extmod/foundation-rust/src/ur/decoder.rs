@@ -120,9 +120,7 @@ pub unsafe extern "C" fn ur_decoder_receive(
     });
 
     match result {
-        Ok(_) => {
-            true
-        }
+        Ok(_) => true,
         Err(e) => {
             *error = e;
             false
