@@ -7,9 +7,10 @@ from flows import Flow
 
 
 class GetSeedWordsFlow(Flow):
-    def __init__(self, external_key=None):
-        super().__init__(initial_state=self.get_words, name='GetSeedWordsFlow')
+    def __init__(self, external_key=None, text='Retrieving Seed'):
         self.external_key = external_key
+        self.text = text
+        super().__init__(initial_state=self.get_words, name='GetSeedWordsFlow')
 
     async def get_words(self):
         from tasks import get_seed_words_task
@@ -19,7 +20,7 @@ class GetSeedWordsFlow(Flow):
         if self.external_key:
             (words, error) = get_words_from_seed(self.external_key)
         else:
-            (words, error) = await spinner_task(text='Retrieving Seed',
+            (words, error) = await spinner_task(text=self.text,
                                                 task=get_seed_words_task)
 
         if error is not None or words is None:
