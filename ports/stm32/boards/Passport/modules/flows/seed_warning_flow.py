@@ -8,11 +8,9 @@ from flows import Flow
 
 class SeedWarningFlow(Flow):
     def __init__(self, mention_passphrase=False,
-                 action_text="display your seed words",
-                 continue_text=None):
+                 action_text=None):
         self.mention_passphrase = mention_passphrase
-        self.action_text = action_text
-        self.continue_text = continue_text or "control your funds"
+        self.action_text = action_text or "display your seed words"
         super().__init__(initial_state=self.show_intro, name='SeedWarningFlow')
 
     async def show_intro(self):
