@@ -56,7 +56,9 @@ class ScanQRFlow(Flow):
         from pages import LongTextPage
         import microns
 
-        result = await ScanQRPage(max_frames=self.max_frames, qr_type=self.explicit_type).show(auto_close_timeout=self.auto_close_timeout)
+        result = await ScanQRPage(max_frames=self.max_frames,
+                                  qr_type=self.explicit_type) \
+            .show(auto_close_timeout=self.auto_close_timeout)
 
         if result is None:
             self.set_result(None)
