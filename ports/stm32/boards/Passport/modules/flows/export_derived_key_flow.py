@@ -11,13 +11,15 @@ class ExportDerivedKeyFlow(Flow):
         self.key = context
         self.key_type = None
         self.pk = None
-        self.qr_data = None
+        self.qr_type = None
+        self.words = None
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
         from utils import spinner_task
         from derived_key import get_key_type_from_tn
         from pages import ErrorPage
+        from flows import GetSeedWordsFlow
 
         self.key_type = get_key_type_from_tn(self.key['tn'])
 
@@ -34,12 +36,19 @@ class ExportDerivedKeyFlow(Flow):
             self.set_result(False)
             return
 
+        if self.key_type['words']:
+            self.words = await GetSeedWordsFlow(external_key=self.pk, text='Generating Key').run()
+
+            if self.words is None:
+                self.set_result(False)
+                return
+
         self.goto(self.choose_export_mode)
 
     async def choose_export_mode(self):
         from pages import ChooserPage
 
-        options = [{'label': 'Export via QR', 'value': self.show_qr_code},
+        options = [{'label': 'Export via QR', 'value': self.choose_qr_type},
                    {'label': 'Export via microSD', 'value': self.save_to_sd}]
 
         if self.key_type['words']:
@@ -47,54 +56,69 @@ class ExportDerivedKeyFlow(Flow):
 
         mode = await ChooserPage(card_header={'title': 'Export Mode'}, options=options).show()
 
+        # TODO: if key_type['words'] and not save_to_sd, use ViewSeedWordsFlow
+
         if mode is None:
             self.set_result(False)
             return
 
         self.goto(mode)
 
-    async def show_qr_code(self):
-        from flows import GetSeedWordsFlow, SeedWarningFlow
-        from pages import ShowQRPage, ChooserPage
-        from utils import B2A
+    async def choose_qr_type(self):
+        from pages import ChooserPage
+        from flows import SeedWarningFlow
         from data_codecs.qr_type import QRType
-        import microns
+
+        self.qr_type = QRType.QR
 
         if self.key_type['words']:
             options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
                        {'label': 'SeedQr', 'value': QRType.SEED_QR}]
 
-            qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()
-        else:
-            qr_type = QRType.QR
+            self.qr_type = await ChooserPage(card_header={'title': 'QR Format'}, options=options).show()
 
-        if qr_type is None:
-            self.set_result(False)
+        if self.qr_type is None:
+            self.back()
             return
-
-        if qr_type is QRType.QR:
-            if isinstance(self.pk, str):
-                self.qr_data = self.pk
-            else:
-                self.qr_data = B2A(self.pk)
-        else:  # SeedQR or Compact SeedQR
-            self.qr_data = await GetSeedWordsFlow(self.pk).run()
-
-            if self.qr_data is None:
-                self.set_result(False)
-                return
 
         result = await SeedWarningFlow(action_text="display your {} as a QR code"
                                        .format(self.key_type['title'])).run()
-
         if not result:
-            self.set_result(False)
+            self.back()
             return
 
-        await ShowQRPage(qr_type=qr_type, qr_data=self.qr_data, right_micron=microns.Checkmark).show()
+        if self.qr_type in [QRType.SEED_QR, QRType.COMPACT_SEED_QR]:
+            self.goto(self.show_seed_qr)
+            return
 
-        if qr_type in [QRType.COMPACT_SEED_QR, QRType.SEED_QR]:
-            self.goto(self.confirm_seedqr)
+        self.goto(show_qr_code)
+
+    async def show_seed_qr(self):
+        from pages import ShowQRPage
+        import microns
+
+        result = await ShowQRPage(qr_type=self.qr_type, qr_data=self.words, right_micron=microns.Checkmark).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.confirm_seedqr)
+
+    async def show_qr_code(self):
+        from pages import ShowQRPage
+        from utils import B2A
+        import microns
+
+        if isinstance(self.pk, str):
+            qr_data = self.pk
+        else:
+            qr_data = B2A(self.pk)
+
+        result = await ShowQRPage(qr_type=self.qr_type, qr_data=qr_data, right_micron=microns.Checkmark).show()
+
+        if not result:
+            self.back()
             return
 
         self.set_result(True)
@@ -103,7 +127,7 @@ class ExportDerivedKeyFlow(Flow):
         from pages import InfoPage, SeedWordsListPage
         import microns
 
-        plural_label = 's' if len(self.qr_data) == 24 else ''
+        plural_label = 's' if len(self.words) == 24 else ''
         text = 'Confirm the seed words in the following page{}.'.format(plural_label)
         result = await InfoPage(text=text, left_micron=microns.Back).show()
 
@@ -111,7 +135,7 @@ class ExportDerivedKeyFlow(Flow):
             self.back()
             return
 
-        result = await SeedWordsListPage(words=self.qr_data, left_micron=microns.Back).show()
+        result = await SeedWordsListPage(words=self.words, left_micron=microns.Back).show()
 
         if not result:
             return
@@ -120,11 +144,10 @@ class ExportDerivedKeyFlow(Flow):
 
     async def save_to_sd(self):
         from utils import B2A
-        from flows import GetSeedWordsFlow, SaveToMicroSDFlow, SeedWarningFlow
+        from flows import SaveToMicroSDFlow, SeedWarningFlow
 
         if self.key_type['words']:
-            words = await GetSeedWordsFlow(self.pk).run()
-            text = " ".join(words)
+            text = " ".join(self.words)
         elif isinstance(self.pk, str):
             text = self.pk
         else:
