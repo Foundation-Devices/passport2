@@ -22,6 +22,7 @@ class PINInput(View):
         self.input_mode = input_mode
         self.show_last_char = False
         self.timer = None
+        self.hidden_mode = True
 
         self.set_size(lv.pct(100), 35)
 
@@ -64,8 +65,10 @@ class PINInput(View):
         for i in range(num_chars):
             # ch = self.pin[i]
             # item = Label(text=ch, color=TEXT_GREY)
-            if i == num_chars - 1 and self.show_last_char:
-                ch = self.pin[i]
+            ch = self.pin[i]
+            if not self.hidden_mode:
+                item = Label(text=ch, color=TEXT_INPUT_TEXT)
+            elif i == num_chars - 1 and self.show_last_char:
                 item = Label(text=ch, color=TEXT_INPUT_TEXT)
             else:
                 item = Icon(lv.ICON_PAGE_DOT, color=TEXT_INPUT_TEXT)
@@ -122,3 +125,11 @@ class PINInput(View):
     def set_mode(self, mode):
         self.input_mode = mode
         self.mode_icon.set_icon(InputMode.get_icon(self.input_mode))
+
+    def view_pin(self):
+        self.hidden_mode = False
+        self.update_pin()
+
+    def hide_pin(self):
+        self.hidden_mode = True
+        self.update_pin()

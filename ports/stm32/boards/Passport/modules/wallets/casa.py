@@ -33,7 +33,7 @@ def create_casa_export(sw_wallet=None,
         with stash.SensitiveValues() as sv:
             is_mainnet = chain.ctype == 'BTC'
 
-            network = ur.NETWORK_TESTNET if is_mainnet else ur.NETWORK_TESTNET
+            network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
             use_info = ur.CryptoCoinInfo(ur.CoinType.BTC, network)
             origin = ur.CryptoKeypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
                                       depth=0)
@@ -78,8 +78,8 @@ CasaWallet = {
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2, 'ur_type': 'crypto-hdkey', 'is_cbor': True},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-casa.txt', 'ext': '.txt',
-         'filename_pattern_multisig': '{sd}/{xfp}-casa-multisig.txt', 'ext_multisig': '.txt'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-casa.txt', 'ext': '.txt',
+         'filename_pattern_multisig': '{xfp}-casa-multisig.txt', 'ext_multisig': '.txt'}
     ],
     'skip_address_validation': True,
     'skip_multisig_import': True,

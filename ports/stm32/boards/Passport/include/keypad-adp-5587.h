@@ -11,7 +11,9 @@
 #include "stm32h7xx_hal_i2c.h"
 #include "i2c-init.h"
 
-#define KBD_ADDR (0x34 << 1)  // Use 8-Bit address
+// Use 8-Bit address
+#define KBD_ADDR_REV_A (0x34 << 1)
+#define KBD_ADDR_REV_B (0x30 << 1)
 
 #define KBD_REG_DEVID 0x00            // Device ID
 #define KBD_REG_CFG 0x01              // Configuration Register 1
@@ -82,11 +84,14 @@
 #define KBD_REG_CFG_GPI_IEN 0x02
 #define KBD_REG_CFG_KE_IEN 0x01
 
-extern void keypad_init(void);
+extern bool keypad_init(void);
 extern int  keypad_write(uint8_t address, uint8_t reg, uint8_t data);
 extern int  keypad_read(uint8_t address, uint8_t reg, uint8_t* data, uint8_t len);
 extern void keypad_test(void);
 extern void keypad_ISR(void);
 extern bool keypad_poll_key(uint8_t* key);
+
+uint8_t get_kbd_addr(void);
+bool read_num_keys(uint8_t *num_keys);
 
 #endif

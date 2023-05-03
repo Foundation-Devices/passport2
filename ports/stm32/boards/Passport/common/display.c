@@ -48,20 +48,31 @@ void display_show(void) {
     // Clear the keypad interrupt so that it will retrigger if it had any events while
     // interrupts were disabled, else it will hang the controller since it's waiting
     // for the previous interrupt to be acknowledged.
-    keypad_write(KBD_ADDR, KBD_REG_INT_STAT, 0xFF);
+    keypad_write(get_kbd_addr(), KBD_REG_INT_STAT, 0xFF);
 #endif /* DEBUG */
 }
 
 // Clear the memory display and then shutdown
-void display_clean_shutdown() {
+__attribute__((noreturn)) void display_clean_shutdown() {
     display_clear(COLOR_BLACK);
     display_show();
     passport_shutdown();
-    while (true)
-        ;
 }
 
 #ifdef PASSPORT_BOOTLOADER
+static void display_glyph(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* glyph, uint16_t color) {
+    lcd_draw_glyph(x, y, w, h, glyph, color);
+}
+
+static void display_repeat_image_horiz(
+    uint16_t x, uint16_t y, const lv_img_dsc_t* image, uint16_t repeat_count, uint8_t mode) {
+    uint16_t curr_x = x;
+    for (uint16_t i = 0; i < repeat_count; i++) {
+        display_image(curr_x, y, image->header.w, image->header.h, image->data, mode);
+        curr_x += image->header.w;
+    }
+}
+
 uint16_t display_measure_text(char* text, Font* font) {
     uint16_t width = 0;
     uint16_t slen  = strlen(text);
@@ -138,19 +149,6 @@ void display_image(uint16_t x, uint16_t y, uint16_t image_w, uint16_t image_h, c
         lcd_draw_image_rgb565(x, y, image_w, image_h, image);
     }
 #endif
-}
-
-void display_repeat_image_horiz(
-    uint16_t x, uint16_t y, const lv_img_dsc_t* image, uint16_t repeat_count, uint8_t mode) {
-    uint16_t curr_x = x;
-    for (uint16_t i = 0; i < repeat_count; i++) {
-        display_image(curr_x, y, image->header.w, image->header.h, image->data, mode);
-        curr_x += image->header.w;
-    }
-}
-
-void display_glyph(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* glyph, uint16_t color) {
-    lcd_draw_glyph(x, y, w, h, glyph, color);
 }
 
 // Assumes it's the only thing on these lines, so it does not retain any other

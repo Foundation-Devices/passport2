@@ -11,8 +11,10 @@ import common
 
 
 class MenuFlow(Flow):
+    latest_menu = None
+
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
-                 card_header=None, statusbar=None, one_shot=False):
+                 card_header=None, statusbar=None):
         self.menu = menu
 
         super().__init__(initial_state=self.show_menu, name='MenuFlow')
@@ -22,7 +24,7 @@ class MenuFlow(Flow):
         self.context = context
         self.card_header = card_header
         self.statusbar = statusbar
-        self.one_shot = one_shot
+        MenuFlow.latest_menu = self
 
     async def show_menu(self):
         from common import ui
@@ -32,6 +34,8 @@ class MenuFlow(Flow):
         # This allows them to update if any state has changed since last running.
         assert(callable(self.menu))
         self.items = self.menu()
+        self.prev_statusbar = None
+        self.prev_card_header = None
 
         # print('show_menu(): is_top_level() = {}'.format(common.ui.is_top_level()))
         result = await MenuPage(
@@ -58,17 +62,22 @@ class MenuFlow(Flow):
             item = self.selected_item
 
             if item.get('submenu') is not None:
+                # TODO: this and the flow case have a lot in common
                 # If it contains a submenu, then just call MenuFlow recursively
-                prev_statusbar = self.update_statusbar(item)
+                auto = item.get('auto_card_header', True)
+                self.update_headers(item, auto)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
 
                 # print('MENUFLOW >>>>>>> args={}'.format(args))
                 submenu = item.get('submenu')
-                await MenuFlow(submenu, **args).run()
-                if prev_statusbar is not None:
-                    ui.set_statusbar(**prev_statusbar)
+                result = await MenuFlow(submenu, **args).run()
+                self.revert_headers(auto)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
                 # Trigger a card refresh, usually because an Extension was enabled or disabled
                 if self.is_top_level and ui.update_cards_pending:
@@ -80,23 +89,32 @@ class MenuFlow(Flow):
 
                 # prev_card_header = self.update_card_header(item)
                 # print('PAGE >>>>>>> args={}'.format(args))
-                await PageFlow(args).run()
+                result = await PageFlow(args).run()
                 # if prev_card_header is not None:
                 #     ui.set_card_header(**prev_card_header)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
             elif item.get('flow') is not None:
 
                 # If there is a flow, run it
                 flow = item.get('flow')
 
-                prev_statusbar = self.update_statusbar(item)
+                auto = item.get('auto_card_header', True)
+                self.update_headers(item, auto)
                 args = item.get('args', {})
                 if self.context is not None:
                     args['context'] = self.context
                 # print('FLOW >>>>>>> args={}'.format(args))
-                await flow(**args).run()
-                if prev_statusbar is not None:
-                    ui.set_statusbar(**prev_statusbar)
+                result = await flow(**args).run()
+
+                self.revert_headers(auto)
+
+                if result and item.get('exit_on_success', False):
+                    # User picked this item, which invalidates this menu
+                    self.set_result(True)
 
             elif item.get('action') is not None:
                 action = item.get('action')
@@ -104,9 +122,6 @@ class MenuFlow(Flow):
                     action(item)
 
             self.cleanup()
-            if self.one_shot:
-                # User picked an item, so now return
-                self.set_result(True)
 
     def apply_page_args(self, item):
         args = item.get('args', {})
@@ -145,14 +160,11 @@ class MenuFlow(Flow):
         if card_header is not None:
             card_title = card_header.get('title', None)
             card_icon = card_header.get('icon', None)
-        else:
-            card_title = item.get('label', None)
-            card_icon = item.get('icon', None)
+            card_right_icon = card_header.get('right_icon', None)
 
-        if card_title is not None or card_icon is not None:
-            return ui.set_card_header(title=card_title, icon=card_icon)
+            return ui.set_card_header(title=card_title, icon=card_icon, right_icon=card_right_icon)
 
-        return None
+        return ui.get_card_header()
 
     # Automatically assign screen header to menu label and icon unless
     # auto_screen_header is present and False.
@@ -171,3 +183,34 @@ class MenuFlow(Flow):
             return ui.set_statusbar(title=statusbar_title, icon=statusbar_icon)
 
         return None
+
+    def update_prev_statusbar(self, statusbar):
+        self.prev_statusbar = statusbar
+
+    def get_prev_statusbar(self):
+        return self.prev_statusbar
+
+    def update_prev_card_header(self, card_header):
+        self.prev_card_header = card_header
+
+    def get_prev_card_header(self):
+        return self.prev_card_header
+
+    def revert_headers(self, auto=True):
+        from common import ui
+        if self.prev_statusbar is not None:
+            ui.set_statusbar(**self.prev_statusbar)
+            self.prev_statusbar = None
+
+        if not auto and self.prev_card_header is not None:
+            ui.set_card_header(**self.prev_card_header)
+            self.prev_card_header = None
+
+    def update_headers(self, item, auto=True):
+        from common import ui
+
+        self.prev_statusbar = self.update_statusbar(item)
+        if not auto:
+            self.prev_card_header = self.update_card_header(item)
+        else:
+            self.prev_card_header = ui.get_card_header()

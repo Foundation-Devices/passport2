@@ -787,8 +787,9 @@ class MultisigWallet:
 
         # path length of derivation given needs to match xpub's depth
         p_len = deriv.count('/')
-        assert p_len == depth, 'deriv %d != %d xpub depth (xfp=%s)' % (
-            p_len, depth, xfp2str(xfp))
+        assert p_len == depth, \
+            'Key info of (xfp=%s) invalid, key derivation path length = (%d) while \
+configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
 
         if xfp == my_xfp:
             # its supposed to be my key, so I should be able to generate pubkey

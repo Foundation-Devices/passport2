@@ -8,12 +8,11 @@
 
 #include "ring_buffer.h"
 
-#include "../../../../lib/lv_bindings/driver/include/common.h"
-#include "../../../../lib/lv_bindings/lv_conf.h"
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
+#include "lib/lv_bindings/driver/include/common.h"
+#include "lvgl/lvgl.h"
 
 #ifndef KEYPAD_DEBUG
-// #define KEYPAD_DEBUG 1
+#define KEYPAD_DEBUG 0
 #endif
 
 STATIC mp_obj_t key_cb = mp_const_none;
@@ -181,6 +180,11 @@ STATIC mp_obj_t mod_passport_lv_Keypad_set_key_cb(mp_obj_t self_in, mp_obj_t key
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_lv_Keypad_set_key_cb_obj, mod_passport_lv_Keypad_set_key_cb);
 
+STATIC mp_obj_t mod_passport_lv_Keypad_set_key_repeat(mp_obj_t self_in, mp_obj_t _key, mp_obj_t _enabled){
+    return mp_const_true;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_passport_lv_Keypad_set_key_repeat_obj, mod_passport_lv_Keypad_set_key_repeat);
+
 /// def enable_global(self, enable):
 ///     """
 ///     """
@@ -216,7 +220,7 @@ STATIC mp_obj_t mod_passport_lv_Keypad_inject(mp_obj_t self_in, mp_obj_t _ch, mp
         keycode = 'r';
         break;
     case LV_KEY_ESC:
-        keycode = 'c';
+        keycode = 'x';
         break;
     case LV_KEY_ENTER:
         keycode = 'y';
@@ -254,6 +258,7 @@ STATIC const mp_rom_map_elem_t mod_passport_lv_Keypad_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_get_keycode), MP_ROM_PTR(&mod_passport_lv_Keypad_get_keycode_obj)},
     {MP_ROM_QSTR(MP_QSTR_read_cb), MP_ROM_PTR(&PTR_OBJ(mod_passport_lv_Keypad_read_cb))},
     {MP_ROM_QSTR(MP_QSTR_set_key_cb), MP_ROM_PTR(&mod_passport_lv_Keypad_set_key_cb_obj)},
+    {MP_ROM_QSTR(MP_QSTR_set_key_repeat), MP_ROM_PTR(&mod_passport_lv_Keypad_set_key_repeat_obj)},
     {MP_ROM_QSTR(MP_QSTR_enable_global_nav_keys), MP_ROM_PTR(&mod_passport_lv_Keypad_enable_global_nav_keys_obj)},
     {MP_ROM_QSTR(MP_QSTR_inject), MP_ROM_PTR(&mod_passport_lv_Keypad_inject_obj)},
     {MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_passport_lv_Keypad___del___obj)},

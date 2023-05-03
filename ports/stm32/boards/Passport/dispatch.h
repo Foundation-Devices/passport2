@@ -10,9 +10,6 @@
  */
 #pragma once
 
-// Start DFU, or return doing nothing if chip is secure (no DFU possible).
-extern void dfu_by_request(void);
-
 /* Temporary declaration for unit-testing */
 extern int se_dispatch(
     int method_num, uint8_t* buf_io, int len_in, uint32_t arg2, uint32_t incoming_sp, uint32_t incoming_lr);

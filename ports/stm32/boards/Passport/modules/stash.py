@@ -193,7 +193,7 @@ class SensitiveValues:
     def get_xfp(self):
         return self.node.my_fingerprint()
 
-    def capture_xpub(self):
+    def capture_xpub(self, save=False):
         # track my xpubkey fingerprint & value in settings (not sensitive really)
         # - we share these on any USB connection
         import common
@@ -224,6 +224,11 @@ class SensitiveValues:
         # a passphrase is entered, so no need to waste flash cycles on storing it.
         if bip39_passphrase == '':
             settings.set_volatile('root_xfp', xfp)
+            if save:
+                settings.set('xfp', xfp)
+                settings.set('xpub', xpub)
+                settings.save()
+
         settings.set_volatile('xfp', xfp)
         settings.set_volatile('xpub', xpub)
 

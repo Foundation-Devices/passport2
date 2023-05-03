@@ -205,3 +205,9 @@ bool check_stack(char* msg, bool print) {
 }
 
 #endif /* PASSPORT_BOOTLOADER */
+
+keypad_driver_rev_t get_keypad_driver_rev(void) {
+    uint8_t rev = (GPIO_PIN_SET == HAL_GPIO_ReadPin(KEYPAD_DRIVER_REV_PORT, KEYPAD_DRIVER_REV_PIN));
+
+    return rev ? REV_B : REV_A;
+}

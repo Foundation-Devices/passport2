@@ -16,6 +16,12 @@ use ur_foundation::ur;
 /// alphanumeric characters.
 pub const UR_ENCODER_MAX_STRING: usize = 535;
 
+/// Minimum size of an encoded Uniform Resource.
+///
+/// This value assumes a QR code of version of 7 with ECC L using
+/// alphanumeric characters.
+pub const UR_ENCODER_MIN_STRING: usize = 224;
+
 /// Maximum fragment length.
 ///
 /// This is the maximum fragment length in bytes, this is not for the
@@ -25,12 +31,16 @@ pub const UR_ENCODER_MAX_STRING: usize = 535;
 pub const UR_ENCODER_MAX_FRAGMENT_LEN: usize =
     max_fragment_len(UR_ENCODER_MAX_STRING);
 
+/// Minimum fragment length.
+pub const UR_ENCODER_MIN_FRAGMENT_LEN: usize =
+    max_fragment_len(UR_ENCODER_MIN_STRING);
+
 /// Maximum sequence count for the decoder.
 ///
 /// Must be a power of two.
 /// cbindgen:ignore
 pub const UR_ENCODER_MAX_SEQUENCE_COUNT: usize = usize::next_power_of_two(
-    UR_DECODER_MAX_MESSAGE_LEN / UR_ENCODER_MAX_FRAGMENT_LEN,
+    UR_DECODER_MAX_MESSAGE_LEN / UR_ENCODER_MIN_FRAGMENT_LEN,
 );
 
 /// Maximum message length that can be encoded.
@@ -40,7 +50,7 @@ pub const UR_ENCODER_MAX_MESSAGE_LEN: usize = UR_DECODER_MAX_MESSAGE_LEN;
 /// Statically allocated encoder.
 #[no_mangle]
 #[used]
-#[cfg_attr(sram4, link_section = ".sram4")]
+#[cfg_attr(dtcm, link_section = ".dtcm")]
 pub static mut UR_ENCODER: UR_Encoder = UR_Encoder {
     inner: ur::HeaplessEncoder::new_heapless(),
 };

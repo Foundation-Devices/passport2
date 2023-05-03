@@ -58,97 +58,93 @@ static camera_reg_t _camera_reg_init[] = {
     // Sensor   : OVM7690
 
     // Flip and invert the image due to the camera orientation on the board
-    {0x0c, 0xD6},
+    {REG0C, 0xD6},
 
-    {0x81, 0xff},
-    {0x21, 0x23},
-    {0x16, 0x03},
+    {REG81, 0xff},
+    {AECGM, 0x23},
+    {REG16, 0x03},
     {0x39, 0x80},
     {0x1e, 0xb1},
 
     //===Format===
-    {0x12, 0x06},
-    {0x82, 0x03},
-    {0xd0, 0x48},
-    {0x80, 0x7f},
-    {0x3e, 0x30},
-    {0x22, 0x00},
-
-    // The Vfirst flag set by the line below is not documented.
-    // Adding or removing this has no noticeable effect for us.
-    // {0xC2, 0x02},
+    {REG12, 0x06},
+    {REG82, 0x03},
+    {REGD0, 0x48},
+    {REG80, 0x7f},
+    {REG3E, 0x30},
+    {REG22, 0x00},
 
     //===Resolution===
-    {0x18, 0xa4},
-    {0x1a, 0xf6},
+    {HSIZE, 0xa4},
+    {VSIZE, 0xf6},
 
     //===Zoom===
-    {0xc8, 0x02},
-    {0xc9, 0x40},  // ISP input hsize (576)
-    {0xca, 0x01},
-    {0xcb, 0xe0},  // ISP input vsize (480)
+    {REGC8, 0x02},
+    {REGC9, 0x40},  // ISP input hsize (576)
+    {REGCA, 0x01},
+    {REGCB, 0xe0},  // ISP input vsize (480)
 
-    {0xcc, 0x01},
-    {0xcd, 0x8c},  // ISP output hsize (396)
-    {0xce, 0x01},
-    {0xcf, 0x4a},  // ISP output vsize (330)
+    {REGCC, 0x01},
+    {REGCD, 0x8c},  // ISP output hsize (396)
+    {REGCE, 0x01},
+    {REGCF, 0x4a},  // ISP output vsize (330)
 
     //===Position===
-    {0x17, 0x69},  // h
-    {0x19, 0x0C},  // v
+    {HSTART, 0x69},  // h
+    {VSTART, 0x0C},  // v
 
     //===Lens Correction==
-    {0x85, 0x90},
-    {0x86, 0x00},
-    {0x87, 0x00},
-    {0x88, 0x10},
-    {0x89, 0x30},
-    {0x8a, 0x29},
-    {0x8b, 0x26},
+    {LCC0, 0x90},
+    {LCC1, 0x00},
+    {LCC2, 0x00},
+    {LCC3, 0x10},
+    {LCC4, 0x30},
+    {LCC5, 0x29},
+    {LCC6, 0x26},
 
     //====Color Matrix====
-    {0xbb, 0x80},
-    {0xbc, 0x62},
-    {0xbd, 0x1e},
-    {0xbe, 0x26},
-    {0xbf, 0x7b},
-    {0xc0, 0xac},
-    {0xc1, 0x1e},
+    {REGBB, 0x80},
+    {REGBC, 0x62},
+    {REGBD, 0x1e},
+    {REGBE, 0x26},
+    {REGBF, 0x7b},
+    {REGC0, 0xac},
+    {REGC1, 0x1e},
 
     //===Edge + Denoise====
-    {0xb7, 0x05},
-    {0xb8, 0x09},
-    {0xb9, 0x00},
-    {0xba, 0x18},
+    {REGB7, 0x05},
+    {REGB8, 0x09},
+    {REGB9, 0x00},
+    {REGBA, 0x18},
 
     //===UVAdjust====
-    {0x5A, 0x4A},
-    {0x5B, 0x9F},
-    {0x5C, 0x48},
-    {0x5d, 0x32},
+    {UVCTR0, 0x4A},
+    {UVCTR1, 0x9F},
+    {UVCTR2, 0x48},
+    {UVCTR3, 0x32},
 
     //====AEC/AGC target====
-    {0x24, 0x78},
-    {0x25, 0x68},
-    {0x26, 0xb3},
+    {WPT, 0x78},
+    {BPT, 0x68},
+    {VPT, 0xb3},
 
     //====Gamma====
-    {0xa3, 0x0b},
-    {0xa4, 0x15},
-    {0xa5, 0x2a},
-    {0xa6, 0x51},
-    {0xa7, 0x63},
-    {0xa8, 0x74},
-    {0xa9, 0x83},
-    {0xaa, 0x91},
-    {0xab, 0x9e},
-    {0xac, 0xaa},
-    {0xad, 0xbe},
-    {0xae, 0xce},
-    {0xaf, 0xe5},
-    {0xb0, 0xf3},
-    {0xb1, 0xfb},
-    {0xb2, 0x06},
+    {GAM1, 0x0b},
+    {GAM2, 0x15},
+    {GAM3, 0x2a},
+    {GAM4, 0x51},
+    {GAM5, 0x63},
+    {GAM6, 0x74},
+    {GAM7, 0x83},
+    {GAM8, 0x91},
+    {GAM9, 0x9e},
+    {GAM10, 0xaa},
+    {GAM11, 0xbe},
+    {GAM12, 0xce},
+    {GAM13, 0xe5},
+    {GAM14, 0xf3},
+    {GAM15, 0xfb},
+    {SLOPE, 0x06},
 
     //===AWB===
     //==Advanced==
@@ -177,175 +173,12 @@ static camera_reg_t _camera_reg_init[] = {
     {0xa2, 0x13},
 
     //==General Control==
-    {0x50, 0x9a},
-    {0x51, 0x80},
+    {BD50ST, 0x9a},
+    {BD60ST, 0x80},
 
-    {0x14, 0x29},
-    {0x13, 0xe7},
-    {0x11, 0x40},  // Changed from 0 - we use an external oscillator
-
-    //===Saturation===
-    // 1x (default)
-    // { 0xD8, 0x40 },
-    // { 0xD9, 0x40 },
-    // { 0xD2, 0x00 },
-
-    // 1.25x
-    // {0xD8, 0x50},
-    // {0xD9, 0x50},
-    // {0xD2, 0x02},
-
-    // 1.5x
-    // { 0xD8, 0x60 },
-    // { 0xD9, 0x60 },
-    // { 0xD2, 0x00 },
-
-    // 1.75x
-    // { 0xD8, 0x70 },
-    // { 0xD9, 0x70 },
-    // { 0xD2, 0x00 },
-
-    // 2x
-    // { 0xD8, 0x80 },
-    // { 0xD9, 0x80 },
-    // { 0xD2, 0x02 },
-
-    // 102 80 0
-    // 102 81 0
-    // 102 82 18c
-    // 102 83 14a
-
-    // 100 98 2 2// based on OVM7690 Setting V2.2
-
-    // {0x0E, 0x00}, /* No sleep and full range (default)  */
-    // {0x0C, 0x06}, /* External sync */
-    // {0x81, 0xFF}, /* SDE, UV, vscale, hscale, uvavg, color matrix */
-    // {0x21, 0x44}, /* AECGM banding max */
-    // {0x16, 0x03}, /* Setting reserved bits?? */
-    // {0x39, 0x80}, /* Setting reserved bits?? */
-    // {0x1E, 0xB1}, /* Setting reserved bits?? */
-    //
-    // /* Format */
-    // {0x12, 0x06}, /* Output format control: RGB565      */
-    // {0x82, 0x03}, /* YUV422? */
-    // {0xD0, 0x48}, /* voffset/hoffset (default) */
-    // {0x80, 0x7F}, /* color interp, bp corr, wp corr, gamma, awb gain, awb, lens corr */
-    // {0x3E, 0x30}, /* reserved bit?? and PLCK YUV */
-    // {0x22, 0x00}, /* optical black output disable (default) */
-    //
-    // /* Resolution */
-    // {0x17, 0x69}, /* Horizontal window start point      */
-    // {0x18, 0xA4}, /* Horizontal senzor size             */
-    // {0x19, 0x0C}, /* Vertical Window start line         */
-    // {0x1A, 0xF6}, /* Vertical sensor size               */
-    //
-    // {0xC8, 0x02}, /* H input size MSBs (default) */
-    // {0xC9, 0x80}, /* H input size LSBs (default) */
-    // {0xCA, 0x01}, /* V input size MSBs (default) */
-    // {0xCB, 0xE0}, /* V input size LSBs (default) */
-    // {0xCC, 0x02}, /* H output size MSBs (default) */
-    // {0xCD, 0x80}, /* H output size LSBs (default) */
-    // {0xCE, 0x01}, /* V output size MSBs (default) */
-    // {0xCF, 0xE0}, /* V output size LSBs (default) */
-    //
-    // /* Lens Correction */
-    // {0x85, 0x90}, /* reserved bit?? and LENC bias enable */
-    // {0x86, 0x00}, /* no compensation radius (default) */
-    // {0x87, 0x00}, /* LENSC X coord (default) */
-    // {0x88, 0x10}, /* LENSC Y coord */
-    // {0x89, 0x30}, /* R compensation coefficient */
-    // {0x8A, 0x29}, /* G compensation coefficient */
-    // {0x8B, 0x26}, /* B compensation coefficient */
-    //
-    // /* Color Matrix */
-    // {0xBB, 0x80}, /* color matrix coefficient 1 */
-    // {0xBC, 0x62}, /* color matrix coefficient 2 */
-    // {0xBD, 0x1E}, /* color matrix coefficient 3 */
-    // {0xBE, 0x26}, /* color matrix coefficient 4 */
-    // {0xBF, 0x7B}, /* color matrix coefficient 5 */
-    // {0xC0, 0xAC}, /* color matrix coefficient 6 */
-    // {0xC1, 0x1E}, /* M sign (default) */
-    //
-    // /* Edge + Denoise */
-    // {0xB7, 0x05}, /* offset */
-    // {0xB8, 0x09}, /* base 1 */
-    // {0xB9, 0x00}, /* base 2 */
-    // {0xBA, 0x18}, /* gain 4x limited to 16 and DNS_th_sel */
-    //
-    // /* UVAdjust */
-    // {0x5A, 0x4A}, /* slope of UV curve */
-    // {0x5B, 0x9F}, /* UV adjust */
-    // {0x5C, 0x48}, /* UV adjust */
-    // {0x5D, 0x32}, /* UV adjust */
-    //
-    // /* AEC/AGC target */
-    // {0x24, 0x78}, /* stable operation up limit (default) */
-    // {0x25, 0x68}, /* stable operation lower limit (default) */
-    // {0x26, 0xB3}, /* fast mode operating region */
-    //
-    // /* Gamma */
-    // {0xA3, 0x0B}, /* gamma curve 1st segment */
-    // {0xA4, 0x15}, /* gamma curve 2nd segment */
-    // {0xA5, 0x2A}, /* gamma curve 3rd segment */
-    // {0xA6, 0x51}, /* gamma curve 4th segment */
-    // {0xA7, 0x63}, /* gamma curve 5th segment */
-    // {0xA8, 0x74}, /* gamma curve 6th segment */
-    // {0xA9, 0x83}, /* gamma curve 7th segment */
-    // {0xAA, 0x91}, /* gamma curve 8th segment */
-    // {0xAB, 0x9E}, /* gamma curve 9th segment */
-    // {0xAC, 0xAA}, /* gamma curve 10th segment */
-    // {0xAD, 0xBE}, /* gamma curve 11th segment */
-    // {0xAE, 0xCE}, /* gamma curve 12th segment */
-    // {0xAF, 0xE5}, /* gamma curve 13th segment */
-    // {0xB0, 0xF3}, /* gamma curve 14th segment */
-    // {0xB1, 0xFB}, /* gamma curve 15th segment */
-    // {0xB2, 0x06}, /* gamma curve highest segment slope */
-    //
-    // /* Advance (AWB Control Registers) */
-    // {0x8C, 0x5D},
-    // {0x8D, 0x11},
-    // {0x8E, 0x12},
-    // {0x8F, 0x11},
-    // {0x90, 0x50},
-    // {0x91, 0x22},
-    // {0x92, 0xD1},
-    // {0x93, 0xA7},
-    // {0x94, 0x23},
-    // {0x95, 0x3B},
-    // {0x96, 0xFF},
-    // {0x97, 0x00},
-    // {0x98, 0x4A},
-    // {0x99, 0x46},
-    // {0x9A, 0x3D},
-    // {0x9B, 0x3A},
-    // {0x9C, 0xF0},
-    // {0x9D, 0xF0},
-    // {0x9E, 0xF0},
-    // {0x9F, 0xFF},
-    // {0xA0, 0x56},
-    // {0xA1, 0x55},
-    // {0xA2, 0x13},
-    //
-    // /* General Control */
-    // {0x50, 0x9A}, /* 50 Hz banding AEC (default) */
-    // {0x51, 0x80}, /* 60 Hz banding AEC (default) */
-    // {0x21, 0x23}, /* AECGM banding max (overrides above) */
-    //
-    // {0x14, 0x29}, /* Max AGC 8x */
-    // {0x13,
-    //  0xE7}, /* fast AGC/AEC, AEC step unlimited, banding filter, AEC below banding, AGC auto, AWB auto, exp auto */
-    // {0x11, 0x40}, /* external clock or internal clock prescalar */
-    //
-    // {0x0E, 0x00}, /* already specified above */
-    //
-    // {0xC8, 0x02},
-    // {0xC9, 0x40}, /* Input Horiz 576 */
-    // {0xCA, 0x01},
-    // {0xCB, 0xE0}, /* Input Vert 480 */
-    // {0xCC, 0x01},
-    // {0xCD, 0x8C}, /* Output Horiz 396 */
-    // {0xCE, 0x01},
-    // {0xCF, 0x4A} /* Output Vert 330 */
+    {REG14, 0x29},
+    {REG13, 0xe7},
+    {CLKRC, 0x40},  // Changed from 0 - we use an external oscillator
 };
 #define CAMERA_REG_INIT_NUMOF (sizeof(_camera_reg_init) / sizeof(camera_reg_t))
 
@@ -597,17 +430,6 @@ HAL_StatusTypeDef camera_init(void) {
     return HAL_OK;
 }
 
-void camera_uninit(void) {
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_6 | GPIO_PIN_4);
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_6 | GPIO_PIN_7);
-    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_3);
-    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6);
-
-    /* Disable DCMI clock */
-    __DCMI_CLK_DISABLE();
-}
-
 HAL_StatusTypeDef camera_on(void) {
     HAL_StatusTypeDef ret = HAL_OK;
     uint8_t           val = 0;
@@ -694,36 +516,4 @@ HAL_StatusTypeDef camera_snapshot(void) {
     // total_end = HAL_GetTick();
     // printf("camera_snapshot(): took %lu ms\n", total_end - total_start);
     return HAL_OK;
-}
-
-HAL_StatusTypeDef camera_continuous(void) {
-    HAL_StatusTypeDef ret              = HAL_OK;
-    uint16_t*         framebuffer_addr = NULL;
-
-    if ((framebuffer_addr = framebuffer_camera()) == NULL) {
-        // printf("[%s] framebuffer_camera() failed\n", __func__);
-        return HAL_ERROR;
-    }
-
-    if ((ret = camera_on()) < 0) {
-        // printf("[%s] camera_on() failed\n", __func__);
-        return ret;
-    }
-
-    /* Clear any current interrupts */
-    _camera_dcmi_clear_int();
-
-    /* Run in continuous mode */
-    if ((ret = HAL_DCMI_Start_DMA(&hdcmi, DCMI_MODE_CONTINUOUS, (uint32_t)framebuffer_addr,
-                                  CAMERA_FRAMEBUFFER_SIZE / 4)) != HAL_OK) {
-        // printf("[%s] HAL_DCMI_Start_DMA() failed\n", __func__);
-        return ret;
-    }
-
-    // printf("[%s] camera in continous capture mode\n", __func__);
-    return HAL_OK;
-}
-
-void camera_stop(void) {
-    camera_off();
 }

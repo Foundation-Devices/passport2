@@ -35,14 +35,18 @@ void gpio_init(void) {
 #endif
 }
 
-void passport_reset(void) {
+__attribute__((noreturn)) void passport_reset(void) {
     NVIC_SystemReset();
 }
 
-void passport_shutdown(void) {
+__attribute__((noreturn)) void passport_shutdown(void) {
 #ifdef SCREEN_MODE_COLOR
     HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
 #else
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, 1);
 #endif  // SCREEN_MODE_COLOR
+
+    while (1) {
+        __NOP();
+    }
 }

@@ -313,7 +313,6 @@ class Settings:
         return SETTINGS_FLASH_START
 
     def save(self):
-        from export import auto_backup
         # Render as JSON, encrypt and write it
         self.curr_dict['_revision'] = self.curr_dict.get('_revision', 0) + 1
 

@@ -3,6 +3,8 @@
 //
 // Backlight driver for LED
 
+#include "stm32h7xx_hal.h"
+
 #include "backlight.h"
 
 // Get a pointer to the CCR for the PWM on the timer channel

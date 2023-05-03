@@ -202,7 +202,7 @@ class ScvFlow(Flow):
 
         options = [{'label': 'Passed', 'value': True}, {'label': 'Failed', 'value': False}]
         result = await ChooserPage(
-            text='Select Security Check Result',
+            text='Security Check Result',
             options=options,
             icon=lv.LARGE_ICON_SHIELD,
             initial_value=options[0].get('value'),

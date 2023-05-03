@@ -57,4 +57,15 @@ bool     check_stack(char* msg, bool print);
 
 #endif
 
+
+#define KEYPAD_DRIVER_REV_PIN GPIO_PIN_13
+#define KEYPAD_DRIVER_REV_PORT GPIOD
+
+typedef enum keypad_driver_rev {
+  REV_A = 0,
+  REV_B = 1,
+} keypad_driver_rev_t;
+
+keypad_driver_rev_t get_keypad_driver_rev(void);
+
 #endif /* _UTILS_H_ */

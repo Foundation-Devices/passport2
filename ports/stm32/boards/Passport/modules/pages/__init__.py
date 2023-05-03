@@ -14,7 +14,6 @@ from .account_details_page import *
 from .address_type_chooser_page import *
 from .auto_shutdown_setting_page import *
 from .backup_code_page import *
-from .battery_page import *
 from .brandmark_page import *
 from .brightness_setting_page import *
 from .chain_setting_page import *
@@ -32,7 +31,6 @@ from .progress_page import *
 from .question_page import *
 from .recovery_mode_chooser_page import *
 from .scan_qr_page import *
-from .seed_length_chooser_page import *
 from .seed_words_list_page import *
 from .setup_mode_chooser_page import *
 from .shield_page import *

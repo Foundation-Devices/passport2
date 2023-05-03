@@ -13,6 +13,7 @@ compile_commands := join(builddir, "compile_commands.json")
 base_cflags := "-DLV_COLOR_DEPTH=16 -DLV_COLOR_16_SWAP -DLV_TICK_CUSTOM=1"
 color_cflags := "-DSCREEN_MODE_COLOR -DHAS_FUEL_GAUGE "
 mono_cflags := "-DSCREEN_MODE_MONO"
+dev_cflags := "-DDEV_BUILD"
 
 # Number of jobs to use when building
 jobs := if os() == "macos" {
@@ -78,17 +79,18 @@ compile-commands screen="mono" ext="":
 #
 
 # Build the firmware
-build screen="mono" +ext='':
+build screen="mono" dev="" +ext='':
     @echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
 
     make -j{{jobs}} \
-        LV_CFLAGS='{{base_cflags}} {{ if screen == "mono" { mono_cflags } else { color_cflags } }}' \
+        LV_CFLAGS='{{base_cflags}} {{ if screen == "mono" { mono_cflags } else { color_cflags } }} {{ if dev == "dev" { dev_cflags } else { "" } }}' \
         BOARD=Passport \
         SCREEN_MODE={{ uppercase(screen) }} \
+        FROZEN_MANIFEST={{ if dev == "dev" { 'boards/Passport/manifest_dev.py' } else { 'boards/Passport/manifest.py' } }} \
         {{ext}}
 
 # Sign current firmware build with the user.pem key and set specified version
-sign version="1.0.0" screen="mono" ext="": (build screen ext)
+sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     #!/usr/bin/env bash
     set -e
     SCREEN_EXT={{screen}}
@@ -115,8 +117,31 @@ sign version="1.0.0" screen="mono" ext="": (build screen ext)
     cosign -t {{lowercase(screen)}} -f $SIGNED_FILE -p
     echo -e "\nSigning Complete!"
 
+# Build and sign all beta versions
+sign-beta version="1.0.0" beta-num="1":
+    #!/usr/bin/env bash
+    rm -rf "{{version}}-beta-{{beta-num}}"
+    mkdir -p "{{version}}-beta-{{beta-num}}"
+    screens=("color" "mono")
+    paths=("passport-key-user" "passport-fe-key-user")
+    builds=("" "dev")
+    build_names=("" "-dev")
+    i=0
+    for screen in "${screens[@]}"; do
+        j=0
+        for build in "${builds[@]}"; do
+            just clean
+            just sign {{version}} $screen $build
+            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin"
+            just hash "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-notes.md"
+            cp build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
+            j=$((j + 1))
+        done
+        i=$((i + 1))
+    done
+
 # Build, sign and flash the firmware with the specified version
-flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
+flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext) && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -129,6 +154,18 @@ flash version="1.0.0" screen="mono" ext="": (sign version screen ext) && (reset)
         SIGNED_FILENAME="v{{version}}-passport-key-user.bin"
     else
         SIGNED_FILENAME="v{{version}}-passport-fe-key-user.bin"
+    fi
+
+    SIZE=$(ls -l build-Passport/$SIGNED_FILENAME | cut -d " " -f5)
+
+    # 1792k firmware size limit
+    LIMIT=1835008
+    echo "limit: $LIMIT"
+    echo "size: $SIZE"
+    if [ $SIZE -gt $LIMIT ]
+    then
+        echo "ERROR: Firmware too large"
+        exit 1
     fi
 
     just run-ocd-command "flash write_image erase build-Passport/$SIGNED_FILENAME $BL_FW_HDR_BASE"
@@ -279,8 +316,14 @@ secrets screen="mono":
     echo -e "Passport ROM Secrets:\n$secrets"
 
 # Calculate all hashes and format it all for GitHub release notes
-hash filepath:
+hash filepath screen="mono" output_file="":
     #!/usr/bin/env bash
+
+    if [ "{{screen}}" != "mono" ] && [ "{{screen}}" != "color" ]; then
+        echo "Screen must be either 'mono' or 'color', the default value is 'mono'."
+        exit 1
+    fi
+
     set -e
     filename=`basename {{filepath}}`
     directory=`dirname {{filepath}}`
@@ -296,12 +339,23 @@ hash filepath:
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
-    build_hash=`cosign -t color -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
+    build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
-    echo -e "## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n"
-    echo -e "SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum v2.0.5-passport.bin\` or \`md5sum v2.0.5-passport.bin\`\n"
-    echo -e "### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
+    output="## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
+
+    if [ -n "{{output_file}}" ]; then
+        output+="### $filename:\n\n"
+    fi
+
+    output+="SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum $filename\` or \`md5sum $filename\`\n\n"
+    output+="### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
+
+    if [ -z "{{output_file}}" ]; then
+        echo -e "$output"
+    else
+        echo -e "$output" > "{{output_file}}"
+    fi
 
 # Format the project's .py files under boards/Passport/modules
 fmt-py:
@@ -372,90 +426,3 @@ cp source:
 
 cpr source dest:
     cp -f {{source}} /media/psf/Home/Downloads/{{dest}}
-
-ditto-pull:
-    ditto-cli pull
-
-ditto:
-    #!/usr/bin/python3
-    import json
-    from datetime import date
-
-    ENVOY_PREFIX = 'envoy_'
-    PASSPORT_PREFIX = 'passport__'
-
-    def generate_tags(tags):
-        year = date.today().year
-
-        with open('boards/Passport/modules/translations/tags.py', 'w') as tags_file:
-            tags_file.write(
-                '# SP' + 'DX-FileCopyrightText: {} Foundation Devices, Inc. <hello@foundationdevices.com>\n'.format(year) +
-                '# SP' + 'DX-License-Identifier: GPL-3.0-or-later\n' +
-                '#\n' +
-                '# tags.py\n' +
-                '#\n' +
-                '# Text tag names used in all translation files.\n' +
-                '#\n' +
-                '# AUTOGENERATED FILE!  DO NOT EDIT MANUALLY!\n' +
-                '#\n' +
-                '\n' +
-                'from Enum import enum\n' +
-                '\n' +
-                'T = enum(\n')
-
-            for tag in tags:
-                tags_file.write("    '{}',\n".format(tag))
-
-            tags_file.write(')\n')
-
-    def generate_translations(tags, dict, language):
-        year = date.today().year
-
-        with open('boards/Passport/modules/translations/{}.py'.format(language.lower()), 'w') as language_file:
-            language_file.write(
-                '# SP' + 'DX-FileCopyrightText: {} Foundation Devices, Inc. <hello@foundationdevices.com>\n'.format(year) +
-                '# SP' + 'DX-License-Identifier: GPL-3.0-or-later\n' +
-                '#\n' +
-                '# {}.py - String translations for {} language code\n'.format(language.lower(), language) +
-                '#\n' +
-                '# AUTOGENERATED FILE!  DO NOT EDIT MANUALLY!\n' +
-                '#\n' +
-                '\n' +
-                'from .tags import T\n' +
-                '\n' +
-                '{}_TRANSLATIONS = {}\n'.format(language, '{'))
-
-            for tag in tags:
-                # Use triple quotes since some strings have line feeds
-                if tag in dict:
-                    value = dict[tag]
-                else:
-                    # Must be one where we stripped the prefix
-                    value = dict[PASSPORT_PREFIX + tag]
-
-                language_file.write("    T.{}: '''{}''',\n".format(tag, value))
-
-            language_file.write('}\n')
-
-    
-    # Read strings from JSON file
-    with open('ditto/Envoy + PP Clean Start.json') as json_file:
-        strings = json.load(json_file)
-
-        tags = list(strings.keys())
-
-        # Filter down to what we want
-        # Discard envoy tags
-        tags = [tag for tag in tags if not tag.startswith(ENVOY_PREFIX)]
-
-        # Strip off passport-specific prefix where present
-        tags = [tag[len(PASSPORT_PREFIX):] if tag.startswith(PASSPORT_PREFIX) else tag for tag in tags]
-
-        # Finally, sort the tags
-        tags.sort()
-
-        # Generate tags file
-        generate_tags(tags)
-
-        # Generate language file - Just English for now
-        generate_translations(tags, strings, 'EN')

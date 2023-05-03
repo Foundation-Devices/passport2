@@ -180,7 +180,7 @@ class ChainsBase:
         # take a scriptPubKey (part of the TxOut) and convert into conventional human-readable
         # string... aka: the "payment address"
 
-        ll = len(script)
+        ll = len(script)  # locking script length
 
         # P2PKH
         if ll == 25 and script[0:3] == b'\x76\xA9\x14' and script[23:26] == b'\x88\xAC':
@@ -197,6 +197,10 @@ class ChainsBase:
         # P2WSH
         if ll == 34 and script[0:2] == b'\x00\x20':
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, script[2:])
+
+        # P2TR
+        if ll == 34 and script[0:2] == b'\x51\x20':
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script[2:], tcc.codecs.BECH32_ENCODING_BECH32M)
 
         raise ValueError('Unknown payment script', repr(script))
 

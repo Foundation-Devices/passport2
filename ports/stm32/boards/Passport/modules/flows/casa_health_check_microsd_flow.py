@@ -8,7 +8,7 @@ from files import CardSlot, CardMissingError
 from pages.insert_microsd_page import InsertMicroSDPage
 
 
-def is_health_check(filename):
+def is_health_check(filename, path=None):
     filename = filename.lower()
 
     if '-signed' in filename:
@@ -28,12 +28,8 @@ class CasaHealthCheckMicrosdFlow(Flow):
 
     async def choose_file(self):
         from flows import FilePickerFlow
-        from files import CardSlot
 
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, filter_fn=is_health_check).run()
+        result = await FilePickerFlow(show_folders=True, filter_fn=is_health_check).run()
         if result is None:
             self.set_result(False)
             return
@@ -73,54 +69,13 @@ class CasaHealthCheckMicrosdFlow(Flow):
         self.goto(self.write_signed_file)
 
     async def write_signed_file(self):
-        from files import CardSlot, CardMissingError
-        from pages import ErrorPage
+        from flows import SaveToMicroSDFlow
 
         orig_path, basename = self.file_path.rsplit('/', 1)
-        orig_path += '/'
-        base = basename.rsplit('.', 1)[0]
-        self.out_fn = None
-
-        # Add -signed to end. We won't offer to sign again.
-        target_fname = base + '-signed.txt'
-
-        for path in [orig_path, None]:
-            try:
-                with CardSlot() as card:
-                    out_full, self.out_fn = card.pick_filename(
-                        target_fname, path)
-                    if out_full:
-                        break
-            except CardMissingError:
-                self.goto(self.show_card_missing)
-                return
-
-        if not self.out_fn:
-            self.goto(self.show_card_missing)
-            return
-        else:
-            # Attempt to write-out the transaction
-            try:
-                with CardSlot() as _card:
-                    with open(out_full, 'w') as fd:
-                        fd.write(self.signed_message)
-            except OSError as exc:
-                result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
-                # sys.print_exception(exc)
-                # fall thru to try again
-
-            # Success and done!
-            self.goto(self.show_success)
-            return
-
-    async def show_success(self):
-        import microns
-        from lvgl import LARGE_ICON_SUCCESS
-        from styles.colors import DEFAULT_LARGE_ICON_COLOR
-        from pages import LongTextPage
-        msg = "Updated Health Check is:\n\n%s" % self.out_fn
-
-        await LongTextPage(text=msg, centered=True, left_micron=None,
-                           right_micron=microns.Checkmark, icon=LARGE_ICON_SUCCESS,
-                           icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
-        self.set_result(True)
+        base, ext = basename.rsplit('.', 1)
+        filename = base + '-signed' + '.' + ext
+        result = await SaveToMicroSDFlow(filename=filename,
+                                         data=self.signed_message,
+                                         success_text="updated health check",
+                                         path=orig_path).run()
+        self.set_result(result)

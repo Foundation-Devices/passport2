@@ -14,7 +14,7 @@ CaravanWallet = {
          'import_microsd': read_multisig_config_from_microsd}
     ],
     'export_modes': [
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-caravan.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-caravan-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-caravan.json',
+         'filename_pattern_multisig': '{xfp}-caravan-multisig.json'}
     ]
 }

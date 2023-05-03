@@ -8,7 +8,6 @@
 #define _ADC_H_
 
 extern int  adc_init(void);
-extern int  adc_read_boardrev(uint16_t* board_rev);
 extern int  adc_read_powermon(uint16_t* current, uint16_t* voltage);
 extern void adc_enable_noise(void);
 extern void adc_disable_noise(void);

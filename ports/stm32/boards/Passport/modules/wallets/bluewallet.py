@@ -19,7 +19,7 @@ BlueWallet = {
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-bluewallet.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-bluewallet-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-bluewallet.json',
+         'filename_pattern_multisig': '{xfp}-bluewallet-multisig.json'}
     ]
 }

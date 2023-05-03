@@ -9,9 +9,11 @@
 #include "stm32h7xx_hal.h"
 
 #include "delay.h"
+#include "utils.h"
 #include "keypad-adp-5587.h"
 
 static I2C_HandleTypeDef* hi2c = NULL;
+static uint8_t keypad_addr = 0;
 
 static void keypad_reset(void) {
     int i;
@@ -31,17 +33,17 @@ static int keypad_setup(void) {
     // Enable GPI part of event FIFO (R0 to R7, C0 to C7, C8 to C9)
     // With retry in case of i2c error
     for (int i = 0; i < 5; i++) {
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG1, 0xFF);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG1, 0xFF);
         if (rc < 0) {
             continue; // Retry
         }
 
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG2, 0xFF);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG2, 0xFF);
         if (rc < 0) {
             continue; // Retry
         }
 
-        rc = keypad_write(KBD_ADDR, KBD_REG_GPI_EM_REG3, 0x03);
+        rc = keypad_write(get_kbd_addr(), KBD_REG_GPI_EM_REG3, 0x03);
         if (rc < 0) {
             continue; // Retry
         }
@@ -52,7 +54,7 @@ static int keypad_setup(void) {
     return rc;
 }
 
-void keypad_init(void) {
+bool keypad_init(void) {
     int              rcc;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -76,11 +78,13 @@ void keypad_init(void) {
     rcc = keypad_setup();
     if (rcc < 0)
 #ifdef PASSPORT_BOOTLOADER
-        ;
+        return false;
 #else
-        ;
+        return false;
         // printf("[%s-%d] keypad_setup() failed\n", __func__, __LINE__);
 #endif /* PASSPORT_BOOTLOADER */
+
+    return true;
 }
 
 int keypad_write(uint8_t address, uint8_t reg, uint8_t data) {
@@ -105,14 +109,14 @@ int keypad_read(uint8_t address, uint8_t reg, uint8_t* data, uint8_t len) {
 /**
  * Reads number of keys in the key queue.
  */
-static bool read_num_keys(uint8_t *num_keys) {
+bool read_num_keys(uint8_t *num_keys) {
     uint8_t data = 0;
 
     if (!num_keys) {
         return false;
     }
 
-    int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_LCK_EC_STAT, &data, 1);
+    int rc = keypad_read(get_kbd_addr(), KBD_REG_KEY_LCK_EC_STAT, &data, 1);
     if (rc < 0) {
         return false;
     }
@@ -134,10 +138,33 @@ bool keypad_poll_key(uint8_t* key) {
     }
 
     // Read from the key queue
-    int rc = keypad_read(KBD_ADDR, KBD_REG_KEY_EVENTA, key, 1);
+    int rc = keypad_read(get_kbd_addr(), KBD_REG_KEY_EVENTA, key, 1);
     if (rc < 0) {
         return false;
     }
 
     return true;
+}
+
+uint8_t get_kbd_addr(void) {
+    const uint32_t NUM_TRIES = 1;
+    const uint32_t TIMEOUT   = 100;
+
+    // Check corresponding revision keypad controller address and remember that
+    if (!keypad_addr) {
+        if (HAL_I2C_IsDeviceReady(hi2c, KBD_ADDR_REV_A, NUM_TRIES, TIMEOUT) == HAL_OK) {
+            keypad_addr = KBD_ADDR_REV_A;
+            printf("keypad: using rev A keypad controller address\r\n");
+        } else if (HAL_I2C_IsDeviceReady(hi2c, KBD_ADDR_REV_B, NUM_TRIES, TIMEOUT) == HAL_OK) {
+            keypad_addr = KBD_ADDR_REV_B;
+            printf("keypad: using rev B keypad controller address\r\n");
+        } else {
+            printf("ERROR: Unable to determine keypad controller address\r\n");
+
+            // Fallback to rev A by default
+            return KBD_ADDR_REV_A;
+        }
+    }
+
+    return keypad_addr;
 }

@@ -21,7 +21,7 @@ import common
 class ChooserPage(Page):
     def __init__(
             self, card_header=None, statusbar=None, options=[],
-            initial_value=None, on_change=None,
+            initial_value=None, on_change=None, scroll_fix=False,
             icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon=lv.ICON_SMALL_CHECKMARK,
             left_micron=microns.Cancel, right_micron=microns.Checkmark):
 
@@ -37,13 +37,15 @@ class ChooserPage(Page):
         self.options = options
         self.initial_value = initial_value
         self.on_change = on_change
+        # This is only required to be True if you have a chooser which has too many items to fit on the screen.
+        self.scroll_fix = scroll_fix
         self.icon = icon
         self.icon_color = icon_color
         self.text = text
         self.center = center
         self.item_icon = item_icon
 
-        # If initial value is given, then select it, else o
+        # If initial value is given, then select it, else select the first item
         if self.initial_value is not None:
             self.selected_idx = self.get_selected_option_index_by_value(self.initial_value)
         else:
@@ -61,11 +63,14 @@ class ChooserPage(Page):
         # Add icon if provided
         if icon is not None:
             from views import Icon
+            import passport
+
             self.icon_view = Icon(self.icon)
             with Stylize(self.icon_view) as default:
                 if self.icon_color is not None:
                     default.img_recolor(self.icon_color)
-                    default.pad(top=20, bottom=12)
+                    top = 20 if passport.IS_COLOR else 12
+                    default.pad(top=top, bottom=12)
             self.add_child(self.icon_view)
 
         # Add text if provided
@@ -118,7 +123,8 @@ class ChooserPage(Page):
         if initial_focus is not None:
             lv.gridnav_set_focused(self.scroll_container.lvgl_root, initial_focus, False)
 
-        self.scroll_to_selected_option()
+        if self.scroll_fix:
+            self.scroll_selected_to_visible()
 
     def detach(self):
         lv.group_remove_obj(self.scroll_container.lvgl_root)
@@ -127,7 +133,7 @@ class ChooserPage(Page):
         self.scroll_container.set_no_scroll()
         super().detach()
 
-    def scroll_to_selected_option(self):
+    def scroll_selected_to_visible(self):
         """Scrolls the menu list to make the selected option visible."""
         selected = self.scroll_container.children[self.selected_idx].get_lvgl_root()
         if selected is not None:

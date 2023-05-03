@@ -62,9 +62,11 @@ MAX_TEXT_INPUT_LENGTH = 1000
 MAX_ACCOUNT_NAME_LEN = 20
 MAX_MULTISIG_NAME_LEN = 20
 MAX_ACCOUNTS = 10
+MAX_DERIVED_KEYS = 20
 
 
 DEFAULT_ACCOUNT_ENTRY = {'name': 'Primary', 'acct_num': 0}
+
 
 # Unit types for labeling conversions
 UNIT_TYPE_BTC = 0

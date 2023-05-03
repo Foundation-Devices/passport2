@@ -6,6 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Head
 - Improved self-send transaction information formatting (PASS1-638)
+- Added the key manager extension, compatible with BIP85 and Nostr (PASS1-24)
 
 ## 2.0.7
 - Perform more accurate calculation of scan progress. (PASS1-553)

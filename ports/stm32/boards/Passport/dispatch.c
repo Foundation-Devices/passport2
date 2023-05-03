@@ -31,7 +31,6 @@
 #include "gpio.h"
 #include "pins.h"
 #include "se-atecc608a.h"
-#include "version.h"
 
 #define D1_AXISRAM_SIZE_MAX ((uint32_t)0x00080000U)
 
@@ -47,7 +46,7 @@ static inline void memset4(uint32_t* dest, uint32_t value, uint32_t byte_len) {
 //
 // A C-runtime compatible env. is running, so do some work.
 //
-__attribute__((used)) int se_dispatch(
+int se_dispatch(
     int method_num, uint8_t* buf_io, int len_in, uint32_t arg2, uint32_t incoming_sp, uint32_t incoming_lr) {
     int rv = 0;
 

@@ -18,7 +18,7 @@ DuxReserveWallet = {
          'import_microsd': read_multisig_config_from_microsd}
     ],
     'export_modes': [
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{sd}/{xfp}-dux.json',
-         'filename_pattern_multisig': '{sd}/{xfp}-dux-multisig.json'}
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-dux.json',
+         'filename_pattern_multisig': '{xfp}-dux-multisig.json'}
     ]
 }

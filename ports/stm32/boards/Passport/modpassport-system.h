@@ -142,22 +142,6 @@ STATIC mp_obj_t mod_passport_System_get_software_info(mp_obj_t self) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_get_software_info_obj, mod_passport_System_get_software_info);
 
-/// def progress_bar(self, progress: int) -> None:
-///     """
-///     Draw a progress bar to the specified amount (0-1.0)
-///     """
-STATIC mp_obj_t mod_passport_System_progress_bar(mp_obj_t self, mp_obj_t _progress) {
-    // int8_t progress = mp_obj_get_int(_progress);
-    // display_progress_bar(PROGRESS_BAR_MARGIN, PROGRESS_BAR_Y, SCREEN_WIDTH - (PROGRESS_BAR_MARGIN * 2),
-    //                      PROGRESS_BAR_HEIGHT, progress);
-    //
-    // // Showing just the lines that changed is much faster and avoids full-screen flicker
-    // display_show_lines(PROGRESS_BAR_Y, PROGRESS_BAR_Y + PROGRESS_BAR_HEIGHT);
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_System_progress_bar_obj, mod_passport_System_progress_bar);
-
 /// def turbo(self, enable: bool) -> None
 ///     """
 ///     Enable or disable turbo mode (fastest MCU frequency)
@@ -328,29 +312,6 @@ STATIC mp_obj_t mod_passport_System_get_backup_pw_hash(mp_obj_t self, mp_obj_t h
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_System_get_backup_pw_hash_obj, mod_passport_System_get_backup_pw_hash);
-
-/// def mod_passport_System_get_rtc_calibration_offset(self) -> Int
-///     """
-///   Return the calibration offset for the real-time clock.
-///     """
-STATIC mp_obj_t mod_passport_System_get_rtc_calibration_offset(mp_obj_t self) {
-    int32_t offset = eeprom_get_rtc_calibration_offset(0);
-    return mp_obj_new_int(offset);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_get_rtc_calibration_offset_obj,
-                                 mod_passport_System_get_rtc_calibration_offset);
-
-/// def mod_passport_System_set_rtc_calibration_offset(self, Int) -> None
-///     """
-///   Set the calibration offset for the real-time clock.
-///     """
-STATIC mp_obj_t mod_passport_System_set_rtc_calibration_offset(mp_obj_t self, mp_obj_t _offset) {
-    int32_t offset = mp_obj_get_int(_offset);
-    eeprom_set_rtc_calibration_offset(offset);
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_System_set_rtc_calibration_offset_obj,
-                                 mod_passport_System_set_rtc_calibration_offset);
 
 /// def mod_passport_System_get_screen_brightness(self) -> Int
 ///     """
@@ -533,7 +494,6 @@ STATIC const mp_rom_map_elem_t mod_passport_System_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_shutdown), MP_ROM_PTR(&mod_passport_System_shutdown_obj)},
     {MP_ROM_QSTR(MP_QSTR_dispatch), MP_ROM_PTR(&mod_passport_System_dispatch_obj)},
     {MP_ROM_QSTR(MP_QSTR_get_software_info), MP_ROM_PTR(&mod_passport_System_get_software_info_obj)},
-    {MP_ROM_QSTR(MP_QSTR_progress_bar), MP_ROM_PTR(&mod_passport_System_progress_bar_obj)},
     {MP_ROM_QSTR(MP_QSTR_turbo), MP_ROM_PTR(&mod_passport_System_turbo_obj)},
     {MP_ROM_QSTR(MP_QSTR_set_user_firmware_pubkey), MP_ROM_PTR(&mod_passport_System_set_user_firmware_pubkey_obj)},
     {MP_ROM_QSTR(MP_QSTR_get_user_firmware_pubkey), MP_ROM_PTR(&mod_passport_System_get_user_firmware_pubkey_obj)},
@@ -543,8 +503,6 @@ STATIC const mp_rom_map_elem_t mod_passport_System_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_get_serial_number), MP_ROM_PTR(&mod_passport_System_get_serial_number_obj)},
     {MP_ROM_QSTR(MP_QSTR_get_device_hash), MP_ROM_PTR(&mod_passport_System_get_device_hash_obj)},
     {MP_ROM_QSTR(MP_QSTR_get_backup_pw_hash), MP_ROM_PTR(&mod_passport_System_get_backup_pw_hash_obj)},
-    {MP_ROM_QSTR(MP_QSTR_get_rtc_calibration_offset), MP_ROM_PTR(&mod_passport_System_get_rtc_calibration_offset_obj)},
-    {MP_ROM_QSTR(MP_QSTR_set_rtc_calibration_offset), MP_ROM_PTR(&mod_passport_System_set_rtc_calibration_offset_obj)},
     {MP_ROM_QSTR(MP_QSTR_get_screen_brightness), MP_ROM_PTR(&mod_passport_System_get_screen_brightness_obj)},
     {MP_ROM_QSTR(MP_QSTR_set_screen_brightness), MP_ROM_PTR(&mod_passport_System_set_screen_brightness_obj)},
     {MP_ROM_QSTR(MP_QSTR_busy_wait), MP_ROM_PTR(&mod_passport_System_busy_wait_obj)},

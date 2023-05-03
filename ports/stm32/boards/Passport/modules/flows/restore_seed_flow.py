@@ -6,23 +6,40 @@
 
 from flows import Flow
 import microns
-from pages import ErrorPage, PredictiveTextInputPage, SeedLengthChooserPage, SuccessPage, QuestionPage
+from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task
 from tasks import save_seed_task
 
 
 class RestoreSeedFlow(Flow):
     def __init__(self, refresh_cards_when_done=False):
-        super().__init__(initial_state=self.choose_seed_len, name='RestoreSeedFlow')
+        super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_words = []
 
-    async def choose_seed_len(self):
-        self.seed_length = await SeedLengthChooserPage().show()
-        if self.seed_length is None:
+    async def choose_restore_method(self):
+        from pages import ChooserPage
+
+        options = [{'label': '24 words', 'value': 24},
+                   {'label': '12 words', 'value': 12}]
+
+        choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
+
+        if choice is None:
             self.set_result(False)
-        else:
+            return
+
+        if isinstance(choice, int):
+            self.seed_length = choice
             self.goto(self.explain_input_method)
+        else:
+            self.goto(choice)
+
+    async def scan_qr(self):
+        from flows import ScanPrivateKeyQRFlow
+        result = await ScanPrivateKeyQRFlow(
+            refresh_cards_when_done=self.refresh_cards_when_done).run()
+        self.set_result(result)
 
     async def explain_input_method(self):
         from pages import InfoPage

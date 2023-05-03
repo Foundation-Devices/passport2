@@ -22,7 +22,7 @@ from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL
-from serializations import uint256_from_str, ser_push_data, uint256_from_str
+from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 
 from public_constants import (
@@ -531,7 +531,7 @@ class psbtInputProxy(psbtProxy):
             # - challenge: it's a straight dsha256() for old serializations, but not for newer
             #   segwit txn's... plus I don't want to deserialize it here.
             try:
-                observed = uint256_from_str(calc_txid(self.fd, self.utxo))
+                observed = uint256_from_bytes(calc_txid(self.fd, self.utxo))
             except BaseException:
                 raise AssertionError("Trouble parsing UTXO given for input #%d" % idx)
 
@@ -1414,7 +1414,6 @@ class psbtObject(psbtProxy):
 
     #             for count, out_idx in enumerate(change_outs):
     #                 # only expecting single case, but be general
-    #                 # system.progress_bar(int(count / len(change_outs)) * 100)
 
     #                 oup = self.outputs[out_idx]
 
@@ -1442,8 +1441,6 @@ class psbtObject(psbtProxy):
     #         sigs = 0
     #         success = set()
     #         for in_idx, txi in self.input_iter():
-    #             # system.progress_bar(int(in_idx * 100 / self.num_inputs))
-
     #             inp = self.inputs[in_idx]
 
     #             if not inp.has_utxo():
@@ -1535,9 +1532,6 @@ class psbtObject(psbtProxy):
     #             del result, r, s
 
     #             gc.collect()
-
-    #     # done.
-    #     # system.progress_bar(100)
 
     def make_txn_sighash(self, replace_idx, replacement, sighash_type):
         # calculate the hash value for one input of current transaction

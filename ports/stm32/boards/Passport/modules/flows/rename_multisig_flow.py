@@ -70,12 +70,7 @@ class RenameMultisigFlow(Flow):
 
             self.set_result(True)
 
-            # Back out of the Delete menu too
-            # TODO: Fix this inject pattern so that we don't need to check IS_SIMULATOR here
-            if passport.IS_SIMULATOR:
-                keypad.inject('x')
-            else:
-                keypad.inject(lv.KEY.ESC)
+            # TODO: is it necessary to back out of the menu here?
 
         else:
             await ErrorPage(text='Multisig config NOT renamed: {}'.format(self.error)).show()

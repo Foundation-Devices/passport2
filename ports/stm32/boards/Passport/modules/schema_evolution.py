@@ -77,7 +77,7 @@ def migrate_settings():
     # print('migrate_settings() END')
 
 
-def handle_foundational_evolutions():
+async def handle_foundational_evolutions():
     # This function handles updates that need to be applied very early in the startup cycle before most 'common'
     # values have been configured.  These are "foundational" changes like moving user settings from internal
     # to external flash.  This means that it will need to do "pre-initialization" of some systems that it needs.
@@ -103,6 +103,10 @@ def handle_foundational_evolutions():
 
                 # Now copy user settings from the internal flash to the external flash
                 migrate_settings()
+
+                # Update the from_version in old settings so this doesn't happen again
+                old_settings.set('update', '{}->{}'.format(to_version, to_version))
+                await old_settings.write_out()
 
 
 async def handle_schema_evolutions(update_from_to):

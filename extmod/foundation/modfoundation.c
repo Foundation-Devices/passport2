@@ -19,7 +19,6 @@
 #include "image_conversion.h"
 
 #include "hash.h"
-#include "firmware-keys.h"
 
 #include "sha256.h"
 #include "uECC.h"

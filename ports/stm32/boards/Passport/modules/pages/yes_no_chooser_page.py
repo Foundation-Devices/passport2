@@ -9,11 +9,13 @@ from pages import ChooserPage
 
 
 class YesNoChooserPage(ChooserPage):
-    def __init__(self, yes_text='Yes', no_text='No', icon=None, text=None, default=True):
+    def __init__(self, yes_text='Yes', no_text='No', icon=None, text=None, initial_value=True):
         options = [
             {'label': yes_text, 'value': True},
             {'label': no_text, 'value': False}
         ]
+        if not initial_value:
+            options.reverse()
 
         super().__init__(
             options=options,
@@ -21,4 +23,4 @@ class YesNoChooserPage(ChooserPage):
             text=text,
             center=True,
             item_icon=None,
-            initial_value=options[0 if default else 1].get('value'))
+            initial_value=options[0].get('value'))

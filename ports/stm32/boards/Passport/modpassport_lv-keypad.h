@@ -9,9 +9,8 @@
 #include "extint.h"
 #include "pins.h"
 
-#include "../../../../lib/lv_bindings/driver/include/common.h"
-#include "../../../../lib/lv_bindings/lv_conf.h"
-#include "../../../../lib/lv_bindings/lvgl/lvgl.h"
+#include "lib/lv_bindings/driver/include/common.h"
+#include "lvgl/lvgl.h"
 
 #include "keypad-adp-5587.h"
 #include "ring_buffer.h"
@@ -32,6 +31,11 @@ typedef struct _keycode_map_t {
     uint8_t keycode;
     char    ch;
 } keycode_map_t;
+
+typedef struct _repeat_map_t {
+    uint8_t ch;
+    bool    repeat;
+} repeat_map_t;
 
 // #define PCB_VERSION 1
 #if SCREEN_MODE_COLOR
@@ -76,6 +80,14 @@ STATIC keycode_map_t keycode_map[] = {
 #define KEYCODE_MAP_NUMOF (sizeof(keycode_map) / sizeof(keycode_map_t))
 
 STATIC key_filter_t key_filter[KEYCODE_MAP_NUMOF];
+
+STATIC repeat_map_t repeat_map[] = {
+    {LV_KEY_UP, true},
+    {LV_KEY_DOWN, true},
+    {LV_KEY_BACKSPACE, true},
+};
+
+#define REPEAT_MAP_NUMOF (sizeof(repeat_map) / sizeof(repeat_map[0]))
 
 // Convert from keycode to character (e.g., 0123456789udlrxy*#)
 STATIC uint8_t keycode_to_char(uint8_t keycode, int8_t * key_index) {
@@ -172,6 +184,18 @@ STATIC mp_obj_t mod_passport_lv_Keypad_set_key_cb(mp_obj_t self_in, mp_obj_t key
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_lv_Keypad_set_key_cb_obj, mod_passport_lv_Keypad_set_key_cb);
 
+STATIC mp_obj_t mod_passport_lv_Keypad_set_key_repeat(mp_obj_t self_in, mp_obj_t _key, mp_obj_t _enabled){
+    int8_t key = mp_obj_get_int(_key);
+    bool enabled = mp_obj_is_true(_enabled);
+    for (int i = 0; i < REPEAT_MAP_NUMOF; i++){
+        if (repeat_map[i].ch == key) {
+            repeat_map[i].repeat = enabled;
+        }
+    }
+    return mp_const_true;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_passport_lv_Keypad_set_key_repeat_obj, mod_passport_lv_Keypad_set_key_repeat);
+
 /// def enable_global(self, enable):
 ///     """
 ///     """
@@ -217,11 +241,10 @@ void start_repeat_timer(uint32_t delay) {
 }
 
 bool is_repeatable_key(uint32_t key) {
-    switch (key) {
-        case LV_KEY_DOWN:
-        case LV_KEY_UP:
-        case LV_KEY_BACKSPACE:
-            return true;
+    for (int i = 0; i < REPEAT_MAP_NUMOF; i++) {
+        if (repeat_map[i].ch == key) {
+            return repeat_map[i].repeat;
+        }
     }
     return false;
 }
@@ -321,6 +344,7 @@ STATIC const mp_rom_map_elem_t mod_passport_lv_Keypad_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_get_keycode), MP_ROM_PTR(&mod_passport_lv_Keypad_get_keycode_obj)},
     {MP_ROM_QSTR(MP_QSTR_read_cb), MP_ROM_PTR(&PTR_OBJ(mod_passport_lv_Keypad_read_cb))},
     {MP_ROM_QSTR(MP_QSTR_set_key_cb), MP_ROM_PTR(&mod_passport_lv_Keypad_set_key_cb_obj)},
+    {MP_ROM_QSTR(MP_QSTR_set_key_repeat), MP_ROM_PTR(&mod_passport_lv_Keypad_set_key_repeat_obj)},
     {MP_ROM_QSTR(MP_QSTR_inject), MP_ROM_PTR(&mod_passport_lv_Keypad_inject_obj)},
     {MP_ROM_QSTR(MP_QSTR_enable_global_nav_keys), MP_ROM_PTR(&mod_passport_lv_Keypad_enable_global_nav_keys_obj)},
     {MP_ROM_QSTR(MP_QSTR_intercept_all), MP_ROM_PTR(&mod_passport_lv_Keypad_intercept_all_obj)},

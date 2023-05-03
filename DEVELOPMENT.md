@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Development
 
-This document describes how to develop for Passport.  The instructions below describe how to setup the developent environment and build Passport on a system running **Ubuntu 20.04**.  This OS is used for official Passport builds, as well as in the Dockerfile descibed below which creates reproducible builds.
+This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 20.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
 
 ## Setup
 In order to build the Passport firmware, you need to:
@@ -39,7 +39,7 @@ First install the `rustup` tool from [rustup.rs](https://rustup.rs/).
     cargo install cbindgen
 
 #### Cross-Compiler Toolchain
-The cross compiler enables your PC to build code for the STM32H753 MCU used by Passport.  Use the following commands to install and build the cross compiler and MicroPython tools.
+The cross-compiler enables your PC to build code for the STM32H753 MCU used by Passport.  Use the following commands to install and build the cross-compiler and MicroPython tools.
 
     sudo apt install gcc-arm-none-eabi
     cd ~/passport2
@@ -63,7 +63,7 @@ OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only
 
 
 ## Building Passport Firmware
-Passport comes with a a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by following the instructions here:
+Passport comes with a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by following the instructions here:
 
     https://github.com/casey/just#installation
     
@@ -84,6 +84,10 @@ If you just want to build without signing, use one of the following commands:
     just build mono
 
 There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
+
+    just clean                    # Cleans exisiting compiled binaries
+    just flash 2.1.0 color <dev>  # Builds, signs, and flashes firmware to a device using a connected STLink
+    just sign-beta 2.1.0 3        # Builds and signs all combinations of color, mono, normal, and dev firmwares, with a beta number
 
 #### Building the Simulator
 First, install xterm

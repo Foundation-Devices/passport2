@@ -108,18 +108,23 @@ def ser_uint256(u):
     return rs
 
 
-def uint256_from_str(s):
+def uint256_from_bytes(s: bytes) -> int:
+    """
+    Deserialize a little-endian 256-bit unsigned integer from a bytes string.
+
+    :param s: The bytes to deserialize.
+    :raises: ValueError if the s length is less than 32 bytes.
+    :return: The deserialized integer.
+    """
+
+    if len(s) < 32:
+        raise ValueError("bytes length must be at least 32")
+
     r = 0
     t = struct.unpack("<IIIIIIII", s[:32])
     for i in range(8):
         r += t[i] << (i * 32)
     return r
-
-
-def uint256_from_compact(c):
-    nbytes = (c >> 24) & 0xFF
-    v = (c & 0xFFFFFF) << (8 * (nbytes - 3))
-    return v
 
 
 def deser_vector(f, c):
@@ -145,22 +150,6 @@ def ser_vector(v, ser_function_name=None):
     return r
 
 
-def deser_uint256_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = deser_uint256(f)
-        r.append(t)
-    return r
-
-
-def ser_uint256_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += ser_uint256(i)
-    return r
-
-
 def deser_string_vector(f):
     nit = deser_compact_size(f)
     r = []
@@ -174,22 +163,6 @@ def ser_string_vector(v):
     r = ser_compact_size(len(v))
     for sv in v:
         r += ser_string(sv)
-    return r
-
-
-def deser_int_vector(f):
-    nit = deser_compact_size(f)
-    r = []
-    for i in range(nit):
-        t = struct.unpack("<i", f.read(4))[0]
-        r.append(t)
-    return r
-
-
-def ser_int_vector(v):
-    r = ser_compact_size(len(v))
-    for i in v:
-        r += struct.pack("<i", i)
     return r
 
 
@@ -250,18 +223,6 @@ def disassemble(script):
         raise ValueError("bad script")
 
 
-# Deserialize from a hex string representation (eg from RPC)
-def FromHex(obj, hex_string):
-    obj.deserialize(BytesIO(hex_str_to_bytes(hex_string)))
-    return obj
-
-# Convert a binary-serializable object to hex (eg for submission via RPC)
-
-
-def ToHex(obj):
-    return bytes_to_hex_str(obj.serialize())
-
-
 def ser_sig_der(r, s, sighash_type=1):
     sig = b"\x30"
 
@@ -305,20 +266,7 @@ def ser_sig_der(r, s, sighash_type=1):
 
     return sig
 
-
-def ser_sig_compact(r, s, recid):
-    rec = struct.unpack("B", recid)[0]
-    prefix = struct.pack("B", 27 + 4 + rec)
-
-    sig = prefix
-    sig += r + s
-
-    return sig
-
 # Objects that map to bitcoind objects, which can be serialized/deserialized
-
-
-MSG_WITNESS_FLAG = 1 << 30
 
 
 class COutPoint(object):

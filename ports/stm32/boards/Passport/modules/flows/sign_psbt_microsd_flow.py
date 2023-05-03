@@ -7,24 +7,28 @@ from flows import Flow
 from pages import InsertMicroSDPage, QuestionPage, LongTextPage
 
 
-def is_psbt(filename):
+def is_psbt(filename, path):
     from files import CardSlot
 
     # print('filenmame={}'.format(filename))
     if '-signed' in filename.lower():
         return False
 
-    sd_root = CardSlot.get_sd_root()
-    with open('{}/{}'.format(sd_root, filename), 'rb') as fd:
-        taste = fd.read(10)
-        # print('taste={}'.format(taste))
-        if taste[0:5] == b'psbt\xff':
-            return True
-        if taste[0:10] == b'70736274ff':        # hex-encoded
-            return True
-        if taste[0:6] == b'cHNidP':             # base64-encoded
-            return True
-        return False
+    try:
+        with CardSlot() as card:
+            with open('{}/{}'.format(path, filename), 'rb') as fd:
+                taste = fd.read(10)
+                # print('taste={}'.format(taste))
+                if taste[0:5] == b'psbt\xff':
+                    return True
+                if taste[0:10] == b'70736274ff':        # hex-encoded
+                    return True
+                if taste[0:6] == b'cHNidP':             # base64-encoded
+                    return True
+                return False
+    except Exception as e:
+        pass
+    return True
 
 
 class SignPsbtMicroSDFlow(Flow):
@@ -38,7 +42,7 @@ class SignPsbtMicroSDFlow(Flow):
         root_path = CardSlot.get_sd_root()
 
         result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=is_psbt).run()
+            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=None).run()
         if result is None:
             self.set_result(False)
             return
@@ -105,12 +109,11 @@ class SignPsbtMicroSDFlow(Flow):
         self.goto(self.write_signed_transaction)
 
     async def write_signed_transaction(self):
-        from files import CardSlot, CardMissingError, securely_blank_file
-        from utils import HexWriter
+        from files import securely_blank_file
         from pages import ErrorPage
+        from flows import SaveToMicroSDFlow
 
         orig_path, basename = self.file_path.rsplit('/', 1)
-        orig_path += '/'
         base = basename.rsplit('.', 1)[0]
         self.out2_fn = None
         self.out_fn = None
@@ -124,48 +127,46 @@ class SignPsbtMicroSDFlow(Flow):
             # Add -signed to end. We won't offer to sign again.
             target_fname = base + '-signed.psbt'
 
-        for path in [orig_path, None]:
-            try:
-                with CardSlot() as card:
-                    out_full, self.out_fn = card.pick_filename(
-                        target_fname, path)
-                    out_path = path
-                    if out_full:
-                        break
-            except CardMissingError:
-                self.goto(self.show_card_missing)
-                return
-
-        if not self.out_fn:
-            self.goto(self.show_card_missing)
+        result_1 = await SaveToMicroSDFlow(filename=target_fname,
+                                           write_fn=self.write_psbt_fn,
+                                           success_text="psbt",
+                                           path=orig_path,
+                                           automatic=True).run()
+        if not result_1:
+            # Fall through
+            await ErrorPage(text='Unable to save {} to MicroSD'.format(target_fname)).show()
             return
-        else:
-            # Attempt to write-out the transaction
-            try:
-                with CardSlot() as card:
-                    with self.output_encoder(open(out_full, 'wb')) as fd:
-                        # save as updated PSBT
-                        self.psbt.serialize(fd)
 
-                    if is_comp:
-                        # write out as hex too, if it's final
-                        out2_full, self.out2_fn = card.pick_filename(base + '-final.txn', out_path)
-                        if out2_full:
-                            with HexWriter(open(out2_full, 'w+t')) as fd:
-                                # save transaction, in hex
-                                self.txid = self.psbt.finalize(fd)
-
-                    securely_blank_file(self.file_path)
-
-                # Success and done!
-                self.goto(self.show_success)
+        if is_comp:
+            target2_fname = base + '-final.txn'
+            result_2 = await SaveToMicroSDFlow(filename=target2_fname,
+                                               write_fn=self.write_final_fn,
+                                               success_text="transaction",
+                                               path=orig_path,
+                                               automatic=True).run()
+            if not result_2:
+                await ErrorPage(text='Unable to save {} to MicroSD'.format(target2_fname)).show()
+                # Fall through
                 return
 
-            except OSError as exc:
-                # If this ever changes to not fall through, clear the flash
-                result = await ErrorPage(text='Unable to write!\n\n%s\n\n' % exc).show()
-                # sys.print_exception(exc)
-                # fall thru to try again
+        securely_blank_file(self.file_path)
+        self.goto(self.show_success)
+
+    def write_psbt_fn(self, filename):
+        # Attempt to write-out the transaction
+        with self.output_encoder(open(filename, 'wb')) as fd:
+            # save as updated PSBT
+            self.psbt.serialize(fd)
+        self.out_fn = filename
+
+    def write_final_fn(self, filename):
+        from utils import HexWriter
+
+        # write out as hex too, if it's final
+        with HexWriter(open(filename, 'w+t')) as fd:
+            # save transaction, in hex
+            self.txid = self.psbt.finalize(fd)
+        self.out2_fn = filename
 
     async def show_success(self):
         import microns

@@ -19,21 +19,16 @@ pub const fn max_fragment_len(max_characters: usize) -> usize {
         + digit_count(u32::MAX as usize)
         + "/".len();
 
-    let max_chars_for_part: usize = max_characters - MAX_UR_PREFIX;
-
-    let max_bytes_for_part: usize = (max_chars_for_part / 2) - 4;
-
-    max_bytes_for_part - Part::max_encoded_len()
+    let max_chars_for_part = max_characters.saturating_sub(MAX_UR_PREFIX);
+    let max_bytes_for_part = (max_chars_for_part / 2).saturating_sub(4);
+    max_bytes_for_part.saturating_sub(Part::max_encoded_len())
 }
 
 pub const fn max_message_len(max_characters: usize) -> usize {
     const MAX_UR_PREFIX: usize = "ur:crypto-coin-info/".len();
 
-    let max_chars_for_message: usize = max_characters - MAX_UR_PREFIX;
-
-    let max_bytes_for_message: usize = (max_chars_for_message / 2) - 4;
-
-    max_bytes_for_message
+    let max_chars_for_message = max_characters.saturating_sub(MAX_UR_PREFIX);
+    (max_chars_for_message / 2).saturating_sub(4)
 }
 
 /// Count the number of digits in a number.
