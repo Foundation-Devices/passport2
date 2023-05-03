@@ -168,8 +168,8 @@ class CardSlot:
         basename, ext = pattern.rsplit('.', 1)
         ext = '.' + ext
 
-        # try w/o any number first
-        fname = path + '/' + basename + ext
+        # try with 001 first
+        fname = path + '/' + basename + '-001' + ext
         try:
             os.stat(fname)
         except OSError as e:
@@ -190,7 +190,7 @@ class CardSlot:
                 continue
             highest = max(highest, int(m.group(1)))
 
-        fname = path + '/' + basename + ('-%d' % (highest + 1)) + ext
+        fname = path + '/' + basename + ('-%03d' % (highest + 1)) + ext
 
         return fname, fname[len(path):]
 
