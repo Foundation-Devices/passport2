@@ -7,7 +7,7 @@ from flows import Flow
 
 
 class ViewSeedWordsFlow(Flow):
-    def __init__(self, external_key=None, qr_option=False, sd_option=False, filename=None):
+    def __init__(self, external_key=None, qr_option=False, sd_option=False, path=None, filename=None):
         self.external_key = external_key
         self.qr_option = qr_option
 
@@ -15,6 +15,7 @@ class ViewSeedWordsFlow(Flow):
             filename = filename or 'Seed.txt'  # Caller should never let this happen
 
         self.sd_option = sd_option
+        self.path = path
         self.filename = filename
         self.qr_type = None
         self.words = None
@@ -114,6 +115,7 @@ class ViewSeedWordsFlow(Flow):
 
         text = " ".join(self.words)
         result = await SaveToMicroSDFlow(filename=self.filename,
+                                         path=self.path,
                                          data=text,
                                          success_text="seed").run()
 
