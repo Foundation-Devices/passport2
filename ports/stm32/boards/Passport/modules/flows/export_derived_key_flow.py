@@ -90,7 +90,7 @@ class ExportDerivedKeyFlow(Flow):
         from pages import InfoPage, LongTextPage
         import microns
 
-        text = 'Confirm the exported {} in the following page.'.format(self.key_type['title'])
+        text = 'Confirm the exported {} on the following page.'.format(self.key_type['title'])
         result = await InfoPage(text=text, left_micron=microns.Back).show()
 
         if not result:
