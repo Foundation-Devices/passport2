@@ -31,7 +31,7 @@ class SaveToMicroSDFlow(Flow):
         self.return_bool = True
         super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
 
-    async def default_write_fn(self, filename):
+    def default_write_fn(self, filename):
         with open(self.out_full, 'w' + self.mode) as fd:
             fd.write(self.data)
 
