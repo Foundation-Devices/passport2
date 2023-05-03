@@ -68,7 +68,8 @@ class StatusBar(View):
         if self.icon is None:
             icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
         else:
-            icon_view = Icon(icon=self.icon, color=self.fg_color)
+            icon_color = self.fg_color if passport.IS_COLOR else None
+            icon_view = Icon(icon=self.icon, color=icon_color)
 
         if passport.IS_COLOR:
             self.icon_view = icon_view
