@@ -97,6 +97,14 @@ TRUST_VERIFY = const(0)
 TRUST_OFFER = const(1)
 TRUST_PSBT = const(2)
 
+# Default Directories
+DIR_BACKUPS = 'backups'
+DIR_KEY_MNGR = 'key_manager'
+DIR_MULTISIGS = 'multisigs'
+DIR_WALLET_CONFIGS = 'wallet_configs'
+DIR_TRANSACTIONS = 'transactions'
+DIR_HEALTH_CHECKS = 'health_checks'
+
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
 {msg}

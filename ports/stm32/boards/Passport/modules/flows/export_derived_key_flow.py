@@ -109,6 +109,8 @@ class ExportDerivedKeyFlow(Flow):
 
     async def save_to_sd(self):
         from flows import SaveToMicroSDFlow, SeedWarningFlow
+        from utils import get_folder_path
+        from public_constants import DIR_KEY_MNGR
 
         result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
                                        .format(self.key_type['title']),
@@ -119,6 +121,7 @@ class ExportDerivedKeyFlow(Flow):
             return
 
         result = await SaveToMicroSDFlow(filename=self.filename,
+                                         path=get_folder_path(DIR_KEY_MNGR),
                                          data=self.data,
                                          success_text="key").run()
         self.set_result(result)

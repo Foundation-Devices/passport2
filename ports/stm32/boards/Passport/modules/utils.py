@@ -12,6 +12,7 @@
 
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
+from public_constants import DIR_BACKUPS
 from files import CardSlot
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
@@ -1017,7 +1018,11 @@ def format_btc_address(address, addr_type):
 
 
 def get_backups_folder_path():
-    return '{}/backups'.format(CardSlot.get_sd_root())
+    return get_folder_path()
+
+
+def get_folder_path(folder=DIR_BACKUPS):
+    return '{}/{}'.format(CardSlot.get_sd_root(), folder)
 
 
 def split_to_lines(s, width):
