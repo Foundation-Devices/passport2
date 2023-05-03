@@ -15,7 +15,7 @@ class SignPsbtQRFlow(Flow):
         self.txid = None
         self.out_fn = None
         self.signed_bytes = None
-        self.max_frames = 5
+        self.max_frames = 35
 
     async def scan_transaction(self):
         from foundation import ur
