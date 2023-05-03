@@ -12,14 +12,16 @@ class ExportDerivedKeyFlow(Flow):
         self.key_type = None
         self.pk = None
         self.data = None
+        self.path = None
         self.filename = None
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
-        from utils import spinner_task, B2A
+        from utils import spinner_task, B2A, get_folder_path
         from derived_key import get_key_type_from_tn
         from pages import ErrorPage
         from flows import ViewSeedWordsFlow
+        from public_constants import DIR_KEY_MNGR
 
         self.key_type = get_key_type_from_tn(self.key['tn'])
 
@@ -36,12 +38,14 @@ class ExportDerivedKeyFlow(Flow):
             self.set_result(False)
             return
 
+        self.path = get_folder_path(DIR_KEY_MNGR)
         self.filename = '{}-{}.txt'.format(self.key_type['title'], self.key['name'])
 
         if self.key_type['words']:
             result = await ViewSeedWordsFlow(external_key=self.pk,
                                              qr_option=True,
                                              sd_option=True,
+                                             path=self.path,
                                              filename=self.filename).run()
             self.set_result(result)
             return
@@ -109,8 +113,6 @@ class ExportDerivedKeyFlow(Flow):
 
     async def save_to_sd(self):
         from flows import SaveToMicroSDFlow, SeedWarningFlow
-        from utils import get_folder_path
-        from public_constants import DIR_KEY_MNGR
 
         result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
                                        .format(self.key_type['title']),
@@ -121,7 +123,7 @@ class ExportDerivedKeyFlow(Flow):
             return
 
         result = await SaveToMicroSDFlow(filename=self.filename,
-                                         path=get_folder_path(DIR_KEY_MNGR),
+                                         path=self.path,
                                          data=self.data,
                                          success_text="key").run()
         self.set_result(result)
