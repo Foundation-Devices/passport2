@@ -38,14 +38,7 @@ FROZEN_MANIFEST ?= boards/Passport/manifest.py
 MICROPY_EXTMOD_DIR = ../../extmod
 CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
   -I$(MICROPY_EXTMOD_DIR)/foundation \
-  -I$(MICROPY_EXTMOD_DIR)/quirc \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/aes \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core
-
-CFLAGS_MOD += -DBITCOIN_ONLY=1 -DAES_128=1 -DAES_192=1
+  -I$(MICROPY_EXTMOD_DIR)/quirc
 
 # settings that apply only to crypto C-lang code
 build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += \
