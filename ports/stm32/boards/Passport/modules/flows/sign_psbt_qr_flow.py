@@ -152,8 +152,7 @@ class SignPsbtQRFlow(Flow):
         result = await SaveToMicroSDFlow(filename='QR.txn',
                                          write_fn=self.write_final_fn,
                                          success_text="transaction",
-                                         path=get_folder_path(DIR_TRANSACTIONS),
-                                         automatic=True).run()
+                                         path=get_folder_path(DIR_TRANSACTIONS)).run()
         if not result:
             self.back()
             return
