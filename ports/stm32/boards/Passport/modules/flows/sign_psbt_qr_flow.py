@@ -22,7 +22,7 @@ class SignPsbtQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow, SignPsbtMicroSDFlow
         from errors import Error
-        from pages import LongTextPage
+        from pages import YesNoChooserPage
         import microns
 
         text = "\nThis transaction is quite large, and may take some time to scan. \
@@ -39,10 +39,7 @@ Would you like to sign with microSD instead?"
         if result == Error.PSBT_OVERSIZED:
             text = "\nThis transaction is quite large, and may take some time to scan. \
 Would you like to sign with microSD instead?"
-            result = await LongTextPage(text=text,
-                                        centered=True,
-                                        left_micron=microns.Cancel,
-                                        right_micron=microns.MicroSD).show()
+            result = await YesNoChooserPage(text=text).show()
 
             if result:
                 result = await SignPsbtMicroSDFlow().run()
