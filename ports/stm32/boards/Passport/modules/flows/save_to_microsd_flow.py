@@ -57,7 +57,7 @@ class SaveToMicroSDFlow(Flow):
                 with CardSlot() as card:
                     ensure_folder_exists(self.path)
                     self.out_full, _ = card.pick_filename(self.filename, path)
-                    error = await spinner_task("Writing {}.".format(self.success_text),
+                    error = await spinner_task("Writing {}".format(self.success_text),
                                                custom_microsd_write_task,
                                                args=[self.out_full, self.write_fn])
                     if error is Error.MICROSD_CARD_MISSING:
