@@ -154,5 +154,5 @@ class QRScanResult:
     def is_failure(self):
         return self.error is not None
 
-    def is_too_large(self):
+    def is_oversized(self):
         return self.max_frames is not None and self.num_frames > self.max_frames

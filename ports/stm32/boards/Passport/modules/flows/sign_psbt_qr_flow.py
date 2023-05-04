@@ -20,19 +20,36 @@ class SignPsbtQRFlow(Flow):
     async def scan_transaction(self):
         from foundation import ur
         from data_codecs.qr_type import QRType
-        from flows import ScanQRFlow
+        from flows import ScanQRFlow, SignPsbtMicroSDFlow
+        from errors import Error
+        from pages import LongTextPage
+        import microns
 
         text = "\nThis transaction is quite large, and may take some time to scan. \
 Would you like to sign with microSD instead?"
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
-                                  max_frames=self.max_frames,
-                                  max_frames_text=text).run()
+                                  max_frames=self.max_frames).run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
             return
+
+        if result == Error.PSBT_OVERSIZED:
+            text = "\nThis transaction is quite large, and may take some time to scan. \
+Would you like to sign with microSD instead?"
+            result = await LongTextPage(text=text,
+                                        centered=True,
+                                        left_micron=microns.Cancel,
+                                        right_micron=microns.Checkmark).show()
+
+            if result:
+                result = await SignPsbtMicroSDFlow().run()
+                self.set_result(result)
+            else:
+                self.max_frames = None
+            return  # Run it again with no max frames if the user wants
 
         if isinstance(result, ur.Value):
             self.ur_type = result.ur_type()
