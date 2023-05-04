@@ -44,7 +44,9 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-chacha20poly1305.h"
 #include "modtrezorcrypto-crc.h"
 #include "modtrezorcrypto-curve25519.h"
+#if USE_KECCAK
 #include "modtrezorcrypto-ed25519.h"
+#endif
 #include "modtrezorcrypto-groestl.h"
 #include "modtrezorcrypto-hmac.h"
 #include "modtrezorcrypto-nist256p1.h"
@@ -54,8 +56,10 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-secp256k1.h"
 #include "modtrezorcrypto-sha1.h"
 #include "modtrezorcrypto-sha256.h"
+#if USE_KECCAK
 #include "modtrezorcrypto-sha3-256.h"
 #include "modtrezorcrypto-sha3-512.h"
+#endif
 #include "modtrezorcrypto-sha512.h"
 #include "modtrezorcrypto-shamir.h"
 #include "modtrezorcrypto-slip39.h"
@@ -83,8 +87,10 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_crc), MP_ROM_PTR(&mod_trezorcrypto_crc_module)},
     {MP_ROM_QSTR(MP_QSTR_curve25519),
      MP_ROM_PTR(&mod_trezorcrypto_curve25519_module)},
+#if USE_KECCAK
     {MP_ROM_QSTR(MP_QSTR_ed25519),
      MP_ROM_PTR(&mod_trezorcrypto_ed25519_module)},
+#endif
 #if !BITCOIN_ONLY
     {MP_ROM_QSTR(MP_QSTR_monero), MP_ROM_PTR(&mod_trezorcrypto_monero_module)},
 #endif
@@ -106,10 +112,12 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_sha1), MP_ROM_PTR(&mod_trezorcrypto_Sha1_type)},
     {MP_ROM_QSTR(MP_QSTR_sha256), MP_ROM_PTR(&mod_trezorcrypto_Sha256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha512), MP_ROM_PTR(&mod_trezorcrypto_Sha512_type)},
+#if USE_KECCAK
     {MP_ROM_QSTR(MP_QSTR_sha3_256),
      MP_ROM_PTR(&mod_trezorcrypto_Sha3_256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha3_512),
      MP_ROM_PTR(&mod_trezorcrypto_Sha3_512_type)},
+#endif
     {MP_ROM_QSTR(MP_QSTR_shamir), MP_ROM_PTR(&mod_trezorcrypto_shamir_module)},
     {MP_ROM_QSTR(MP_QSTR_slip39), MP_ROM_PTR(&mod_trezorcrypto_slip39_module)},
 };

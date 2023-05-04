@@ -104,6 +104,10 @@ $(LODEPNG_C): $(LODEPNG_DIR)/lodepng.cpp $(LODEPNG_DIR)/*
 
 SRC_MOD += $(subst $(TOP)/,,$(LODEPNG_C) $(MP_LODEPNG_C) $(LODEPNG_MODULE))
 
+# trezorcrypto
+CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
+			  -DUSE_KECCAK=0 \
+
 # External modules written in C.
 ifneq ($(USER_C_MODULES),)
 # pre-define USERMOD variables as expanded so that variables are immediate
@@ -374,8 +378,6 @@ PY_EXTMOD_O_BASENAME = \
 	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-donna-impl-base.o \
 	extmod/trezor-firmware/crypto/ed25519-donna/ed25519.o \
 	extmod/trezor-firmware/crypto/ed25519-donna/curve25519-donna-scalarmult-base.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-keccak.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-sha3.o \
 	extmod/trezor-firmware/crypto/chacha20poly1305/chacha20poly1305.o \
 	extmod/trezor-firmware/crypto/chacha20poly1305/chacha_merged.o \
 	extmod/trezor-firmware/crypto/chacha20poly1305/poly1305-donna.o \
