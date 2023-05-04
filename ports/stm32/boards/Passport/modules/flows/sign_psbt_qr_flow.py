@@ -3,11 +3,7 @@
 #
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
-from flows import Flow, ScanQRFlow
-from data_codecs.qr_type import QRType
-from foundation import FixedBytesIO, ur
-from passport import mem
-from pages import ErrorPage
+from flows import Flow
 
 
 class SignPsbtQRFlow(Flow):
@@ -16,8 +12,15 @@ class SignPsbtQRFlow(Flow):
         self.raw_psbt = None
         self.ur_type = None
         self.psbt = None
+        self.txid = None
+        self.out_fn = None
+        self.signed_bytes = None
 
     async def scan_transaction(self):
+        from foundation import ur
+        from data_codecs.qr_type import QRType
+        from flows import ScanQRFlow
+
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file').run()
@@ -44,6 +47,7 @@ class SignPsbtQRFlow(Flow):
         from tasks import copy_psbt_to_external_flash_task
         from public_constants import TXN_INPUT_OFFSET
         from errors import Error
+        from pages import ErrorPage
 
         gc.collect()  # Try to avoid excessive fragmentation
 
@@ -73,25 +77,22 @@ class SignPsbtQRFlow(Flow):
         if self.psbt is None:
             self.set_result(False)
         else:
-            self.goto(self.show_signed_transaction)
+            self.goto(self.get_signed_bytes)
 
-    async def show_signed_transaction(self):
-        import gc
-        from pages import ShowQRPage
-        from data_codecs.qr_type import QRType
-        from ubinascii import hexlify as b2a_hex
-        import microns
+    async def get_signed_bytes(self):
+        from foundation import FixedBytesIO
+        from pages import ErrorPage
+        from passport import mem
 
         # Copy signed txn into a bytearray and show the data as a UR
         # try:
-        signed_bytes = None
         try:
             with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
                     bfd.seek(0)
-                    signed_bytes = bfd.getvalue()
+                    self.signed_bytes = bfd.getvalue()
                     # print('len(signed_bytes)={}'.format(len(signed_bytes)))
                     # print('signed_bytes={}'.format(signed_bytes))
         except MemoryError as e:
@@ -99,22 +100,84 @@ class SignPsbtQRFlow(Flow):
             self.set_result(False)
             return
 
-        self.psbt = None
-        gc.collect()
+        self.goto(self.show_signed_transaction)
+
+    async def show_signed_transaction(self):
+        from pages import ShowQRPage
+        from data_codecs.qr_type import QRType
+        from ubinascii import hexlify as b2a_hex
+        import microns
+        from foundation import ur
 
         if self.ur_type is None:
             qr_type = QRType.QR
-            qr_data = b2a_hex(signed_bytes)
+            qr_data = b2a_hex(self.signed_bytes)
         else:
             qr_type = QRType.UR2
             if self.ur_type == ur.Value.CRYPTO_PSBT:
-                qr_data = ur.new_bytes(signed_bytes)
+                qr_data = ur.new_bytes(self.signed_bytes)
             elif self.ur_type == ur.Value.BYTES:
-                qr_data = ur.new_crypto_psbt(signed_bytes)
+                qr_data = ur.new_crypto_psbt(self.signed_bytes)
             else:
                 raise RuntimeError('Unknown UR type: {}'.format(self.ur_type))
 
-        await ShowQRPage(qr_type=qr_type,
-                         qr_data=qr_data,
-                         right_micron=microns.Checkmark).show()
+        result = await ShowQRPage(qr_type=qr_type,
+                                  qr_data=qr_data,
+                                  left_micron=microns.MicroSD,
+                                  right_micron=microns.Checkmark).show()
+
+        if not result:
+            self.goto(self.save_to_microsd)
+            return
+
+        self.set_result(True)
+
+    def write_final_fn(self, filename):
+        from utils import HexWriter
+
+        # write psbt to file as hex
+        with HexWriter(open(filename, 'w+t')) as fd:
+            self.txid = self.psbt.finalize(fd)
+        self.out_fn = filename
+
+    async def save_to_microsd(self):
+        from flows import SaveToMicroSDFlow
+
+        if self.out_fn is not None:
+            self.goto(self.show_success)
+            return
+
+        result = await SaveToMicroSDFlow(filename='QR.txn',
+                                         write_fn=self.write_final_fn,
+                                         success_text="transaction",
+                                         # add default path
+                                         automatic=True).run()
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.show_success)
+
+    async def show_success(self):
+        import microns
+        from lvgl import LARGE_ICON_SUCCESS
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+        from pages import LongTextPage
+
+        msg = 'Finalized transaction (ready for broadcast):\n\n%s' % self.out_fn
+
+        if self.txid:
+            msg += '\n\nFinal TXID:\n' + self.txid
+
+        result = await LongTextPage(text=msg,
+                                    centered=True,
+                                    left_micron=microns.ScanQR,
+                                    right_micron=microns.Checkmark,
+                                    icon=LARGE_ICON_SUCCESS,
+                                    icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
+
+        if not result:
+            self.goto(self.show_signed_transaction)
+            return
+
         self.set_result(True)
