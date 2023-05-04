@@ -142,6 +142,8 @@ class SignPsbtQRFlow(Flow):
 
     async def save_to_microsd(self):
         from flows import SaveToMicroSDFlow
+        from utils import get_folder_path
+        from public_constants import DIR_TRANSACTIONS
 
         if self.out_fn is not None:
             self.goto(self.show_success)
@@ -150,7 +152,7 @@ class SignPsbtQRFlow(Flow):
         result = await SaveToMicroSDFlow(filename='QR.txn',
                                          write_fn=self.write_final_fn,
                                          success_text="transaction",
-                                         # add default path
+                                         path=get_folder_path(DIR_TRANSACTIONS),
                                          automatic=True).run()
         if not result:
             self.back()
