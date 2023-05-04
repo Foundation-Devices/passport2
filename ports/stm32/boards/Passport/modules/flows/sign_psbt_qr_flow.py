@@ -42,7 +42,7 @@ Would you like to sign with microSD instead?"
             result = await LongTextPage(text=text,
                                         centered=True,
                                         left_micron=microns.Cancel,
-                                        right_micron=microns.Checkmark).show()
+                                        right_micron=microns.MicroSD).show()
 
             if result:
                 result = await SignPsbtMicroSDFlow().run()
