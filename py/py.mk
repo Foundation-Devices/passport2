@@ -106,7 +106,16 @@ SRC_MOD += $(subst $(TOP)/,,$(LODEPNG_C) $(MP_LODEPNG_C) $(LODEPNG_MODULE))
 
 # trezorcrypto
 CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
-			  -DUSE_KECCAK=0 \
+	-DUSE_KECCAK=0 \
+	-DBITCOIN_ONLY=1 \
+	-DAES_128=1 \
+	-DAES_192=1
+
+INC += -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto \
+	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/aes \
+	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
+	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
+	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core
 
 # External modules written in C.
 ifneq ($(USER_C_MODULES),)
