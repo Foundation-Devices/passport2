@@ -173,7 +173,6 @@ class CardSlot:
         fname = path + '/' + basename + '-001' + ext
         try:
             os.stat(numberless_fname)
-            print("renaming {} to {}".format(numberless_fname, fname))
             uos.rename(numberless_fname, fname)
         except OSError as e:
             pass  # file doesn't exist, move on
@@ -193,7 +192,6 @@ class CardSlot:
             old_num = int(m.group(1))
             new_fn = basename + ('-%03d' % old_num) + ext
             if fn != new_fn:
-                print("renaming {} to {}".format(fn, new_fn))
                 uos.rename(path + '/' + fn, path + '/' + new_fn)
 
             highest = max(highest, old_num)
