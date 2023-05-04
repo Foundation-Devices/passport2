@@ -54,7 +54,6 @@ CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
   -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
   -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
   -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core/embed/unix \
   -I$(MICROPY_EXTMOD_DIR)/../ports/stm32/boards/Passport/include \
   -I$(MICROPY_EXTMOD_DIR)/../ports/stm32/boards/Passport/common/micro-ecc
   # TODO: Move this the ports/stm32/boards/Passport include files?
