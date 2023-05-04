@@ -34,6 +34,8 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
   }
 }
 
+#define FOUNDATION_ADDITIONS
+
 #include "modtrezorcrypto-aes.h"
 #include "modtrezorcrypto-bip32.h"
 #include "modtrezorcrypto-bip340.h"
@@ -74,6 +76,7 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_aes), MP_ROM_PTR(&mod_trezorcrypto_AES_type)},
     {MP_ROM_QSTR(MP_QSTR_bip32), MP_ROM_PTR(&mod_trezorcrypto_bip32_module)},
     {MP_ROM_QSTR(MP_QSTR_bip39), MP_ROM_PTR(&mod_trezorcrypto_bip39_module)},
+#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_blake256),
      MP_ROM_PTR(&mod_trezorcrypto_Blake256_type)},
     {MP_ROM_QSTR(MP_QSTR_blake2b), MP_ROM_PTR(&mod_trezorcrypto_Blake2b_type)},
@@ -98,28 +101,37 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
      MP_ROM_PTR(&mod_trezorcrypto_nist256p1_module)},
     {MP_ROM_QSTR(MP_QSTR_groestl512),
      MP_ROM_PTR(&mod_trezorcrypto_Groestl512_type)},
+#endif // FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_hmac), MP_ROM_PTR(&mod_trezorcrypto_Hmac_type)},
+#ifndef FOUNDATION_ADDITIONS
 #if !BITCOIN_ONLY
     {MP_ROM_QSTR(MP_QSTR_nem), MP_ROM_PTR(&mod_trezorcrypto_nem_module)},
 #endif
     {MP_ROM_QSTR(MP_QSTR_pbkdf2), MP_ROM_PTR(&mod_trezorcrypto_Pbkdf2_type)},
+#endif // FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_trezorcrypto_random_module)},
     {MP_ROM_QSTR(MP_QSTR_ripemd160),
      MP_ROM_PTR(&mod_trezorcrypto_Ripemd160_type)},
     {MP_ROM_QSTR(MP_QSTR_secp256k1),
      MP_ROM_PTR(&mod_trezorcrypto_secp256k1_module)},
     {MP_ROM_QSTR(MP_QSTR_bip340), MP_ROM_PTR(&mod_trezorcrypto_bip340_module)},
+#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_sha1), MP_ROM_PTR(&mod_trezorcrypto_Sha1_type)},
+#endif // FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_sha256), MP_ROM_PTR(&mod_trezorcrypto_Sha256_type)},
+#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_sha512), MP_ROM_PTR(&mod_trezorcrypto_Sha512_type)},
+#endif // FOUNDATION_ADDITIONS
 #if USE_KECCAK
     {MP_ROM_QSTR(MP_QSTR_sha3_256),
      MP_ROM_PTR(&mod_trezorcrypto_Sha3_256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha3_512),
      MP_ROM_PTR(&mod_trezorcrypto_Sha3_512_type)},
 #endif
+#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_shamir), MP_ROM_PTR(&mod_trezorcrypto_shamir_module)},
     {MP_ROM_QSTR(MP_QSTR_slip39), MP_ROM_PTR(&mod_trezorcrypto_slip39_module)},
+#endif // FOUNDATION_ADDITIONS
 };
 STATIC MP_DEFINE_CONST_DICT(mp_module_trezorcrypto_globals,
                             mp_module_trezorcrypto_globals_table);
