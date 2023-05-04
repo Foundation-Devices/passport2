@@ -16,8 +16,7 @@ class ScanQRFlow(Flow):
                  ur_types=None,
                  explicit_type=None,
                  data_description=None,
-                 max_frames=None,
-                 max_frames_text=None):
+                 max_frames=None):
         """
         Initialize the scan QR flow.
 
@@ -41,7 +40,6 @@ class ScanQRFlow(Flow):
         self.data_description = data_description
         self.data = None
         self.max_frames = max_frames
-        self.max_frames_text = max_frames_text
 
         if len(self.qr_types) == 0:
             raise ValueError('At least one QR type must be provided')
@@ -53,8 +51,7 @@ class ScanQRFlow(Flow):
             raise ValueError('Data description must be provided')
 
     async def scan(self):
-        from pages import LongTextPage
-        import microns
+        from errors import Error
 
         result = await ScanQRPage(max_frames=self.max_frames,
                                   qr_type=self.explicit_type) \
@@ -69,16 +66,8 @@ class ScanQRFlow(Flow):
             self.set_result(None)
             return
 
-        if result.is_too_large():
-            result = await LongTextPage(text=self.max_frames_text,
-                                        centered=True,
-                                        left_micron=microns.Cancel,
-                                        right_micron=microns.Checkmark).show()
-
-            if result:
-                self.set_result(None)
-            else:
-                self.max_frames = None
+        if result.is_oversized():
+            self.set_result(Error.PSBT_OVERSIZED)
             return
 
         self.data = result.data
