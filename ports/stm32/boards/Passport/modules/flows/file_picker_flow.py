@@ -94,7 +94,7 @@ class FilePickerFlow(Flow):
         return True
 
     async def show_file_picker(self):
-        from utils import show_page_with_sd_card
+        from utils import show_page_with_sd_card, get_backups_folder_path
 
         while True:
             # Get list of files/folders at the current path
@@ -108,7 +108,10 @@ class FilePickerFlow(Flow):
                     suffix=self.suffix,
                     filter_fn=self.filter_fn)
 
-                files = sorted(files, key=file_key)
+                reverse = False
+                if active_path == get_backups_folder_path():
+                    reverse = True
+                files = sorted(files, key=file_key, reverse=reverse)
 
             except CardMissingError:
                 self.reset_paths()
