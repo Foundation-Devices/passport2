@@ -17,7 +17,6 @@ INC += -I$(BUILD)
 INC += -I$(TOP)
 INC += -I$(TOP)/extmod
 INC += -I$(TOP)/extmod/quirc
-INC += -I$(TOP)/extmod/trezor-firmware/crypto
 INC += -I$(TOP)/ports/stm32/boards/Passport/include
 INC += -I$(TOP)/ports/stm32/boards/Passport/common/micro-ecc/
 
