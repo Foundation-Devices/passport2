@@ -384,18 +384,6 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/aes/aeskey.o \
     extmod/trezor-firmware/crypto/aes/aestab.o \
     extmod/trezor-firmware/crypto/aes/aes_modes.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/curve25519-donna-32bit.o \
-    extmod/trezor-firmware/crypto/ed25519-donna/curve25519-donna-helpers.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/modm-donna-32bit.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-donna-basepoint-table.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-donna-32bit-tables.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519-donna-impl-base.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/ed25519.o \
-	extmod/trezor-firmware/crypto/ed25519-donna/curve25519-donna-scalarmult-base.o \
-	extmod/trezor-firmware/crypto/chacha20poly1305/chacha20poly1305.o \
-	extmod/trezor-firmware/crypto/chacha20poly1305/chacha_merged.o \
-	extmod/trezor-firmware/crypto/chacha20poly1305/poly1305-donna.o \
-	extmod/trezor-firmware/crypto/chacha20poly1305/rfc7539.o \
     extmod/trezor-firmware/crypto/shamir.o \
     extmod/trezor-firmware/crypto/groestl.o \
     extmod/trezor-firmware/crypto/slip39.o \
