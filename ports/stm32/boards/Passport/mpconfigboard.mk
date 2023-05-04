@@ -41,9 +41,7 @@ CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
   -I$(MICROPY_EXTMOD_DIR)/quirc
 
 # settings that apply only to crypto C-lang code
-build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += \
-	-DUSE_BIP39_CACHE=0 -DBIP32_CACHE_SIZE=0 -DUSE_BIP32_CACHE=0 -DBIP32_CACHE_MAXDEPTH=0 \
-	-DRAND_PLATFORM_INDEPENDENT=1 -DUSE_BIP39_GENERATE=0 -DUSE_BIP32_25519_CURVES=0
+build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += -DRAND_PLATFORM_INDEPENDENT=1
 
 # Bootloader CFLAGS
 CFLAGS_MOD += -DBL_NVROM_BASE=$(BL_NVROM_BASE)
