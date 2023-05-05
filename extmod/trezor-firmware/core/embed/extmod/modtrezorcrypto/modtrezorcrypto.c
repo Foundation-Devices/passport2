@@ -147,13 +147,13 @@ MP_REGISTER_MODULE(MP_QSTR_trezorcrypto, mp_module_trezorcrypto,
 #ifdef USE_SECP256K1_ZKP
 void secp256k1_default_illegal_callback_fn(const char *str, void *data) {
   (void)data;
-  mp_raise_ValueError(str);
+  mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%s"), str);
   return;
 }
 
 void secp256k1_default_error_callback_fn(const char *str, void *data) {
   (void)data;
-  __fatal_error(NULL, str, __FILE__, __LINE__, __func__);
+  mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%s"), str);
   return;
 }
 #endif

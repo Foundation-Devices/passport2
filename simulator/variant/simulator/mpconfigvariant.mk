@@ -12,4 +12,4 @@ CFLAGS_MOD += -DBL_FW_HDR_BASE=0
 FROZEN_MANIFEST =
 FROZEN_MPY_DIR =
 
-export RUSTFLAGS := --cfg sram4 --cfg rust_secp_no_symbol_renaming
+export RUSTFLAGS := --cfg sram4

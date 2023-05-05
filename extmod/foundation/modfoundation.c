@@ -26,6 +26,7 @@
 
 #include "modfoundation-bip39.h"
 #include "modfoundation-qr.h"
+#include "modfoundation-secp56k1.h"
 #include "modfoundation-ur.h"
 
 /// package: foundation
@@ -273,6 +274,7 @@ STATIC const mp_rom_map_elem_t foundation_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_FixedBytesIO), MP_ROM_PTR(&mp_type_fixedbytesio)},
     {MP_ROM_QSTR(MP_QSTR_bip39), MP_ROM_PTR(&mod_foundation_bip39_module)},
     {MP_ROM_QSTR(MP_QSTR_qr), MP_ROM_PTR(&mod_foundation_qr_module)},
+    {MP_ROM_QSTR(MP_QSTR_secp256k1), MP_ROM_PTR(&mod_foundation_secp256k1_module)},
     {MP_ROM_QSTR(MP_QSTR_ur), MP_ROM_PTR(&mod_foundation_ur_module)},
     {MP_ROM_QSTR(MP_QSTR_convert_rgb565_to_grayscale), MP_ROM_PTR(&mod_foundation_convert_rgb565_to_grayscale_obj)},
     {MP_ROM_QSTR(MP_QSTR_sha256), MP_ROM_PTR(&mod_foundation_sha256_obj)},
