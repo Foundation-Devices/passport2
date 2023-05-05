@@ -25,8 +25,6 @@ class SignPsbtQRFlow(Flow):
         from pages import QuestionPage
         import microns
 
-        text = "\nThis transaction is quite large, and may take some time to scan. \
-Would you like to sign with microSD instead?"
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
