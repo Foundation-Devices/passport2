@@ -20,7 +20,7 @@ class UR2Decoder(DataDecoder):
     def __init__(self):
         ur.decoder_clear()
         self.value = None
-        self.frames = None
+        self.frames = 0
 
     def add_data(self, data):
         data = data.lower()
