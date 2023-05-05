@@ -4,14 +4,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(non_camel_case_types)]
 
+#[cfg(target_arch = "arm")]
+use cortex_m as _;
+
+pub mod secp256k1;
 pub mod ur;
 
 /// cbindgen:ignore
-#[cfg(not(feature = "std"))]
+#[cfg(all(target_os = "none", target_arch = "arm"))]
+mod rand;
+/// cbindgen:ignore
+#[cfg(target_os = "none")]
 mod stdout;
 
+#[cfg(target_os = "none")]
 #[panic_handler]
-#[cfg(all(not(feature = "std"), not(test)))]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     use core::fmt::Write;
 

@@ -110,6 +110,7 @@ CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
 	-DBITCOIN_ONLY=1 \
 	-DAES_128=1 \
 	-DAES_192=1 \
+	-DUSE_SECP256K1_ZKP=1 \
 	-DUSE_BIP39_CACHE=0 \
 	-DUSE_BIP39_GENERATE=0 \
 	-DUSE_BIP32_CACHE=0 \
@@ -155,17 +156,10 @@ endif
 
 
 ifeq ($(RUST_TARGET),)
-  UNAME_M ?= $(shell uname -m)
-
-  ifeq ($(UNAME_M),x86_64)
-    RUST_ARCH ?= x86_64
-  else ifeq ($(UNAME_M),arm)
-    RUST_ARCH ?= arm
-  else ifeq ($(UNAME_M),arm64)
-    RUST_ARCH ?= aarch64
-  endif
-
-  RUST_TARGET ?= $(RUST_ARCH)-unknown-none
+  RUST_TARGET ?= $(shell rustc --version --verbose | $(SED) -n 's/host: \(.*\)$$/\1/p')
+  RUST_FEATURES ?= --features std
+else
+  RUST_FEATURES ?=
 endif
 
 FOUNDATION_RUST ?= $(TOP)/extmod/foundation-rust
@@ -181,7 +175,7 @@ LDFLAGS_MOD += -L$(shell dirname $(FOUNDATION_RUST_LIB)) -lfoundation
 
 $(FOUNDATION_RUST_LIB): $(FOUNDATION_RUST_SRC)
 	$(ECHO) "CARGO foundation-rust"
-	@cargo build --manifest-path $(FOUNDATION_RUST)/Cargo.toml --target $(RUST_TARGET) --release
+	cargo build --manifest-path $(FOUNDATION_RUST)/Cargo.toml --target $(RUST_TARGET) $(RUST_FEATURES) --release
 # FOUNDATION CHANGE: END
 
 

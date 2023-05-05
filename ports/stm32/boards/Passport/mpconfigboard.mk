@@ -84,4 +84,4 @@ ifeq ($(SCREEN_MODE), COLOR)
 endif
 
 RUST_TARGET := thumbv7em-none-eabihf
-export RUSTFLAGS := --cfg dtcm --cfg sram4 --cfg rust_secp_no_symbol_renaming
+export RUSTFLAGS := --cfg dtcm --cfg sram4
