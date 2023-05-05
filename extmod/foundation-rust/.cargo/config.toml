@@ -5,8 +5,4 @@
 rustflags = [
     "--cfg", "dtcm",
     "--cfg", "sram4",
-    "--cfg", "rust_secp_no_symbol_renaming",
 ]
-
-[target.x86_64-unknown-none]
-rustflags = ["--cfg", "rust_secp_no_symbol_renaming"]
