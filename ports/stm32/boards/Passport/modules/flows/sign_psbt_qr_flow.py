@@ -39,13 +39,14 @@ class SignPsbtQRFlow(Flow):
 How would you like to proceed?"
             result = await YesNoChooserPage(text=text,
                                             yes_text='Continue with QR',
-                                            no_text='Sign with MicroSD').show()
+                                            no_text='Sign with MicroSD',
+                                            left_micron=microns.Back).show()
 
-            if result:
+            if result is None or result:
+                self.max_frames = None
+            else:
                 result = await SignPsbtMicroSDFlow().run()
                 self.set_result(result)
-            else:
-                self.max_frames = None
             return  # Run it again with no max frames if the user wants
 
         if isinstance(result, ur.Value):
