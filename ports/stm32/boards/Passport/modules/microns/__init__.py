@@ -36,6 +36,14 @@ def Retry(color=FD_BLUE):
     return IconButton(icon=lv.ICON_RETRY, color=color)
 
 
+def MicroSD(color=FD_BLUE):
+    return IconButton(icon=lv.ICON_MICROSD, color=color)
+
+
+def ScanQR(color=FD_BLUE):
+    return IconButton(icon=lv.ICON_SCAN_QR, color=color)
+
+
 def PageHome(color=MICRON_GREY):
     return Icon(icon=lv.ICON_PAGE_HOME, color=color)
 
