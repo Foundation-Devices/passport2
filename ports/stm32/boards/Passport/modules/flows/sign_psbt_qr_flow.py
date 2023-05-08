@@ -35,8 +35,8 @@ class SignPsbtQRFlow(Flow):
             return
 
         if result == Error.PSBT_OVERSIZED:
-            text = "\nThis transaction is large and will take some time to scan.\n\
-How would you like to proceed?"
+            text = "\nThis transaction is large and will take some time to scan. \
+How would you like to proceed?\n"
             result = await YesNoChooserPage(text=text,
                                             yes_text='Continue with QR',
                                             no_text='Sign with MicroSD',
