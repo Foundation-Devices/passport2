@@ -40,7 +40,6 @@ Then run the following commands:
     rustup target add aarch64-unknown-none 
     
     rustup target add thumbv7em-none-eabihf
-    rustup target add x86_64-unknown-none
     cargo install cbindgen
 
 #### Cross-Compiler Toolchain

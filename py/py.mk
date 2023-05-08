@@ -117,11 +117,11 @@ CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
 	-DBIP32_CACHE_SIZE=0 \
 	-DBIP32_CACHE_MAXDEPTH=0
 
-INC += -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto \
-	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/aes \
-	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
-	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
-	-I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core
+INC += -I$(TOP)/extmod/trezor-firmware/crypto \
+	-I$(TOP)/extmod/trezor-firmware/crypto/aes \
+	-I$(TOP)/extmod/trezor-firmware/crypto/chacha20poly1305 \
+	-I$(TOP)/extmod/trezor-firmware/crypto/ed25519-donna \
+	-I$(TOP)/extmod/trezor-firmware/core
 
 # External modules written in C.
 ifneq ($(USER_C_MODULES),)
@@ -153,7 +153,6 @@ endif
 ifeq ($(SCREEN_MODE),MONO)
 SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(TOP)/ports/stm32/boards/Passport/images/mono -type f -name "*.c")))
 endif
-
 
 ifeq ($(RUST_TARGET),)
   RUST_TARGET ?= $(shell rustc --version --verbose | $(SED) -n 's/host: \(.*\)$$/\1/p')

@@ -37,12 +37,12 @@ pub extern "C" fn secp256k1_sign_schnorr(
     signature.copy_from_slice(sig.as_ref());
 }
 
-#[cfg(all(target_os = "none", target_arch = "arm"))]
+#[cfg(target_arch = "arm")]
 fn rng() -> crate::rand::PassportRng {
     crate::rand::PassportRng
 }
 
-#[cfg(not(all(target_os = "none", target_arch = "arm")))]
-fn rng() -> rand::rngs::OsRng {
-    rand::rngs::OsRng
+#[cfg(not(target_arch = "arm"))]
+fn rng() -> rand::rngs::ThreadRng {
+    rand::thread_rng()
 }

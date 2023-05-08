@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(target_arch = "arm", no_std)]
 #![allow(non_camel_case_types)]
 
 #[cfg(target_arch = "arm")]
