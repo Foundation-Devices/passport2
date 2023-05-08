@@ -241,9 +241,15 @@ def security_menu():
 def update_menu():
     from flows import UpdateFirmwareFlow, ViewCurrentFirmwareFlow
     from utils import is_logged_in
+    import passport
 
+    title = 'UPDATE' + (' FIRMWARE' if passport.IS_COLOR else '')
     return [
-        {'icon': lv.ICON_FIRMWARE, 'label': 'Update Firmware', 'flow': UpdateFirmwareFlow, 'is_visible': is_logged_in},
+        {'icon': lv.ICON_FIRMWARE,
+         'label': 'Update Firmware',
+         'flow': UpdateFirmwareFlow,
+         'is_visible': is_logged_in,
+         'statusbar': {'title': title, 'icon': lv.ICON_FIRMWARE}},
         {'icon': lv.ICON_INFO, 'label': 'Current Version', 'flow': ViewCurrentFirmwareFlow, 'statusbar': {}},
     ]
 

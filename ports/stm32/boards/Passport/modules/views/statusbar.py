@@ -30,7 +30,7 @@ class StatusBar(View):
             if passport.IS_COLOR:
                 top_pad = 0
             else:
-                top_pad = 4
+                top_pad = 6
 
             default.pad(top=top_pad, bottom=0, left=10, right=10)
             default.pad_col(2)
