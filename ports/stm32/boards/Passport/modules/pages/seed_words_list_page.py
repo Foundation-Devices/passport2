@@ -148,24 +148,18 @@ class SeedWordsListPage(Page):
             common.ui.set_right_micron(microns.Checkmark)
 
     def attach(self, group):
+        from utils import add_page_dots
+
         super().attach(group)
         group.add_obj(self.lvgl_root)
 
         # Add the page dots if necessary
-        if self.num_pages > 1:
-            micron_bar_card_descs = []
-            for i in range(self.num_pages):
-                micron_bar_card_descs.append({'page_micron': microns.PageDot})
-
-            self.prev_card_idx = common.ui.active_card_idx
-            self.prev_card_descs = common.ui.set_micron_bar_cards(micron_bar_card_descs, force_show=True)
-            common.ui.set_micron_bar_active_idx(self.page_idx)
+        add_page_dots(self, self.num_pages)
 
     def detach(self):
-        if self.prev_card_descs is not None:
-            common.ui.set_micron_bar_cards(self.prev_card_descs, force_show=False)
-            common.ui.set_micron_bar_active_idx(self.prev_card_idx)
-            self.prev_card_descs = None
+        from utils import remove_page_dots
+
+        remove_page_dots(self)
 
         lv.group_remove_obj(self.lvgl_root)
         super().detach()

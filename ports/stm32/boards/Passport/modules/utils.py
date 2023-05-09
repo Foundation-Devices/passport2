@@ -1330,4 +1330,28 @@ def get_words_from_seed(seed):
     except Exception as e:
         return (None, '{}'.format(e))
 
+
+def add_page_dots(page, num_pages):
+    import common
+    import microns
+
+    # Add the page dots if necessary
+    if num_pages > 1:
+        micron_bar_card_descs = []
+        for i in range(num_pages):
+            micron_bar_card_descs.append({'page_micron': microns.PageDot})
+
+        page.prev_card_idx = common.ui.active_card_idx
+        page.prev_card_descs = common.ui.set_micron_bar_cards(micron_bar_card_descs, force_show=True)
+        common.ui.set_micron_bar_active_idx(page.page_idx)
+
+
+def remove_page_dots(page):
+    import common
+
+    if page.prev_card_descs is not None:
+        common.ui.set_micron_bar_cards(page.prev_card_descs, force_show=False)
+        common.ui.set_micron_bar_active_idx(page.prev_card_idx)
+        page.prev_card_descs = None
+
 # EOF

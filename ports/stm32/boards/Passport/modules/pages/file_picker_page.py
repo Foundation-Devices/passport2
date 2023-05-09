@@ -21,6 +21,8 @@ class FilePickerPage(Page):
                  files=[],
                  card_header=None,
                  statusbar=None,):
+        from math import ceil
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          flex_flow=lv.FLEX_FLOW.COLUMN,
@@ -28,6 +30,10 @@ class FilePickerPage(Page):
                          right_micron=microns.Checkmark)
 
         self.files = files
+        self.num_pages = ceil(len(files) / MAX_FILE_DISPLAY)
+        self.page_idx = 0
+        self.prev_card_descs = None
+        self.prev_card_idx = None
 
         with Stylize(self) as default:
             default.flex_fill()
@@ -47,29 +53,39 @@ class FilePickerPage(Page):
             default.flex_fill()
             default.pad_row(0)
 
-        # Adjust scrollbar position
+        # Adjust scrollbar position # TODO: adjust this in update()
         with Stylize(self.scroll_container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
 
+        self.update()
+
+        self.add_child(self.scroll_container)
+
+    # async def display(self, auto_close_timeout=None):
+    #     from pages import ErrorPage
+
+    #     if len(self.files) > MAX_FILE_DISPLAY:
+    #         await ErrorPage(text="Unable to display all files. Displaying the first "
+    #                         "{} files alphabetically.".format(MAX_FILE_DISPLAY)).show()
+
+    #     await super().display()
+
+    def update(self):
+        if self.is_mounted():
+            self.scroll_container.unmount_children()
+            self.scroll_container.set_children([])
+
         # Add the file items to the scroll container
-        num_files = min(MAX_FILE_DISPLAY, len(self.files))
-        for index in range(num_files):
+        range_start = self.page_idx * MAX_FILE_DISPLAY
+        range_end = range_start + min(MAX_FILE_DISPLAY, (len(self.files) - range_start))
+        for index in range(range_start, range_end):
             filename, _full_path, is_folder = self.files[index]
             self.scroll_container.add_child(
                 FileItem(filename=filename, is_folder=is_folder))
 
-        self.add_child(self.scroll_container)
-
-    async def display(self, auto_close_timeout=None):
-        from pages import ErrorPage
-
-        if len(self.files) > MAX_FILE_DISPLAY:
-            await ErrorPage(text="Unable to display all files. Displaying the first "
-                            "{} files alphabetically.".format(MAX_FILE_DISPLAY)).show()
-
-        await super().display()
-
     def attach(self, group):
+        from utils import add_page_dots
+
         super().attach(group)
 
         # Ensure scrollbars are enabled again
@@ -79,8 +95,15 @@ class FilePickerPage(Page):
         lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.NONE)
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
+        # Add pages dots if necessary
+        add_page_dots(self, self.num_pages)
+
     def detach(self):
+        from utils import remove_page_dots
+
         lv.group_remove_obj(self.scroll_container.lvgl_root)
+
+        remove_page_dots(self)
 
         # Hide scrollbars during transitions
         self.scroll_container.set_no_scroll()
