@@ -77,7 +77,8 @@ class ExportDerivedKeyFlow(Flow):
         import microns
 
         result = await SeedWarningFlow(action_text="display your {} as a QR code"
-                                       .format(self.key_type['title'])).run()
+                                       .format(self.key_type['title']),
+                                       continue_text=self.key_type.get('continue_text', None)).run()
 
         if not result:
             self.back()
