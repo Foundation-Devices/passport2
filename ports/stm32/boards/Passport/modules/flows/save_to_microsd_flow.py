@@ -29,11 +29,21 @@ class SaveToMicroSDFlow(Flow):
         self.show_check = None if automatic else microns.Checkmark
         # return_bool attribute required to use show_card_missing
         self.return_bool = True
-        super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
+        super().__init__(initial_state=self.check_inputs, name='SaveToMicroSDFlow')
 
     def default_write_fn(self, filename):
         with open(self.out_full, 'w' + self.mode) as fd:
             fd.write(self.data)
+
+    async def check_inputs(self):
+        from pages import ErrorPage
+
+        if (not self.data and not self.write_fn) or (self.data and self.write_fn):
+            await ErrorPage("Either data or a write function is required to save a file.").show()
+            self.set_result(False)
+            return
+
+        self.goto(self.save)
 
     async def save(self):
         from files import CardSlot, CardMissingError
@@ -41,11 +51,6 @@ class SaveToMicroSDFlow(Flow):
         from utils import spinner_task, ensure_folder_exists
         from errors import Error
         from tasks import custom_microsd_write_task
-
-        if (not self.data and not self.write_fn) or (self.data and self.write_fn):
-            await ErrorPage("Either data or a write function is required to save a file.").show()
-            self.set_result(False)
-            return
 
         if self.data:
             self.write_fn = self.default_write_fn
