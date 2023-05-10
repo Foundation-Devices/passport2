@@ -4,7 +4,8 @@
 # derived_key.py - Different keys can be derived from the root bitcoin key
 
 import lvgl as lv
-from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_task
+from tasks import bip85_24_word_seed_task, bip85_12_word_seed_task, nostr_key_task, retrieve_manual_key_task
+from menus import manual_key_menu
 
 # Each key generation task must take index as args, whether or not they use it.
 # tn stands for Type Number
@@ -27,6 +28,13 @@ key_types = [
      'indexed': True,
      'words': False,
      'task': nostr_key_task},
+    {'tn': 3,
+     'title': 'Manual Key',
+     'icon': lv.ICON_ONE_KEY,
+     'indexed': True,
+     'words': None,
+     'task': retrieve_manual_key_task,
+     'menu': manual_key_menu},
 ]
 
 

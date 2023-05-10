@@ -14,7 +14,7 @@ class MenuFlow(Flow):
     latest_menu = None
 
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
-                 card_header=None, statusbar=None, one_shot=False):
+                 card_header=None, statusbar=None, one_shot=False, dynamic=None):
         self.menu = menu
 
         super().__init__(initial_state=self.show_menu, name='MenuFlow')
@@ -25,6 +25,7 @@ class MenuFlow(Flow):
         self.card_header = card_header
         self.statusbar = statusbar
         self.one_shot = one_shot
+        self.dynamic = dynamic
         MenuFlow.latest_menu = self
 
     async def show_menu(self):
@@ -35,6 +36,9 @@ class MenuFlow(Flow):
         # This allows them to update if any state has changed since last running.
         assert(callable(self.menu))
         self.items = self.menu()
+        if self.dynamic:
+            assert(callable(self.dynamic))
+            self.items[:0] = self.dynamic()
         self.prev_statusbar = None
 
         # print('show_menu(): is_top_level() = {}'.format(common.ui.is_top_level()))

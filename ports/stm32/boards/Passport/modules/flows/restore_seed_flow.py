@@ -13,12 +13,14 @@ from public_constants import SEED_LENGTHS
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False):
+    def __init__(self, refresh_cards_when_done=False, save_seed=True, copy_callback=None):
         super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
         self.seed_length = None
         self.validate_text = None
+        self.save_seed = save_seed
+        self.copy_callback = copy_callback
         self.seed_words = []
 
     async def choose_restore_method(self):
@@ -143,9 +145,15 @@ class RestoreSeedFlow(Flow):
             trim_pos = 16
         entropy = entropy[:trim_pos]  # Trim off the excess (including checksum bits)
 
-        (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
+        if self.copy_callback and callable(self.copy_callback):
+            self.copy_callback(entropy)
+
+        error = None
+        if self.save_seed:
+            (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
         if error is None:
             import common
+            # TODO: customize text for other uses
             await SuccessPage(text='New seed restored and saved.').show()
 
             if self.refresh_cards_when_done:

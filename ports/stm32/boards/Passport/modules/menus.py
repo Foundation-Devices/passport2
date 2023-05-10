@@ -146,6 +146,26 @@ def new_key_menu():
     return result
 
 
+# TODO: this should efficiently reuse the above function
+def manual_key_type_menu():
+    from flows import SaveManualKeyFlow
+    from derived_key import key_types
+
+    result = []
+    for key_type in key_types:
+        if key_type['tn'] != 3:  # No infinitely recursive manual keys please
+            title = key_type['title']
+            icon = key_type['icon']
+            # TODO: make this back out on success
+            result.append({'icon': icon,
+                           'label': title,
+                           'flow': SaveManualKeyFlow,
+                           'statusbar': {'title': 'Save {}'.format(title),
+                                         'icon': icon},
+                           'args': {'key_type': key_type}})
+    return result
+
+
 def manage_keys():
     from utils import toggle_showing_hidden_keys, are_hidden_keys_showing
     return [
@@ -155,6 +175,20 @@ def manage_keys():
          'is_toggle': True,
          'value': lambda: are_hidden_keys_showing()},
     ]
+
+
+def manual_key_menu():
+    from flows import MenuFlow
+    from utils import get_manual_key_by_index
+
+    result = []
+
+    if MenuFlow.latest_menu is not None:
+        index = MenuFlow.latest_menu.context['index']
+        if not get_manual_key_by_index(index):
+            result.append({'icon': lv.ICON_SIGN, 'label': 'Save Key', 'submenu': manual_key_type_menu})
+
+    return result
 
 
 def key_manager_menu():
@@ -184,7 +218,7 @@ def key_manager_menu():
                            'label': "{} ({})".format(key['name'], key['index']),
                            'submenu': key_item_menu,
                            'statusbar': {'title': "{} ({})".format(key['name'], key['index'])},
-                           'args': {'context': key}})
+                           'args': {'context': key, 'dynamic': key_type.get('menu', None)}})
 
     result.append({'icon': lv.ICON_SETTINGS, 'label': 'Manage', 'submenu': manage_keys})
 

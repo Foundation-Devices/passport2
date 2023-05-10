@@ -17,7 +17,7 @@ class ExportDerivedKeyFlow(Flow):
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
-        from utils import spinner_task, B2A, get_folder_path
+        from utils import spinner_task, B2A, get_folder_path, get_manual_key_by_index
         from derived_key import get_key_type_from_tn
         from pages import ErrorPage
         from flows import ViewSeedWordsFlow
@@ -38,8 +38,13 @@ class ExportDerivedKeyFlow(Flow):
             self.set_result(False)
             return
 
-        self.path = get_folder_path(DIR_KEY_MNGR)
         self.filename = '{}-{}.txt'.format(self.key_type['title'], self.key['name'])
+        self.path = get_folder_path(DIR_KEY_MNGR)
+
+        if self.key['tn'] == 3:  # Manual Key, treated like a normal key from here
+            key = get_manual_key_by_index(self.key['index'])
+            if key is not None:
+                self.key_type = get_key_type_from_tn(key['tn'])
 
         if self.key_type['words']:
             result = await ViewSeedWordsFlow(external_key=self.pk,

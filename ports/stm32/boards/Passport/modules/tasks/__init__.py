@@ -44,9 +44,11 @@ from .rename_account_task import rename_account_task
 from .rename_derived_key_task import rename_derived_key_task
 from .rename_multisig_task import rename_multisig_task
 from .restore_backup_task import restore_backup_task
+from .retrieve_manual_key_task import retrieve_manual_key_task
 from .save_multisig_wallet_task import save_multisig_wallet_task
 from .save_new_account_task import save_new_account_task
 from .save_new_derived_key_task import save_new_derived_key_task
+from .save_new_manual_key_task import save_new_manual_key_task
 from .save_seed_task import save_seed_task
 from .search_for_address_task import search_for_address_task
 from .set_initial_pin_task import set_initial_pin_task

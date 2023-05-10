@@ -918,6 +918,22 @@ def get_derived_key_by_index(index, key_tn, xfp):
     return None
 
 
+def get_manual_keys():
+    from common import settings
+    keys = settings.get('manual_keys', [])
+    print(keys)
+    return keys
+
+
+def get_manual_key_by_index(index):
+    keys = get_manual_keys()
+    for key in keys:
+        if key['index'] == index:
+            return key
+
+    return None
+
+
 def get_width_from_num_words(num_words):
     return (num_words - 1) * 11 // 8 + 1
 

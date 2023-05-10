@@ -24,4 +24,5 @@ Error = enum(
     'SECURE_ELEMENT_ERROR',
     'USER_SETTINGS_FULL',
     'PSBT_TOO_LARGE',
+    'INDEX_TAKEN_ERROR',
 )
