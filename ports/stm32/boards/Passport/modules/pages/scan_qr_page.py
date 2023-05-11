@@ -112,7 +112,6 @@ class ScanQRPage(Page):
 
                 num_frames = self.camera.num_frames()
                 if self.max_frames is not None and num_frames > self.max_frames:
-                    print("num_frames: {}, max_frames: {}".format(num_frames, self.max_frames))
                     self.set_result(QRScanResult(num_frames=num_frames,
                                                  max_frames=self.max_frames))
                     return
