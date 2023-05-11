@@ -31,8 +31,8 @@ class ExportDerivedKeyFlow(Flow):
             return
 
         (vals, error) = await spinner_task(text='Generating Key',
-                                                task=self.key_type['task'],
-                                                args=[self.key['index']])
+                                           task=self.key_type['task'],
+                                           args=[self.key['index']])
         self.pk = vals['priv']
         if error is not None:
             await ErrorPage(error).show()
