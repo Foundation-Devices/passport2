@@ -194,7 +194,7 @@ class NostrDelegationFlow(Flow):
 
         result = await SeedWarningFlow(action_text="sign a Nostr delegation"
                                        .format(self.key_type['title']),
-                                       funds_text="post on your behalf").run()
+                                       continue_text="post on your behalf").run()
         if not result:
             self.set_result(False)
             return
