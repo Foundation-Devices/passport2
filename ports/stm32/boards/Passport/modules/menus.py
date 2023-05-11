@@ -110,7 +110,7 @@ def plus_menu():
 
 
 def device_menu():
-    from flows import AboutFlow, ChangePINFlow, ChooseTimezoneFlow
+    from flows import AboutFlow, ChangePINFlow
     from pages import AutoShutdownSettingPage, BrightnessSettingPage
     from utils import is_logged_in
 
