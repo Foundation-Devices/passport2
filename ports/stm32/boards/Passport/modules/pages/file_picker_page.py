@@ -69,11 +69,16 @@ class FilePickerPage(Page):
     #     await super().display()
 
     def update(self):
+        import common
+
         if self.is_mounted():
             self.scroll_container.unmount_children()
             self.scroll_container.set_children([])
+            lv.gridnav_remove(self.scroll_container.lvgl_root)
+            # lv.group_remove_obj(self.scroll_container.lvgl_root)
             self.unmount_children()
             self.set_children([])
+            self.scroll_container.set_no_scroll()
 
         # add back option if there's a previous page
         if self.page_idx != 0:
@@ -94,6 +99,15 @@ class FilePickerPage(Page):
                 FileItem(filename='More', custom_icon=lv.ICON_FORWARD))
 
         self.add_child(self.scroll_container)
+
+        if self.is_mounted():
+            self.mount_children()
+            self.scroll_container.set_scroll_dir(lv.DIR.VER)
+            lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.NONE)
+            # IMPORTANT: Add this to the group AFTER setting up gridnav
+            # self.group.add_obj(self.scroll_container.lvgl_root)
+
+        common.ui.set_micron_bar_active_idx(self.page_idx)
 
     def attach(self, group):
         from utils import add_page_dots
@@ -156,14 +170,14 @@ class FilePickerPage(Page):
                 # Go back a page
                 if self.page_idx != 0 and selected_option_idx == 0:
                     self.page_idx -= 1
-                    # self.update()
+                    self.update()
                     return
 
                 # Go forward a page
                 if self.page_idx < self.num_pages - 1 \
                         and selected_option_idx == len(self.scroll_container.children) - 1:
                     self.page_idx += 1
-                    # self.update()
+                    self.update()
                     return
 
                 selected_file = self.files[selected_option_idx]
