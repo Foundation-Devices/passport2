@@ -67,26 +67,23 @@ class VerifyAddressFlow(Flow):
 
     async def scan_address(self):
         import chains
-        from pages import ErrorPage, ScanQRPage
+        from pages import ErrorPage
+        from flows import ScanQRFlow
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
         from utils import is_valid_btc_address, get_next_addr
+        from data_codecs.qr_type import QRType
 
-        result = await ScanQRPage(
-            left_micron=microns.Back,
-            right_micron=None).show()
+        result = await ScanQRFlow(qr_types=[QRType.QR],
+                                  data_description='a Bitcoin address').run()
 
         if result is None:
             if not self.back():
                 self.set_result(False)
                 return
             return
-        elif result.is_failure():
-            await ErrorPage(text='Unable to scan QR code.').show()
-            self.set_result(False)
-            return
 
         # print('result={}'.format(result))
-        self.address = result.data
+        self.address = result
 
         # Simple check on the data type first
         chain_name = chains.current_chain().name
