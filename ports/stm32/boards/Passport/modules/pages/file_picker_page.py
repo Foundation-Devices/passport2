@@ -59,8 +59,6 @@ class FilePickerPage(Page):
 
         self.update()
 
-        self.add_child(self.scroll_container)
-
     # async def display(self, auto_close_timeout=None):
     #     from pages import ErrorPage
 
@@ -74,6 +72,13 @@ class FilePickerPage(Page):
         if self.is_mounted():
             self.scroll_container.unmount_children()
             self.scroll_container.set_children([])
+            self.unmount_children()
+            self.set_children([])
+
+        # add back option if there's a previous page
+        if self.page_idx != 0:
+            self.scroll_container.add_child(
+                FileItem(filename='Previous', custom_icon=lv.ICON_BACK))
 
         # Add the file items to the scroll container
         range_start = self.page_idx * MAX_FILE_DISPLAY
@@ -82,6 +87,13 @@ class FilePickerPage(Page):
             filename, _full_path, is_folder = self.files[index]
             self.scroll_container.add_child(
                 FileItem(filename=filename, is_folder=is_folder))
+
+        # add forward option if there are more pages:
+        if self.page_idx < self.num_pages - 1:
+            self.scroll_container.add_child(
+                FileItem(filename='More', custom_icon=lv.ICON_FORWARD))
+
+        self.add_child(self.scroll_container)
 
     def attach(self, group):
         from utils import add_page_dots
@@ -139,6 +151,21 @@ class FilePickerPage(Page):
         if not is_pressed:
             try:
                 selected_option_idx = self.get_focused_item_index()
+
+                # TODO: add back/forward page controls
+                # Go back a page
+                if self.page_idx != 0 and selected_option_idx == 0:
+                    self.page_idx -= 1
+                    # self.update()
+                    return
+
+                # Go forward a page
+                if self.page_idx < self.num_pages - 1 \
+                        and selected_option_idx == len(self.scroll_container.children) - 1:
+                    self.page_idx += 1
+                    # self.update()
+                    return
+
                 selected_file = self.files[selected_option_idx]
                 # print('Selected file: {}'.format(selected_file))
                 self.set_result(selected_file)
