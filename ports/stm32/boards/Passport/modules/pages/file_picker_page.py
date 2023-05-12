@@ -59,15 +59,6 @@ class FilePickerPage(Page):
 
         self.update()
 
-    # async def display(self, auto_close_timeout=None):
-    #     from pages import ErrorPage
-
-    #     if len(self.files) > MAX_FILE_DISPLAY:
-    #         await ErrorPage(text="Unable to display all files. Displaying the first "
-    #                         "{} files alphabetically.".format(MAX_FILE_DISPLAY)).show()
-
-    #     await super().display()
-
     def update(self):
         import common
 
@@ -75,7 +66,7 @@ class FilePickerPage(Page):
             self.scroll_container.unmount_children()
             self.scroll_container.set_children([])
             lv.gridnav_remove(self.scroll_container.lvgl_root)
-            # lv.group_remove_obj(self.scroll_container.lvgl_root)
+            lv.group_remove_obj(self.scroll_container.lvgl_root)
             self.unmount_children()
             self.set_children([])
             self.scroll_container.set_no_scroll()
@@ -105,7 +96,7 @@ class FilePickerPage(Page):
             self.scroll_container.set_scroll_dir(lv.DIR.VER)
             lv.gridnav_add(self.scroll_container.lvgl_root, lv.GRIDNAV_CTRL.NONE)
             # IMPORTANT: Add this to the group AFTER setting up gridnav
-            # self.group.add_obj(self.scroll_container.lvgl_root)
+            self.group.add_obj(self.scroll_container.lvgl_root)
 
         common.ui.set_micron_bar_active_idx(self.page_idx)
 
@@ -180,7 +171,13 @@ class FilePickerPage(Page):
                     self.update()
                     return
 
-                selected_file = self.files[selected_option_idx]
+                # Account for previous button taking index 0
+                if self.page_idx != 0:
+                    selected_option_idx -= 1
+
+                file_idx = self.page_idx * MAX_FILE_DISPLAY + selected_option_idx
+
+                selected_file = self.files[file_idx]
                 # print('Selected file: {}'.format(selected_file))
                 self.set_result(selected_file)
             except Exception as e:
