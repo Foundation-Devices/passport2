@@ -84,6 +84,7 @@ class TextInputPage(Page):
             if self.is_showing_symbols:
                 self.is_showing_symbols = False
                 self.update_symbol_picker()
+                return
             self.set_result(None)
 
     def attach(self, group):
