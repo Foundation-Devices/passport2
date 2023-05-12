@@ -6,7 +6,7 @@
 import lvgl as lv
 from flows import Flow, ScanQRFlow
 from pages import ShowQRPage, QuestionPage, ChooserPage
-from styles.colors import HIGHLIGHT_TEXT_HEX
+from styles.colors import HIGHLIGHT_TEXT_HEX, DEFAULT_LARGE_ICON_COLOR
 from data_codecs.qr_type import QRType
 from utils import a2b_hex, recolor
 from ubinascii import hexlify as b2a_hex
@@ -33,7 +33,7 @@ class ScvFlow(Flow):
         self.uuid = None
 
     async def show_intro(self):
-        from pages import ShieldPage
+        from pages import LongTextPage
 
         if self.envoy:
             text = 'On the next screen, scan the QR code shown in Envoy.'
@@ -42,9 +42,12 @@ class ScvFlow(Flow):
                    'On the next screen, scan the Security Check ' \
                    'QR code from validate.foundationdevices.com.'
 
-        result = await ShieldPage(text=text,
-                                  left_micron=microns.Back,
-                                  right_micron=microns.Forward).show()
+        result = await LongTextPage(text=text,
+                                    centered=True,
+                                    icon=lv.LARGE_ICON_SHIELD,
+                                    icon_color=DEFAULT_LARGE_ICON_COLOR,
+                                    left_micron=microns.Back,
+                                    right_micron=microns.Forward).show()
         if result:
             self.goto(self.scan_qr_challenge)
         else:
@@ -130,13 +133,17 @@ class ScvFlow(Flow):
             self.goto(self.ask_if_valid)
 
     async def show_manual_response(self):
-        from pages import ShieldPage
+        from pages import StatusPage
 
         lines = ['{}. {}\n'.format(idx + 1, word) for idx, word in enumerate(self.words)]
         words = ''.join(lines)
 
-        result = await ShieldPage(text=words, card_header={'title': 'Security Check'},
-                                  left_micron=microns.Retry, right_micron=microns.Forward).show()
+        result = await StatusPage(text=words,
+                                  card_header={'title': 'Security Check'},
+                                  icon=lv.LARGE_ICON_SHIELD,
+                                  icon_color=DEFAULT_LARGE_ICON_COLOR,
+                                  left_micron=microns.Retry,
+                                  right_micron=microns.Forward).show()
         if not result:
             self.back()
         else:

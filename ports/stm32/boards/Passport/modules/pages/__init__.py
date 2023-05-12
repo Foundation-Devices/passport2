@@ -33,7 +33,6 @@ from .recovery_mode_chooser_page import *
 from .scan_qr_page import *
 from .seed_words_list_page import *
 from .setup_mode_chooser_page import *
-from .shield_page import *
 from .show_security_words_setting_page import *
 from .show_qr_page import *
 from .shutdown_page import *
