@@ -23,9 +23,12 @@ class ChooserPage(Page):
             self, card_header=None, statusbar=None, options=[],
             initial_value=None, on_change=None, scroll_fix=False,
             icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon=lv.ICON_SMALL_CHECKMARK,
-            left_micron=microns.Cancel, right_micron=microns.Checkmark):
+            left_micron=None, right_micron=None):
 
         from views import ListItem, View
+
+        left_micron = left_micron or microns.Cancel
+        right_micron = right_micron or microns.Checkmark
 
         super().__init__(
             card_header=card_header,

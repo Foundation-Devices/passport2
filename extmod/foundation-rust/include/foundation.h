@@ -375,7 +375,8 @@ extern UR_Encoder UR_ENCODER;
 bool ur_decoder_receive(UR_Decoder *decoder,
                         const uint8_t *ur,
                         size_t ur_len,
-                        UR_Error *error);
+                        UR_Error *error,
+                        uint32_t *num_frames);
 
 /**
  * Returns `true` if the decoder is complete and no more data is needed.

@@ -37,3 +37,6 @@ class DataDecoder:
     # - etc.
     def qr_type(self):
         pass
+
+    def num_frames(self):
+        return 1
