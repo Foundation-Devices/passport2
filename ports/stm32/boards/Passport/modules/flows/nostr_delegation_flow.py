@@ -263,9 +263,9 @@ class NostrDelegationFlow(Flow):
         self.goto(self.scan_delegation_string)
 
     async def scan_delegation_string(self):
-        from pages import ScanQRPage, ErrorPage, InfoPage
+        from pages import ErrorPage, InfoPage
         import microns
-        from flows import FilePickerFlow, ReadFileFlow
+        from flows import FilePickerFlow, ReadFileFlow, ScanQRFlow
 
         if self.use_qr:
             info_text = 'On the next screen, scan the delegation details QR from your Nostr client.'
@@ -278,17 +278,12 @@ class NostrDelegationFlow(Flow):
             return
 
         if self.use_qr:
-            # TODO: Use ScanQRFlow
-            result = await ScanQRPage().show()
+            result = await ScanQRFlow(data_description='a Nostr delegation description').run()
 
-            if not result:
+            if result is None:
                 return  # return to InfoPage
 
-            if result.is_failure():
-                await ErrorPage('Unable to scan QR code.').show()
-                return  # return to InfoPage
-
-            self.delegation_string = result.data
+            self.delegation_string = result
         else:
             result = await FilePickerFlow(show_folders=True).run()
 
