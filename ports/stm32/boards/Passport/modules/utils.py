@@ -1342,8 +1342,12 @@ def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
 
 
 def nostr_sign(key, message):
-    from trezorcrypto import schnorr
-    return schnorr.sign(key, message)
+    # from trezorcrypto import schnorr
+    # return schnorr.sign(key, message)
+    import foundation
+
+    ctx = foundation.secp256k1.Secp256k1()
+    return ctx.schnorr_sign(message, key)
 
 
 months = {
