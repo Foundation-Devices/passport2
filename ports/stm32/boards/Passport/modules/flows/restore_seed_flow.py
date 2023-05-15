@@ -13,13 +13,15 @@ from public_constants import SEED_LENGTHS
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False):
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
         super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
         self.seed_length = None
         self.validate_text = None
         self.seed_words = []
+        self.full_backup = full_backup
+        self.autobackup = autobackup
 
     async def choose_restore_method(self):
         from pages import ChooserPage
@@ -130,6 +132,7 @@ class RestoreSeedFlow(Flow):
 
     async def valid_seed(self):
         from foundation import bip39
+        from flows import AutoBackupFlow, BackupFlow
 
         entropy = bytearray(33)  # Includes an extra byte for the checksum bits
 
@@ -146,7 +149,12 @@ class RestoreSeedFlow(Flow):
         (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
         if error is None:
             import common
+
             await SuccessPage(text='New seed restored and saved.').show()
+            if self.full_backup:
+                await BackupFlow().run()
+            elif self.autobackup:
+                await AutoBackupFlow(offer=True).run()
 
             if self.refresh_cards_when_done:
                 common.ui.full_cards_refresh()
@@ -155,5 +163,5 @@ class RestoreSeedFlow(Flow):
             else:
                 self.set_result(True)
         else:
-            # WIP: This is not complete - offer backup?
             await ErrorPage('Unable to save seed.').show()
+            self.set_result(False)
