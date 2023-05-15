@@ -187,6 +187,8 @@ class NostrDelegationFlow(Flow):
         self.created_after = None
         self.kinds = None
         self.use_qr = None
+        self.orig_path = None
+        self.basename = None
         super().__init__(initial_state=self.show_warning, name='NostrDelegationFlow')
 
     async def show_warning(self):
@@ -217,11 +219,12 @@ class NostrDelegationFlow(Flow):
         self.goto(self.export_npub)
 
     async def export_npub(self):
-        from utils import spinner_task
+        from utils import spinner_task, get_folder_path
         from pages import ShowQRPage, ErrorPage, InfoPage
         from flows import SaveToMicroSDFlow
         from ubinascii import unhexlify as a2b_hex
         import microns
+        from public_constants import DIR_KEY_MNGR
 
         (vals, error) = await spinner_task(text='Generating npub',
                                                 task=self.key_type['task'],
@@ -248,9 +251,9 @@ class NostrDelegationFlow(Flow):
                 return
 
             filename = '{}-{}-npub.txt'.format(self.key_type['title'], self.key['name'])
-            # TODO: use the key manager path
             result = await SaveToMicroSDFlow(filename=filename,
                                              data=self.npub,
+                                             path=get_folder_path(DIR_KEY_MNGR),
                                              success_text="Nostr npub").run()
 
         if not result:
@@ -275,6 +278,7 @@ class NostrDelegationFlow(Flow):
             return
 
         if self.use_qr:
+            # TODO: Use ScanQRFlow
             result = await ScanQRPage().show()
 
             if not result:
@@ -297,6 +301,7 @@ class NostrDelegationFlow(Flow):
             if data is None:
                 return  # return to InfoPage
 
+            self.orig_path, self.basename = full_path.rsplit('/', 1)
             self.delegation_string = data.strip()
 
         try:
@@ -356,10 +361,11 @@ class NostrDelegationFlow(Flow):
                 self.back()
                 return
 
-            filename = '{}-{}-delegation.txt'.format(self.key_type['title'], self.key['name'])
-            # TODO: use the key manager path
-            result = await SaveToMicroSDFlow(filename=filename,
+            # Name resulting file after original file
+            target_fname = self.basename.rsplit('.', 1)[0] + '-signed.txt'
+            result = await SaveToMicroSDFlow(filename=target_fname,
                                              data=sig,
+                                             path=self.orig_path,
                                              success_text="Nostr delegation").run()
 
         self.set_result(True)
