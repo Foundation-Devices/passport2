@@ -75,7 +75,7 @@ class ScvFlow(Flow):
 
             try:
                 scv_id = a2b_hex(parts[0])
-                scv_signature = b2a_hex(parts[1])
+                scv_signature = a2b_hex(parts[1])
             except ValueError:
                 await self.show_error('Security Check QR code is invalid.\n')
                 return
