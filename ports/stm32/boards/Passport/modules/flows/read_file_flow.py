@@ -22,7 +22,7 @@ class ReadFileFlow(Flow):
         from errors import Error
         from pages import ErrorPage
 
-        (data, error) = await spinner_task('Reading File',
+        (data, error) = await spinner_task('Reading file',
                                            read_file_task,
                                            args=[self.file_path, self.binary, self.read_fn])
 
