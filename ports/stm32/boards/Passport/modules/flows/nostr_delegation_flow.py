@@ -248,6 +248,7 @@ class NostrDelegationFlow(Flow):
                 return
 
             filename = '{}-{}-npub.txt'.format(self.key_type['title'], self.key['name'])
+            # TODO: use the key manager path
             result = await SaveToMicroSDFlow(filename=filename,
                                              data=self.npub,
                                              success_text="Nostr npub").run()
@@ -356,6 +357,7 @@ class NostrDelegationFlow(Flow):
                 return
 
             filename = '{}-{}-delegation.txt'.format(self.key_type['title'], self.key['name'])
+            # TODO: use the key manager path
             result = await SaveToMicroSDFlow(filename=filename,
                                              data=sig,
                                              success_text="Nostr delegation").run()
