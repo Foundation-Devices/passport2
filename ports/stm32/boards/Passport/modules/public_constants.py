@@ -99,11 +99,11 @@ TRUST_PSBT = const(2)
 
 # Default Directories
 DIR_BACKUPS = 'backups'
-DIR_KEY_MNGR = 'key_manager'
-DIR_MULTISIGS = 'multisig_configs'
-DIR_WALLET_CONFIGS = 'wallet_configs'
+DIR_KEY_MNGR = 'key manager'
+DIR_MULTISIGS = 'multisig configs'
+DIR_WALLET_CONFIGS = 'wallet configs'
 DIR_TRANSACTIONS = 'transactions'
-DIR_HEALTH_CHECKS = 'health_checks'
+DIR_HEALTH_CHECKS = 'health checks'
 
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
