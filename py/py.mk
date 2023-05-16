@@ -54,33 +54,6 @@ SRC_MOD += $(sort $(subst $(TOP)/,,$(shell find $(LVGL_DIR)/src $(LVGL_GENERIC_D
 
 GIT_SUBMODULES += lib/lv_bindings
 
-
-# secp256k1
-SECP256K1_PATH = extmod/trezor-firmware/vendor/secp256k1-zkp
-SECP256K1_DIR = $(TOP)/$(SECP256K1_PATH)
-SECP256K1_ECMULT_STATIC_CONTEXT_H = $(SECP256K1_DIR)/src/ecmult_static_context.h
-CFLAGS_MOD += -DUSE_NUM_NONE -DUSE_FIELD_INV_BUILTIN \
-              -DUSE_FIELD_10X26 -DUSE_SCALAR_8X32 -DUSE_ECMULT_STATIC_PRECOMPUTATION \
-              -DUSE_EXTERNAL_DEFAULT_CALLBACKS -DECMULT_GEN_PREC_BITS=4 \
-              -DECMULT_WINDOW_SIZE=8 -DENABLE_MODULE_GENERATOR \
-              -DENABLE_MODULE_RECOVERY -DENABLE_MODULE_SCHNORRSIG \
-              -DENABLE_MODULE_EXTRAKEYS -I$(SECP256K1_DIR)/src
-SECP256K1_MPY = $(BUILD)/secp256k1/secp256k1_mpy.c
-INC += -I$(SECP256K1_DIR) -I$(SECP256K1_DIR)/include
-HOST_CC = gcc
-SRC_MOD += $(SECP256K1_PATH)/src/secp256k1.c $(SECP256K1_MPY)
-
-$(SECP256K1_ECMULT_STATIC_CONTEXT_H):
-	$(ECHO) "GEN-CONTEXT $@"
-	$(Q)$(HOST_CC) -O2 -DECMULT_GEN_PREC_BITS=4 -I$(SECP256K1_DIR)/src $(SECP256K1_DIR)/src/gen_context.c -o $(SECP256K1_DIR)/gen_context
-	$(Q)cd $(SECP256K1_DIR) && ./gen_context
-
-# NOTE: generates a dummy file in order to have ecmult_static_context.h as a dependency.
-$(SECP256K1_MPY): $(SECP256K1_ECMULT_STATIC_CONTEXT_H)
-	$(ECHO) "GEN $@"
-	$(Q)mkdir -p $(dir $@)
-	$(Q)touch $@
-
 #lodepng
 LODEPNG_DIR = $(TOP)/lib/lv_bindings/driver/png/lodepng
 MP_LODEPNG_C = $(TOP)/lib/lv_bindings/driver/png/mp_lodepng.c
@@ -110,7 +83,6 @@ CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
 	-DBITCOIN_ONLY=1 \
 	-DAES_128=1 \
 	-DAES_192=1 \
-	-DUSE_SECP256K1_ZKP=1 \
 	-DUSE_BIP39_CACHE=0 \
 	-DUSE_BIP39_GENERATE=0 \
 	-DUSE_BIP32_CACHE=0 \
@@ -383,10 +355,8 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/rand.o \
     extmod/trezor-firmware/crypto/rfc6979.o \
     extmod/trezor-firmware/crypto/hmac_drbg.o \
-    extmod/trezor-firmware/crypto/zkp_bip340.o \
     extmod/trezor-firmware/core/embed/extmod/modtrezorcrypto/modtrezorcrypto.o \
-    extmod/trezor-firmware/core/embed/extmod/modtrezorcrypto/crc.o \
-    extmod/trezor-firmware/core/vendor/trezor-crypto/zkp_context.o
+    extmod/trezor-firmware/core/embed/extmod/modtrezorcrypto/crc.o
 
 # prepend the build destination prefix to the py object files
 PY_CORE_O = $(addprefix $(BUILD)/, $(PY_CORE_O_BASENAME))
@@ -412,9 +382,8 @@ endif
 
 # Sources that may contain qstrings
 SRC_QSTR_IGNORE = py/nlr%
-SRC_MOD_QSTR_IGNORE = $(SECP256K1_PATH)/src/secp256k1.c extmod/trezor-firmware/crypto/zkp_bip340.c
-SRC_EXTMOD_QSTR_IGNORE = extmod/trezor-firmware/crypto/zkp_bip340.c \
-                         extmod/trezor-firmware/core/vendor/trezor-crypto/zkp_context.c
+SRC_MOD_QSTR_IGNORE =
+SRC_EXTMOD_QSTR_IGNORE =
 SRC_QSTR += $(filter-out $(SRC_MOD_QSTR_IGNORE),$(SRC_MOD)) \
             $(filter-out $(SRC_QSTR_IGNORE),$(PY_CORE_O_BASENAME:.o=.c)) \
 			$(filter-out $(SRC_EXTMOD_QSTR_IGNORE),$(PY_EXTMOD_O_BASENAME:.o=.c))
