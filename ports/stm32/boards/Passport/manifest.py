@@ -326,6 +326,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'views/statusbar.py',
         'views/switch.py',
         'views/symbol_picker.py',
+        'views/table.py',
         'views/text_area.py',
         'views/text_input.py',
         'views/view.py'))
