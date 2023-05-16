@@ -1184,14 +1184,15 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     prev_sd_card_cb = CardSlot.get_sd_card_change_cb()
     CardSlot.set_sd_card_change_cb(sd_card_cb)
 
-    try:
-        await page.display()
-    except Exception as e:
-        page.unmount()
-        restore_sd_cb()
-        await on_result(None)
-        await ErrorPage(text='Unable to display page.').show()
-        return
+    # try:
+    await page.display()
+    # except Exception as e:
+    #     print(e)
+    #     page.unmount()
+    #     restore_sd_cb()
+    #     await on_result(None)
+    #     await ErrorPage(text='Unable to display page.').show()
+    #     return
 
     g = page.poll_for_done()
     while True:
