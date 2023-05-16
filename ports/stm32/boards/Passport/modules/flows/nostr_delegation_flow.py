@@ -335,11 +335,8 @@ class NostrDelegationFlow(Flow):
         import microns
         from flows import SaveToMicroSDFlow
 
-        print("pk: {}".format(B2A(self.pk)))
         sha = sha256(self.delegation_string)
-        print("sha: {}".format(B2A(sha)))
         sig = B2A(nostr_sign(self.pk, sha))
-        print("sig: {}".format(sig))
 
         if self.use_qr:
             result = await ShowQRPage(caption='Scan this final QR code with your Nostr client',
