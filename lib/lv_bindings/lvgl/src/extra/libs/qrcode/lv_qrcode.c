@@ -122,7 +122,7 @@ lv_res_t lv_qrcode_update(lv_obj_t * obj, const void * data, uint32_t data_len, 
     int32_t remain = res % qr_size;
 
     /* The qr version is incremented by four point */
-    uint32_t version_extend = remain / (scale << 2);
+    int32_t version_extend = remain / (scale << 2);
     if(version_extend && qr_version < qrcodegen_VERSION_MAX) {
         qr_version = qr_version + version_extend > qrcode->max_version ?
                      qrcode->max_version : qr_version + version_extend;
