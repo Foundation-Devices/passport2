@@ -55,7 +55,7 @@ STATIC mp_obj_t mod_foundation_convert_rgb565_to_grayscale(size_t n_args, const 
         mp_raise_ValueError(MP_ERROR_TEXT("invalid rgb565 buffer size"));
         return mp_const_none;
     }
-    if (grayscale_info.len != (hor_res * ver_res))
+    if (grayscale_info.len != (size_t)(hor_res * ver_res))
     {
         mp_raise_ValueError(MP_ERROR_TEXT("invalid grayscale buffer size"));
         return mp_const_none;
