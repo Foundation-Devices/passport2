@@ -239,11 +239,11 @@ class NostrDelegationFlow(Flow):
             return
 
         if self.use_qr:
-            result = await ShowQRPage(caption='Scan this npub QR code with your Nostr client.',
+            result = await ShowQRPage(caption='Scan this npub QR code with your Nostr client',
                                       qr_data=self.npub,
                                       left_micron=microns.Cancel).show()
         else:
-            result = await InfoPage('Copy the following npub into your Nostr client.',
+            result = await InfoPage('Copy the following npub into your Nostr client',
                                     left_micron=microns.Cancel).show()
 
             if not result:
@@ -268,9 +268,9 @@ class NostrDelegationFlow(Flow):
         from flows import FilePickerFlow, ReadFileFlow, ScanQRFlow
 
         if self.use_qr:
-            info_text = 'On the next screen, scan the delegation details QR from your Nostr client.'
+            info_text = 'On the next screen, scan the delegation details QR from your Nostr client'
         else:
-            info_text = 'Next, select the delegation details file from your SD card.'
+            info_text = 'Next, select the delegation details file from your SD card'
         result = await InfoPage(text=info_text, left_micron=microns.Cancel).show()
 
         if not result:
@@ -342,14 +342,14 @@ class NostrDelegationFlow(Flow):
         print("sig: {}".format(sig))
 
         if self.use_qr:
-            result = await ShowQRPage(caption='Scan this final QR code with your Nostr client.',
+            result = await ShowQRPage(caption='Scan this final QR code with your Nostr client',
                                       qr_data=sig,
                                       right_micron=microns.Checkmark).show()
             if not result:
                 self.back()
                 return
         else:
-            result = await InfoPage('Copy the following delegation code into your Nostr client.',
+            result = await InfoPage('Copy the following delegation code into your Nostr client',
                                     left_micron=microns.Back).show()
 
             if not result:
