@@ -38,12 +38,11 @@ class SaveToMicroSDFlow(Flow):
 
         written = False
 
-        if self.path:
-            ensure_folder_exists(self.path)
-
         for path in [self.path, None]:
             try:
                 with CardSlot() as card:
+                    ensure_folder_exists(self.path)
+
                     self.out_full, _ = card.pick_filename(self.filename, path)
 
                     if self.data:
