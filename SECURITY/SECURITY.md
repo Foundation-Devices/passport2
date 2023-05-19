@@ -296,8 +296,6 @@ If the need arises to restore a backup, simply insert the microSD card into Pass
 ### 11.12 Seed Display
 The user can choose to display the wallet seed on screen. Once this is complete, Passport internally erases all memory that held the seed entropy bits and/or the seed phrase.
 
-**^ DOUBLE CHECK THIS**
-
 ### 11.13 Verify Address
 
 Passport empowers users to scan single-sig and multisig addresses from any wallet that can display addresses as QR codes and determine if the address belongs to that Passport.
