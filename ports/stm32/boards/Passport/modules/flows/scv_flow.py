@@ -33,21 +33,34 @@ class ScvFlow(Flow):
         self.uuid = None
 
     async def show_intro(self):
-        from pages import LongTextPage
+        from pages import StatusPage
 
         if self.envoy:
-            text = 'On the next screen, scan the QR code shown in Envoy.'
+            messages = ['On the next screen, scan the QR code shown in Envoy.']
         else:
-            text = 'Let\'s confirm Passport was not tampered with during shipping. ' \
-                   'On the next screen, scan the Security Check ' \
-                   'QR code from validate.foundationdevices.com.'
+            messages = ['Let\'s confirm Passport was not tampered with during shipping. ',
+                        'Next, scan the Security Check '
+                        'QR code from validate.foundationdevices.com.']
 
-        result = await LongTextPage(text=text,
-                                    centered=True,
-                                    icon=lv.LARGE_ICON_SHIELD,
-                                    icon_color=DEFAULT_LARGE_ICON_COLOR,
-                                    left_micron=microns.Back,
-                                    right_micron=microns.Forward).show()
+        # for text in messages:
+        #     result = await ShieldPage(text=text,
+        #                               left_micron=microns.Back,
+        #                               right_micron=microns.Forward).show()
+        message_index = 0
+        while message_index < len(messages):
+            result = await StatusPage(text=messages[message_index],
+                                      card_header={'title': 'Security Check'},
+                                      icon=lv.LARGE_ICON_SHIELD,
+                                      icon_color=DEFAULT_LARGE_ICON_COLOR,
+                                      left_micron=microns.Back,
+                                      right_micron=microns.Forward).show()
+            if result:
+                message_index += 1
+            elif message_index > 0:
+                message_index -= 1
+            else:
+                break
+
         if result:
             self.goto(self.scan_qr_challenge)
         else:
