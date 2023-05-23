@@ -24,12 +24,14 @@ import common
 
 
 class RestoreBackupFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False):
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
         super().__init__(initial_state=self.check_if_erased, name='RestoreBackupFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.backup_code = [None] * TOTAL_BACKUP_CODE_DIGITS
         self.backup_password_words = []
         self.backup_password_prefixes = []
+        self.full_backup = full_backup
+        self.autobackup = autobackup
 
     async def check_if_erased(self):
         from common import pa
@@ -102,6 +104,8 @@ class RestoreBackupFlow(Flow):
 
     async def do_restore(self):
         from utils import start_task
+        from flows import AutoBackupFlow, BackupFlow
+        from pages import InfoPage
 
         # TODO: Change from spinner to ProgressPage and pass on_progress instead of None below.
         (error,) = await spinner_task(
@@ -112,6 +116,12 @@ class RestoreBackupFlow(Flow):
         if error is None:
             await SuccessPage(text='Restore Complete!').show()
             self.set_result(True)
+
+            if self.full_backup:
+                await InfoPage("You will receive a new backup code to use with your new Passport.").show()
+                await BackupFlow().run()
+            elif self.autobackup:
+                await AutoBackupFlow(offer=True).run()
 
             if self.refresh_cards_when_done:
                 common.ui.update_cards(is_init=True)
