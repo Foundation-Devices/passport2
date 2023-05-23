@@ -135,9 +135,9 @@ How would you like to proceed?\n"
         else:
             qr_type = QRType.UR2
             if self.ur_type == ur.Value.CRYPTO_PSBT:
-                qr_data = ur.new_bytes(self.signed_bytes)
-            elif self.ur_type == ur.Value.BYTES:
                 qr_data = ur.new_crypto_psbt(self.signed_bytes)
+            elif self.ur_type == ur.Value.BYTES:
+                qr_data = ur.new_bytes(self.signed_bytes)
             else:
                 raise RuntimeError('Unknown UR type: {}'.format(self.ur_type))
 
