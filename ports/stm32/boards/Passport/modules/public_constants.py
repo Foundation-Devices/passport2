@@ -99,7 +99,7 @@ TRUST_PSBT = const(2)
 
 # Default Directories
 DIR_BACKUPS = 'backups'
-DIR_KEY_MNGR = 'key manager'
+DIR_KEY_MNGR = 'key_manager'
 DIR_MULTISIGS = 'multisig_configs'
 DIR_WALLET_CONFIGS = 'wallet_configs'
 DIR_TRANSACTIONS = 'transactions'
