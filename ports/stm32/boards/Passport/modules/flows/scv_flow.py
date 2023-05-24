@@ -6,7 +6,7 @@
 import lvgl as lv
 from flows import Flow, ScanQRFlow
 from pages import ShowQRPage, QuestionPage, ChooserPage
-from styles.colors import HIGHLIGHT_TEXT_HEX, DEFAULT_LARGE_ICON_COLOR
+from styles.colors import HIGHLIGHT_TEXT_HEX
 from data_codecs.qr_type import QRType
 from utils import a2b_hex, recolor
 from ubinascii import hexlify as b2a_hex
@@ -43,15 +43,6 @@ class ScvFlow(Flow):
                         {'text': 'Next, scan the Security Check '
                          'QR code from validate.foundationdevices.com.'}]
 
-        # message_index = 0
-        # while message_index < len(messages):
-        #     result = await ShieldPage(text=messages[message_index], left_micron=microns.Back).show()
-        #     if result:
-        #         message_index += 1
-        #     elif message_index > 0:
-        #         message_index -= 1
-        #     else:
-        #         break
         result = await SeriesOfPagesFlow(ShieldPage, messages).run()
 
         if result:
