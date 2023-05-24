@@ -114,6 +114,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/magic_scan_validate_address_flow.py',
 
         'flows/scan_qr_flow.py',
+        'flows/series_of_pages_flow.py',
 
         'flows/system_test_flow.py',
         'flows/system_test_camera_flow.py',
