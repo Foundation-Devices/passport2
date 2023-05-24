@@ -14,6 +14,7 @@ from .save_to_microsd_flow import *
 from .scan_qr_flow import *
 from .backup_common_flow import *
 from .seed_warning_flow import *
+from .series_of_pages_flow import *
 
 # QR Magic Scan flows
 from .magic_scan_import_multisig_flow import *
