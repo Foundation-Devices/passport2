@@ -21,10 +21,11 @@ class SeedWarningFlow(Flow):
         from pages import InfoPage
         import stash
 
-        if not self.mention_passphrase or not stash.bip39_passphrase:
-            text = 'Passport is about to {}'.format(self.action_text)
-        else:
+        if self.mention_passphrase and stash.bip39_passphrase:
             text = 'Passport is about to {} and passphrase'.format(self.action_text)
+        else:
+            text = 'Passport is about to {}'.format(self.action_text)
+
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=microns.Back, right_micron=microns.Forward).show()
