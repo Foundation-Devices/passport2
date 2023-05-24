@@ -339,7 +339,7 @@ class NostrDelegationFlow(Flow):
         sig = B2A(nostr_sign(self.pk, sha))
 
         if self.use_qr:
-            result = await ShowQRPage(caption='Scan this final QR code with your Nostr client',
+            result = await ShowQRPage(caption='Scan this QR code with your Nostr client',
                                       qr_data=sig,
                                       right_micron=microns.Checkmark).show()
             if not result:
@@ -359,5 +359,18 @@ class NostrDelegationFlow(Flow):
                                              data=sig,
                                              path=self.orig_path,
                                              success_text="Nostr delegation").run()
+
+        self.goto(self.show_success)
+
+    async def show_success(self):
+        from pages import SuccessPage
+        import microns
+
+        result = await SuccessPage(text='Delegation complete',
+                                   left_micron=microns.Back).show()
+
+        if not result:
+            self.back()
+            return
 
         self.set_result(True)
