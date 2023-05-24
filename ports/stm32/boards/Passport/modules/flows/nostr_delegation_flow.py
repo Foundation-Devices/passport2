@@ -144,11 +144,11 @@ def format_delegation_string(delegatee_npub, created_before, created_after, kind
         details.write("{}\n{} UTC\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Delegation Start Date:'),
             timestamp_to_str(created_after),
-            "Make sure this time isn't in the past!"))
+            "Make sure this time isn't in the past."))
     else:
         details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Warning:'),
-            "No start date, use caution!"))
+            "No start date, use caution."))
 
     details.write("\n\n")
 
@@ -159,7 +159,7 @@ def format_delegation_string(delegatee_npub, created_before, created_after, kind
     else:
         details.write("{}\n{}".format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Warning:'),
-            "No end date, use caution!"))
+            "No end date, use caution."))
 
     details.write("\n\n")
 
@@ -168,7 +168,7 @@ def format_delegation_string(delegatee_npub, created_before, created_after, kind
 
     for k in kinds:
         details.write("\n{}: {}".format(
-            k, event_kind.get(k, "Unknown event, use caution!")))
+            k, event_kind.get(k, "Unknown event, use caution.")))
 
     return details.getvalue()
 
