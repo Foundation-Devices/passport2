@@ -56,6 +56,7 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-random.h"
 #include "modtrezorcrypto-ripemd160.h"
 #include "modtrezorcrypto-secp256k1.h"
+#include "modtrezorcrypto-schnorr.h"
 #include "modtrezorcrypto-sha1.h"
 #include "modtrezorcrypto-sha256.h"
 #if USE_KECCAK

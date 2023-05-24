@@ -352,6 +352,7 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/shamir.o \
     extmod/trezor-firmware/crypto/groestl.o \
     extmod/trezor-firmware/crypto/slip39.o \
+    extmod/trezor-firmware/crypto/schnorr.o \
     extmod/trezor-firmware/crypto/rand.o \
     extmod/trezor-firmware/crypto/rfc6979.o \
     extmod/trezor-firmware/crypto/hmac_drbg.o \

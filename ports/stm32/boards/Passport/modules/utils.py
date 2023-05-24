@@ -1330,4 +1330,48 @@ def get_words_from_seed(seed):
     except Exception as e:
         return (None, '{}'.format(e))
 
+
+def nostr_pubkey_from_pk(pk):
+    from trezorcrypto import secp256k1
+    return secp256k1.publickey(pk, True)[1:]
+
+
+def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
+    import tcc
+    return tcc.codecs.bech32_plain_encode(key_type, key)
+
+
+def nostr_sign(key, message):
+    from foundation import secp256k1
+    return secp256k1.schnorr_sign(message, key)
+
+
+months = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'Aug',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+}
+
+
+def timestamp_to_str(time):
+    import utime
+
+    time_tup = utime.gmtime(time)
+    return "{} {}, {}\n{}:{:02d}".format(months[time_tup[1]],  # Month
+                                         time_tup[2],          # Day
+                                         time_tup[0],          # Year
+                                         time_tup[3],          # Hour
+                                         time_tup[4],          # Minute
+                                         )
+
+
 # EOF
