@@ -168,15 +168,6 @@ class CardSlot:
         basename, ext = pattern.rsplit('.', 1)
         ext = '.' + ext
 
-        # rename numberless first
-        numberless_fname = path + '/' + basename + ext
-        fname = path + '/' + basename + '-001' + ext
-        try:
-            os.stat(numberless_fname)
-            uos.rename(numberless_fname, fname)
-        except OSError as e:
-            pass  # file doesn't exist, move on
-
         # look for existing numbered files, even if some are deleted, and pick next
         # highest filename
         highest = 0
@@ -187,14 +178,7 @@ class CardSlot:
             m = pat.match(fn)
             if not m:
                 continue
-
-            # Rename older files to fit 3 digit numbering scheme
-            old_num = int(m.group(1))
-            new_fn = basename + ('-%03d' % old_num) + ext
-            if fn != new_fn:
-                uos.rename(path + '/' + fn, path + '/' + new_fn)
-
-            highest = max(highest, old_num)
+            highest = max(highest, int(m.group(1)))
 
         fname = path + '/' + basename + ('-%03d' % (highest + 1)) + ext
 
