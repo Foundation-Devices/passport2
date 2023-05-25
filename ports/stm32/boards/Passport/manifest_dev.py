@@ -10,6 +10,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'developer/delete_derived_keys_flow.py',
         'developer/developer_functions_flow.py',
         'developer/fcc_test_flow.py',
+        'developer/fcc_copy_files_task.py',
         'developer/spin_delay_flow.py',
         ))
 

@@ -9,7 +9,7 @@ from flows import Flow, ScanQRFlow
 import microns
 from pages import ProgressPage
 from styles.colors import COPPER
-from tasks import fcc_copy_files_task
+from developer import fcc_copy_files_task
 from utils import start_task
 from files import CardSlot
 import common
