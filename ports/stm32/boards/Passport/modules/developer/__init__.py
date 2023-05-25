@@ -5,6 +5,7 @@
 
 from .developer_functions_flow import *
 from .fcc_test_flow import *
+from .fcc_copy_files_task import *
 from .spin_delay_flow import *
 from .delete_derived_keys_flow import *
 from .battery_page import *
