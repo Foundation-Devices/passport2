@@ -170,7 +170,7 @@ class CardSlot:
 
         # rename numberless first
         numberless_fname = path + '/' + basename + ext
-        fname = path + '/' + basename + '-001' + ext
+        fname = path + '/' + basename + '-000' + ext
         try:
             os.stat(numberless_fname)
             uos.rename(numberless_fname, fname)
