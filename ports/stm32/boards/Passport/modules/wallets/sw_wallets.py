@@ -17,6 +17,7 @@ from .envoy import EnvoyWallet
 # from .gordian import GordianWallet
 # from .lily import LilyWallet
 from .nunchuk import NunchukWallet
+from .sentinel import SentinelWallet
 from .simple_bitcoin_wallet import SimpleBitcoinWallet
 from .sparrow import SparrowWallet
 from .specter import SpecterWallet
@@ -37,6 +38,7 @@ supported_software_wallets = [
     # GordianWallet,
     # LilyWallet,
     NunchukWallet,
+    SentinelWallet,
     SimpleBitcoinWallet,
     SparrowWallet,
     SpecterWallet,
