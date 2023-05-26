@@ -113,13 +113,12 @@ Passport will clear your passphrase upon shutdown.'''
 
         # Make a success page
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
-            result = False
-            while not result:
-                result = await SuccessPage(
-                    text='Passphrase {}ed.\n\nFingerprint:\n\n{}'.format(
-                        self.msg.lower(),  # this is either 'revert' or 'clear' at this point
-                        xfp2str(common.settings.get('xfp', '---')))
-                ).show()
+            await SuccessPage(
+                text='Passphrase {}ed.\n\nFingerprint:\n\n{}'.format(
+                    self.msg.lower(),  # this is either 'revert' or 'clear' at this point
+                    xfp2str(common.settings.get('xfp', '---'))),
+                use_left_button=False
+            ).show()
         else:
             self.attempted = True
             result = await QuestionPage(
