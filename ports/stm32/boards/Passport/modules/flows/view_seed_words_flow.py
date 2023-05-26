@@ -64,7 +64,7 @@ class ViewSeedWordsFlow(Flow):
         if isinstance(mode, int) and mode in [QRType.SEED_QR, QRType.COMPACT_SEED_QR]:
             self.qr_type = mode
             mode = self.show_qr
-            self.seed_micron = microns.Cancel
+            self.seed_micron = microns.Back
 
         self.goto(mode)
 
