@@ -78,7 +78,8 @@ Passport will clear your passphrase upon shutdown.'''
         result = await QuestionPage(text='Clear the active passphrase?').show()
 
         if not result:
-            self.back()
+            if not self.back():
+                self.set_result(False)
             return
 
         self.msg = 'Clear'
@@ -112,15 +113,17 @@ Passport will clear your passphrase upon shutdown.'''
 
         # Make a success page
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:
-            await SuccessPage(
-                text='Passphrase {}ed\n\nFingerprint:\n\n{}'.format(
-                    self.msg.lower(),  # this is either 'revert' or 'clear' at this point
-                    xfp2str(common.settings.get('xfp', '---')))
-            ).show()
+            result = False
+            while not result:
+                result = await SuccessPage(
+                    text='Passphrase {}ed.\n\nFingerprint:\n\n{}'.format(
+                        self.msg.lower(),  # this is either 'revert' or 'clear' at this point
+                        xfp2str(common.settings.get('xfp', '---')))
+                ).show()
         else:
             self.attempted = True
             result = await QuestionPage(
-                text='Passphrase applied\n\nFingerprint correct?\n\n{}'.format(
+                text='Passphrase applied.\n\nFingerprint correct?\n\n{}'.format(
                     xfp2str(common.settings.get('xfp', '---')))
             ).show()
 
