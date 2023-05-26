@@ -27,6 +27,7 @@ class ScanQRPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=None,
+                 use_right_button=True,
                  qr_type=None,
                  max_frames=None):
         super().__init__(flex_flow=None,
@@ -39,6 +40,7 @@ class ScanQRPage(Page):
         self.prev_card_header = None
         self.timer = None
         self.camera = CameraQRScanner(qr_type)
+        self.use_right_button = use_right_button
         self.qr_type = qr_type
         self.max_frames = max_frames
 
@@ -131,7 +133,7 @@ class ScanQRPage(Page):
 
     # Either the user goes back or the scan finishes
     def right_action(self, is_pressed):
-        if not is_pressed:
+        if not is_pressed and self.use_right_button:
             self.set_result(None)
 
 
