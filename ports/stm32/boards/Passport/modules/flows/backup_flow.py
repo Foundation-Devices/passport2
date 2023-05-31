@@ -26,15 +26,17 @@ class BackupFlow(Flow):
         from utils import spinner_task
         from tasks import get_backup_code_task
         from pages import ErrorPage, InfoPage
+        from common import settings
 
-        (self.backup_code, error) = await spinner_task('Retrieving Backup Code', get_backup_code_task)
+        (self.backup_code, error) = await spinner_task('Retrieving backup code', get_backup_code_task)
 
         if error is not None:
-            await ErrorPage(text='Unable to retrieve Backup Code: {}'.format(error)).show()
+            await ErrorPage(text='Unable to retrieve backup code: {}'.format(error)).show()
             self.set_result(False)
 
         if self.input_backup_code is not None:
             if self.backup_code == self.input_backup_code:
+                settings.set('backup_quiz', True)
                 self.backup_quiz_passed = True
             else:
                 await InfoPage("You will receive a new backup code to use with your new Passport.").show()
@@ -54,9 +56,9 @@ class BackupFlow(Flow):
                     'The Backup Code is the same as what you were previously shown.']
         else:
             msgs = ['Passport is about to create your first encrypted microSD backup.',
-                    'The next screen will show you the Backup Code that is {} to decrypt the backup.'.format(
+                    'The next screen will show you the backup code that is {} to decrypt the backup.'.format(
                         recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
-                    'We recommend writing down the Backup Code on the included security card.',
+                    'We recommend writing down the backup code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
         if stash.bip39_passphrase != '':
             msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.')
@@ -67,9 +69,9 @@ class BackupFlow(Flow):
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if result:
-            self.goto(self.get_backup_code)
+            self.goto(self.show_backup_code)
         else:
-            result = await QuestionPage(text='Skip initial Backup?\n\n{}'.format(
+            result = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
             if result:
                 self.set_result(False)
@@ -87,7 +89,7 @@ class BackupFlow(Flow):
             result = await InfoPage(
                 icon=lv.LARGE_ICON_BACKUP,
                 card_header={'title': 'Backup Code Quiz'},
-                text='Let\'s check that you recorded the Backup Code correctly.').show()
+                text='Let\'s check that you recorded the backup code correctly.').show()
             if not result:
                 self.back()
             else:
@@ -103,12 +105,12 @@ class BackupFlow(Flow):
             if result == self.backup_code:
                 from common import settings
                 settings.set('backup_quiz', True)
-                await SuccessPage(text='You entered the Backup Code correctly!').show()
+                await SuccessPage(text='You entered the backup code correctly!').show()
                 self.goto(self.do_backup)
             else:
                 # Save this so the user doesn't lose their input
                 self.quiz_result = result
-                await ErrorPage(text='The Backup Code you entered is incorrect, please try again.').show()
+                await ErrorPage(text='The backup code you entered is incorrect, please try again.').show()
         else:
             # Clear out quiz result
             self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
