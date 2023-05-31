@@ -118,8 +118,7 @@ class RestoreBackupFlow(Flow):
             self.set_result(True)
 
             if self.full_backup:
-                await InfoPage("You will receive a new backup code to use with your new Passport.").show()
-                await BackupFlow().run()
+                await BackupFlow(self.backup_code).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
