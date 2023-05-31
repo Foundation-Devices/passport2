@@ -88,6 +88,7 @@ class SignPsbtMicroSDFlow(Flow):
 
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
+
         if result is None:
             self.set_result(False)
         else:
