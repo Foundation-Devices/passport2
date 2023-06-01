@@ -41,7 +41,7 @@ class SignPsbtQRFlow(Flow):
 How would you like to proceed?\n"
             result = await YesNoChooserPage(text=text,
                                             yes_text='Continue with QR',
-                                            no_text='Sign with MicroSD',
+                                            no_text='Sign with microSD',
                                             left_micron=microns.Back).show()
 
             if result is None or result:
@@ -196,7 +196,7 @@ How would you like to proceed?\n"
                                            path=get_folder_path(DIR_TRANSACTIONS),
                                            automatic=True).run()
         if not result_1:
-            await ErrorPage(text='Unable to save {} to MicroSD'.format(target_fname)).show()
+            await ErrorPage(text='Unable to save {} to microSD'.format(target_fname)).show()
             self.back()
             return
 
@@ -208,7 +208,7 @@ How would you like to proceed?\n"
                                                path=get_folder_path(DIR_TRANSACTIONS),
                                                automatic=True).run()
             if not result_2:
-                await ErrorPage(text='Unable to save {} to MicroSD'.format(target2_fname)).show()
+                await ErrorPage(text='Unable to save {} to microSD'.format(target2_fname)).show()
                 self.back()
                 return
 
