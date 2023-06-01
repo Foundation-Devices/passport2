@@ -16,8 +16,7 @@ class SuccessPage(StatusPage):
             card_header=None,
             statusbar=None,
             left_micron=None,
-            right_micron=microns.Checkmark,
-            use_left_button=True):
+            right_micron=microns.Checkmark):
         super().__init__(
             text=text,
             card_header=card_header,
@@ -25,5 +24,4 @@ class SuccessPage(StatusPage):
             icon=lv.LARGE_ICON_SUCCESS,
             icon_color=DEFAULT_LARGE_ICON_COLOR,
             left_micron=left_micron,
-            right_micron=right_micron,
-            use_left_button=use_left_button)
+            right_micron=right_micron)
