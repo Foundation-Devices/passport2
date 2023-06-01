@@ -13,7 +13,9 @@ class SignPsbtQRFlow(Flow):
         self.ur_type = None
         self.psbt = None
         self.txid = None
+        self.is_comp = None
         self.out_fn = None
+        self.out2_fn = None
         self.signed_bytes = None
         self.max_frames = 35
 
@@ -39,7 +41,7 @@ class SignPsbtQRFlow(Flow):
 How would you like to proceed?\n"
             result = await YesNoChooserPage(text=text,
                                             yes_text='Continue with QR',
-                                            no_text='Sign with MicroSD',
+                                            no_text='Sign with microSD',
                                             left_micron=microns.Back).show()
 
             if result is None or result:
@@ -92,11 +94,12 @@ How would you like to proceed?\n"
         from flows import SignPsbtCommonFlow
 
         # This flow validates and signs if all goes well, and returns the signed psbt
-        self.psbt = await SignPsbtCommonFlow(self.psbt_len).run()
+        result = await SignPsbtCommonFlow(self.psbt_len).run()
 
-        if self.psbt is None:
+        if result is None:
             self.set_result(False)
         else:
+            self.psbt = result
             self.goto(self.get_signed_bytes)
 
     async def get_signed_bytes(self):
@@ -105,7 +108,6 @@ How would you like to proceed?\n"
         from passport import mem
 
         # Copy signed txn into a bytearray and show the data as a UR
-        # try:
         try:
             with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
@@ -158,24 +160,57 @@ How would you like to proceed?\n"
         # write psbt to file as hex
         with HexWriter(open(filename, 'w+t')) as fd:
             self.txid = self.psbt.finalize(fd)
+        self.out2_fn = filename
+
+    def write_psbt_fn(self, filename):
+        # Attempt to write-out the transaction
+        with self.output_encoder(open(filename, 'wb')) as fd:
+            # save as updated PSBT
+            self.psbt.serialize(fd)
         self.out_fn = filename
 
     async def save_to_microsd(self):
         from flows import SaveToMicroSDFlow
+        from pages import ErrorPage
         from utils import get_folder_path
         from public_constants import DIR_TRANSACTIONS
 
-        if self.out_fn is not None:
+        # Check that the psbt has been written, and the transaction has been written if complete
+        if self.out_fn and (self.is_comp == bool(self.out2_fn)):
             self.goto(self.show_success)
             return
 
-        result = await SaveToMicroSDFlow(filename='QR.txn',
-                                         write_fn=self.write_final_fn,
-                                         success_text="transaction",
-                                         path=get_folder_path(DIR_TRANSACTIONS)).run()
-        if not result:
+        base = 'QR'
+
+        self.is_comp = self.psbt.is_complete()
+        if not self.is_comp:
+            # Keep the filename under control during multiple passes
+            target_fname = base + '-part.psbt'
+        else:
+            # Add -signed to end. We won't offer to sign again.
+            target_fname = base + '-signed.psbt'
+
+        result_1 = await SaveToMicroSDFlow(filename=target_fname,
+                                           write_fn=self.write_psbt_fn,
+                                           success_text="psbt",
+                                           path=get_folder_path(DIR_TRANSACTIONS),
+                                           automatic=True).run()
+        if not result_1:
+            await ErrorPage(text='Unable to save {} to microSD'.format(target_fname)).show()
             self.back()
             return
+
+        if self.is_comp:
+            target2_fname = base + '-final.txn'
+            result_2 = await SaveToMicroSDFlow(filename=target2_fname,
+                                               write_fn=self.write_final_fn,
+                                               success_text="transaction",
+                                               path=get_folder_path(DIR_TRANSACTIONS),
+                                               automatic=True).run()
+            if not result_2:
+                await ErrorPage(text='Unable to save {} to microSD'.format(target2_fname)).show()
+                self.back()
+                return
 
         self.goto(self.show_success)
 
@@ -185,17 +220,19 @@ How would you like to proceed?\n"
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage
 
-        msg = 'Finalized transaction (ready for broadcast):\n\n%s' % self.out_fn
+        msg = "Updated PSBT is:\n\n%s" % self.out_fn
+        if self.out2_fn:
+            msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.out2_fn
 
-        if self.txid:
-            msg += '\n\nFinal TXID:\n' + self.txid
+            if self.txid:
+                msg += '\n\nFinal TXID:\n' + self.txid
 
         result = await LongTextPage(text=msg,
                                     centered=True,
                                     left_micron=microns.ScanQR,
                                     right_micron=microns.Checkmark,
                                     icon=LARGE_ICON_SUCCESS,
-                                    icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
+                                    icon_color=DEFAULT_LARGE_ICON_COLOR).show()
 
         if not result:
             self.goto(self.show_signed_transaction)
