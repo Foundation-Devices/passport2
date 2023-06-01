@@ -116,8 +116,7 @@ Passport will clear your passphrase upon shutdown.'''
             await SuccessPage(
                 text='Passphrase {}ed.\n\nFingerprint:\n\n{}'.format(
                     self.msg.lower(),  # this is either 'revert' or 'clear' at this point
-                    xfp2str(common.settings.get('xfp', '---'))),
-                use_left_button=False
+                    xfp2str(common.settings.get('xfp', '---')))
             ).show()
         else:
             self.attempted = True
