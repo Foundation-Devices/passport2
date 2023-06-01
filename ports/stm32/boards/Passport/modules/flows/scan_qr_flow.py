@@ -54,8 +54,7 @@ class ScanQRFlow(Flow):
         from errors import Error
 
         result = await ScanQRPage(max_frames=self.max_frames,
-                                  qr_type=self.explicit_type,
-                                  use_right_button=False) \
+                                  qr_type=self.explicit_type) \
             .show(auto_close_timeout=self.auto_close_timeout)
 
         if result is None:
