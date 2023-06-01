@@ -18,8 +18,7 @@ class StatusPage(Page):
 
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
-                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
-                 use_left_button=True):
+                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -39,7 +38,6 @@ class StatusPage(Page):
         self.centered = centered
         self.show_spinner = show_spinner
         self.interactive = interactive
-        self.use_left_button = use_left_button
 
         self.is_list_mode = isinstance(self.text, list)
 
@@ -162,7 +160,7 @@ class StatusPage(Page):
         super().detach()
 
     def right_action(self, is_pressed):
-        if self.interactive:
+        if self.interactive and self.right_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx < len(self.text) - 1:
                     self.page_idx += 1
@@ -171,7 +169,7 @@ class StatusPage(Page):
                     self.set_result(True)
 
     def left_action(self, is_pressed):
-        if self.interactive and self.use_left_button:
+        if self.interactive and self.left_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx > 0:
                     self.page_idx -= 1
