@@ -37,7 +37,9 @@ class BackupFlow(Flow):
         if self.input_backup_code is not None:
             if self.backup_code == self.input_backup_code:
                 settings.set('backup_quiz', True)
-                self.backup_quiz_passed = True
+                await InfoPage("Backup restored, no new Backup Code needed\n").show()
+                self.set_result(True)
+                return
             else:
                 await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
 
