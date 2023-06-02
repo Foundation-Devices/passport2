@@ -6,7 +6,7 @@
 import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
-from flows import Flow, SelectedFileFlow
+from flows import UsesMicroSDFlow, SelectedFileFlow
 from pages import FilePickerPage, StatusPage, InsertMicroSDPage
 from styles.colors import COPPER
 import microns
@@ -19,17 +19,23 @@ def file_key(f):
     return '{}::{}'.format('0' if is_folder else '1', filename.lower())
 
 
-class FilePickerFlow(Flow):
+class FilePickerFlow(UsesMicroSDFlow):
     def __init__(
-            self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
-            filter_fn=None, select_text="Select"):
+            self,
+            initial_path=None,
+            show_folders=False,
+            enable_parent_nav=False,
+            suffix=None,
+            filter_fn=None,
+            select_text="Select"):
         from files import CardSlot
 
         if not initial_path:
             initial_path = CardSlot.get_sd_root()
 
-        super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
-            initial_path))
+        super().__init__(initial_state=self.show_file_picker,
+                         name='FilePickerFlow: {}'.format(initial_path),
+                         return_bool=False)
         self.initial_path = initial_path
         self.paths = [initial_path]
         self.show_folders = show_folders
@@ -40,8 +46,6 @@ class FilePickerFlow(Flow):
         self.status_page = None
         self.empty_result = None
         self.finished = False
-        # return_bool attribute required to use show_card_missing
-        self.return_bool = False
 
     def on_empty_sd_card_change(self, sd_card_present):
         if sd_card_present:
