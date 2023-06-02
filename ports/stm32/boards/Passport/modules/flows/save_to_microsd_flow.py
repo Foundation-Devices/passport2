@@ -3,10 +3,10 @@
 #
 # save_to_microsd_flow.py - Save a file to the microSD card
 
-from flows import Flow
+from flows import UsesMicroSDFlow
 
 
-class SaveToMicroSDFlow(Flow):
+class SaveToMicroSDFlow(UsesMicroSDFlow):
     def __init__(self,
                  filename,
                  data=None,
@@ -14,7 +14,8 @@ class SaveToMicroSDFlow(Flow):
                  success_text="file",
                  path=None,
                  mode='',
-                 automatic=False):
+                 automatic=False,
+                 auto_prompt=None):
         import microns
 
         self.filename = filename.replace(' ', '_')
@@ -24,12 +25,14 @@ class SaveToMicroSDFlow(Flow):
         self.path = path
         self.mode = mode
         self.out_full = None
-        self.automatic = automatic
-        self.auto_timeout = 1000 if automatic else None
-        self.show_check = None if automatic else microns.Checkmark
-        # return_bool attribute required to use show_card_missing
-        self.return_bool = True
-        super().__init__(initial_state=self.check_inputs, name='SaveToMicroSDFlow')
+        # If auto_prompt isn't specified, use automatic value
+        auto_prompt = auto_prompt or automatic
+        self.auto_timeout = 1000 if auto_prompt else None
+        self.show_check = None if auto_prompt else microns.Checkmark
+        super().__init__(initial_state=self.check_inputs,
+                         name='SaveToMicroSDFlow',
+                         automatic=automatic,
+                         return_bool=True)
 
     def default_write_fn(self, filename):
         with open(self.out_full, 'w' + self.mode) as fd:

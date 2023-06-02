@@ -3,18 +3,19 @@
 #
 # read_file_flow.py - Read a file and handle errors
 
-from flows import Flow
+from flows import UsesMicroSDFlow
 
 
-class ReadFileFlow(Flow):
+class ReadFileFlow(UsesMicroSDFlow):
     def __init__(self, file_path, binary=True, automatic=False, read_fn=None):
         self.file_path = file_path
         self.binary = binary
         self.automatic = automatic
         self.read_fn = read_fn
-        # return_bool attribute required to use show_card_missing
-        self.return_bool = False
-        super().__init__(initial_state=self.read_file, name='ReadFileFlow')
+        super().__init__(initial_state=self.read_file,
+                         name='ReadFileFlow',
+                         automatic=automatic,
+                         return_bool=False)
 
     async def read_file(self):
         from utils import spinner_task
@@ -28,7 +29,7 @@ class ReadFileFlow(Flow):
 
         if error is Error.MICROSD_CARD_MISSING:
             # show_card_missing is a global flow state
-            self.goto(self.show_card_missing, self.automatic)
+            self.goto(self.show_card_missing)
             return
 
         if error is Error.FILE_READ_ERROR:
