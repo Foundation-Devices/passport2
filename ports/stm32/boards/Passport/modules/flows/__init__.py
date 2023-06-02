@@ -10,6 +10,7 @@ from .page_flow import *
 from .menu_flow import *
 from .main_flow import *
 from .login_flow import *
+from .uses_microsd_flow import *
 from .save_to_microsd_flow import *
 from .scan_qr_flow import *
 from .backup_common_flow import *
