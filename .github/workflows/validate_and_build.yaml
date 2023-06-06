@@ -74,6 +74,7 @@ jobs:
       run: |
         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
         version=$(cat version.txt)
+        echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
         just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
       env:
