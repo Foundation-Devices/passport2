@@ -74,6 +74,7 @@ jobs:
       run: |
         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
         version=$(cat version.txt)
+        echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
         just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
       env:
@@ -82,14 +83,14 @@ jobs:
     - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-${{ env.SCREEN_MODE }}.bin
+        name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
     - name: Upload firmware (signed)
       uses: actions/upload-artifact@v2
       with:
-        name: v${{version}}-beta${{ matrix.build.suffix }}.bin
-        path: ports/stm32/build-Passport/v${{version}}-beta${{ matrix.build.suffix }}.bin
+        name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
 
   build-bootloader:
     name: Build Bootloader
