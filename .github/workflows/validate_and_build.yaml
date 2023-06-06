@@ -83,7 +83,7 @@ jobs:
     - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-${{ env.SCREEN_MODE }}.bin
+        name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
     - name: Upload firmware (signed)
