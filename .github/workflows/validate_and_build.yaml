@@ -88,8 +88,8 @@ jobs:
     - name: Upload firmware (signed)
       uses: actions/upload-artifact@v2
       with:
-        name: v${{version}}-beta${{ matrix.build.suffix }}.bin
-        path: ports/stm32/build-Passport/v${{version}}-beta${{ matrix.build.suffix }}.bin
+        name: v${version}-beta${{ matrix.build.suffix }}.bin
+        path: ports/stm32/build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin
 
   build-bootloader:
     name: Build Bootloader
