@@ -43,7 +43,7 @@ jobs:
 
     strategy:
       matrix:
-        screen: ["mono", "color"]
+        build: [{screen: "mono", suffix: "-founders-passport"}, {screen: "color", suffix: "-passport"}]
 
     services:
       registry:
@@ -68,28 +68,29 @@ jobs:
     - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
     - run: |
         echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
-        echo "SCREEN_MODE=$(echo "${{ matrix.screen }}" | tr a-z A-Z)" >> $GITHUB_ENV
+        echo "SCREEN_MODE=$(echo "${{ matrix.build.screen }}" | tr a-z A-Z)" >> $GITHUB_ENV
 
     - name: Build
       run: |
         echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
         version=$(cat version.txt)
+        echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
-        just sign signing_key.pem "${version}" ${{ matrix.color }}
+        just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
     - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-${{ env.SCREEN_MODE }}.bin
+        name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
     - name: Upload firmware (signed)
       uses: actions/upload-artifact@v2
       with:
-        name: firmware-${{ env.SCREEN_MODE }}-key-user.bin
-        path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}-key-user.bin
+        name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
 
   build-bootloader:
     name: Build Bootloader
