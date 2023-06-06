@@ -6,7 +6,7 @@
 import lvgl as lv
 from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
 from files import CardMissingError, CardSlot
-from flows import UsesMicroSDFlow, SelectedFileFlow
+from flows import Flow, SelectedFileFlow
 from pages import FilePickerPage, StatusPage, InsertMicroSDPage
 from styles.colors import COPPER
 import microns
@@ -19,7 +19,7 @@ def file_key(f):
     return '{}::{}'.format('0' if is_folder else '1', filename.lower())
 
 
-class FilePickerFlow(UsesMicroSDFlow):
+class FilePickerFlow(Flow):
     def __init__(
             self,
             initial_path=None,
@@ -34,8 +34,8 @@ class FilePickerFlow(UsesMicroSDFlow):
             initial_path = CardSlot.get_sd_root()
 
         super().__init__(initial_state=self.show_file_picker,
-                         name='FilePickerFlow: {}'.format(initial_path),
-                         return_bool=False)
+                         name='FilePickerFlow: {}'.format(initial_path))
+
         self.initial_path = initial_path
         self.paths = [initial_path]
         self.show_folders = show_folders
@@ -53,7 +53,6 @@ class FilePickerFlow(UsesMicroSDFlow):
         else:
             self.reset_paths()
             self.status_page.set_result(None)
-            # show_card_missing is a global flow state
             self.goto(self.show_card_missing)
             return False
 
@@ -68,7 +67,6 @@ class FilePickerFlow(UsesMicroSDFlow):
     def on_file_sd_card_change(self, sd_card_present):
         if not sd_card_present:
             self.reset_paths()
-            # show_card_missing is a global flow state
             self.goto(self.show_card_missing)
             return True
 
@@ -121,7 +119,6 @@ class FilePickerFlow(UsesMicroSDFlow):
 
             except CardMissingError:
                 self.reset_paths()
-                # show_card_missing is a global flow state
                 self.goto(self.show_card_missing)
                 return
 
@@ -175,3 +172,7 @@ class FilePickerFlow(UsesMicroSDFlow):
 
     def reset_paths(self):
         self.paths = [self.initial_path]
+
+    async def show_card_missing(self):
+        from utils import flow_show_card_missing
+        await flow_show_card_missing(self)
