@@ -36,7 +36,7 @@ extern EC_KEY* PEM_read_bio_ECPrivateKey(BIO* bp, EC_KEY** key, void* cb, void* 
 
 static void usage(char* name) {
     printf(
-        "Version 1.3\n"
+        "Version 1.4\n"
         "Usage: %s\n"
         "    -d: debug logging\n"
         "    -f <firmware file>: full path to firmware file to sign\n"
@@ -490,7 +490,7 @@ static void sign_firmware(char* fw, char* key, char* version) {
         if (is_color()) {
             sprintf(output, "%s/v%s-passport.bin", path, hdrptr->info.fwversion);
         } else {
-            sprintf(output, "%s/v%s-passport-fe.bin", path, hdrptr->info.fwversion);
+            sprintf(output, "%s/v%s-founders-passport.bin", path, hdrptr->info.fwversion);
         }
     } else if (is_valid_magic(hdrptr->info.magic)) {
         printf("ERROR: Incompatible firmware type (Wrong magic number).\n");
@@ -513,15 +513,15 @@ static void sign_firmware(char* fw, char* key, char* version) {
         // Generate output filename
         if (working_key == FW_USER_KEY) {
             if (is_color()) {
-                sprintf(output, "%s/v%s-passport-key-user.bin", path, version);
+                sprintf(output, "%s/v%s-beta-passport.bin", path, version);
             } else {
-                sprintf(output, "%s/v%s-passport-fe-key-user.bin", path, version);
+                sprintf(output, "%s/v%s-beta-founders-passport.bin", path, version);
             }
         } else {
             if (is_color()) {
                 sprintf(output, "%s/v%s-passport-key%02d.bin", path, version, working_key);
             } else {
-                sprintf(output, "%s/v%s-passport-fe-key%02d.bin", path, version, working_key);
+                sprintf(output, "%s/v%s-founders-passport-key%02d.bin", path, version, working_key);
             }
         }
 
