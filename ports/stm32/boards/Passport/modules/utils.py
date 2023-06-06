@@ -1374,4 +1374,24 @@ def timestamp_to_str(time):
                                          )
 
 
+async def flow_show_card_missing(flow):
+    from pages import InsertMicroSDPage
+
+    # This makes the return type consistent with the caller
+    if hasattr(flow, "return_bool") and flow.return_bool:
+        result = False
+    else:
+        result = None
+
+    if hasattr(flow, "automatic") and flow.automatic:
+        flow.set_result(result)
+        return
+
+    retry = await InsertMicroSDPage().show()
+    if retry:
+        flow.back()
+    else:
+        flow.set_result(result)
+
+
 # EOF

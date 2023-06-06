@@ -202,7 +202,6 @@ How would you like to proceed?"
                                            automatic=False,
                                            auto_prompt=True).run()
         if not result_1:
-            await ErrorPage(text='Unable to save {} to microSD'.format(target_fname)).show()
             self.back()
             return
 
@@ -215,7 +214,6 @@ How would you like to proceed?"
                                                automatic=False,
                                                auto_prompt=True).run()
             if not result_2:
-                await ErrorPage(text='Unable to save {} to microSD'.format(target2_fname)).show()
                 self.back()
                 return
 
