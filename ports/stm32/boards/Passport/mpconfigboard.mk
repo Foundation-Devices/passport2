@@ -40,6 +40,8 @@ CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
   -I$(MICROPY_EXTMOD_DIR)/foundation \
   -I$(MICROPY_EXTMOD_DIR)/quirc
 
+LV_CFLAGS += -DLV_COLOR_DEPTH=16 -DLV_COLOR_16_SWAP -DLV_TICK_CUSTOM=1
+
 # settings that apply only to crypto C-lang code
 build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += -DRAND_PLATFORM_INDEPENDENT=1
 
@@ -74,13 +76,19 @@ SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
 ifeq ($(SCREEN_MODE), MONO)
     SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
  				lcd-sharp-ls018b7dh02.c)
-	CFLAGS += -DSCREEN_MODE_MONO=1
+    LV_CFLAGS += -DSCREEN_MODE_MONO=1
+    CFLAGS += -DSCREEN_MODE_MONO=1
 endif
 
 ifeq ($(SCREEN_MODE), COLOR)
     SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
 				lcd-st7789.c st7789.c)
-	CFLAGS += -DSCREEN_MODE_COLOR=1
+    LV_CFLAGS += -DSCREEN_MODE_COLOR=1 -DHAS_FUEL_GAUGE=1
+    CFLAGS += -DSCREEN_MODE_COLOR=1 -DHAS_FUEL_GAUGE=1
+endif
+
+ifeq ($(DEV_BUILD),1)
+    LV_CFLAGS += -DDEV_BUILD
 endif
 
 RUST_TARGET := thumbv7em-none-eabihf
