@@ -16,6 +16,13 @@ import passport
 
 MAX_FILE_DISPLAY = const(15) if passport.IS_COLOR else const(10)
 
+# Returns a tuple where the first value is the string to show in the list and the second value is
+# whether to show the default icon or the alt icon.
+# NOTE: Doesn't support showing arbitrary icons at this time.
+def get_file_info(item):
+    (filename, _full_path, is_folder) = item
+    return (filename, is_folder)
+
 
 class FilePickerPage(Page):
     def __init__(self,
@@ -40,7 +47,7 @@ class FilePickerPage(Page):
         self.set_width(lv.pct(100))
         self.set_no_scroll()
 
-        self.table = Table(self.files)
+        self.table = Table(items=self.files, get_cell_info=get_file_info)
         self.table.set_width(lv.pct(100))
         self.table.set_height(lv.pct(100))
         self.table.set_scroll_dir(lv.DIR.VER)
@@ -139,18 +146,14 @@ class FilePickerPage(Page):
             self.set_result(None)
 
     def right_action(self, is_pressed):
-        selected_idx = self.table.get_selected_row()
-        
-        print('selected: {}'.format(selected_idx))
-
-        # if not is_pressed:
-        #     self.set_result(None)
-
-        # if not is_pressed:
-        #     try:
-        #         selected_option_idx = self.get_focused_item_index()
-        #         selected_file = self.files[selected_option_idx]
-        #         # print('Selected file: {}'.format(selected_file))
-        #         self.set_result(selected_file)
-        #     except Exception as e:
-        #         assert(False, '{}'.format(e))
+        print('Right Action!')
+        if not is_pressed:
+            try:
+                selected_idx = self.table.get_selected_row()
+                print('selected: {}'.format(selected_idx))
+                selected_file = self.files[selected_idx]
+                print('Selected file: {}'.format(selected_file))
+                self.set_result(selected_file)
+            except Exception as e:
+                print("Exception: {}".format(e))
+                assert(False, '{}'.format(e))
