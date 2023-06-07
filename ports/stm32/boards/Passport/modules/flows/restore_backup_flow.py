@@ -18,7 +18,7 @@ from pages import (
     YesNoChooserPage
 )
 from utils import get_backups_folder_path, spinner_task, get_backup_code_as_password
-from tasks import restore_backup_task
+from tasks import restore_backup_task, get_backup_code_task
 from errors import Error
 import common
 
@@ -113,12 +113,16 @@ class RestoreBackupFlow(Flow):
             restore_backup_task,
             args=[self.decryption_password,
                   self.backup_file_path])
+        (new_backup_code, error_2) = await spinner_task('Restoring Backup', get_backup_code_task)
+
         if error is None:
             await SuccessPage(text='Restore Complete!').show()
             self.set_result(True)
 
             if self.full_backup:
-                await BackupFlow(self.backup_code).run()
+                if error_2 is not None or self.backup_code != new_backup_code:
+                    await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
+                    await BackupFlow(self.backup_code).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
