@@ -745,7 +745,7 @@ static void draw_main(lv_event_t * e)
 
             if(table->cell_data[cell]) {
                 txt_area.x1 = cell_area.x1 + cell_left;
-                txt_area.x2 = cell_area.x2 - cell_right;
+                txt_area.x2 = cell_area.x2 - cell_right - 28; // FOUNDATION
                 txt_area.y1 = cell_area.y1 + cell_top;
                 txt_area.y2 = cell_area.y2 - cell_bottom;
 
@@ -1027,7 +1027,7 @@ static void scroll_to_selected_cell(lv_obj_t *obj)
     }
     else if (a.y2 > lv_obj_get_height(obj))
     {
-        lv_obj_scroll_by_bounded(obj, 0, lv_obj_get_height(obj) - a.y2, LV_ANIM_ON);
+        lv_obj_scroll_by_bounded(obj, 0, lv_obj_get_height(obj) - a.y2 - 10, LV_ANIM_ON);
     }
 }
 
