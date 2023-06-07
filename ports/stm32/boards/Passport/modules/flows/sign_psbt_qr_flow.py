@@ -26,6 +26,7 @@ class SignPsbtQRFlow(Flow):
         from errors import Error
         from pages import YesNoChooserPage
         import microns
+        import passport
 
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
@@ -37,8 +38,12 @@ class SignPsbtQRFlow(Flow):
             return
 
         if result == Error.PSBT_OVERSIZED:
-            text = "\nThis transaction is large and will take some time to scan. \
-How would you like to proceed?\n"
+            text = "This transaction is large and will take some time to scan. \
+How would you like to proceed?"
+
+            if passport.IS_COLOR:
+                text = '\n' + text + '\n'
+
             result = await YesNoChooserPage(text=text,
                                             yes_text='Continue with QR',
                                             no_text='Sign with microSD',
