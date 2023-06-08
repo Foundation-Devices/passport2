@@ -187,7 +187,8 @@ class VerifyAddressFlow(Flow):
             self.goto(self.not_found)
 
     async def not_found(self):
-        from pages import ErrorPage
+        from pages import ErrorPage, LongErrorPage
+        import passport
 
         # Address was not found in that batch of 100, so offer to keep searching
         msg = 'Address Not Found\nRanges Checked:\n'
@@ -201,15 +202,18 @@ class VerifyAddressFlow(Flow):
 
         msg += '\n\nContinue searching?'
 
-        result = await ErrorPage(msg, left_micron=microns.Cancel, right_micron=microns.Checkmark).show()
+        page_class = ErrorPage if passport.IS_COLOR else LongErrorPage
+
+        result = await page_class(msg, left_micron=microns.Cancel, right_micron=microns.Checkmark).show()
         if result:
             self.goto(self.search_for_address)
         else:
             self.set_result(False)
 
     async def found(self):
-        from pages import SuccessPage
+        from pages import SuccessPage, LongSuccessPage
         from utils import save_next_addr, format_btc_address
+        import passport
 
         # Remember where to start from next time
         save_next_addr(self.acct_num, self.addr_type, self.found_addr_idx, self.found_is_change)
@@ -222,5 +226,6 @@ class VerifyAddressFlow(Flow):
             'Change' if self.found_is_change == 1 else 'Receive',
             self.found_addr_idx)
 
-        await SuccessPage(msg).show()
+        page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
+        await page_class(msg).show()
         self.set_result(True)

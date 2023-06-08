@@ -5,10 +5,11 @@
 
 
 from flows import Flow, FilePickerFlow
-from pages import ErrorPage, SuccessPage, InsertMicroSDPage
+from pages import ErrorPage, SuccessPage, LongSuccessPage, InsertMicroSDPage
 from utils import get_backups_folder_path, spinner_task
 from tasks import verify_backup_task
 from errors import Error
+import passport
 
 
 class VerifyBackupFlow(Flow):
@@ -34,8 +35,9 @@ class VerifyBackupFlow(Flow):
             verify_backup_task,
             args=[self.backup_file_path])
         if error is None:
-            await SuccessPage(text='Backup file appears to be valid.\n\nPlease note this is only a check to ensure ' +
-                              'the file has not been modified or damaged.').show()
+            page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
+            await page_class(text='Backup file appears to be valid.\n\nPlease note this is only a check to ensure ' +
+                             'the file has not been modified or damaged.').show()
             self.set_result(True)
         elif error is Error.MICROSD_CARD_MISSING:
             result = await InsertMicroSDPage().show()
