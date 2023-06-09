@@ -8,9 +8,10 @@ from pages import Page
 from styles.style import Stylize
 from views import View, Label
 import microns
-from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
+from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY, SCROLLBAR_BG_COLOR
 from micropython import const
 import common
+import passport
 
 _NUM_COLUMNS = const(2)
 
@@ -63,6 +64,8 @@ class SeedWordsListPage(Page):
 
         with Stylize(self, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         self.update()
 
