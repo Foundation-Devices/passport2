@@ -29,6 +29,7 @@ class FilePickerFlow(Flow):
             filter_fn=None,
             select_text="Select"):
         from files import CardSlot
+        from utils import bind, show_card_missing
 
         if not initial_path:
             initial_path = CardSlot.get_sd_root()
@@ -46,6 +47,8 @@ class FilePickerFlow(Flow):
         self.status_page = None
         self.empty_result = None
         self.finished = False
+
+        bind(self, show_card_missing)
 
     def on_empty_sd_card_change(self, sd_card_present):
         if sd_card_present:
@@ -172,7 +175,3 @@ class FilePickerFlow(Flow):
 
     def reset_paths(self):
         self.paths = [self.initial_path]
-
-    async def show_card_missing(self):
-        from utils import flow_show_card_missing
-        await flow_show_card_missing(self)

@@ -1374,7 +1374,8 @@ def timestamp_to_str(time):
                                          )
 
 
-async def flow_show_card_missing(flow):
+# This is a flow function, so it needs to be async
+async def show_card_missing(flow):
     from pages import InsertMicroSDPage
 
     # This makes the return type consistent with the caller
@@ -1392,6 +1393,14 @@ async def flow_show_card_missing(flow):
         flow.back()
     else:
         flow.set_result(result)
+
+
+def bind_function(instance, func, as_name=None):
+    if as_name is None:
+        as_name = func.__name__
+    bound_method = func.__get__(instance, instance.__class__)
+    setattr(instance, as_name, bound_method)
+    return bound_method
 
 
 # EOF

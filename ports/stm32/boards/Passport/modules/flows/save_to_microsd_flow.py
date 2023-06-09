@@ -17,6 +17,7 @@ class SaveToMicroSDFlow(Flow):
                  automatic=False,
                  auto_prompt=None):
         import microns
+        from utils import bind, show_card_missing
 
         self.filename = filename.replace(' ', '_')
         self.data = data
@@ -33,6 +34,8 @@ class SaveToMicroSDFlow(Flow):
         # Used in flow_show_card_missing
         self.automatic = automatic
         self.return_bool = True
+
+        bind(self, show_card_missing)
 
         super().__init__(initial_state=self.check_inputs,
                          name='SaveToMicroSDFlow')
@@ -102,7 +105,3 @@ class SaveToMicroSDFlow(Flow):
                           right_micron=self.show_check) \
             .show(auto_close_timeout=self.auto_timeout)
         self.set_result(True)
-
-    async def show_card_missing(self):
-        from utils import flow_show_card_missing
-        await flow_show_card_missing(self)
