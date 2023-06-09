@@ -1395,7 +1395,7 @@ async def show_card_missing(flow):
         flow.set_result(result)
 
 
-def bind_function(instance, func, as_name=None):
+def bind(instance, func, as_name=None):
     if as_name is None:
         as_name = func.__name__
     bound_method = func.__get__(instance, instance.__class__)
