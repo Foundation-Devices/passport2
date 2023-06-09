@@ -7,6 +7,7 @@ import lvgl as lv
 from views import View
 from styles.colors import WHITE, TEXT_GREY
 
+
 class Table(View):
     def __init__(self,
                  items=[],
@@ -25,13 +26,6 @@ class Table(View):
         self.src = src
         self.update()
 
-    # def change_event_cb(self, e):
-    #     print('change event!')
-    #     # obj = e.get_target()
-    #     row = lv.C_Pointer()
-    #     col = lv.C_Pointer()
-    #     self.lvgl_root.get_selected_cell(row, col)
-
     def draw_part_begin_event_cb(self, e):
         dsc = lv.obj_draw_part_dsc_t.__cast__(e.get_param())
 
@@ -39,9 +33,8 @@ class Table(View):
         if dsc.part == lv.PART.ITEMS:
             label_dsc = lv.draw_label_dsc_t.__cast__(dsc.label_dsc)
             label_dsc.ofs_x += 28
-                                
+
     def draw_part_end_event_cb(self, e):
-        # print("Draw part end 1")
         dsc = lv.obj_draw_part_dsc_t.__cast__(e.get_param())
 
         # If the cells are being drawn...
@@ -56,37 +49,22 @@ class Table(View):
             if is_alt_icon:
                 icon = self.alt_icon
             else:
-                icon= self.default_icon
+                icon = self.default_icon
 
-            selected_row  = self.get_selected_row()
+            selected_row = self.get_selected_row()
             col_count = self.lvgl_root.get_row_cnt()
-            # print("--> id={}".format(dsc.id))
             draw_row = dsc.id % col_count
-            draw_col = dsc.id // col_count
 
-            # print("--> selected_row={}".format(selected_row))
-            # print("--> draw_row={}".format(draw_row))
-            # print("--> draw_col={}".format(draw_col))
             selected = draw_row == selected_row
             if selected:
-                # print("Draw WHITE icon")
                 icon_color = WHITE
             else:
-                # print("Draw grey icon")
                 icon_color = TEXT_GREY
-
 
             icon_img_dsc = lv.draw_img_dsc_t()
             icon_img_dsc.init()
             icon_img_dsc.recolor = icon_color
-            icon_img_dsc.recolor_opa=255
-
-            # print("draw_area: x1={} x2={} y1={} y2={}".format(
-            #     dsc.draw_area.x1,
-            #     dsc.draw_area.x2,
-            #     dsc.draw_area.y1,
-            #     dsc.draw_area.y2
-            # ))
+            icon_img_dsc.recolor_opa = 255
 
             # Setup the draw area
             icon_area.x1 = 10 + dsc.draw_area.x1
@@ -94,23 +72,7 @@ class Table(View):
             icon_area.x2 = icon_area.x1 + icon.header.w - 1
             icon_area.y2 = icon_area.y1 + icon.header.h - 1
 
-            # print("icon_area: x1={} x2={} y1={} y2={}".format(
-            #     icon_area.x1,
-            #     icon_area.x2,
-            #     icon_area.y1,
-            #     icon_area.y2
-            # ))
-
-            # print("clip_area: x1={} x2={} y1={} y2={}".format(
-            #     dsc.clip_area.x1,
-            #     dsc.clip_area.x2,
-            #     dsc.clip_area.y1,
-            #     dsc.clip_area.y2
-            # ))
-
             lv.draw_img(icon_area, dsc.clip_area, icon, icon_img_dsc)
-            # print("===============================================")
-
 
     def create_lvgl_root(self, lvgl_parent):
         table = lv.table(lvgl_parent)
@@ -122,7 +84,7 @@ class Table(View):
                 label = item
                 is_alt_icon = False
 
-            table.set_cell_value(i,0, label)
+            table.set_cell_value(i, 0, label)
             if is_alt_icon:
                 table.add_cell_ctrl(i, 0, lv.table.CELL_CTRL.CUSTOM_1)
             else:
@@ -140,5 +102,4 @@ class Table(View):
         row = lv.C_Pointer()
         _col = lv.C_Pointer()
         self.lvgl_root.get_selected_cell(row, _col)
-        # print("row: {}".format(row.uint_val))
         return row.uint_val
