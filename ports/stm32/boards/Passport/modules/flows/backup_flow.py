@@ -13,38 +13,13 @@ from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class BackupFlow(Flow):
-    def __init__(self, input_backup_code=None):
+    def __init__(self):
         from common import settings
-        super().__init__(initial_state=self.get_backup_code, name='BackupFlow')
+        super().__init__(initial_state=self.show_intro, name='BackupFlow')
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
-        self.input_backup_code = input_backup_code
 
         self.statusbar = {'title': 'BACKUP', 'icon': lv.ICON_BACKUP}
-
-    async def get_backup_code(self):
-        from utils import spinner_task
-        from tasks import get_backup_code_task
-        from pages import ErrorPage, InfoPage
-        from common import settings
-
-        (self.backup_code, error) = await spinner_task('Retrieving Backup Code', get_backup_code_task)
-
-        if error is not None:
-            await ErrorPage(text='Unable to retrieve Backup Code: {}'.format(error)).show()
-            self.set_result(False)
-
-        if self.input_backup_code is not None:
-            if self.backup_code == self.input_backup_code:
-                settings.set('backup_quiz', True)
-                self.backup_quiz_passed = True
-            else:
-                await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
-
-        if self.backup_quiz_passed:
-            self.goto(self.do_backup, save_curr=False)
-        else:
-            self.goto(self.show_intro, save_curr=False)
 
     async def show_intro(self):
         from pages import InfoPage
@@ -69,7 +44,7 @@ class BackupFlow(Flow):
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
         if result:
-            self.goto(self.show_backup_code)
+            self.goto(self.get_backup_code)
         else:
             result = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
@@ -77,6 +52,21 @@ class BackupFlow(Flow):
                 self.set_result(False)
             else:
                 return
+
+    async def get_backup_code(self):
+        from utils import spinner_task
+        from tasks import get_backup_code_task
+        from pages import ErrorPage
+
+        (self.backup_code, error) = await spinner_task('Retrieving Backup Code', get_backup_code_task)
+        if error is None:
+            if self.backup_quiz_passed:
+                self.goto(self.do_backup, save_curr=False)
+            else:
+                self.goto(self.show_backup_code, save_curr=False)
+        else:
+            await ErrorPage(text='Unable to retrieve Backup Code: {}'.format(error)).show()
+            self.set_result(False)
 
     async def show_backup_code(self):
         from pages import InfoPage, BackupCodePage
