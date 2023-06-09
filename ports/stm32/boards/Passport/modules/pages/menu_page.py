@@ -6,10 +6,12 @@
 
 import lvgl as lv
 from styles import Stylize
+from styles.colors import SCROLLBAR_BG_COLOR
 from pages import Page
 from views import MenuItem
 import common
 import microns
+import passport
 
 
 class MenuPage(Page):
@@ -39,6 +41,8 @@ class MenuPage(Page):
         # Adjust scrollbar position
         with Stylize(self, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         # Set non-style props
         self.set_width(lv.pct(100))
