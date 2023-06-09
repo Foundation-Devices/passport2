@@ -21,15 +21,22 @@ def file_key(f):
 
 class FilePickerFlow(Flow):
     def __init__(
-            self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
-            filter_fn=None, select_text="Select"):
+            self,
+            initial_path=None,
+            show_folders=False,
+            enable_parent_nav=False,
+            suffix=None,
+            filter_fn=None,
+            select_text="Select"):
         from files import CardSlot
+        from utils import bind, show_card_missing
 
         if not initial_path:
             initial_path = CardSlot.get_sd_root()
 
-        super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
-            initial_path))
+        super().__init__(initial_state=self.show_file_picker,
+                         name='FilePickerFlow: {}'.format(initial_path))
+
         self.initial_path = initial_path
         self.paths = [initial_path]
         self.show_folders = show_folders
@@ -40,8 +47,8 @@ class FilePickerFlow(Flow):
         self.status_page = None
         self.empty_result = None
         self.finished = False
-        # return_bool attribute required to use show_card_missing
-        self.return_bool = False
+
+        bind(self, show_card_missing)
 
     def on_empty_sd_card_change(self, sd_card_present):
         if sd_card_present:
@@ -49,7 +56,6 @@ class FilePickerFlow(Flow):
         else:
             self.reset_paths()
             self.status_page.set_result(None)
-            # show_card_missing is a global flow state
             self.goto(self.show_card_missing)
             return False
 
@@ -64,7 +70,6 @@ class FilePickerFlow(Flow):
     def on_file_sd_card_change(self, sd_card_present):
         if not sd_card_present:
             self.reset_paths()
-            # show_card_missing is a global flow state
             self.goto(self.show_card_missing)
             return True
 
@@ -117,7 +122,6 @@ class FilePickerFlow(Flow):
 
             except CardMissingError:
                 self.reset_paths()
-                # show_card_missing is a global flow state
                 self.goto(self.show_card_missing)
                 return
 

@@ -14,8 +14,10 @@ class SaveToMicroSDFlow(Flow):
                  success_text="file",
                  path=None,
                  mode='',
-                 automatic=False):
+                 automatic=False,
+                 auto_prompt=None):
         import microns
+        from utils import bind, show_card_missing
 
         self.filename = filename.replace(' ', '_')
         self.data = data
@@ -24,12 +26,19 @@ class SaveToMicroSDFlow(Flow):
         self.path = path
         self.mode = mode
         self.out_full = None
+        # If auto_prompt isn't specified, use automatic value
+        auto_prompt = auto_prompt or automatic
+        self.auto_timeout = 1000 if auto_prompt else None
+        self.show_check = None if auto_prompt else microns.Checkmark
+
+        # Used in flow_show_card_missing
         self.automatic = automatic
-        self.auto_timeout = 1000 if automatic else None
-        self.show_check = None if automatic else microns.Checkmark
-        # return_bool attribute required to use show_card_missing
         self.return_bool = True
-        super().__init__(initial_state=self.check_inputs, name='SaveToMicroSDFlow')
+
+        bind(self, show_card_missing)
+
+        super().__init__(initial_state=self.check_inputs,
+                         name='SaveToMicroSDFlow')
 
     def default_write_fn(self, filename):
         with open(self.out_full, 'w' + self.mode) as fd:
@@ -73,7 +82,6 @@ class SaveToMicroSDFlow(Flow):
                     break
 
             except CardMissingError:
-                # show_card_missing is a global flow state
                 self.goto(self.show_card_missing)
                 return
 

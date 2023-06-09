@@ -8,13 +8,19 @@ from flows import Flow
 
 class ReadFileFlow(Flow):
     def __init__(self, file_path, binary=True, automatic=False, read_fn=None):
+        from utils import bind, show_card_missing
+
         self.file_path = file_path
         self.binary = binary
-        self.automatic = automatic
         self.read_fn = read_fn
-        # return_bool attribute required to use show_card_missing
-        self.return_bool = False
-        super().__init__(initial_state=self.read_file, name='ReadFileFlow')
+
+        # Used in flow_show_card_missing
+        self.automatic = automatic
+
+        bind(self, show_card_missing)
+
+        super().__init__(initial_state=self.read_file,
+                         name='ReadFileFlow')
 
     async def read_file(self):
         from utils import spinner_task
@@ -27,8 +33,7 @@ class ReadFileFlow(Flow):
                                            args=[self.file_path, self.binary, self.read_fn])
 
         if error is Error.MICROSD_CARD_MISSING:
-            # show_card_missing is a global flow state
-            self.goto(self.show_card_missing, self.automatic)
+            self.goto(self.show_card_missing)
             return
 
         if error is Error.FILE_READ_ERROR:

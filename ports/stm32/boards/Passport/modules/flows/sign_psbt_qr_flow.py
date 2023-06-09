@@ -199,9 +199,9 @@ How would you like to proceed?"
                                            write_fn=self.write_psbt_fn,
                                            success_text="psbt",
                                            path=get_folder_path(DIR_TRANSACTIONS),
-                                           automatic=True).run()
+                                           automatic=False,
+                                           auto_prompt=True).run()
         if not result_1:
-            await ErrorPage(text='Unable to save {} to microSD'.format(target_fname)).show()
             self.back()
             return
 
@@ -211,9 +211,9 @@ How would you like to proceed?"
                                                write_fn=self.write_final_fn,
                                                success_text="transaction",
                                                path=get_folder_path(DIR_TRANSACTIONS),
-                                               automatic=True).run()
+                                               automatic=False,
+                                               auto_prompt=True).run()
             if not result_2:
-                await ErrorPage(text='Unable to save {} to microSD'.format(target2_fname)).show()
                 self.back()
                 return
 

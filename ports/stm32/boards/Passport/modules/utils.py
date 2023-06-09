@@ -1374,4 +1374,37 @@ def timestamp_to_str(time):
                                          )
 
 
+# This is a flow function, so it needs to be async
+async def show_card_missing(flow):
+    from pages import InsertMicroSDPage
+
+    # This makes the return type consistent with the caller
+    if hasattr(flow, "return_bool") and flow.return_bool:
+        result = False
+    else:
+        result = None
+
+    if hasattr(flow, "automatic") and flow.automatic:
+        flow.set_result(result)
+        return
+
+    retry = await InsertMicroSDPage().show()
+    if retry:
+        flow.back()
+    else:
+        flow.set_result(result)
+
+
+# This assumes the function passed in is async
+def bind(instance, func, as_name=None):
+    if as_name is None:
+        as_name = func.__name__
+
+    async def method(*args, **kwargs):
+        return await func(instance, *args, **kwargs)
+
+    setattr(instance, as_name, method)
+    return method
+
+
 # EOF
