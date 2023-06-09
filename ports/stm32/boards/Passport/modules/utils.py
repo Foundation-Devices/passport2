@@ -1395,7 +1395,7 @@ async def show_card_missing(flow):
         flow.set_result(result)
 
 
-# This assums the func passed in is async
+# This assumes the function passed in is async
 def bind(instance, func, as_name=None):
     if as_name is None:
         as_name = func.__name__
