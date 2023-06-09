@@ -8,12 +8,16 @@ from flows import Flow
 
 class ReadFileFlow(Flow):
     def __init__(self, file_path, binary=True, automatic=False, read_fn=None):
+        from utils import bind, show_card_missing
+
         self.file_path = file_path
         self.binary = binary
         self.read_fn = read_fn
 
         # Used in flow_show_card_missing
         self.automatic = automatic
+
+        bind(self, show_card_missing)
 
         super().__init__(initial_state=self.read_file,
                          name='ReadFileFlow')
@@ -45,7 +49,3 @@ class ReadFileFlow(Flow):
             return
 
         self.set_result(data)
-
-    async def show_card_missing(self):
-        from utils import flow_show_card_missing
-        await flow_show_card_missing(self)
