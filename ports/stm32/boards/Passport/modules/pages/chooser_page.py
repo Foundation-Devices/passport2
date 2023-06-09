@@ -6,7 +6,7 @@
 
 import lvgl as lv
 import microns
-from styles.colors import CHOOSER_ICON
+from styles.colors import CHOOSER_ICON, SCROLLBAR_BG_COLOR
 from styles import Stylize
 from pages import Page
 import common
@@ -26,6 +26,7 @@ class ChooserPage(Page):
             left_micron=None, right_micron=None):
 
         from views import ListItem, View
+        import passport
 
         left_micron = left_micron or microns.Cancel
         right_micron = right_micron or microns.Checkmark
@@ -66,7 +67,6 @@ class ChooserPage(Page):
         # Add icon if provided
         if icon is not None:
             from views import Icon
-            import passport
 
             self.icon_view = Icon(self.icon)
             with Stylize(self.icon_view) as default:
@@ -96,6 +96,8 @@ class ChooserPage(Page):
         # Adjust scrollbar position
         with Stylize(self.scroll_container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         with Stylize(self.scroll_container) as default:
             default.flex_fill()

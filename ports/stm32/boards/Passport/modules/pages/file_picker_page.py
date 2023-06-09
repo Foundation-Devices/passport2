@@ -6,7 +6,7 @@
 
 import lvgl as lv
 import microns
-from styles.colors import TEXT_GREY
+from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
 from styles import Stylize
 from pages import Page
 from views import FileItem, View
@@ -50,6 +50,8 @@ class FilePickerPage(Page):
         # Adjust scrollbar position
         with Stylize(self.scroll_container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         # Add the file items to the scroll container
         num_files = min(MAX_FILE_DISPLAY, len(self.files))
