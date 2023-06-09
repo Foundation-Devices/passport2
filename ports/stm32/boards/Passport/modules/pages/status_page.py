@@ -7,7 +7,7 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Arc, Label, View, Icon, Spinner
 from pages import Page
-from styles.colors import DEFAULT_SPINNER, TEXT_GREY
+from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR
 import microns
 import common
 import passport
@@ -53,6 +53,8 @@ class StatusPage(Page):
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         self.update()
 

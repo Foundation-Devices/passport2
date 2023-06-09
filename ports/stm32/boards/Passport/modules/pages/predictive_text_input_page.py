@@ -5,7 +5,7 @@
 
 
 import lvgl as lv
-from styles.colors import BLACK
+from styles.colors import BLACK, SCROLLBAR_BG_COLOR
 from pages import Page
 from utils import InputMode, set_list
 from views import TextInput, Label, View, ListItem, TextInput
@@ -13,6 +13,7 @@ from styles import Stylize
 from keys import KEY_0, KEY_9
 import microns
 from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers
+import passport
 
 
 class PredictiveTextInputPage(Page):
@@ -73,6 +74,8 @@ class PredictiveTextInputPage(Page):
         # Adjust scrollbar position
         with Stylize(self.predictions_container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         self.add_child(self.predictions_container)
 
