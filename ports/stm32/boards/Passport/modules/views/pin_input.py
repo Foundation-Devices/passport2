@@ -6,7 +6,7 @@
 
 import lvgl as lv
 from styles import Stylize
-from styles.colors import TEXT_GREY, TEXT_INPUT_BG, TEXT_INPUT_CURSOR, TEXT_INPUT_TEXT, TEXT_INPUT_CURSOR
+from styles.colors import TEXT_INPUT_ICON, TEXT_INPUT_BG, TEXT_INPUT_CURSOR, TEXT_INPUT_TEXT, TEXT_INPUT_CURSOR
 from views import View
 from utils import InputMode
 from views import Label, Icon
@@ -38,7 +38,7 @@ class PINInput(View):
             default.pad(left=2)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
-        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=TEXT_GREY)
+        self.mode_icon = Icon(InputMode.get_icon(self.input_mode), color=TEXT_INPUT_ICON)
         self.mode_view.add_child(self.mode_icon)
 
         self.pin_container = View(flex_flow=lv.FLEX_FLOW.ROW)
@@ -63,8 +63,6 @@ class PINInput(View):
 
         num_chars = len(self.pin)
         for i in range(num_chars):
-            # ch = self.pin[i]
-            # item = Label(text=ch, color=TEXT_GREY)
             ch = self.pin[i]
             if not self.hidden_mode:
                 item = Label(text=ch, color=TEXT_INPUT_TEXT)
