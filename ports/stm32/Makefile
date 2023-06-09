@@ -556,12 +556,6 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_O))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 OBJ += $(BUILD)/pins_$(BOARD).o
 
-# secp256k1-zkp ARM assembly.
-# NOTE: this is done here because the assembly and the flag from the Unix and
-# STM32 ports differ.
-OBJ += $(SECP256K1_DIR)/src/asm/field_10x26_arm.o
-CFLAGS += -DUSE_EXTERNAL_ASM -DSECP256K1_CONTEXT_SIZE=184
-
 # For extmod/trezor-firmware/crypto/rand.c, we define a random32, random_reseed and random_buffer,
 # in our Passport board that uses our own noise source.
 CFLAGS += -DRAND_PLATFORM_INDEPENDENT

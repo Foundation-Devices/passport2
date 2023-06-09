@@ -30,9 +30,10 @@ class ExportDerivedKeyFlow(Flow):
             self.set_result(False)
             return
 
-        (self.pk, error) = await spinner_task(text='Generating Key',
-                                              task=self.key_type['task'],
-                                              args=[self.key['index']])
+        (vals, error) = await spinner_task(text='Generating key',
+                                           task=self.key_type['task'],
+                                           args=[self.key['index']])
+        self.pk = vals['priv']
         if error is not None:
             await ErrorPage(error).show()
             self.set_result(False)
@@ -95,7 +96,7 @@ class ExportDerivedKeyFlow(Flow):
         from pages import InfoPage, LongTextPage
         import microns
 
-        text = 'Confirm the exported {} on the following page.'.format(self.key_type['title'])
+        text = 'Confirm the exported {} on the following page'.format(self.key_type['title'])
         result = await InfoPage(text=text, left_micron=microns.Back).show()
 
         if not result:

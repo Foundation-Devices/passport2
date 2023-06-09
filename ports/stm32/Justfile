@@ -123,6 +123,7 @@ sign-beta version="1.0.0" beta-num="1":
     rm -rf "{{version}}-beta-{{beta-num}}"
     mkdir -p "{{version}}-beta-{{beta-num}}"
     screens=("color" "mono")
+    screen_names=("" "-founders")
     paths=("passport-key-user" "passport-fe-key-user")
     builds=("" "dev")
     build_names=("" "-dev")
@@ -132,9 +133,9 @@ sign-beta version="1.0.0" beta-num="1":
         for build in "${builds[@]}"; do
             just clean
             just sign {{version}} $screen $build
-            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin"
-            just hash "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-notes.md"
-            cp build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
+            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-passport.bin"
+            just hash "build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-notes.md"
+            cp build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
             j=$((j + 1))
         done
         i=$((i + 1))
@@ -345,11 +346,13 @@ hash filepath screen="mono" output_file="":
     build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
-    output="## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
+    output="## RELEASE HASHES\n\n"
 
     if [ -n "{{output_file}}" ]; then
         output+="### $filename:\n\n"
     fi
+
+    output+="SHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
 
     output+="SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum $filename\` or \`md5sum $filename\`\n\n"
     output+="### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"

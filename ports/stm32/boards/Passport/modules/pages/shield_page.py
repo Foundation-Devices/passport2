@@ -14,10 +14,10 @@ class ShieldPage(StatusPage):
             self,
             text=None,
             centered=True,
-            card_header=None,
+            card_header={'title': 'Security Check'},
             statusbar=None,
-            left_micron=microns.Cancel,
-            right_micron=microns.Checkmark):
+            left_micron=microns.Back,
+            right_micron=microns.Forward):
         super().__init__(
             text=text,
             icon=lv.LARGE_ICON_SHIELD,

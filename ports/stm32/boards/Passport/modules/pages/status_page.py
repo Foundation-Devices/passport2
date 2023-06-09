@@ -160,7 +160,7 @@ class StatusPage(Page):
         super().detach()
 
     def right_action(self, is_pressed):
-        if self.interactive:
+        if self.interactive and self.right_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx < len(self.text) - 1:
                     self.page_idx += 1
@@ -169,7 +169,7 @@ class StatusPage(Page):
                     self.set_result(True)
 
     def left_action(self, is_pressed):
-        if self.interactive:
+        if self.interactive and self.left_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx > 0:
                     self.page_idx -= 1

@@ -143,7 +143,7 @@ def key_item_menu():
         HideDerivedKeyFlow)
     return [
         {'icon': lv.ICON_ONE_KEY, 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
-        {'icon': lv.ICON_SIGN, 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': lv.ICON_INFO, 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': lv.ICON_SCAN_QR, 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': lv.ICON_ERASE, 'label': 'Toggle Hidden', 'flow': HideDerivedKeyFlow},
     ]
@@ -178,6 +178,12 @@ def manage_keys():
     ]
 
 
+def nostr_menu():
+    from flows import NostrDelegationFlow
+
+    return [{'icon': lv.ICON_SIGN, 'label': 'Delegate', 'flow': NostrDelegationFlow}]
+
+
 def key_manager_menu():
     from utils import get_derived_keys, are_hidden_keys_showing
     from derived_key import get_key_type_from_tn
@@ -204,7 +210,7 @@ def key_manager_menu():
                            'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
-                           'args': {'context': key},
+                           'args': {'context': key, 'dynamic': key_type.get('menu', None)},
                            'auto_card_header': False})
 
     result.append({'icon': lv.ICON_ONE_KEY, 'label': 'New Key', 'submenu': new_key_menu})

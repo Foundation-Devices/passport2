@@ -84,6 +84,9 @@ class TextInputPage(Page):
             if self.is_showing_symbols:
                 self.is_showing_symbols = False
                 self.update_symbol_picker()
+                self.t9.set_mode(self.last_input_mode)
+                self.synchronize_with_t9()
+                return
             self.set_result(None)
 
     def attach(self, group):

@@ -64,7 +64,7 @@ class ViewSeedWordsFlow(Flow):
         if isinstance(mode, int) and mode in [QRType.SEED_QR, QRType.COMPACT_SEED_QR]:
             self.qr_type = mode
             mode = self.show_qr
-            self.seed_micron = microns.Cancel
+            self.seed_micron = microns.Back
 
         self.goto(mode)
 
@@ -132,16 +132,16 @@ class ViewSeedWordsFlow(Flow):
             result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase).run()
 
             if not result:
-                self.back()
+                self.set_result(False)
                 return
 
-        result = await SeedWordsListPage(words=self.words,
-                                         left_micron=self.seed_micron).show()
-
-        if not result:
-            if self.qr_type:
+        result = False
+        while not result:
+            result = await SeedWordsListPage(words=self.words,
+                                             left_micron=self.seed_micron).show()
+            if not result and self.qr_type:
                 self.back()
-            return
+                return
 
         self.goto(self.show_passphrase)
 

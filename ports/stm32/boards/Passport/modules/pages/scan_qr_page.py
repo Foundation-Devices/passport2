@@ -126,12 +126,12 @@ class ScanQRPage(Page):
 
     # Just return None.
     def left_action(self, is_pressed):
-        if not is_pressed:
+        if not is_pressed and self.left_micron:
             self.set_result(None)
 
     # Either the user goes back or the scan finishes
     def right_action(self, is_pressed):
-        if not is_pressed:
+        if not is_pressed and self.right_micron:
             self.set_result(None)
 
 

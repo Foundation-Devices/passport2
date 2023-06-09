@@ -67,26 +67,23 @@ class VerifyAddressFlow(Flow):
 
     async def scan_address(self):
         import chains
-        from pages import ErrorPage, ScanQRPage
+        from pages import ErrorPage
+        from flows import ScanQRFlow
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
         from utils import is_valid_btc_address, get_next_addr
+        from data_codecs.qr_type import QRType
 
-        result = await ScanQRPage(
-            left_micron=microns.Back,
-            right_micron=None).show()
+        result = await ScanQRFlow(qr_types=[QRType.QR],
+                                  data_description='a Bitcoin address').run()
 
         if result is None:
             if not self.back():
                 self.set_result(False)
                 return
             return
-        elif result.is_failure():
-            await ErrorPage(text='Unable to scan QR code.').show()
-            self.set_result(False)
-            return
 
         # print('result={}'.format(result))
-        self.address = result.data
+        self.address = result
 
         # Simple check on the data type first
         chain_name = chains.current_chain().name
@@ -109,6 +106,11 @@ class VerifyAddressFlow(Flow):
 
         self.goto(self.search_for_address)
 
+    def finalize(self, addr_idx, is_change):
+        self.found_addr_idx = addr_idx
+        self.found_is_change = is_change == 1
+        self.goto(self.found)
+
     async def search_for_address(self):
         from tasks import search_for_address_task
         from utils import get_prev_address_range, get_next_address_range, spinner_task
@@ -123,6 +125,23 @@ class VerifyAddressFlow(Flow):
         addr_idx = -1
         is_change = 0
 
+        (addr_idx, path_info, error) = await spinner_task(
+            'Searching Addresses',
+            search_for_address_task,
+            min_duration_ms=0,
+            args=[self.deriv_path,
+                  0,
+                  self.address,
+                  self.addr_type,
+                  self.multisig_wallet,
+                  is_change,
+                  1,
+                  True])
+
+        if addr_idx >= 0:
+            self.finalize(addr_idx, is_change)
+            return
+
         for is_change in range(0, 2):
             # print('CHECKING: low_range={}  low_size={}'.format(self.low_range, self.low_size))
             # Check downwards
@@ -130,6 +149,7 @@ class VerifyAddressFlow(Flow):
                 (addr_idx, path_info, error) = await spinner_task(
                     'Searching Addresses',
                     search_for_address_task,
+                    min_duration_ms=0,
                     args=[self.deriv_path,
                           self.low_range[is_change][0],
                           self.address,
@@ -148,6 +168,7 @@ class VerifyAddressFlow(Flow):
             (addr_idx, path_info, error) = await spinner_task(
                 'Searching Addresses',
                 search_for_address_task,
+                min_duration_ms=0,
                 args=[self.deriv_path,
                       self.high_range[is_change][0],
                       self.address,
@@ -161,9 +182,7 @@ class VerifyAddressFlow(Flow):
                 break
 
         if addr_idx >= 0:
-            self.found_addr_idx = addr_idx
-            self.found_is_change = is_change == 1
-            self.goto(self.found)
+            self.finalize(addr_idx, is_change)
         else:
             self.goto(self.not_found)
 

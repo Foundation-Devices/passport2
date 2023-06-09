@@ -34,17 +34,17 @@ class ScvFlow(Flow):
 
     async def show_intro(self):
         from pages import ShieldPage
+        from flows import SeriesOfPagesFlow
 
         if self.envoy:
-            text = 'On the next screen, scan the QR code shown in Envoy.'
+            messages = [{'text': 'On the next screen, scan the QR code shown in Envoy.'}]
         else:
-            text = 'Let\'s confirm Passport was not tampered with during shipping. ' \
-                   'On the next screen, scan the Security Check ' \
-                   'QR code from validate.foundationdevices.com.'
+            messages = [{'text': 'Let\'s confirm Passport was not tampered with during shipping.'},
+                        {'text': 'Next, scan the Security Check '
+                         'QR code from validate.foundationdevices.com.'}]
 
-        result = await ShieldPage(text=text,
-                                  left_micron=microns.Back,
-                                  right_micron=microns.Forward).show()
+        result = await SeriesOfPagesFlow(ShieldPage, messages).run()
+
         if result:
             self.goto(self.scan_qr_challenge)
         else:
@@ -75,7 +75,7 @@ class ScvFlow(Flow):
 
             try:
                 scv_id = a2b_hex(parts[0])
-                scv_signature = b2a_hex(parts[1])
+                scv_signature = a2b_hex(parts[1])
             except ValueError:
                 await self.show_error('Security Check QR code is invalid.\n')
                 return
@@ -135,8 +135,8 @@ class ScvFlow(Flow):
         lines = ['{}. {}\n'.format(idx + 1, word) for idx, word in enumerate(self.words)]
         words = ''.join(lines)
 
-        result = await ShieldPage(text=words, card_header={'title': 'Security Check'},
-                                  left_micron=microns.Retry, right_micron=microns.Forward).show()
+        result = await ShieldPage(text=words,
+                                  left_micron=microns.Retry).show()
         if not result:
             self.back()
         else:

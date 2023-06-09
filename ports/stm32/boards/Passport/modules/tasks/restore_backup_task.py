@@ -123,5 +123,8 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
 
         settings.set(k[8:], vals[k])
 
+    # This would be true in the old backup, but false for this new device
+    settings.set('backup_quiz', False)
+
     # Success!
     await on_done(None)

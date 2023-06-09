@@ -45,8 +45,8 @@ class InitialSeedSetupFlow(Flow):
 
         options = [{'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)},
-                   {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow()},
-                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow()}]
+                   {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
+                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
 
         flow = await ChooserPage(
             text=None,
