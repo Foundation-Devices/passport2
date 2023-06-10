@@ -8,6 +8,7 @@ from views import View
 from styles.colors import WHITE, TEXT_GREY
 from styles import Stylize
 
+
 class Table(View):
     def __init__(self,
                  items=[],
@@ -106,4 +107,3 @@ class Table(View):
         _col = lv.C_Pointer()
         self.lvgl_root.get_selected_cell(row, _col)
         return row.uint_val
-
