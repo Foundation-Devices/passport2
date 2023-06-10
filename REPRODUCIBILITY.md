@@ -79,9 +79,9 @@ just --help
 
 ### Build the reproducible builds Docker image
 
-Now that we have all of the necessary dependencies, you can use `just` to run the correct commands to build the firmware and bootloader necessary to verify Passport’s reproducibility.
+Now that we have all of the necessary dependencies, you can use `just` to run the correct commands to build the firmware necessary to verify Passport’s reproducibility.
 
-In order to build the firmware and bootloader, we need to first build the Docker image that will include all the necessary dependencies and files for building the firmware in a reproducible way:
+In order to build the firmware, we need to first build the Docker image that will include all the necessary dependencies and files for building the firmware in a reproducible way:
 
 ```bash
 just build-docker
@@ -94,23 +94,21 @@ If you’d like to validate exactly how the `build-docker` Justfile command func
 - [passport2/Justfile#L8-L10](https://github.com/Foundation-Devices/passport2/blob/6c6249e2c15f52c59db56b12b5f84213806a6533/Justfile#L8-L10)
 - [passport2/Dockerfile](https://github.com/Foundation-Devices/passport2/blob/main/Dockerfile)
 
-### Build Passport’s firmware and bootloader
+### Build Passport’s firmware
 
-Now that we have everything in place, we can actually build the firmware and bootloader binaries for Passport with two simple commands:
+Now that we have everything in place, we can actually build the firmware binaries for Passport with two simple commands:
 
 ```bash
 just build-firmware color
-just build-bootloader color
 ```
 
 If you instead want to reproduce firmware for Passport “Founder’s Edition,” use the following commands and substitute “MONO” for “COLOR” in filenames throughout the rest of this guide:
 
 ```bash
 just build-firmware mono
-just build-bootloader mono
 ```
 
-These commands will take a few minutes as they build Passport’s firmware and bootloader directly from the source code you downloaded earlier. Once they complete, you’ll have the completed binary available in `ports/stm32/build-Passport/`.
+These commands will take a few minutes as they build Passport’s firmware directly from the source code you downloaded earlier. Once they complete, you’ll have the completed binary available in `ports/stm32/build-Passport/`.
 
 If you’d like to validate exactly how the `build-*` Justfile commands function, you can find the relevant source code here:
 
