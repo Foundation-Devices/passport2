@@ -50,6 +50,14 @@ class FilePickerPage(Page):
         self.table.set_height(lv.pct(100))
         self.table.set_scroll_dir(lv.DIR.VER)
 
+        with Stylize(self.table) as default:
+            default.flex_fill()
+            default.pad_row(0)
+
+        # Adjust scrollbar position
+        with Stylize(self.table, selector=lv.PART.SCROLLBAR) as scrollbar:
+            scrollbar.pad(right=0)
+
         with Stylize(self.table, lv.PART.MAIN) as default:
             default.bg_color(WHITE)
             default.radius(4)
