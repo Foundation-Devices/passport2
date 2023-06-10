@@ -6,7 +6,7 @@
 import lvgl as lv
 from views import View
 from styles.colors import WHITE, TEXT_GREY
-
+from styles import Stylize
 
 class Table(View):
     def __init__(self,
@@ -21,6 +21,9 @@ class Table(View):
         self.default_icon = default_icon
         self.alt_icon = alt_icon
         self.get_cell_info = get_cell_info
+
+        with Stylize(self, lv.PART.ITEMS) as default:
+            default.pad(bottom=11, top=12)
 
     def set_src(self, src):
         self.src = src
@@ -103,3 +106,4 @@ class Table(View):
         _col = lv.C_Pointer()
         self.lvgl_root.get_selected_cell(row, _col)
         return row.uint_val
+
