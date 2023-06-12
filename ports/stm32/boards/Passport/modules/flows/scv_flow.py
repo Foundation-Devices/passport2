@@ -26,7 +26,7 @@ class ScvFlow(Flow):
 
         super().__init__(initial_state=self.show_intro,
                          name='ScvFlow',
-                         statusbar={'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD})
+                         statusbar={'title': 'SECURITY CHECK', 'icon': 'ICON_SHIELD'})
         self.words = None
         self.envoy = envoy
         self.ask_to_skip = ask_to_skip

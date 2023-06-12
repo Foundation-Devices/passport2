@@ -11,7 +11,11 @@ from views import View
 class Icon(View):
     def __init__(self, icon, color=None, opa=None):
         super().__init__()
-        self.icon = icon
+        # Icon is expected to be a string
+        if isinstance(icon, str):
+            self.icon = getattr(lv, icon)
+        else:
+            self.icon = icon
         self.color = color
         self.opa = opa
 

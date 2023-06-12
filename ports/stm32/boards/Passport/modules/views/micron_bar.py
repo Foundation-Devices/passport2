@@ -117,7 +117,7 @@ class MicronBar(View):
                         page_dot.add_child(icon)
 
                         if i == self.active_card_idx:
-                            indicator = Icon(icon=lv.ICON_PAGE_INDICATOR, color=WHITE)
+                            indicator = Icon(icon='ICON_PAGE_INDICATOR', color=WHITE)
                             page_dot.add_child(indicator)
 
                     # print('page_dot={}'.format(page_dot))

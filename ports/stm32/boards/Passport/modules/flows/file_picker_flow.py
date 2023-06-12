@@ -128,11 +128,11 @@ class FilePickerFlow(Flow):
             is_root = active_path == CardSlot.get_sd_root()
             if is_root:
                 title = 'microSD'
-                icon = lv.ICON_MICROSD
+                icon = 'ICON_MICROSD'
             else:
                 leaf_folder_name = active_path.split('/')[-1]
                 title = leaf_folder_name
-                icon = lv.ICON_FOLDER
+                icon = 'ICON_FOLDER'
 
             if len(files) == 0:
                 self.status_page = StatusPage(

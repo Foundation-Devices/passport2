@@ -69,7 +69,7 @@ class PINInput(View):
             elif i == num_chars - 1 and self.show_last_char:
                 item = Label(text=ch, color=TEXT_INPUT_TEXT)
             else:
-                item = Icon(lv.ICON_PAGE_DOT, color=TEXT_INPUT_TEXT)
+                item = Icon('ICON_PAGE_DOT', color=TEXT_INPUT_TEXT)
             self.pin_container.add_child(item)
 
         # Finally, draw a "cursor", which is always at the end

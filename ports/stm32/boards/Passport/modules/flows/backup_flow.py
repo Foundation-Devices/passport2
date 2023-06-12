@@ -19,7 +19,7 @@ class BackupFlow(Flow):
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
 
-        self.statusbar = {'title': 'BACKUP', 'icon': lv.ICON_BACKUP}
+        self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
 
     async def show_intro(self):
         from pages import InfoPage
