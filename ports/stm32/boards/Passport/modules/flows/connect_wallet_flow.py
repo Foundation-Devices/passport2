@@ -277,7 +277,7 @@ class ConnectWalletFlow(Flow):
 
         # Show the QR code
         result = await ShowQRPage(
-            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT},
+            statusbar={'title': 'CONNECT', 'icon': 'ICON_CONNECT'},
             qr_type=qr_type,
             qr_data=data).show()
         if result is False:

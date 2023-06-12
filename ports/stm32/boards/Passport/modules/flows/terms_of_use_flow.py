@@ -13,7 +13,7 @@ class TermsOfUseFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.show_terms, name='TermsOfUseFlow')
 
-        self.statusbar = {'title': 'TERMS OF USE', 'icon': lv.ICON_INFO}
+        self.statusbar = {'title': 'TERMS OF USE', 'icon': 'ICON_INFO'}
         # Skip if already accepted
         if common.settings.get('terms_ok') == 1:
             self.goto(self.show_status)

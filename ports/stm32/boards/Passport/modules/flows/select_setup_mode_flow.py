@@ -19,7 +19,7 @@ class SelectSetupModeFlow(Flow):
             self.set_result(True)
             return
 
-        self.statusbar = {'title': 'PASSPORT SETUP', 'icon': lv.ICON_SETUP}
+        self.statusbar = {'title': 'PASSPORT SETUP', 'icon': 'ICON_SETUP'}
 
     async def show_welcome(self):
         from pages import BrandmarkPage, ShutdownPage
@@ -27,7 +27,7 @@ class SelectSetupModeFlow(Flow):
         result = await BrandmarkPage(
             text='Welcome to Passport\n\nCongratulations on taking custody of your Bitcoin ' +
             'and reclaiming your sovereignty!',
-            statusbar={'title': 'WELCOME', 'icon': lv.ICON_HOME},
+            statusbar={'title': 'WELCOME', 'icon': 'ICON_HOME'},
             left_micron=microns.Shutdown,
             right_micron=microns.Forward).show()
         if result:

@@ -22,7 +22,7 @@ class ChooserPage(Page):
     def __init__(
             self, card_header=None, statusbar=None, options=[],
             initial_value=None, on_change=None, scroll_fix=False,
-            icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon=lv.ICON_SMALL_CHECKMARK,
+            icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon='ICON_SMALL_CHECKMARK',
             left_micron=None, right_micron=None):
 
         from views import ListItem, View

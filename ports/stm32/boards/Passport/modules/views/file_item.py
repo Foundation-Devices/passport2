@@ -38,7 +38,7 @@ class FileItem(View):
             focus.img_recolor(FOCUSED_LIST_ITEM_TEXT)
 
         # Icon
-        self.icon_view = Icon(icon=lv.ICON_FOLDER if self.is_folder else lv.ICON_FILE)
+        self.icon_view = Icon(icon='ICON_FOLDER' if self.is_folder else 'ICON_FILE')
 
         # Filename
         self.filename_view = Label(text=self.filename)

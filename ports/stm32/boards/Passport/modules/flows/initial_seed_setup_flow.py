@@ -11,7 +11,7 @@ class InitialSeedSetupFlow(Flow):
     def __init__(self, is_envoy=True, allow_backtrack=True):
         super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
         self.is_envoy = is_envoy
-        self.statusbar = {'title': 'CREATE SEED', 'icon': lv.ICON_SEED}
+        self.statusbar = {'title': 'CREATE SEED', 'icon': 'ICON_SEED'}
         self.allow_backtrack = allow_backtrack
 
     async def show_intro(self):

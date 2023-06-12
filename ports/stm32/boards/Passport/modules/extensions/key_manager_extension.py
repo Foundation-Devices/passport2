@@ -13,7 +13,7 @@ import microns
 
 name = 'key_manager'
 label = 'Key Manager'
-icon = lv.ICON_ONE_KEY
+icon = 'ICON_ONE_KEY'
 
 KeyManagerExtension = {
     'name': name,
@@ -28,7 +28,7 @@ KeyManagerExtension = {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_EXTENSIONS, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': 'ICON_EXTENSIONS', 'fg_color': WHITE},
         'title': label,
         'page_micron': microns.PageDot,
         'bg_color': LIGHT_COPPER,
