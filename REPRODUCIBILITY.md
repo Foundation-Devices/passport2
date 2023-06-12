@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Reproducibility Guide
 
 The instructions below describe how to easily build and verify Passport firmware in a reproducible way.
