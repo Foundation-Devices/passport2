@@ -77,7 +77,7 @@ class ManualSetupFlow(Flow):
         result = await QuestionPage(
             icon=lv.LARGE_ICON_FIRMWARE,
             text='Do you want to update Passport\'s firmware now?',
-            statusbar={'title': title, 'icon': lv.ICON_FIRMWARE}).show()
+            statusbar={'title': title, 'icon': 'ICON_FIRMWARE'}).show()
         if not result:
             await ErrorPage(text='We recommend updating Passport\'s firmware at your earliest convenience.').show()
             self.goto(self.setup_seed)
@@ -85,7 +85,7 @@ class ManualSetupFlow(Flow):
 
         result = await UpdateFirmwareFlow(
             reset_after=False,
-            statusbar={'title': title, 'icon': lv.ICON_FIRMWARE}
+            statusbar={'title': title, 'icon': 'ICON_FIRMWARE'}
         ).run()
         if result:
             import machine

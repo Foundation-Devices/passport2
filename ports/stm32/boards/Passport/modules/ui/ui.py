@@ -149,7 +149,7 @@ class UI():
             card = {
                 'header_color': LIGHT_GREY,
                 'header_fg_color': LIGHT_TEXT,
-                'statusbar': {'title': 'PASSPORT', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
+                'statusbar': {'title': 'PASSPORT', 'icon': 'ICON_HAMBURGER', 'fg_color': WHITE},
                 'page_micron': microns.PageDot,
                 'bg_color': TEXT_GREY,
                 'flow': flow
@@ -182,7 +182,7 @@ class UI():
         return {
             'header_color': LIGHT_GREY,
             'header_fg_color': LIGHT_TEXT,
-            'statusbar': {'title': 'SETTINGS', 'icon': lv.ICON_HAMBURGER, 'fg_color': WHITE},
+            'statusbar': {'title': 'SETTINGS', 'icon': 'ICON_HAMBURGER', 'fg_color': WHITE},
             'page_micron': microns.PageHome,
             'bg_color': TEXT_GREY,
             'flow': MenuFlow,
@@ -244,10 +244,10 @@ class UI():
                 # print('account[{}]={}'.format(account, i))
 
                 account_card = {
-                    'right_icon': lv.ICON_BITCOIN,
+                    'right_icon': 'ICON_BITCOIN',
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
-                    'statusbar': {'title': 'ACCOUNT', 'icon': lv.ICON_FOLDER, 'fg_color': get_account_fg(account)},
+                    'statusbar': {'title': 'ACCOUNT', 'icon': 'ICON_FOLDER', 'fg_color': get_account_fg(account)},
                     'title': account.get('name'),
                     'page_micron': microns.PageDot,
                     'bg_color': get_account_bg(account),
@@ -256,7 +256,7 @@ class UI():
                     'account': account
                 }
                 if len(stash.bip39_passphrase) > 0:
-                    account_card['icon'] = lv.ICON_PASSPHRASE
+                    account_card['icon'] = 'ICON_PASSPHRASE'
 
                 card_descs.append(account_card)
 
@@ -265,13 +265,13 @@ class UI():
             for extension in supported_extensions:
                 if common.settings.get('ext.{}.enabled'.format(extension['name']), False):
                     if len(stash.bip39_passphrase) > 0:
-                        extension['card']['icon'] = lv.ICON_PASSPHRASE
+                        extension['card']['icon'] = 'ICON_PASSPHRASE'
                     else:
                         extension['card']['icon'] = None
                     card_descs.append(extension['card'])
 
             more_card = {
-                'statusbar': {'title': 'MORE', 'icon': lv.ICON_ADD_ACCOUNT, 'fg_color': WHITE},
+                'statusbar': {'title': 'MORE', 'icon': 'ICON_ADD_ACCOUNT', 'fg_color': WHITE},
                 'page_micron': microns.PagePlus,
                 'bg_color': DARK_GREY,
                 'flow': MenuFlow,

@@ -13,7 +13,7 @@ from constants import MENU_ITEM_CORNER_RADIUS
 
 
 class ListItem(View):
-    def __init__(self, label='', is_selected=False, icon=lv.ICON_SMALL_CHECKMARK, center=False):
+    def __init__(self, label='', is_selected=False, icon='ICON_SMALL_CHECKMARK', center=False):
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
         self.icon = icon

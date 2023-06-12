@@ -19,14 +19,12 @@ class StatusBar(View):
         self.title = title
         self.icon = icon
         self.fg_color = fg_color
+        self.bg_color = BLACK
 
         self.title_view = None
         self.icon_view = None
 
         with Stylize(self) as default:
-            # if not passport.IS_COLOR:
-            # default.bg_color(BLACK)
-
             if passport.IS_COLOR:
                 top_pad = 0
             else:
@@ -64,11 +62,16 @@ class StatusBar(View):
         if self.is_mounted():
             self.icon_view.unmount()
             self.remove_child(self.icon_view)
+            if hasattr(self, "bg_view"):
+                self.bg_view.unmount()
+                self.remove_child(self.bg_view)
 
         if self.icon is None:
-            icon_view = Icon(icon=lv.ICON_SETTINGS, opa=0)  # Transparent placeholder
-        else:
-            icon_view = Icon(icon=self.icon, color=self.fg_color)
+            self.icon = 'ICON_SETTINGS'
+
+        icon_view = Icon(icon=self.icon, color=self.fg_color)
+        if not passport.IS_COLOR and isinstance(self.icon, str):
+            bg_view = Icon(icon=(self.icon + '_BACKGROUND'), color=self.bg_color)
 
         if passport.IS_COLOR:
             self.icon_view = icon_view
@@ -76,10 +79,13 @@ class StatusBar(View):
             self.icon_view = View(flex_flow=None)
             self.icon_view.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             with Stylize(self.icon_view) as default:
-                default.bg_color(BLACK)
                 default.pad_all(2)
                 default.radius(4)
                 default.align(lv.ALIGN.CENTER)
+
+            if isinstance(self.icon, str):
+                self.icon_view.add_child(bg_view)
+                icon_view.set_pos(1, 1)
 
             self.icon_view.add_child(icon_view)
 

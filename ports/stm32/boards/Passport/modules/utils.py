@@ -174,7 +174,7 @@ async def save_error_log_to_microsd_task(msg, filename):
             sd_card_change = False
             saved = save_error_log(msg, filename)
             if saved:
-                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Saved to microSD', icon='ICON_MICROSD')
 
         await sleep_ms(100)
 
@@ -214,7 +214,7 @@ def handle_fatal_error(exc):
 
             # Switch immediately to a new card to show the error
             fatal_error_card = {
-                'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_INFO},
+                'statusbar': {'title': 'FATAL ERROR', 'icon': 'ICON_INFO'},
                 'page_micron': microns.PageDot,
                 'bg_color': BLACK,
                 'flow': PageFlow,
@@ -224,9 +224,9 @@ def handle_fatal_error(exc):
 
             common.ui.set_cards([fatal_error_card])
             if saved:
-                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Saved to microSD', icon='ICON_MICROSD')
             else:
-                common.ui.set_card_header(title='Insert microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Insert microSD', icon='ICON_MICROSD')
 
             loop = get_event_loop()
             _fatal_card_task = loop.create_task(card_task(fatal_error_card))

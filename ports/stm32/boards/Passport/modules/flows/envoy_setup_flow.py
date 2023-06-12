@@ -83,7 +83,7 @@ class EnvoySetupFlow(Flow):
         result = await QuestionPage(
             icon=lv.LARGE_ICON_FIRMWARE,
             text='Do you want to update Passport\'s firmware now?',
-            statusbar={'title': title, 'icon': lv.ICON_FIRMWARE}).show()
+            statusbar={'title': title, 'icon': 'ICON_FIRMWARE'}).show()
         if not result:
             await ErrorPage(text='We recommend updating Passport\'s firmware at your earliest convenience.').show()
             self.goto(self.setup_seed)
@@ -91,7 +91,7 @@ class EnvoySetupFlow(Flow):
 
         result = await UpdateFirmwareFlow(
             reset_after=False,
-            statusbar={'title': title, 'icon': lv.ICON_FIRMWARE}
+            statusbar={'title': title, 'icon': 'ICON_FIRMWARE'}
         ).run()
         if result:
             import machine
@@ -138,7 +138,7 @@ class EnvoySetupFlow(Flow):
         await self.ensure_logged_in()
 
         result = await InfoPage(
-            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT},
+            statusbar={'title': 'CONNECT', 'icon': 'ICON_CONNECT'},
             text='Now, let\'s connect Passport with Envoy.',
             left_micron=None).show()
         self.goto(self.connect_with_envoy)
@@ -168,7 +168,7 @@ class EnvoySetupFlow(Flow):
 
         result = await ConnectWalletFlow(
             sw_wallet='Envoy',
-            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT}
+            statusbar={'title': 'CONNECT', 'icon': 'ICON_CONNECT'}
         ).run()
         if result:
             self.goto(self.show_success)

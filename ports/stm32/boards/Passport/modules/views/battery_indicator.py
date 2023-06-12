@@ -23,7 +23,7 @@ class BatteryIndicator(View):
         self.is_charging = False
         self.outline_color = outline_color
 
-        self.icon = Icon(lv.ICON_BATTERY, color=WHITE)
+        self.icon = Icon('ICON_BATTERY', color=WHITE)
         self.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
         with Stylize(self.icon) as default:
             default.align(lv.ALIGN.CENTER)
@@ -58,9 +58,9 @@ class BatteryIndicator(View):
     def set_is_charging(self, is_charging):
         self.is_charging = is_charging
         if self.is_charging:
-            self.icon.set_icon(lv.ICON_BATTERY_CHARGING)
+            self.icon.set_icon('ICON_BATTERY_CHARGING')
         else:
-            self.icon.set_icon(lv.ICON_BATTERY)
+            self.icon.set_icon('ICON_BATTERY')
 
     def set_outline_color(self, outline_color):
         self.outline_color = outline_color
