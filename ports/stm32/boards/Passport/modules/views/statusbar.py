@@ -46,15 +46,18 @@ class StatusBar(View):
         if passport.IS_COLOR:
             self.add_child(self.battery)
         else:
+            battery_bg = Icon(icon='ICON_BATTERY_BACKGROUND', color=self.bg_color)
+
             self.battery_container = View(flex_flow=None)
             self.battery_container.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             # self.battery_container.set_size(24, 24)
             with Stylize(self.battery_container) as default:
-                default.bg_color(BLACK)
                 default.pad(left=2, right=2)
                 default.radius(4)
                 default.align(lv.ALIGN.CENTER)
 
+            self.battery_container.add_child(battery_bg)
+            self.battery.set_pos(1, 1)
             self.battery_container.add_child(self.battery)
             self.add_child(self.battery_container)
 
