@@ -179,9 +179,12 @@ def manage_keys():
 
 
 def nostr_menu():
-    from flows import NostrDelegationFlow
+    from utils import is_dev_build
 
-    return [{'icon': lv.ICON_SIGN, 'label': 'Delegate', 'flow': NostrDelegationFlow}]
+    if is_dev_build():
+        from developer import NostrDelegationFlow
+        return [{'icon': lv.ICON_SIGN, 'label': 'Delegate', 'flow': NostrDelegationFlow}]
+    return []
 
 
 def key_manager_menu():
