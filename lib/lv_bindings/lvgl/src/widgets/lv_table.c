@@ -498,7 +498,7 @@ static void lv_table_event(const lv_obj_class_t * class_p, lv_event_t * e)
         for(i = 0; i < table->row_cnt; i++) h += table->row_h[i];
 
         p->x = w - 1;
-        p->y = h - 1;
+        p->y = h;  // FOUNDATION CHANGE - last pixel was being cut off on last table item
     }
     else if(code == LV_EVENT_PRESSED || code == LV_EVENT_PRESSING) {
         uint16_t col;
@@ -745,7 +745,8 @@ static void draw_main(lv_event_t * e)
 
             if(table->cell_data[cell]) {
                 txt_area.x1 = cell_area.x1 + cell_left;
-                txt_area.x2 = cell_area.x2 - cell_right - 28; // FOUNDATION
+                txt_area.x2 = cell_area.x2 - cell_right - 28;  // FOUNDATION CHANGE ===================================
+
                 txt_area.y1 = cell_area.y1 + cell_top;
                 txt_area.y2 = cell_area.y2 - cell_bottom;
 
