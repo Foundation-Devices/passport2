@@ -333,8 +333,7 @@ hash filepath screen="mono" output_file="":
     echo "$sha" > ${directory}/${release_name}-sha256
 
     # MD5
-    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
-    md5=${md5::-1}
+    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p' | xargs`
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
