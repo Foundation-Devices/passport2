@@ -38,7 +38,10 @@ Code specific to Passport is included in the following folders:
         -   [`se_config_gen`](ports/stm32/boards/Passport/tools/se_config_gen) - Tool for specifying how Passport will use the slots of the Secure Element and generating the configuration data to pass to the chip during provisioning.  The conriguration gets locked down during provisioning and cannot be changed.
         -   [`version_info`](ports/stm32/boards/Passport/tools/version_info) - A simple bash script for creating a date and version number available in C.
         -   [`word_list_gen`](ports/stm32/boards/Passport/tools/word_list_gen) - Simple utility for creating optimized word lookup metadata for BIP-39 and bytewords.
- 
+
+## Reproducible Builds
+Please see [`REPRODUCIBILITY.md`](https://github.com/Foundation-Devices/passport2/blob/main/REPRODUCIBILITY.md) for instructions on how to easily build and verify Passport firmware in a reproducible way.
+
 ## Development
 
 Please see [`DEVELOPMENT.md`](DEVELOPMENT.md) for information on developing for Passport.
