@@ -10,12 +10,10 @@ from views import View
 
 class Icon(View):
     def __init__(self, icon, color=None, opa=None):
+        from utils import derive_icon
+
         super().__init__()
-        # Icon is expected to be a string
-        if isinstance(icon, str):
-            self.icon = getattr(lv, icon)
-        else:
-            self.icon = icon
+        self.icon = derive_icon(icon)
         self.color = color
         self.opa = opa
 
