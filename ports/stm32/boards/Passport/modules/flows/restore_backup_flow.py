@@ -17,7 +17,7 @@ from pages import (
     SuccessPage,
     YesNoChooserPage
 )
-from utils import get_backups_folder_path, spinner_task, get_backup_code_as_password
+from utils import spinner_task, get_backup_code_as_password
 from tasks import restore_backup_task, get_backup_code_task
 from errors import Error
 import common
@@ -52,8 +52,7 @@ class RestoreBackupFlow(Flow):
             self.goto(self.choose_file)
 
     async def choose_file(self):
-        backups_path = get_backups_folder_path()
-        result = await FilePickerFlow(initial_path=backups_path, suffix='.7z', show_folders=True).run()
+        result = await FilePickerFlow(suffix='.7z', show_folders=True).run()
         if result is None:
             # No file chosen, so go back to menu
             self.set_result(False)
