@@ -160,5 +160,10 @@ To build the bootloader for a reproducibility check, go to the repo root folder:
 
 Then run one of the following commands to build the corresponding bootloader:
 
-    just build color
-    just build mono
+    just build-bootloader color
+    just build-bootloader mono
+
+Please note that building the mono bootloader is not yet supported on this
+repository, if you need to build it please follow the instruction on:
+
+https://github.com/Foundation-Devices/passport-firmware
