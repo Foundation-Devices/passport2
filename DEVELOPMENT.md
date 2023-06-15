@@ -127,8 +127,7 @@ If you don't already have an openssl key, return to the repo root directory (e.g
 
 Now, move the keys into `~/bin/keys/`, or look ahead a few steps for instructions on setting a custom `cosign_keypath`. Create the directory if it doesn't exist yet. If you already have keys here for another use, make sure not to overwrite them. Make sure not to commit these keys in the git repo.
 
-    mkdir ~/bin
-    mkdir ~/bin/keys
+    mkdir -p ~/bin/keys
     mv tools/1.pem ~/bin/keys/user.pem
     mv tools/1-pub.bin ~/bin/keys/user-pub.bin
     mv tools/1-pub.pem ~/bin/keys/user-pub.pem
