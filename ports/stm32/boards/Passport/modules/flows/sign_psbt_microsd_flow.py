@@ -37,12 +37,8 @@ class SignPsbtMicroSDFlow(Flow):
 
     async def choose_file(self):
         from flows import FilePickerFlow
-        from files import CardSlot
 
-        root_path = CardSlot.get_sd_root()
-
-        result = await FilePickerFlow(
-            initial_path=root_path, show_folders=True, suffix='psbt', filter_fn=None).run()
+        result = await FilePickerFlow(show_folders=True, suffix='psbt', filter_fn=None).run()
         if result is None:
             self.set_result(False)
             return
@@ -92,21 +88,12 @@ class SignPsbtMicroSDFlow(Flow):
 
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
+
         if result is None:
             self.set_result(False)
         else:
             self.psbt = result
             self.goto(self.write_signed_transaction)
-
-    async def show_card_missing(self):
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            result = QuestionPage(text='Cancel signing this transaction?').show()
-            if result:
-                self.set_result(None)
-
-        self.goto(self.write_signed_transaction)
 
     async def write_signed_transaction(self):
         from files import securely_blank_file
@@ -131,10 +118,11 @@ class SignPsbtMicroSDFlow(Flow):
                                            write_fn=self.write_psbt_fn,
                                            success_text="psbt",
                                            path=orig_path,
-                                           automatic=True).run()
+                                           automatic=False,
+                                           auto_prompt=True).run()
         if not result_1:
             # Fall through
-            await ErrorPage(text='Unable to save {} to MicroSD'.format(target_fname)).show()
+            await ErrorPage(text='Unable to save {} to microSD'.format(target_fname)).show()
             return
 
         if is_comp:
@@ -143,9 +131,10 @@ class SignPsbtMicroSDFlow(Flow):
                                                write_fn=self.write_final_fn,
                                                success_text="transaction",
                                                path=orig_path,
-                                               automatic=True).run()
+                                               automatic=False,
+                                               auto_prompt=True).run()
             if not result_2:
-                await ErrorPage(text='Unable to save {} to MicroSD'.format(target2_fname)).show()
+                await ErrorPage(text='Unable to save {} to microSD'.format(target2_fname)).show()
                 # Fall through
                 return
 

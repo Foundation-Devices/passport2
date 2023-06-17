@@ -83,6 +83,7 @@ pub unsafe extern "C" fn ur_decoder_receive(
     ur: *const u8,
     ur_len: usize,
     error: &mut UR_Error,
+    num_frames: &mut u32,
 ) -> bool {
     // SAFETY: ur and ur_len are assumed to be valid.
     let ur = unsafe { slice::from_raw_parts(ur, ur_len) };
@@ -108,6 +109,8 @@ pub unsafe extern "C" fn ur_decoder_receive(
             return false;
         }
     };
+
+    *num_frames = ur.sequence_count().unwrap_or(0);
 
     let result = decoder.inner.receive(ur).map_err(|e| match e {
         Error::NotMultiPart => unsafe {

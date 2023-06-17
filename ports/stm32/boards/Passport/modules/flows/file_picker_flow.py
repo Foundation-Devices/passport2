@@ -21,15 +21,22 @@ def file_key(f):
 
 class FilePickerFlow(Flow):
     def __init__(
-            self, initial_path=None, show_folders=False, enable_parent_nav=False, suffix=None,
-            filter_fn=None, select_text="Select"):
+            self,
+            initial_path=None,
+            show_folders=False,
+            enable_parent_nav=False,
+            suffix=None,
+            filter_fn=None,
+            select_text="Select"):
         from files import CardSlot
+        from utils import bind, show_card_missing
 
         if not initial_path:
             initial_path = CardSlot.get_sd_root()
 
-        super().__init__(initial_state=self.show_file_picker, name='FilePickerFlow: {}'.format(
-            initial_path))
+        super().__init__(initial_state=self.show_file_picker,
+                         name='FilePickerFlow: {}'.format(initial_path))
+
         self.initial_path = initial_path
         self.paths = [initial_path]
         self.show_folders = show_folders
@@ -41,13 +48,15 @@ class FilePickerFlow(Flow):
         self.empty_result = None
         self.finished = False
 
+        bind(self, show_card_missing)
+
     def on_empty_sd_card_change(self, sd_card_present):
         if sd_card_present:
             return True  # This will cause a refresh
         else:
             self.reset_paths()
             self.status_page.set_result(None)
-            self.goto(self.show_insert_microsd_error)
+            self.goto(self.show_card_missing)
             return False
 
     async def on_empty_result(self, res):
@@ -61,7 +70,7 @@ class FilePickerFlow(Flow):
     def on_file_sd_card_change(self, sd_card_present):
         if not sd_card_present:
             self.reset_paths()
-            self.goto(self.show_insert_microsd_error)
+            self.goto(self.show_card_missing)
             return True
 
     async def on_file_result(self, res):
@@ -90,7 +99,8 @@ class FilePickerFlow(Flow):
         return True
 
     async def show_file_picker(self):
-        from utils import show_page_with_sd_card
+        from utils import show_page_with_sd_card, get_backups_folder_path, get_folder_path
+        from public_constants import DIR_TRANSACTIONS
 
         while True:
             # Get list of files/folders at the current path
@@ -104,21 +114,25 @@ class FilePickerFlow(Flow):
                     suffix=self.suffix,
                     filter_fn=self.filter_fn)
 
-                files = sorted(files, key=file_key)
+                reverse = False
+                if (active_path == get_backups_folder_path() or
+                        active_path == get_folder_path(DIR_TRANSACTIONS)):
+                    reverse = True
+                files = sorted(files, key=file_key, reverse=reverse)
 
             except CardMissingError:
                 self.reset_paths()
-                self.goto(self.show_insert_microsd_error)
+                self.goto(self.show_card_missing)
                 return
 
             is_root = active_path == CardSlot.get_sd_root()
             if is_root:
                 title = 'microSD'
-                icon = lv.ICON_MICROSD
+                icon = 'ICON_MICROSD'
             else:
                 leaf_folder_name = active_path.split('/')[-1]
                 title = leaf_folder_name
-                icon = lv.ICON_FOLDER
+                icon = 'ICON_FOLDER'
 
             if len(files) == 0:
                 self.status_page = StatusPage(
@@ -158,13 +172,6 @@ class FilePickerFlow(Flow):
 
                 if self.finished:
                     return
-
-    async def show_insert_microsd_error(self):
-        result = await InsertMicroSDPage().show()
-        if not result:
-            self.set_result(None)
-        else:
-            self.goto(self.show_file_picker)
 
     def reset_paths(self):
         self.paths = [self.initial_path]

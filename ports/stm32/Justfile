@@ -10,11 +10,6 @@ contribdir := join(justfile_directory(), "boards/Passport/contrib")
 openocd_cfg := join(contribdir, "openocd.cfg")
 compile_commands := join(builddir, "compile_commands.json")
 
-base_cflags := "-DLV_COLOR_DEPTH=16 -DLV_COLOR_16_SWAP -DLV_TICK_CUSTOM=1"
-color_cflags := "-DSCREEN_MODE_COLOR -DHAS_FUEL_GAUGE "
-mono_cflags := "-DSCREEN_MODE_MONO"
-dev_cflags := "-DDEV_BUILD"
-
 # Number of jobs to use when building
 jobs := if os() == "macos" {
     `sysctl -n hw.logicalcpu`
@@ -83,7 +78,7 @@ build screen="mono" dev="" +ext='':
     @echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
 
     make -j{{jobs}} \
-        LV_CFLAGS='{{base_cflags}} {{ if screen == "mono" { mono_cflags } else { color_cflags } }} {{ if dev == "dev" { dev_cflags } else { "" } }}' \
+        {{ if dev == "dev" { "DEV_BUILD=1" } else { "" } }} \
         BOARD=Passport \
         SCREEN_MODE={{ uppercase(screen) }} \
         FROZEN_MANIFEST={{ if dev == "dev" { 'boards/Passport/manifest_dev.py' } else { 'boards/Passport/manifest.py' } }} \
@@ -123,6 +118,7 @@ sign-beta version="1.0.0" beta-num="1":
     rm -rf "{{version}}-beta-{{beta-num}}"
     mkdir -p "{{version}}-beta-{{beta-num}}"
     screens=("color" "mono")
+    screen_names=("" "-founders")
     paths=("passport-key-user" "passport-fe-key-user")
     builds=("" "dev")
     build_names=("" "-dev")
@@ -132,9 +128,9 @@ sign-beta version="1.0.0" beta-num="1":
         for build in "${builds[@]}"; do
             just clean
             just sign {{version}} $screen $build
-            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin"
-            just hash "build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}-notes.md"
-            cp build-Passport/v{{version}}-beta-{{beta-num}}-${screen}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
+            mv "build-Passport/v{{version}}-${paths[$i]}.bin" "build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-passport.bin"
+            just hash "build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-passport.bin" "${screen}" "{{version}}-beta-{{beta-num}}/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}-notes.md"
+            cp build-Passport/v{{version}}-beta-{{beta-num}}${screen_names[$i]}${build_names[$j]}* "{{version}}-beta-{{beta-num}}/"
             j=$((j + 1))
         done
         i=$((i + 1))
@@ -208,14 +204,15 @@ graphics-c:
 # graphics: graphics-py graphics-c
 
 # Build all images.
-images: (convert-images 'boards/Passport/images') (convert-images 'boards/Passport/bootloader/images')
+images: (convert-images "boards/Passport/images" "true") (convert-images "boards/Passport/bootloader/images" "false")
 
 # LVGL Image Conversion Tool
-convert-images image_path:
+convert-images image_path process_mono='false':
     #!/usr/bin/python3
     import os
     from os import listdir
     image_path = '{{image_path}}'
+    process_mono = '{{process_mono}}'
     conv_path = '../../../../../../tools/lv_img_conv/lv_img_conv.js'
 
     f = open(image_path + '/images.h', 'w')
@@ -230,6 +227,7 @@ convert-images image_path:
         from shutil import copyfile
         full_folder = image_path + '/{}'.format(folder)
         image_filenames = [f for f in listdir(full_folder) if f.endswith('.png')]
+        image_filenames.sort()
         for filename in image_filenames:
             base = os.path.splitext(filename)[0] # Trim extension
             parts = base.split('__')
@@ -277,9 +275,10 @@ convert-images image_path:
     handle_images('color')
     f.write('#endif\n\n')
 
-    f.write('#ifdef SCREEN_MODE_MONO\n')
-    handle_images('mono')
-    f.write('#endif\n\n')
+    if process_mono == "true":
+        f.write('#ifdef SCREEN_MODE_MONO\n')
+        handle_images('mono')
+        f.write('#endif\n\n')
 
     f.close()
 
@@ -334,19 +333,20 @@ hash filepath screen="mono" output_file="":
     echo "$sha" > ${directory}/${release_name}-sha256
 
     # MD5
-    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
-    md5=${md5::-1}
+    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p' | xargs`
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
     build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
-    output="## RELEASE HASHES\n\nSHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
+    output="## RELEASE HASHES\n\n"
 
     if [ -n "{{output_file}}" ]; then
         output+="### $filename:\n\n"
     fi
+
+    output+="SHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
 
     output+="SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum $filename\` or \`md5sum $filename\`\n\n"
     output+="### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"

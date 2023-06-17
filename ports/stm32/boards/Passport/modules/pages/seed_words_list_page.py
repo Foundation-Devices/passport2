@@ -8,9 +8,10 @@ from pages import Page
 from styles.style import Stylize
 from views import View, Label
 import microns
-from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
+from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY, SCROLLBAR_BG_COLOR
 from micropython import const
 import common
+import passport
 
 _NUM_COLUMNS = const(2)
 
@@ -28,6 +29,7 @@ class SeedWordsListPage(Page):
         self.page_idx = 0
         self.prev_card_descs = None
         self.prev_card_idx = None
+        self.left_micron = left_micron
 
         if len(self.words) == 24:
             self.num_pages = 2
@@ -62,6 +64,8 @@ class SeedWordsListPage(Page):
 
         with Stylize(self, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         self.update()
 
@@ -137,13 +141,13 @@ class SeedWordsListPage(Page):
         # Update microns
         if self.num_pages > 1:
             if self.page_idx == 0:
-                common.ui.set_left_micron(None)
+                common.ui.set_left_micron(self.left_micron)
                 common.ui.set_right_micron(microns.Forward)
             else:
                 common.ui.set_left_micron(microns.Back)
                 common.ui.set_right_micron(microns.Checkmark)
         else:
-            common.ui.set_left_micron(None)
+            common.ui.set_left_micron(self.left_micron)
             common.ui.set_right_micron(microns.Checkmark)
 
     def attach(self, group):
@@ -175,6 +179,8 @@ class SeedWordsListPage(Page):
                 # Go back a page
                 self.page_idx -= 1
                 self.update()
+            else:
+                self.set_result(False)
 
     def right_action(self, is_pressed):
         if not is_pressed:

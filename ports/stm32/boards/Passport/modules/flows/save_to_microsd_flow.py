@@ -14,8 +14,10 @@ class SaveToMicroSDFlow(Flow):
                  success_text="file",
                  path=None,
                  mode='',
-                 automatic=False):
+                 automatic=False,
+                 auto_prompt=None):
         import microns
+        from utils import bind, show_card_missing
 
         self.filename = filename.replace(' ', '_')
         self.data = data
@@ -24,10 +26,33 @@ class SaveToMicroSDFlow(Flow):
         self.path = path
         self.mode = mode
         self.out_full = None
+        # If auto_prompt isn't specified, use automatic value
+        auto_prompt = auto_prompt or automatic
+        self.auto_timeout = 1000 if auto_prompt else None
+        self.show_check = None if auto_prompt else microns.Checkmark
+
+        # Used in flow_show_card_missing
         self.automatic = automatic
-        self.auto_timeout = 1000 if automatic else None
-        self.show_check = None if automatic else microns.Checkmark
-        super().__init__(initial_state=self.save, name='SaveToMicroSDFlow')
+        self.return_bool = True
+
+        bind(self, show_card_missing)
+
+        super().__init__(initial_state=self.check_inputs,
+                         name='SaveToMicroSDFlow')
+
+    def default_write_fn(self, filename):
+        with open(self.out_full, 'w' + self.mode) as fd:
+            fd.write(self.data)
+
+    async def check_inputs(self):
+        from pages import ErrorPage
+
+        if (not self.data and not self.write_fn) or (self.data and self.write_fn):
+            await ErrorPage("Either data or a write function is required to save a file.").show()
+            self.set_result(False)
+            return
+
+        self.goto(self.save)
 
     async def save(self):
         from files import CardSlot, CardMissingError
@@ -36,36 +61,28 @@ class SaveToMicroSDFlow(Flow):
         from errors import Error
         from tasks import custom_microsd_write_task
 
+        if self.data:
+            self.write_fn = self.default_write_fn
+
         written = False
 
         for path in [self.path, None]:
             try:
                 with CardSlot() as card:
                     ensure_folder_exists(self.path)
-
                     self.out_full, _ = card.pick_filename(self.filename, path)
-
-                    if self.data:
-                        with open(self.out_full, 'w' + self.mode) as fd:
-                            fd.write(self.data)
-                        written = True
-                    elif self.write_fn:
-                        error = await spinner_task("Writing {}".format(self.success_text),
-                                                   custom_microsd_write_task,
-                                                   args=[self.out_full, self.write_fn])
-                        if error is Error.MICROSD_CARD_MISSING:
-                            raise CardMissingError()
-                        elif error is Error.FILE_WRITE_ERROR:
-                            raise Exception("write task failed")
-                        written = True
-                    if written:
-                        break
+                    error = await spinner_task("Writing {}".format(self.success_text),
+                                               custom_microsd_write_task,
+                                               args=[self.out_full, self.write_fn])
+                    if error is Error.MICROSD_CARD_MISSING:
+                        raise CardMissingError()
+                    elif error is Error.FILE_WRITE_ERROR:
+                        raise Exception("write task failed")
+                    written = True
+                    break
 
             except CardMissingError:
-                if not self.automatic:
-                    self.goto(self.show_card_missing)
-                else:
-                    self.set_result(False)
+                self.goto(self.show_card_missing)
                 return
 
             except Exception as e:
@@ -78,7 +95,7 @@ class SaveToMicroSDFlow(Flow):
         if written:
             self.goto(self.success)
         else:
-            await ErrorPage("Failed to write file: no data or write task.",
+            await ErrorPage("Failed to write file.",
                             right_micron=self.show_check) \
                 .show(auto_close_timeout=self.auto_timeout)
 
@@ -88,12 +105,3 @@ class SaveToMicroSDFlow(Flow):
                           right_micron=self.show_check) \
             .show(auto_close_timeout=self.auto_timeout)
         self.set_result(True)
-
-    async def show_card_missing(self):
-        from pages import InsertMicroSDPage
-
-        result = await InsertMicroSDPage().show()
-        if not result:
-            self.set_result(False)
-        else:
-            self.goto(self.save)

@@ -40,7 +40,6 @@ Then run the following commands:
     rustup target add aarch64-unknown-none 
     
     rustup target add thumbv7em-none-eabihf
-    rustup target add x86_64-unknown-none
     cargo install cbindgen
 
 #### Cross-Compiler Toolchain
@@ -161,5 +160,9 @@ To build the bootloader for a reproducibility check, go to the repo root folder:
 
 Then run one of the following commands to build the corresponding bootloader:
 
-    just build color
-    just build mono
+    just build-bootloader color
+    just build-bootloader mono
+
+Please note that building the mono bootloader is not yet supported in this repository.  If you need to build it, please follow the instructions at:
+
+https://github.com/Foundation-Devices/passport-firmware

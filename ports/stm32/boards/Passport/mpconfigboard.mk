@@ -38,21 +38,12 @@ FROZEN_MANIFEST ?= boards/Passport/manifest.py
 MICROPY_EXTMOD_DIR = ../../extmod
 CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR) \
   -I$(MICROPY_EXTMOD_DIR)/foundation \
-  -I$(MICROPY_EXTMOD_DIR)/quirc \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/aes \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/chacha20poly1305 \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/crypto/ed25519-donna \
-  -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core
+  -I$(MICROPY_EXTMOD_DIR)/quirc
 
-CFLAGS_MOD += -DBITCOIN_ONLY=1 -DAES_128=1 -DAES_192=1
+LV_CFLAGS += -DLV_COLOR_DEPTH=16 -DLV_COLOR_16_SWAP -DLV_TICK_CUSTOM=1
 
 # settings that apply only to crypto C-lang code
-build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += \
-	-DUSE_BIP39_CACHE=0 -DBIP32_CACHE_SIZE=0 -DUSE_BIP32_CACHE=0 -DBIP32_CACHE_MAXDEPTH=0 \
-	-DRAND_PLATFORM_INDEPENDENT=1 -DUSE_BIP39_GENERATE=0 -DUSE_BIP32_25519_CURVES=0
-
-CFLAGS_MOD += -I$(MICROPY_EXTMOD_DIR)/trezor-firmware/core/embed/extmod/modtrezorcrypto -Iboards/$(BOARD)/trezor-firmware/core
+build-Passport/boards/Passport/crypto/%.o: CFLAGS_MOD += -DRAND_PLATFORM_INDEPENDENT=1
 
 # Bootloader CFLAGS
 CFLAGS_MOD += -DBL_NVROM_BASE=$(BL_NVROM_BASE)
@@ -85,13 +76,19 @@ SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
 ifeq ($(SCREEN_MODE), MONO)
     SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
  				lcd-sharp-ls018b7dh02.c)
-	CFLAGS += -DSCREEN_MODE_MONO=1
+    LV_CFLAGS += -DSCREEN_MODE_MONO=1
+    CFLAGS += -DSCREEN_MODE_MONO=1
 endif
 
 ifeq ($(SCREEN_MODE), COLOR)
     SRC_MOD += $(addprefix boards/$(BOARD)/common/,\
 				lcd-st7789.c st7789.c)
-	CFLAGS += -DSCREEN_MODE_COLOR=1
+    LV_CFLAGS += -DSCREEN_MODE_COLOR=1 -DHAS_FUEL_GAUGE=1
+    CFLAGS += -DSCREEN_MODE_COLOR=1 -DHAS_FUEL_GAUGE=1
+endif
+
+ifeq ($(DEV_BUILD),1)
+    LV_CFLAGS += -DDEV_BUILD
 endif
 
 RUST_TARGET := thumbv7em-none-eabihf

@@ -6,11 +6,12 @@
 
 import lvgl as lv
 from flows import Flow
-from pages import SuccessPage, QuestionPage
+from pages import SuccessPage, QuestionPage, LongQuestionPage
 from tasks import erase_passport_task
 from utils import spinner_task
 from translations import t, T
 import microns
+import passport
 
 
 class ErasePassportFlow(Flow):
@@ -28,7 +29,8 @@ class ErasePassportFlow(Flow):
             self.set_result(False)
             return
 
-        if not await QuestionPage(
+        page_class = QuestionPage if passport.IS_COLOR else LongQuestionPage
+        if not await page_class(
             'Without a proper backup, you could lose all funds associated with this device.\n\n' +
                 'Please confirm you understand these risks.').show():
             self.set_result(False)

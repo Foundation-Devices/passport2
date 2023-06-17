@@ -148,11 +148,7 @@ class SignPsbtCommonFlow(Flow):
             options = [{'label': 'Cancel', 'value': True},
                        {'label': 'Review Details', 'value': False}]
 
-            should_cancel = await ChooserPage(
-                text='Cancel this transaction?',
-                options=options,
-                icon=lv.LARGE_ICON_QUESTION,
-                initial_value=options[0].get('value')).show()
+            should_cancel = await QuestionPage(text='Cancel this transaction?').show()
             if should_cancel:
                 self.set_result(None)
             else:

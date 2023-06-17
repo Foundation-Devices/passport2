@@ -12,7 +12,7 @@ class SetInitialPINFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.intro, name='SetInitialPINFlow')
 
-        self.statusbar = {'title': 'SET PIN', 'icon': lv.ICON_PIN}
+        self.statusbar = {'title': 'SET PIN', 'icon': 'ICON_PIN'}
 
     async def intro(self):
         from common import pa

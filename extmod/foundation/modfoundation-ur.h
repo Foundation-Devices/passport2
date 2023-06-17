@@ -555,12 +555,14 @@ STATIC mp_obj_t mod_foundation_ur_decoder_receive(mp_obj_t ur_obj)
 
     mp_check_self(mp_obj_is_str(ur_obj));
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
+
+    uint32_t num_frames = 0;
     
-    if (!ur_decoder_receive(&UR_DECODER, ur, ur_len, &error)) {
+    if (!ur_decoder_receive(&UR_DECODER, ur, ur_len, &error, &num_frames)) {
         mod_foundation_ur_raise(&error);
     }
 
-    return mp_const_none;
+    return mp_obj_new_int(num_frames);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_decoder_receive_obj,
                                  mod_foundation_ur_decoder_receive);

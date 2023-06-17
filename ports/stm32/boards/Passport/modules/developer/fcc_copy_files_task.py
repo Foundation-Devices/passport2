@@ -9,7 +9,7 @@ from files import CardSlot, CardMissingError
 from errors import Error
 
 
-async def fcc_copy_files_task(file_path, file_size=1024, set_progress=None, set_text=None, on_done=None):
+async def fcc_copy_files_task(file_path, file_size, set_progress, set_text, on_done):
     from common import sf
 
     # ==========================================================================================================

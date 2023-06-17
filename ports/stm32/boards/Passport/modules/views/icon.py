@@ -10,8 +10,10 @@ from views import View
 
 class Icon(View):
     def __init__(self, icon, color=None, opa=None):
+        from utils import derive_icon
+
         super().__init__()
-        self.icon = icon
+        self.icon = derive_icon(icon)
         self.color = color
         self.opa = opa
 
@@ -22,7 +24,10 @@ class Icon(View):
                 default.opa(self.opa)
 
     def set_icon(self, icon):
-        self.icon = icon
+        if isinstance(icon, str):
+            self.icon = getattr(lv, icon)
+        else:
+            self.icon = icon
         self.update()
 
     def set_color(self, color=None, opa=None):

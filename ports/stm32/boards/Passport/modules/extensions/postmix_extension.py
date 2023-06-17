@@ -14,7 +14,7 @@ import microns
 # Postmix account for CoinJoin
 name = 'postmix'
 postmix_account = {'name': 'Postmix', 'acct_num': 2_147_483_646}
-icon = lv.ICON_SPIRAL
+icon = 'ICON_SPIRAL'
 
 PostmixExtension = {
     'name': name,
@@ -29,7 +29,7 @@ PostmixExtension = {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_EXTENSIONS, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': 'ICON_EXTENSIONS', 'fg_color': WHITE},
         'title': postmix_account.get('name'),
         'page_micron': microns.PageDot,
         'bg_color': RED,

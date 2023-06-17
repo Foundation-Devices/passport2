@@ -4,12 +4,11 @@
 # scv_flow.py - Supply Chain Validation Flow
 
 import lvgl as lv
-from flows import Flow
-from pages import ScanQRPage, ShowQRPage, QRScanResult
-from pages.chooser_page import ChooserPage
+from flows import Flow, ScanQRFlow
+from pages import ShowQRPage, QuestionPage, ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX
 from data_codecs.qr_type import QRType
-from utils import a2b_hex
+from utils import a2b_hex, recolor
 from ubinascii import hexlify as b2a_hex
 from pincodes import PinAttempt
 from foundation import ur
@@ -25,121 +24,71 @@ class ScvFlow(Flow):
         :param envoy: True for Envoy App flow. False is manual Supply Chain Validation.
         """
 
-        super().__init__(initial_state=self.show_intro, name='ScvFlow')
+        super().__init__(initial_state=self.show_intro,
+                         name='ScvFlow',
+                         statusbar={'title': 'SECURITY CHECK', 'icon': 'ICON_SHIELD'})
         self.words = None
         self.envoy = envoy
         self.ask_to_skip = ask_to_skip
         self.uuid = None
 
-        self.statusbar = {'title': 'SECURITY CHECK', 'icon': lv.ICON_SHIELD}
-
     async def show_intro(self):
         from pages import ShieldPage
-
-        text = []
-        # Only show the first item for manual flow
-        if not self.envoy:
-            text.append('Let\'s confirm Passport was not tampered with during shipping.')
+        from flows import SeriesOfPagesFlow
 
         if self.envoy:
-            text.append('On the next screen, scan the QR code shown in Envoy.')
+            messages = [{'text': 'On the next screen, scan the QR code shown in Envoy.'}]
         else:
-            text.append('On the next screen, scan the Security Check QR code from validate.foundationdevices.com.')
+            messages = [{'text': 'Let\'s confirm Passport was not tampered with during shipping.'},
+                        {'text': 'Next, scan the Security Check '
+                         'QR code from validate.foundationdevices.com.'}]
 
-        result = await ShieldPage(
-            text=text,
-            left_micron=microns.Back, right_micron=microns.Forward).show()
+        result = await SeriesOfPagesFlow(ShieldPage, messages).run()
+
         if result:
             self.goto(self.scan_qr_challenge)
         else:
             self.set_result(False)
 
     async def scan_qr_challenge(self):
-        from utils import recolor
-        result = await ScanQRPage(left_micron=microns.Cancel, right_micron=None).show()
-
-        # User did not scan anything
+        qr_types = [QRType.UR2] if self.envoy else None
+        ur_types = [ur.Value.PASSPORT_REQUEST] if self.envoy else None
+        result = await ScanQRFlow(qr_types=qr_types,
+                                  ur_types=ur_types,
+                                  data_description='a supply chain validation challenge').run()
         if result is None:
-            from pages import QuestionPage
-            if self.envoy:
-                cancel = await QuestionPage(
-                    text='Cancel Envoy Setup?\n\n{}'.format(
-                        recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
-                ).show()
-                if cancel:
-                    self.set_result(None)
-                else:
-                    return
-            else:
-                if not self.ask_to_skip:
-                    self.set_result(True)
-                else:
-                    skip = await QuestionPage(
-                        text='Skip Security Check?\n\n{}'.format(
-                            recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
-                    ).show()
-                    if skip:
-                        common.settings.set('validated_ok', True)
-                        self.set_result(True)
-                    else:
-                        self.back()
+            self.goto(self.prompt_skip)
             return
 
-        # Scan succeeded -- verify its content
         if self.envoy:
-            if not is_valid_envoy_qrcode(result):
-                await self.show_error(("Security Check QR code is invalid.\n"
-                                       "Make sure you're scanning an Envoy QR code."))
-                return
-        else:
-            if not is_valid_website_qrcode(result):
-                await self.show_error(("Security Check QR code is invalid.\n"
-                                       "There was an error scanning the QR code."))
-                return
-
-        if self.envoy:
-            passport_request = result.data.unwrap_passport_request()
+            passport_request = result.unwrap_passport_request()
 
             self.uuid = passport_request.uuid()
-            challenge = {
-                'id': passport_request.scv_challenge_id(),
-                'signature': passport_request.scv_challenge_signature(),
-            }
+            scv_id = passport_request.scv_challenge_id()
+            scv_signature = passport_request.scv_challenge_signature()
         else:
-            try:
-                parts = result.data.split(' ')
-                if len(parts) != 2:
-                    await self.show_error(("Security Check QR code is invalid.\n"
-                                           "There's not enough information in the QR code."))
-                    return
+            parts = result.split(' ')
+            if len(parts) != 2:
+                await self.show_error('Security Check QR code is invalid.\n'
+                                      'There\'s not enough information in the QR code.')
+                return
 
-                challenge = {
-                    'id': parts[0],
-                    'signature': parts[1],
-                }
-                # print('Manual: challenge={}'.format(challenge))
-            except Exception as e:
-                await self.show_error(("Security Check QR code is invalid.\n"
-                                       "Make sure you're scanning a manual setup QR code."))
+            try:
+                scv_id = a2b_hex(parts[0])
+                scv_signature = a2b_hex(parts[1])
+            except ValueError:
+                await self.show_error('Security Check QR code is invalid.\n')
                 return
 
         id_hash = bytearray(32)
-        id_bin = a2b_hex(challenge['id']) if isinstance(challenge['id'], str) else challenge['id']
-        id_hex = challenge['id'] if isinstance(challenge['id'], str) else b2a_hex(challenge['id'])
-        foundation.sha256(id_hex,
-                          id_hash)
-        if isinstance(challenge['signature'], str):
-            signature = a2b_hex(challenge['signature'])
-        else:
-            signature = challenge['signature']
+        foundation.sha256(b2a_hex(scv_id), id_hash)
 
-        signature_valid = passport.verify_supply_chain_server_signature(id_hash, signature)
+        signature_valid = passport.verify_supply_chain_server_signature(id_hash, scv_signature)
         if not signature_valid:
             await self.show_error('Security Check signature is invalid.')
             return
 
-        self.words = PinAttempt.supply_chain_validation_words(id_bin)
-
+        self.words = PinAttempt.supply_chain_validation_words(scv_id)
         if self.envoy:
             self.goto(self.show_envoy_scan_msg)
         else:
@@ -147,7 +96,6 @@ class ScvFlow(Flow):
 
     async def show_envoy_scan_msg(self):
         from pages import InfoPage
-        from utils import recolor
 
         result = await InfoPage(
             text='On Envoy, select {next}, and scan the following QR code.'
@@ -176,7 +124,6 @@ class ScvFlow(Flow):
                                   caption='Scan with Envoy',
                                   left_micron=microns.Back,
                                   right_micron=microns.Forward).show()
-
         if not result:
             self.back()
         else:
@@ -185,13 +132,11 @@ class ScvFlow(Flow):
     async def show_manual_response(self):
         from pages import ShieldPage
 
-        words = ''
-        for idx, word in enumerate(self.words):
-            words += '               {}. {}\n'.format(idx + 1, word)
-        words = words[:-1]
+        lines = ['{}. {}\n'.format(idx + 1, word) for idx, word in enumerate(self.words)]
+        words = ''.join(lines)
 
-        result = await ShieldPage(text=words, card_header={'title': 'Security Check'}, centered=False,
-                                  left_micron=microns.Retry, right_micron=microns.Forward).show()
+        result = await ShieldPage(text=words,
+                                  left_micron=microns.Retry).show()
         if not result:
             self.back()
         else:
@@ -221,11 +166,14 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
             if result:
                 self.goto(self.scan_qr_challenge)
             else:
-                self.goto(self.ask_to_skip)
+                self.goto(self.prompt_skip)
 
-    async def ask_to_skip(self):
-        from pages import QuestionPage
-        from utils import recolor
+    async def prompt_skip(self):
+
+        if not self.ask_to_skip:
+            common.settings.set('validated_ok', True)
+            self.set_result(True)
+            return
 
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
@@ -238,34 +186,7 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
             self.back()
 
     async def show_error(self, message):
-        from pages import InfoPage
+        from pages import ErrorPage
 
-        await InfoPage(text=message).show()
+        await ErrorPage(text=message).show()
         self.reset(self.show_intro)
-
-
-def is_valid_envoy_qrcode(result):
-    if not isinstance(result, QRScanResult):
-        return False
-
-    if (
-            (result.error is not None) or
-            (result.data is None) or
-            (not isinstance(result.data, ur.Value))
-    ):
-        return False
-
-    return True
-
-
-def is_valid_website_qrcode(result):
-    if not isinstance(result, QRScanResult):
-        return False
-
-    if (
-            (result.error is not None) or
-            (result.data is None)
-    ):
-        return False
-
-    return True

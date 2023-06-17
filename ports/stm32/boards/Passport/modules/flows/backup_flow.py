@@ -19,7 +19,7 @@ class BackupFlow(Flow):
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
 
-        self.statusbar = {'title': 'BACKUP', 'icon': lv.ICON_BACKUP}
+        self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
 
     async def show_intro(self):
         from pages import InfoPage
@@ -46,7 +46,7 @@ class BackupFlow(Flow):
         if result:
             self.goto(self.get_backup_code)
         else:
-            result = await QuestionPage(text='Skip initial Backup?\n\n{}'.format(
+            result = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
             if result:
                 self.set_result(False)
