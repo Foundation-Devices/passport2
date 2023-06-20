@@ -6,7 +6,7 @@
 
 import lvgl as lv
 import microns
-from styles.colors import TEXT_GREY, WHITE, FD_BLUE
+from styles.colors import TEXT_GREY, FOCUSED_LIST_ITEM_BG, FOCUSED_LIST_ITEM_TEXT, WHITE
 from styles import Stylize
 from pages import Page
 from views import Table
@@ -70,7 +70,8 @@ class FilePickerPage(Page):
             items.radius(MENU_ITEM_CORNER_RADIUS)
 
         with Stylize(self.table, lv.PART.ITEMS | lv.STATE.FOCUS_KEY) as focused:
-            focused.bg_color(FD_BLUE)
+            focused.bg_color(FOCUSED_LIST_ITEM_BG)
+            focused.text_color(FOCUSED_LIST_ITEM_TEXT)
 
         self.add_child(self.table)
 

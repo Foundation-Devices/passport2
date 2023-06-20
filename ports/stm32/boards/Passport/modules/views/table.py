@@ -5,20 +5,28 @@
 
 import lvgl as lv
 from views import View
-from styles.colors import WHITE, TEXT_GREY
+from styles.colors import FOCUSED_LIST_ITEM_TEXT, TEXT_GREY
 from styles import Stylize
+import passport
 
 
 class Table(View):
     def __init__(self,
                  items=[],
-                 col_width=212,
+                 col_width=None,
                  default_icon=lv.ICON_FILE,
                  alt_icon=lv.ICON_FOLDER,
                  get_cell_info=None):
         super().__init__()
         self.items = items
+
+        if col_width is None:
+            if passport.IS_COLOR:
+                col_width = 212
+            else:
+                col_width = 202
         self.col_width = col_width
+
         self.default_icon = default_icon
         self.alt_icon = alt_icon
         self.get_cell_info = get_cell_info
@@ -36,7 +44,10 @@ class Table(View):
         # If the cells are drawn...
         if dsc.part == lv.PART.ITEMS:
             label_dsc = lv.draw_label_dsc_t.__cast__(dsc.label_dsc)
-            label_dsc.ofs_x += 28
+            if passport.IS_COLOR:
+                label_dsc.ofs_x += 28
+            else:
+                label_dsc.ofs_x += 18
 
     def draw_part_end_event_cb(self, e):
         dsc = lv.obj_draw_part_dsc_t.__cast__(e.get_param())
@@ -61,7 +72,7 @@ class Table(View):
 
             selected = draw_row == selected_row
             if selected:
-                icon_color = WHITE
+                icon_color = FOCUSED_LIST_ITEM_TEXT
             else:
                 icon_color = TEXT_GREY
 
@@ -71,7 +82,10 @@ class Table(View):
             icon_img_dsc.recolor_opa = 255
 
             # Setup the draw area
-            icon_area.x1 = 10 + dsc.draw_area.x1
+            if passport.IS_COLOR:
+                icon_area.x1 = 10 + dsc.draw_area.x1
+            else:
+                icon_area.x1 = 8 + dsc.draw_area.x1
             icon_area.y1 = dsc.draw_area.y1 + ((dsc.draw_area.y2 - dsc.draw_area.y1) - icon.header.h) // 2
             icon_area.x2 = icon_area.x1 + icon.header.w - 1
             icon_area.y2 = icon_area.y1 + icon.header.h - 1
