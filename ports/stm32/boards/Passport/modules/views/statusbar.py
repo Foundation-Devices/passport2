@@ -27,11 +27,13 @@ class StatusBar(View):
         with Stylize(self) as default:
             if passport.IS_COLOR:
                 top_pad = 0
+                default.pad(top=top_pad, bottom=0, left=10, right=10)
+                default.pad_col(2)
             else:
                 top_pad = 8
+                default.pad(top=top_pad, bottom=0, left=8, right=8)
+                default.pad_col(0)
 
-            default.pad(top=top_pad, bottom=0, left=10, right=10)
-            default.pad_col(2)
             default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
 
         self.set_size(lv.pct(100), STATUSBAR_HEIGHT)
@@ -52,7 +54,7 @@ class StatusBar(View):
             self.battery_container.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             # self.battery_container.set_size(24, 24)
             with Stylize(self.battery_container) as default:
-                default.pad(left=2, right=2)
+                default.pad(left=0, right=0)
                 default.radius(4)
                 default.align(lv.ALIGN.CENTER)
 
@@ -85,8 +87,8 @@ class StatusBar(View):
             with Stylize(self.icon_view) as default:
                 if bg_view is None:
                     default.bg_color(BLACK)
-                default.pad_all(2)
-                default.radius(4)
+                    default.radius(4)
+                default.pad(top=2, bottom=2)
                 default.align(lv.ALIGN.CENTER)
 
             if bg_view:
