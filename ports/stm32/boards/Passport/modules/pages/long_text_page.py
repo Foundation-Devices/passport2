@@ -7,8 +7,9 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Label, View, Icon
 from pages import Page
-from styles.colors import TEXT_GREY
+from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
 import microns
+import passport
 
 
 class LongTextPage(Page):
@@ -53,6 +54,10 @@ class LongTextPage(Page):
         with Stylize(self.container) as default:
             default.flex_fill()
             default.pad(left=12, right=12)
+
+        with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         if self.text is not None:
             self.text = Label(text=self.text)
