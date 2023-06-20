@@ -745,8 +745,11 @@ static void draw_main(lv_event_t * e)
 
             if(table->cell_data[cell]) {
                 txt_area.x1 = cell_area.x1 + cell_left;
+#ifdef SCREEN_MODE_COLOR
                 txt_area.x2 = cell_area.x2 - cell_right - 28;  // FOUNDATION CHANGE ===================================
-
+#else
+                txt_area.x2 = cell_area.x2 - cell_right - 18;  // FOUNDATION CHANGE ===================================
+#endif
                 txt_area.y1 = cell_area.y1 + cell_top;
                 txt_area.y2 = cell_area.y2 - cell_bottom;
 
