@@ -5,12 +5,12 @@
 
 use core::{fmt, slice, str};
 
-use ur::UR;
-use ur_foundation::{ur, ur::decoder::Error};
-
-use crate::ur::{
-    max_fragment_len, max_message_len, registry::UR_Value, UR_Error,
+use foundation_ur::{
+    bytewords, bytewords::Style, decoder::Error, max_fragment_len,
+    HeaplessDecoder, UR,
 };
+
+use crate::ur::{max_message_len, registry::UR_Value, UR_Error, UR_MAX_TYPE};
 
 /// Maximum size of an encoded Uniform Resource.
 ///
@@ -25,7 +25,7 @@ pub const UR_DECODER_MAX_SEQUENCE_COUNT: usize = 128;
 
 /// Maximum fragment length.
 pub const UR_DECODER_MAX_FRAGMENT_LEN: usize =
-    max_fragment_len(UR_DECODER_MAX_STRING);
+    max_fragment_len(UR_MAX_TYPE, usize::MAX, UR_DECODER_MAX_STRING);
 
 /// Maximum message length that can be decoded.
 pub const UR_DECODER_MAX_MESSAGE_LEN: usize = 24 * 1024;
@@ -49,7 +49,7 @@ pub const UR_DECODER_MAX_UR_TYPE: usize = "crypto-coin-info".len();
 #[used]
 #[cfg_attr(dtcm, link_section = ".dtcm")]
 pub static mut UR_DECODER: UR_Decoder = UR_Decoder {
-    inner: ur::HeaplessDecoder::new_heapless(),
+    inner: HeaplessDecoder::new(),
 };
 
 /// cbindgen:ignore
@@ -62,7 +62,7 @@ static mut UR_DECODER_SINGLE_PART_MESSAGE: heapless::Vec<
 
 /// Uniform Resource decoder.
 pub struct UR_Decoder {
-    inner: ur::HeaplessDecoder<
+    inner: HeaplessDecoder<
         UR_DECODER_MAX_MESSAGE_LEN,
         UR_DECODER_MAX_MIXED_PARTS,
         UR_DECODER_MAX_FRAGMENT_LEN,
@@ -213,11 +213,7 @@ pub unsafe extern "C" fn ur_validate(ur: *const u8, ur_len: usize) -> bool {
             .as_bytewords()
             .expect("Parsed URs shouldn't be in a deserialized variant");
 
-        return ur::bytewords::validate(
-            bytewords,
-            ur::bytewords::Style::Minimal,
-        )
-        .is_ok();
+        return bytewords::validate(bytewords, Style::Minimal).is_ok();
     }
 
     false
@@ -256,11 +252,11 @@ pub unsafe extern "C" fn ur_decode_single_part(
         .resize(UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN, 0)
         .expect("Message buffer should have the same size as in the constant");
 
-    let result = ur::bytewords::decode_to_slice(
+    let result = bytewords::decode_to_slice(
         ur.as_bytewords()
             .expect("Uniform Resource should contain bytewords"),
         message,
-        ur::bytewords::Style::Minimal,
+        Style::Minimal,
     )
     .map_err(|e| unsafe { UR_Error::other(&e) });
 

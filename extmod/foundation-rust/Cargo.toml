@@ -24,14 +24,14 @@ default-features = false
 version = "1"
 default-features = false
 
-[dependencies.ur]
-git = "https://github.com/Foundation-Devices/ur-rs"
-branch = "dev"
+[dependencies.foundation-ur]
+git = "https://github.com/Foundation-Devices/foundation-rs"
+branch = "main"
 default-features = false
 
-[dependencies.ur-foundation]
-git = "https://github.com/Foundation-Devices/rust-ur-foundation"
-branch = "dev-v0.1.0"
+[dependencies.foundation-urtypes]
+git = "https://github.com/Foundation-Devices/foundation-rs"
+branch = "main"
 default-features = false
 
 [target.'cfg(target_arch = "arm")'.dependencies.cortex-m]

@@ -5,10 +5,12 @@
 
 use core::{ffi::c_char, fmt::Write};
 
+use foundation_ur::{max_fragment_len, HeaplessEncoder};
+use minicbor::{Encode, Encoder};
+
 use crate::ur::{
-    decoder::UR_DECODER_MAX_MESSAGE_LEN, max_fragment_len, registry::UR_Value,
+    decoder::UR_DECODER_MAX_MESSAGE_LEN, registry::UR_Value, UR_MAX_TYPE,
 };
-use ur_foundation::ur;
 
 /// Maximum size of an encoded Uniform Resource.
 ///
@@ -29,11 +31,11 @@ pub const UR_ENCODER_MIN_STRING: usize = 224;
 /// parts that the message is divided into.
 /// cbindgen:ignore
 pub const UR_ENCODER_MAX_FRAGMENT_LEN: usize =
-    max_fragment_len(UR_ENCODER_MAX_STRING);
+    max_fragment_len(UR_MAX_TYPE, usize::MAX, UR_ENCODER_MAX_STRING);
 
 /// Minimum fragment length.
 pub const UR_ENCODER_MIN_FRAGMENT_LEN: usize =
-    max_fragment_len(UR_ENCODER_MIN_STRING);
+    max_fragment_len(UR_MAX_TYPE, usize::MAX, UR_ENCODER_MIN_STRING);
 
 /// Maximum sequence count for the decoder.
 ///
@@ -52,7 +54,7 @@ pub const UR_ENCODER_MAX_MESSAGE_LEN: usize = UR_DECODER_MAX_MESSAGE_LEN;
 #[used]
 #[cfg_attr(dtcm, link_section = ".dtcm")]
 pub static mut UR_ENCODER: UR_Encoder = UR_Encoder {
-    inner: ur::HeaplessEncoder::new_heapless(),
+    inner: HeaplessEncoder::new(),
 };
 
 /// cbindgen:ignore
@@ -69,7 +71,7 @@ static mut UR_ENCODER_MESSAGE: heapless::Vec<u8, UR_ENCODER_MAX_MESSAGE_LEN> =
 
 /// Uniform Resource encoder.
 pub struct UR_Encoder {
-    inner: ur::HeaplessEncoder<
+    inner: HeaplessEncoder<
         'static,
         'static,
         UR_ENCODER_MAX_FRAGMENT_LEN,
@@ -82,7 +84,7 @@ pub struct UR_Encoder {
 /// # Parameters
 ///
 /// - `value` is the uniform resource to encode.
-/// - `max_fragment_len` is the maximum fragment length in bytes.
+/// - `max_chars` is the maximum fragment length in bytes.
 ///
 /// # Safety
 ///
@@ -107,11 +109,18 @@ pub unsafe extern "C" fn ur_encoder_start(
     let message = unsafe { &mut UR_ENCODER_MESSAGE };
 
     message.clear();
-    value.encode(Writer(message)).expect("Couldn't encode UR");
+    let mut e = Encoder::new(Writer(message));
+    value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
 
-    encoder
-        .inner
-        .start(value.ur_type(), message, max_fragment_len(max_chars));
+    encoder.inner.start(
+        value.ur_type(),
+        message,
+        max_fragment_len(
+            value.ur_type(),
+            UR_ENCODER_MAX_SEQUENCE_COUNT,
+            max_chars,
+        ),
+    );
 }
 
 /// Returns the UR corresponding to the next fountain encoded part.
