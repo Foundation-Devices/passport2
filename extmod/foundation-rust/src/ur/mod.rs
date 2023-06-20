@@ -4,36 +4,21 @@
 //! Uniform Resources.
 
 use core::{ffi::c_char, fmt, fmt::Write};
-use ur::fountain::part::Part;
-use ur_foundation::ur;
 
 /// cbindgen:ignore
 #[used]
 #[cfg_attr(sram4, link_section = ".sram4")]
 static mut UR_ERROR: heapless::String<256> = heapless::String::new();
 
-pub const fn max_fragment_len(max_characters: usize) -> usize {
-    const MAX_UR_PREFIX: usize = "ur:crypto-coin-info/".len()
-        + digit_count(u32::MAX as usize)
-        + "-".len()
-        + digit_count(u32::MAX as usize)
-        + "/".len();
+/// The maximum length of a UR type that will be accepted or produced.
+/// cbindgen:ignore
+const UR_MAX_TYPE: &str = "crypto-coin-info";
 
-    let max_chars_for_part = max_characters.saturating_sub(MAX_UR_PREFIX);
-    let max_bytes_for_part = (max_chars_for_part / 2).saturating_sub(4);
-    max_bytes_for_part.saturating_sub(Part::max_encoded_len())
-}
-
-pub const fn max_message_len(max_characters: usize) -> usize {
-    const MAX_UR_PREFIX: usize = "ur:crypto-coin-info/".len();
+const fn max_message_len(max_characters: usize) -> usize {
+    const MAX_UR_PREFIX: usize = "ur:".len() + UR_MAX_TYPE.len();
 
     let max_chars_for_message = max_characters.saturating_sub(MAX_UR_PREFIX);
     (max_chars_for_message / 2).saturating_sub(4)
-}
-
-/// Count the number of digits in a number.
-pub const fn digit_count(v: usize) -> usize {
-    (v.ilog10() + 1) as usize
 }
 
 #[repr(C)]
@@ -96,6 +81,11 @@ pub mod registry;
 pub mod tests {
     use super::*;
 
+    use crate::ur::decoder::UR_DECODER_MAX_FRAGMENT_LEN;
+    use crate::ur::encoder::{
+        UR_ENCODER_MAX_FRAGMENT_LEN, UR_ENCODER_MIN_FRAGMENT_LEN,
+    };
+
     #[test]
     fn sanity_test() {
         const fn is_power_of_2(x: usize) -> bool {
@@ -104,7 +94,10 @@ pub mod tests {
 
         assert!(is_power_of_2(decoder::UR_DECODER_MAX_SEQUENCE_COUNT));
         assert!(is_power_of_2(encoder::UR_ENCODER_MAX_SEQUENCE_COUNT));
-        assert!(max_fragment_len(decoder::UR_DECODER_MAX_STRING) > 0);
-        assert!(max_fragment_len(encoder::UR_ENCODER_MAX_STRING) > 0);
+
+        assert_ne!(UR_DECODER_MAX_FRAGMENT_LEN, 0);
+
+        assert_ne!(UR_ENCODER_MIN_FRAGMENT_LEN, 0);
+        assert_ne!(UR_ENCODER_MAX_FRAGMENT_LEN, 0);
     }
 }
