@@ -16,6 +16,10 @@ In this guide we will outline the exact steps necessary to get set up, build fir
 
 Security through transparency is the goal here, and firmware reproducibility is a key aspect of that!
 
+Just want a taste of what to expect? Watch the entire process, start to finish, in this quick video:
+
+[![asciicast](https://asciinema.org/a/5DtKQT0gH5LnYIpSHonOkkUif.svg)](https://asciinema.org/a/5DtKQT0gH5LnYIpSHonOkkUif)
+
 ## Setup
 
 In order to build and verify the reproducibility of Passport firmware, you will need to:
@@ -214,6 +218,8 @@ In order to install the firmware you just verified, you can follow our documenta
 - [Installing the Firmware (Advanced Instructions)](https://docs.foundationdevices.com/firmware-update#installing-the-firmware-advanced-instructions)
 
 Be sure to use the unmodified release binary you downloaded from Github above (i.e., `v2.1.2-passport.bin`) that still has our official signatures, as Passport will only allow you to install firmware that has been signed by at least two members of the Passport team.
+
+You can also validate the firmware hashes on Passport before installing by viewing the file under Settings>Advanced>MicroSD>List Files and viewing the info for the binary, or after installing by holding down the "1" key while booting and scrolling to the right.
 
 ## Conclusion
 
