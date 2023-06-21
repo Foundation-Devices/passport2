@@ -52,7 +52,18 @@ class RestoreBackupFlow(Flow):
             self.goto(self.choose_file)
 
     async def choose_file(self):
-        result = await FilePickerFlow(suffix='.7z', show_folders=True).run()
+        from utils import get_file_list, get_backups_folder_path
+
+        suffix = '.7z'
+        files = get_file_list(suffix=suffix)
+        if len(files) == 0:
+            initial_path = get_backups_folder_path()
+        else:
+            initial_path = None
+
+        result = await FilePickerFlow(initial_path=initial_path,
+                                      suffix=suffix,
+                                      show_folders=True).run()
         if result is None:
             # No file chosen, so go back to menu
             self.set_result(False)
