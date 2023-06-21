@@ -122,7 +122,7 @@ class RestoreBackupFlow(Flow):
             if self.full_backup:
                 if error_2 is not None or self.backup_code != new_backup_code:
                     await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
-                    await BackupFlow(self.backup_code).run()
+                    await BackupFlow().run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
