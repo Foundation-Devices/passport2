@@ -77,10 +77,12 @@ Note that Python `Pillow` must be updated to `8.4.0` for all commands to work pr
 
 `ports/stm32/Justfile` contains all the `just` commands you can run to build firmware for Passport. You'll typically want to be in the `ports/stm32` folder to run these commands.
 
+**Make sure to replace the version number used in this guide (2.2.0) with the software version number you're building**
+
 To build and sign the firmware with a Developer Pubkey, use one of the following commands. Note: you cannot sign with Developer Pubkey until you've completed the [code-signing](https://github.com/Foundation-Devices/passport2/blob/main/DEVELOPMENT.md#code-signing) steps:
 
-    just sign 2.0.4 color
-    just sign 2.0.4 mono
+    just sign 2.2.0 color
+    just sign 2.2.0 mono
 
 If you just want to build without signing, use one of the following commands:
 
@@ -90,8 +92,8 @@ If you just want to build without signing, use one of the following commands:
 There are other `just` command as well, but most are only useful to developers who have the Developer board with a connection to an STLink V2 debug probe.
 
     just clean                    # Cleans exisiting compiled binaries
-    just flash 2.1.0 color <dev>  # Builds, signs, and flashes firmware to a device using a connected STLink
-    just sign-beta 2.1.0 3        # Builds and signs all combinations of color, mono, normal, and dev firmwares, with a beta number
+    just flash 2.2.0 color <dev>  # Builds, signs, and flashes firmware to a device using a connected STLink
+    just sign-beta 2.2.0 3        # Builds and signs all combinations of color, mono, normal, and dev firmwares, with a beta number
 
 #### Building the Simulator
 First, install xterm
@@ -127,25 +129,31 @@ If you don't already have an openssl key, return to the repo root directory (e.g
 Now, move the keys into `~/bin/keys/`, or look ahead a few steps for instructions on setting a custom `cosign_keypath`. Create the directory if it doesn't exist yet. If you already have keys here for another use, make sure not to overwrite them. Make sure not to commit these keys in the git repo.
 
     mkdir -p ~/bin/keys
-    mv tools/1.pem ~/bin/keys/user.pem
-    mv tools/1-pub.bin ~/bin/keys/user-pub.bin
-    mv tools/1-pub.pem ~/bin/keys/user-pub.pem
+    mv 1.pem ~/bin/keys/user.pem
+    mv 1-pub.bin ~/bin/keys/user-pub.bin
+    mv 1-pub.pem ~/bin/keys/user-pub.pem
 
 Next, save `user-pub.bin` to a microSD card, and upload it to the passport by inserting the microSD, going to the leftmost settings page, and selecting Advanced -> Developer Pubkey -> Install Pubkey, then selecting user-pub.bin.
 
-Next you need to sign the firmware and give it a version number.  Once signed, `cosign` will output a filename of the format `v2.0.3-passport.bin`, but with the version number
+Next you need to sign the firmware and give it a version number.  Once signed, `cosign` will output a filename of the format `v2.1.0-passport.bin`, but with the version number
 replaced with whatever you specified.  Note that you need to tell `cosign` whether you are signing for a `mono` (Founder's Edition) Passport or a `color` (Batch 2 onward) Passport.
 
-    cosign -f build-Passport/firmware-COLOR.bin -k mykeys/user-pub.pem -t color -v 2.0.3
+First, make sure you're in the proper directory
+
+    cd ~/passport2/port/stm32
+
+then
+
+    cosign -f build-Passport/firmware-COLOR.bin -k mykeys/user-pub.pem -t color -v 2.2.0
 
 or
 
-    cosign -f build-Passport/firmware-MONO.bin -k mykeys/user-pub.pem -t mono -v 2.0.3
+    cosign -f build-Passport/firmware-MONO.bin -k mykeys/user-pub.pem -t mono -v 2.2.0
 
 Note that the `Justfile` in `ports/stm32` contains a `just sign` command that you can use just by placing your private key in `~/bin/keys/user.pem`.  Alternatively, you can
 customize the location by setting `cosign_keypath` at the top of the `Justfile`.
 
-    just sign 2.0.3 color
+    just sign 2.2.0 color
 
 You can also print the contents of the firmware header with the following command:
 
