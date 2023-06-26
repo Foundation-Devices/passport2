@@ -179,6 +179,8 @@ class Card(View):
         self.update()
 
     def update(self):
+        from utils import derive_icon
+
         # Always update the color and top padding
         top_pad = CARD_HEADER_HEIGHT if self.is_header_visible() else CARD_BORDER_WIDTH
         with LocalStyle(self.card_border) as style:
@@ -199,7 +201,8 @@ class Card(View):
                 # default.bg_color(GREEN, 128)
 
             if self.icon is not None:
-                self.icon_view = Image(self.icon, color=self.header_fg_color)
+                icon = derive_icon(self.icon)
+                self.icon_view = Image(icon, color=self.header_fg_color)
                 with Stylize(self.icon_view) as default:
                     default.align(lv.ALIGN.LEFT_MID)
                 self.header.add_child(self.icon_view)
@@ -212,7 +215,8 @@ class Card(View):
             self.header.add_child(header_title)
 
             if self.right_icon is not None:
-                self.right_icon_view = Image(self.right_icon, color=self.header_fg_color)
+                right_icon = derive_icon(self.right_icon)
+                self.right_icon_view = Image(right_icon, color=self.header_fg_color)
                 with Stylize(self.right_icon_view) as default:
                     default.align(lv.ALIGN.RIGHT_MID)
                 self.header.add_child(self.right_icon_view)

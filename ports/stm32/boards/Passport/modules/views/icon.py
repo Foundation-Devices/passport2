@@ -24,10 +24,9 @@ class Icon(View):
                 default.opa(self.opa)
 
     def set_icon(self, icon):
-        if isinstance(icon, str):
-            self.icon = getattr(lv, icon)
-        else:
-            self.icon = icon
+        from utils import derive_icon
+
+        self.icon = derive_icon(icon)
         self.update()
 
     def set_color(self, color=None, opa=None):
