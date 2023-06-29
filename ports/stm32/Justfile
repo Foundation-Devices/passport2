@@ -103,9 +103,9 @@ sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     # Remove .bin and append the signed filename string
     if [ {{screen}} == "color" ]
     then
-        SIGNED_FILE="build-Passport/v{{version}}-passport-key-user.bin"
+        SIGNED_FILE="build-Passport/v{{version}}-beta-passport.bin"
     else
-        SIGNED_FILE="build-Passport/v{{version}}-passport-fe-key-user.bin"
+        SIGNED_FILE="build-Passport/v{{version}}-beta-founders-passport.bin"
     fi
 
     # Show the signature data
@@ -119,7 +119,7 @@ sign-beta version="1.0.0" beta-num="1":
     mkdir -p "{{version}}-beta-{{beta-num}}"
     screens=("color" "mono")
     screen_names=("" "-founders")
-    paths=("passport-key-user" "passport-fe-key-user")
+    paths=("beta-passport" "beta-founders-passport")
     builds=("" "dev")
     build_names=("" "-dev")
     i=0
@@ -147,9 +147,9 @@ flash version="1.0.0" screen="mono" dev="" ext="": (sign version screen dev ext)
 
     if [ {{screen}} == "color" ]
     then
-        SIGNED_FILENAME="v{{version}}-passport-key-user.bin"
+        SIGNED_FILENAME="v{{version}}-beta-passport.bin"
     else
-        SIGNED_FILENAME="v{{version}}-passport-fe-key-user.bin"
+        SIGNED_FILENAME="v{{version}}-beta-founders-passport.bin"
     fi
 
     SIZE=$(ls -l build-Passport/$SIGNED_FILENAME | cut -d " " -f5)
