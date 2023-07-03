@@ -13,13 +13,10 @@ MICROPY_FLOAT_IMPL = double
 AF_FILE = boards/stm32h753_af.csv
 MICROPY_PY_LVGL = 1
 
-FLASH_ISR_SIZE=128K
-
 TEXT0_ADDR = $(BL_FW_BASE)
-LD_FILES = boards/Passport/passport.ld boards/common_ifs.ld
+LD_FILES = boards/Passport/passport.ld
 LDFLAGS += --defsym=BL_FW_BASE=$(BL_FW_BASE)
 LDFLAGS += --defsym=BL_FW_END=$(BL_FW_END)
-LDFLAGS += --defsym=FLASH_ISR_SIZE=$(FLASH_ISR_SIZE)
 
 # MicroPython settings
 MICROPY_PY_LWIP = 0
