@@ -10,6 +10,7 @@ from styles import Stylize
 from styles.colors import FOCUSED_LIST_ITEM_TEXT, FOCUSED_LIST_ITEM_BG, NORMAL_TEXT
 from constants import MENU_ITEM_CORNER_RADIUS
 from views import View
+from utils import derive_icon
 
 
 class MenuItem(View):
@@ -17,7 +18,7 @@ class MenuItem(View):
         from views import Switch
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
-        self.icon = icon
+        self.icon = derive_icon(icon)
         self.label = label
         self.is_toggle = is_toggle
         self.value = value
