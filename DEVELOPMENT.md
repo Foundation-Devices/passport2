@@ -25,6 +25,11 @@ to install to a different folder, and just update command paths appropriately.
     cd ~/
     git clone https://github.com/Foundation-Devices/passport2.git
 
+Foundation requires commits to be linted and to have specific commit messages in order to be merged.
+
+    cp .githooks/* .git/hooks/
+    sudo apt install pycodestyle reuse
+
 ### Install Dependencies
 Several tools are required for building Passport.
 
@@ -64,6 +69,8 @@ OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only
     ./configure --enable-stlink
     make
     sudo make install
+    sudo cp /usr/local/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
+    sudo udevadm control --reload
 
 
 ## Building Passport Firmware
