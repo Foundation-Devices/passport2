@@ -32,7 +32,7 @@
 #include "gpio.h"
 #include "hash.h"
 #include "secresult.h"
-#include "splash.h"
+#include "ui-splash.h"
 #include "ui.h"
 #include "version_info.h"
 #include "images.h"
