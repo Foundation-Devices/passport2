@@ -19,7 +19,7 @@
 #include "ui.h"
 #include "display.h"
 #include "spiflash.h"
-#include "splash.h"
+#include "ui-splash.h"
 #include "se.h"
 #include "adc.h"
 #include "noise.h"
