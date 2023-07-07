@@ -1410,8 +1410,7 @@ def bind(instance, func, as_name=None):
 def derive_icon(icon):
     if isinstance(icon, str):
         return getattr(lv, icon)
-    else:
-        return icon
+    return icon
 
 
 # EOF

@@ -2,22 +2,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
-#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+#ifdef LV_LVGL_H_INCLUDE_SIMPLE
 #include "lvgl.h"
 #else
 #include "lvgl/lvgl.h"
 #endif
 
-
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
-
 #ifndef LV_ATTRIBUTE_IMG_ICON_SETTINGS_BACKGROUND
 #define LV_ATTRIBUTE_IMG_ICON_SETTINGS_BACKGROUND
 #endif
-
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_ICON_SETTINGS_BACKGROUND uint8_t ICON_SETTINGS_BACKGROUND_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_SETTINGS_BACKGROUND uint8_t ICON_SETTINGS_BACKGROUND_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0x00, 0x00, 0x00, 0xff, 	/*Color of index 1*/
 
@@ -51,6 +48,6 @@ const lv_img_dsc_t ICON_SETTINGS_BACKGROUND = {
   .header.reserved = 0,
   .header.w = 22,
   .header.h = 22,
-  .data_size = 74,
+  .data_size = 75,
   .data = ICON_SETTINGS_BACKGROUND_map,
 };
