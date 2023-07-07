@@ -13,20 +13,10 @@ MICROPY_FLOAT_IMPL = double
 AF_FILE = boards/stm32h753_af.csv
 MICROPY_PY_LVGL = 1
 
-FLASH_ISR_SIZE=128K
-ifeq ($(SCREEN_MODE), MONO)
-  # 128K reserved for nvstore
-  FLASH_TEXT_SIZE=1664K
-else ifeq ($(SCREEN_MODE), COLOR)
-  # 128K reserved for nvstore
-  FLASH_TEXT_SIZE=1662K
-endif
-
 TEXT0_ADDR = $(BL_FW_BASE)
-LD_FILES = boards/Passport/passport.ld boards/common_ifs.ld
+LD_FILES = boards/Passport/passport.ld
 LDFLAGS += --defsym=BL_FW_BASE=$(BL_FW_BASE)
-LDFLAGS += --defsym=FLASH_ISR_SIZE=$(FLASH_ISR_SIZE)
-LDFLAGS += --defsym=FLASH_TEXT_SIZE=$(FLASH_TEXT_SIZE)
+LDFLAGS += --defsym=BL_FW_END=$(BL_FW_END)
 
 # MicroPython settings
 MICROPY_PY_LWIP = 0

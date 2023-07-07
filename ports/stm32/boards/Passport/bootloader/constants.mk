@@ -48,6 +48,11 @@ else ifeq ($(SCREEN_MODE), COLOR)
   BL_FW_BASE     := 0x08040800
 endif
 
+# Must match the value of FW_END in fwheader.
+#
+# This is the end of the firmware, for MONO and COLOR.
+BL_FW_END := 0x081E0000
+
 # Prints the BL_FW_BASE variable to the command line
 .PHONY: bl_fw_hdr_base
 bl_fw_hdr_base:
