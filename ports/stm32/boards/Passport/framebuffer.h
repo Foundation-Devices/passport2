@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#include "lvgl/lvgl.h"
+#include "lvgl.h"
 
 #if defined(SCREEN_MODE_MONO) && defined(SCREEN_MODE_COLOR)
 #error "SCREEN_MODE_MONO and SCREEN_MODE_COLOR cannot be used at the same time"
