@@ -49,7 +49,7 @@ class SaveToMicroSDFlow(Flow):
 
         if (not self.data and not self.write_fn) or (self.data and self.write_fn):
             await ErrorPage("Either data or a write function is required to save a file.").show()
-            self.set_result(False)
+            self.set_result(None)
             return
 
         self.goto(self.save)
@@ -89,7 +89,7 @@ class SaveToMicroSDFlow(Flow):
                 await ErrorPage(text='Failed to write file: {}'.format(e),
                                 right_micron=self.show_check) \
                     .show(auto_close_timeout=self.auto_timeout)
-                self.set_result(False)
+                self.set_result(None)
                 return
 
         if written:
@@ -104,4 +104,4 @@ class SaveToMicroSDFlow(Flow):
         await SuccessPage(text='Saved {} as {}'.format(self.success_text, self.out_full),
                           right_micron=self.show_check) \
             .show(auto_close_timeout=self.auto_timeout)
-        self.set_result(True)
+        self.set_result(self.out_full)
