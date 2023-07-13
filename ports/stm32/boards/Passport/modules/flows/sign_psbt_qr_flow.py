@@ -14,10 +14,11 @@ class SignPsbtQRFlow(Flow):
         self.psbt = None
         self.txid = None
         self.is_comp = None
-        self.out_fn = None
         self.out2_fn = None
+        self.written = False
         self.signed_bytes = None
         self.max_frames = 35
+        self.filename = None
 
     async def scan_transaction(self):
         from foundation import ur
@@ -108,6 +109,7 @@ How would you like to proceed?"
             self.goto(self.get_signed_bytes)
 
     async def get_signed_bytes(self):
+        import gc
         from foundation import FixedBytesIO
         from pages import ErrorPage
         from passport import mem
@@ -127,6 +129,9 @@ How would you like to proceed?"
             self.set_result(False)
             return
 
+        self.is_comp = self.psbt.is_complete()
+        self.psbt = None
+        gc.collect()
         self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
@@ -159,35 +164,21 @@ How would you like to proceed?"
 
         self.set_result(True)
 
-    def write_final_fn(self, filename):
-        from utils import HexWriter
-
-        # write psbt to file as hex
-        with HexWriter(open(filename, 'w+t')) as fd:
-            self.txid = self.psbt.finalize(fd)
-        self.out2_fn = filename
-
-    def write_psbt_fn(self, filename):
-        # Attempt to write-out the transaction
-        with self.output_encoder(open(filename, 'wb')) as fd:
-            # save as updated PSBT
-            self.psbt.serialize(fd)
-        self.out_fn = filename
-
     async def save_to_microsd(self):
         from flows import SaveToMicroSDFlow
         from pages import ErrorPage
         from utils import get_folder_path
         from public_constants import DIR_TRANSACTIONS
+        from ubinascii import hexlify as b2a_hex
 
-        # Check that the psbt has been written, and the transaction has been written if complete
-        if self.out_fn and (self.is_comp == bool(self.out2_fn)):
+        # Check that the psbt has been written
+        if self.written:
             self.goto(self.show_success)
             return
 
+        self.written = True
         base = 'QR'
 
-        self.is_comp = self.psbt.is_complete()
         if not self.is_comp:
             # Keep the filename under control during multiple passes
             target_fname = base + '-part.psbt'
@@ -195,27 +186,15 @@ How would you like to proceed?"
             # Add -signed to end. We won't offer to sign again.
             target_fname = base + '-signed.psbt'
 
-        result_1 = await SaveToMicroSDFlow(filename=target_fname,
-                                           write_fn=self.write_psbt_fn,
-                                           success_text="psbt",
-                                           path=get_folder_path(DIR_TRANSACTIONS),
-                                           automatic=False,
-                                           auto_prompt=True).run()
-        if not result_1:
+        self.filename = await SaveToMicroSDFlow(filename=target_fname,
+                                                data=b2a_hex(self.signed_bytes),
+                                                success_text="psbt",
+                                                path=get_folder_path(DIR_TRANSACTIONS),
+                                                automatic=False,
+                                                auto_prompt=True).run()
+        if self.filename is None:
             self.back()
             return
-
-        if self.is_comp:
-            target2_fname = base + '-final.txn'
-            result_2 = await SaveToMicroSDFlow(filename=target2_fname,
-                                               write_fn=self.write_final_fn,
-                                               success_text="transaction",
-                                               path=get_folder_path(DIR_TRANSACTIONS),
-                                               automatic=False,
-                                               auto_prompt=True).run()
-            if not result_2:
-                self.back()
-                return
 
         self.goto(self.show_success)
 
@@ -225,13 +204,7 @@ How would you like to proceed?"
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage
 
-        msg = "Updated PSBT is:\n\n%s" % self.out_fn
-        if self.out2_fn:
-            msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.out2_fn
-
-            if self.txid:
-                msg += '\n\nFinal TXID:\n' + self.txid
-
+        msg = "Updated PSBT is:\n\n%s" % self.filename
         result = await LongTextPage(text=msg,
                                     centered=True,
                                     left_micron=microns.ScanQR,
