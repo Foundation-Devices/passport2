@@ -211,7 +211,8 @@ static lv_color_t grey_filter_cb(const lv_color_filter_dsc_t *f, lv_color_t colo
 static void style_init(void)
 {
     static const lv_style_prop_t trans_props[] = {
-        // FOUNDATION: Comment out the following line to have no transitions for button background color changes
+        // FOUNDATION CHANGE ==============================================================
+        // Comment out the following line to have no transitions for button background color changes
         // LV_STYLE_BG_OPA, LV_STYLE_BG_COLOR,
         LV_STYLE_TRANSFORM_WIDTH, LV_STYLE_TRANSFORM_HEIGHT,
         LV_STYLE_TRANSLATE_Y, LV_STYLE_TRANSLATE_X,

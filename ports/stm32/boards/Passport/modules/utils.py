@@ -1187,6 +1187,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     try:
         await page.display()
     except Exception as e:
+        print(e)
         page.unmount()
         restore_sd_cb()
         await on_result(None)
