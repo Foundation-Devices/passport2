@@ -4,10 +4,13 @@
 # Justfile - Root-level Justfile for Passport
 
 export DOCKER_IMAGE := env_var_or_default('DOCKER_IMAGE', 'foundation-devices/passport2:latest')
+export DOCKER_CMD := env_var_or_default('DOCKER_CMD', 'docker')
+
+DOCKER_RUN := if DOCKER_CMD == 'docker' { 'docker run -u $(id -u):$(id -g)' } else { 'podman run' }
 
 # Build the docker image
 build-docker:
-    docker build -t ${DOCKER_IMAGE} .
+    $DOCKER_CMD build -t ${DOCKER_IMAGE} .
 
 # Build the firmware inside docker.
 build-firmware screen="mono": mpy-cross (run-in-docker ("just ports/stm32/build " + screen))
@@ -76,8 +79,7 @@ mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-d
 
 [private]
 run-in-docker command:
-    docker run --rm -v "$PWD":/workspace \
-        -u $(id -u):$(id -g) \
+    {{DOCKER_RUN}} --rm \
         -v $(pwd):/workspace \
         -w /workspace \
         -e MPY_CROSS="/workspace/mpy-cross/mpy-cross-docker" \
