@@ -14,7 +14,7 @@
 
 include constants.mk
 
-BOOTLOADER_VERSION = 2.0
+BOOTLOADER_VERSION = 2.1
 
 # Toolchain
 TOOLCHAIN = arm-none-eabi-
