@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "spiflash.h"
 #include "flash.h"
 #include "hash.h"
 #include "pprng.h"
@@ -195,16 +196,25 @@ int se_setup_config(rom_secrets_t* secrets) {
                     break;
 
                 case KEYNUM_supply_chain: {
-                    // SCV key is in user settings flash
-                    uint8_t* supply_chain_key = (uint8_t*)USER_SETTINGS_FLASH_ADDR;
-                    bool     is_erased        = true;
+                    if (spi_setup() != HAL_OK) {
+                        return -11;
+                    }
+
+                    // Read SCV key from the SPI FLASH
+                    // It was written there by the factory test bootloader
+                    uint8_t supply_chain_key[32] = {0xff,};
+                    if (!spi_get_scv_key(&supply_chain_key[0])) {
+                        return -11;
+                    }
+
+                    bool is_erased = true;
                     for (uint32_t i = 0; i < 32; i++) {
                         if (supply_chain_key[i] != 0xFF) {
                             is_erased = false;
                         }
                     }
 
-                    // If the scv key is not set in flash, then don't proceed, else validation will never work!
+                    // If the scv key is not set in SPI flash, then don't proceed, else validation will never work!
                     if (is_erased) {
                         return -11;
                     }
@@ -212,7 +222,7 @@ int se_setup_config(rom_secrets_t* secrets) {
                     int rc = se_write_data_slot(kn, supply_chain_key, 32, false);
 
                     // Always erase the supply chain key, even if the write failed
-                    flash_sector_erase(USER_SETTINGS_FLASH_ADDR);
+                    spi_clear_scv_key();
 
                     if (rc) return -7;
                 } break;

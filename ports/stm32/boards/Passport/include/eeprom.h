@@ -20,6 +20,4 @@ HAL_StatusTypeDef eeprom_write(uint16_t offset, uint8_t* buffer, uint8_t len);
 uint16_t eeprom_get_screen_brightness(uint16_t _default);
 bool     eeprom_set_screen_brightness(uint16_t brightness);
 
-#define EEPROM_EMPTY_TIMESTAMP (0xFFFFFFFF)
-
 #endif /* __EEPROM_H__ */

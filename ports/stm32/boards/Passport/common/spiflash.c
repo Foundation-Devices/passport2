@@ -287,3 +287,30 @@ HAL_StatusTypeDef spi_sector_erase(uint32_t addr) {
 
     return rv;
 }
+
+#define SPI_ADDR_SCV_KEY (0x00000000)
+#define SPI_SCV_KEY_SIZE (32)
+
+bool spi_get_scv_key(uint8_t* buf) {
+    if (spi_read(SPI_ADDR_SCV_KEY, SPI_SCV_KEY_SIZE, buf) == HAL_OK) {
+        return true;
+    }
+
+    return false;
+}
+
+bool spi_set_scv_key(uint8_t* buf) {
+    if (spi_write(SPI_ADDR_SCV_KEY, SPI_SCV_KEY_SIZE, buf) == HAL_OK) {
+        return true;
+    }
+
+    return false;
+}
+
+bool spi_clear_scv_key() {
+    if (spi_sector_erase(SPI_ADDR_SCV_KEY) == HAL_OK) {
+        return true;
+    }
+
+    return false;
+}
