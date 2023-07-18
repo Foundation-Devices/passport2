@@ -33,7 +33,7 @@ class SaveToMicroSDFlow(Flow):
 
         # Used in flow_show_card_missing
         self.automatic = automatic
-        self.return_bool = True
+        self.return_bool = False
 
         bind(self, show_card_missing)
 
