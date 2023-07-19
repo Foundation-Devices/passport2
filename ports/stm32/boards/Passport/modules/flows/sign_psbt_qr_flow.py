@@ -176,7 +176,6 @@ How would you like to proceed?"
             self.goto(self.show_success)
             return
 
-        self.written = True
         base = 'QR'
 
         if not self.is_comp:
@@ -196,6 +195,7 @@ How would you like to proceed?"
             self.back()
             return
 
+        self.written = True
         self.goto(self.show_success)
 
     async def show_success(self):
