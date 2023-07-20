@@ -187,12 +187,18 @@ How would you like to proceed?"
             # Add -signed to end. We won't offer to sign again.
             target_fname = base + '-signed.psbt'
 
-        self.filename = await SaveToMicroSDFlow(filename=target_fname,
-                                                data=b2a_hex(self.signed_bytes),
-                                                success_text="psbt",
-                                                path=get_folder_path(DIR_TRANSACTIONS),
-                                                automatic=False,
-                                                auto_prompt=True).run()
+        try:
+            self.filename = await SaveToMicroSDFlow(filename=target_fname,
+                                                    data=b2a_hex(self.signed_bytes),
+                                                    success_text="psbt",
+                                                    path=get_folder_path(DIR_TRANSACTIONS),
+                                                    automatic=False,
+                                                    auto_prompt=True).run()
+        except MemoryError as e:
+            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
+            self.set_result(False)
+            return
+
         if self.filename is None:
             self.back()
             return
