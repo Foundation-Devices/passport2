@@ -385,7 +385,9 @@ class ConnectWalletFlow(Flow):
         msg = self.get_custom_text(
             'multisig_import_qr', 'Next, import the multisig configuration from {} via QR code.'.format(
                 self.sw_wallet['label']))
-        result = await InfoPage(card_header={'title': 'Import Multisig'}, text=msg).show()
+        result = await InfoPage(card_header={'title': 'Import Multisig'},
+                                text=msg,
+                                left_micron=microns.Back).show()
         if not result:
             if not self.back():
                 self.set_result(False)
