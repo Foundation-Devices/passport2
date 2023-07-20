@@ -137,7 +137,7 @@ How would you like to proceed?"
         self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
-        from pages import ShowQRPage
+        from pages import ShowQRPage, ErrorPage
         from data_codecs.qr_type import QRType
         from ubinascii import hexlify as b2a_hex
         import microns
@@ -155,10 +155,16 @@ How would you like to proceed?"
             else:
                 raise RuntimeError('Unknown UR type: {}'.format(self.ur_type))
 
-        result = await ShowQRPage(qr_type=qr_type,
-                                  qr_data=qr_data,
-                                  left_micron=microns.MicroSD,
-                                  right_micron=microns.Checkmark).show()
+        result = False
+        try:
+            result = await ShowQRPage(qr_type=qr_type,
+                                      qr_data=qr_data,
+                                      left_micron=microns.MicroSD,
+                                      right_micron=microns.Checkmark).show()
+        except MemoryError as e:
+            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
+            self.set_result(False)
+            return
 
         if not result:
             self.goto(self.save_to_microsd)
