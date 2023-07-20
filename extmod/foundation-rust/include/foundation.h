@@ -74,11 +74,6 @@
  */
 #define UR_NETWORK_TESTNET 1
 
-/**
- * Maximum number of components that a `crypto-keypath` can have.
- */
-#define UR_MAX_PATH_COMPONENTS 4
-
 typedef enum {
   BTC,
 } UR_CoinType;
@@ -441,7 +436,7 @@ bool ur_decode_single_part(const uint8_t *ur,
  * # Parameters
  *
  * - `value` is the uniform resource to encode.
- * - `max_fragment_len` is the maximum fragment length in bytes.
+ * - `max_chars` is the maximum fragment length in bytes.
  *
  * # Safety
  *
