@@ -162,8 +162,13 @@ How would you like to proceed?"
                                       left_micron=microns.MicroSD,
                                       right_micron=microns.Checkmark).show()
         except MemoryError as e:
-            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
-            self.set_result(False)
+            await ErrorPage(text='Transaction is too complex: {}'.format(e),
+                            left_micron=microns.MicroSD,
+                            right_micron=microns.Cancel).show()
+            if not result:
+                self.goto(self.save_to_microsd)
+            else:
+                self.set_result(False)
             return
 
         if not result:
