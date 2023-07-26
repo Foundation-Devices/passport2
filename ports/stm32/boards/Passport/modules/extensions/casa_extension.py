@@ -21,9 +21,9 @@ CasaExtension = {
     'menu_item': {
         'icon': icon,
         'label': 'Casa',
-        'action': lambda item: toggle_extension_enabled(name),
+        'action': lambda item, context: toggle_extension_enabled(name),
         'is_toggle': True,
-        'value': lambda: is_extension_enabled(name),
+        'value': lambda context: is_extension_enabled(name),
     },
     'card': {
         'right_icon': icon,

@@ -135,6 +135,14 @@ def backup_menu():
     ]
 
 
+def toggle_key_hidden(item, context):
+    print(item)
+
+
+def is_key_hidden(context):
+    print(context)
+
+
 def key_item_menu():
     from flows import (
         ViewDerivedKeyDetailsFlow,
@@ -145,7 +153,11 @@ def key_item_menu():
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
-        {'icon': 'ICON_ERASE', 'label': 'Toggle Hidden', 'flow': HideDerivedKeyFlow},
+        {'icon': 'ICON_ERASE',
+         'label': 'Hide Key',
+         'action': lambda item, context: toggle_key_hidden(item, context),
+         'is_toggle': True,
+         'value': lambda context: is_key_hidden(context)},
     ]
 
 
@@ -172,9 +184,9 @@ def manage_keys():
     return [
         {'icon': 'ICON_TWO_KEYS',
          'label': 'Show Hidden',
-         'action': lambda item: toggle_showing_hidden_keys(),
+         'action': lambda item, context: toggle_showing_hidden_keys(),
          'is_toggle': True,
-         'value': lambda: are_hidden_keys_showing()},
+         'value': lambda context: are_hidden_keys_showing()},
     ]
 
 

@@ -19,6 +19,7 @@ class MenuPage(Page):
                  item_descs=[],
                  focus_idx=0,
                  is_top_level=None,
+                 context=None,
                  card_header=None,
                  statusbar=None,
                  left_micron=None,
@@ -33,6 +34,7 @@ class MenuPage(Page):
 
         self.focus_idx = focus_idx
         self.is_top_level = is_top_level
+        self.context = context
 
         with Stylize(self) as default:
             default.flex_fill()
@@ -64,7 +66,8 @@ class MenuPage(Page):
                 label=item_desc.get('label'),
                 is_toggle=item_desc.get('is_toggle'),
                 value=item_desc.get('value'),
-                desc=item_desc)
+                desc=item_desc,
+                context=self.context)
             is_visible = item_desc.get('is_visible')
             if is_visible is None or (callable(is_visible) and is_visible()):
                 self.visible_items.append(item)
