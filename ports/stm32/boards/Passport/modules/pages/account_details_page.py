@@ -48,7 +48,7 @@ class AccountDetailsPage(LongTextPage):
             acct_name=self.account.get('name'),
             acct_num_title=recolor(HIGHLIGHT_TEXT_HEX, 'Account Number'),
             acct_num=self.account.get('acct_num'),
-            deriv_title=recolor(HIGHLIGHT_TEXT_HEX, 'Envoy Derivation'),
+            deriv_title=recolor(HIGHLIGHT_TEXT_HEX, 'Derivation Path'),
             deriv=deriv_path
         )
         super().__init__(
