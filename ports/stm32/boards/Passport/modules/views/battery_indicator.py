@@ -9,11 +9,12 @@ from micropython import const
 from views import View, Icon
 from styles.colors import BATTERY_FILL_COLOR, WHITE, TEXT_GREY
 from styles import Stylize, LocalStyle
+import passport
 
-_LEFT_MARGIN = const(2)
-_TOP_MARGIN = const(5)
-_FILL_HEIGHT = const(9)
-_FILL_MAX_WIDTH = const(16)
+_LEFT_MARGIN = const(2) if passport.IS_COLOR else const(4)
+_TOP_MARGIN = const(5) if passport.IS_COLOR else const(7)
+_FILL_HEIGHT = const(9) if passport.IS_COLOR else const(6)
+_FILL_MAX_WIDTH = const(16) if passport.IS_COLOR else const(10)
 
 
 class BatteryIndicator(View):
