@@ -135,12 +135,22 @@ def backup_menu():
     ]
 
 
-def toggle_key_hidden(item, context):
-    print(item)
+def toggle_key_hidden(item, key):
+    from common import settings
+    from utils import get_derived_keys
+
+    keys = get_derived_keys()
+    keys.remove(key)
+    key['hidden'] = not key['hidden']
+    keys.append(key)
+    settings.set('derived_keys', keys)
 
 
-def is_key_hidden(context):
-    print(context)
+def is_key_hidden(key):
+    from utils import get_derived_key_by_index
+
+    updated = get_derived_key_by_index(key['index'], key['tn'], key['xfp'])
+    return updated['hidden']
 
 
 def key_item_menu():
