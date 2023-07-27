@@ -135,30 +135,13 @@ def backup_menu():
     ]
 
 
-def toggle_key_hidden(item, key):
-    from common import settings
-    from utils import get_derived_keys
-
-    keys = get_derived_keys()
-    keys.remove(key)
-    key['hidden'] = not key['hidden']
-    keys.append(key)
-    settings.set('derived_keys', keys)
-
-
-def is_key_hidden(key):
-    from utils import get_derived_key_by_index
-
-    updated = get_derived_key_by_index(key['index'], key['tn'], key['xfp'])
-    return updated['hidden']
-
-
 def key_item_menu():
+    from utils import toggle_key_hidden, is_key_hidden
+
     from flows import (
         ViewDerivedKeyDetailsFlow,
         RenameDerivedKeyFlow,
-        ExportDerivedKeyFlow,
-        HideDerivedKeyFlow)
+        ExportDerivedKeyFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
