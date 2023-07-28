@@ -50,7 +50,8 @@ class MenuFlow(Flow):
             statusbar=self.statusbar,
             left_micron=microns.Back,
             right_micron=microns.Checkmark,
-            is_top_level=self.is_top_level
+            is_top_level=self.is_top_level,
+            context=self.context,
         ).show()
         if result is None:
             if ui.is_top_level():
@@ -123,7 +124,7 @@ class MenuFlow(Flow):
             elif item.get('action') is not None:
                 action = item.get('action')
                 if callable(action):
-                    action(item)
+                    action(item, self.context)
 
             self.cleanup()
 

@@ -30,7 +30,6 @@ from .generate_addresses_task import generate_addresses_task
 from .get_security_words_task import get_security_words_task
 from .get_seed_words_task import get_seed_words_task
 from .get_backup_code_task import get_backup_code_task
-from .hide_derived_key_task import hide_derived_key_task
 from .login_task import login_task
 from .lvgl_task import lvgl_task
 from .main_task import main_task

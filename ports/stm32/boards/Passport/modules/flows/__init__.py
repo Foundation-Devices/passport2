@@ -42,7 +42,6 @@ from .selected_file_flow import *
 from .file_picker_flow import *
 from .format_microsd_flow import *
 from .get_seed_words_flow import *
-from .hide_derived_key_flow import *
 from .import_multisig_wallet_flow import *
 from .import_multisig_wallet_from_microsd_flow import *
 from .import_multisig_wallet_from_qr_flow import *
