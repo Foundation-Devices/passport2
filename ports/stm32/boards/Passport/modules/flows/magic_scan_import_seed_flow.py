@@ -3,7 +3,7 @@
 #
 # magic_scan_import_seed_flow.py - Import a multisig file
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class MagicScanImportSeedFlow(Flow):

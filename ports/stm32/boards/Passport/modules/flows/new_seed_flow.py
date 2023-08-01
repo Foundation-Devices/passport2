@@ -3,11 +3,7 @@
 #
 # new_seed_flow.py - Create a new random seed
 
-from flows import Flow
-from pages import ErrorPage, QuestionPage, SuccessPage
-from tasks import new_seed_task, save_seed_task
-from utils import has_secrets, spinner_task
-from translations import t, T
+from flows.flow import Flow
 
 
 class NewSeedFlow(Flow):
@@ -19,6 +15,10 @@ class NewSeedFlow(Flow):
         self.full_backup = full_backup
 
     async def confirm_generate(self):
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
+        from utils import has_secrets
+
         # Ensure we don't overwrite an existing seed
         if has_secrets():
             await ErrorPage(text='Passport already has a seed!').show()
@@ -32,6 +32,9 @@ class NewSeedFlow(Flow):
             self.set_result(False)
 
     async def generate_seed(self):
+        from tasks import new_seed_task
+        from utils import spinner_task
+
         (seed, error) = await spinner_task('Generating Seed', new_seed_task)
         if error is None:
             self.seed = seed
@@ -41,6 +44,9 @@ class NewSeedFlow(Flow):
             self.goto(self.show_error)
 
     async def save_seed(self):
+        from tasks import save_seed_task
+        from utils import spinner_task
+
         (error,) = await spinner_task('Saving Seed', save_seed_task, args=[self.seed])
         if error is None:
             if self.show_words:
@@ -59,6 +65,7 @@ class NewSeedFlow(Flow):
     async def show_success(self):
         import common
         from flows import AutoBackupFlow, BackupFlow
+        from pages.success_page import SuccessPage
 
         await SuccessPage(text='New seed created and saved.').show()
         if self.full_backup:

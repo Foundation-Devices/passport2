@@ -3,7 +3,7 @@
 #
 # new_derived_key_flow.py - Create a new derived key
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class NewDerivedKeyFlow(Flow):
@@ -22,7 +22,8 @@ class NewDerivedKeyFlow(Flow):
     async def key_limit_warning(self):
         from utils import get_derived_keys
         from constants import MAX_DERIVED_KEYS
-        from pages import ErrorPage, InfoPage
+        from pages.error_page import ErrorPage
+        from pages.info_page import InfoPage
         import microns
 
         keys = get_derived_keys()
@@ -46,7 +47,7 @@ and keys can not be deleted. Create keys wisely.'.format(MAX_DERIVED_KEYS)
         self.goto(self.passphrase_warning)
 
     async def passphrase_warning(self):
-        from pages import LongTextPage
+        from pages.long_text_page import LongTextPage
         import microns
         import stash
 
@@ -65,7 +66,9 @@ It will only be displayed when this same passphrase is applied. Continue?'''
         self.goto(self.enter_index)
 
     async def enter_index(self):
-        from pages import TextInputPage, ErrorPage, QuestionPage
+        from pages.text_input_page import TextInputPage
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
         import microns
         from utils import get_derived_key_by_index
         from flows import RenameDerivedKeyFlow
@@ -101,7 +104,8 @@ It will only be displayed when this same passphrase is applied. Continue?'''
 
     async def enter_key_name(self):
         from constants import MAX_ACCOUNT_NAME_LEN
-        from pages import TextInputPage, ErrorPage
+        from pages.text_input_page import TextInputPage
+        from pages.error_page import ErrorPage
         import microns
         from utils import get_derived_key_by_name
         result = await TextInputPage(card_header={'title': 'Key Name'},
@@ -132,7 +136,8 @@ It will only be displayed when this same passphrase is applied. Continue?'''
                 self.back()
 
     async def save_key(self):
-        from pages import SuccessPage, ErrorPage
+        from pages.success_page import SuccessPage
+        from pages.error_page import ErrorPage
         from tasks import save_new_derived_key_task
         from utils import spinner_task
         from common import keypad

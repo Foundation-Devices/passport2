@@ -3,9 +3,7 @@
 #
 # login_flow.py - Login to Passport
 
-import lvgl as lv
-from flows import Flow
-from pages import PINEntryPage, ShutdownPage, ErrorPage
+from flows.flow import Flow
 from tasks import login_task
 from utils import spinner_task
 from serializations import sha256
@@ -21,6 +19,9 @@ class LoginFlow(Flow):
         super().__init__(initial_state=self.enter_pin, name='LoginFlow')
 
     async def enter_pin(self):
+        from pages.pin_entry_page import PINEntryPage
+        from pages.shutdown_page import ShutdownPage
+
         try:
             (self.pin, is_done) = await PINEntryPage(
                 card_header={'title': 'Enter PIN'},
@@ -46,6 +47,8 @@ class LoginFlow(Flow):
 
     async def show_error(self):
         from common import pa
+        from pages.shutdown_page import ShutdownPage
+        from pages.error_page import ErrorPage
 
         # Switch to bricked view if no more attempts
         if pa.attempts_left == 0:
@@ -74,6 +77,8 @@ class LoginFlow(Flow):
 
     async def show_bricked_message(self):
         from common import pa
+        from pages.shutdown_page import ShutdownPage
+        from pages.error_page import ErrorPage
 
         msg = '''This Passport is now permanently disabled.
 

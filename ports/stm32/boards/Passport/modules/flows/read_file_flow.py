@@ -3,7 +3,7 @@
 #
 # read_file_flow.py - Read a file and handle errors
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ReadFileFlow(Flow):
@@ -26,7 +26,7 @@ class ReadFileFlow(Flow):
         from utils import spinner_task
         from tasks import read_file_task
         from errors import Error
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         (data, error) = await spinner_task('Reading file',
                                            read_file_task,

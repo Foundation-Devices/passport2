@@ -3,11 +3,7 @@
 #
 # menu_flow.py - Flow class to track position in a menu
 
-from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
-from flows import Flow, PageFlow
-from pages import MenuPage, ShutdownPage
-import microns
-import common
+from flows.flow import Flow
 
 
 class MenuFlow(Flow):
@@ -29,6 +25,12 @@ class MenuFlow(Flow):
 
     async def show_menu(self):
         from common import ui
+        from pages.menu_page import MenuPage
+        from pages.shutdown_page import ShutdownPage
+        from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
+        from flows import PageFlow
+        import microns
+
         self.cleanup()
 
         # Regenerate the menu items each time if this is a function.

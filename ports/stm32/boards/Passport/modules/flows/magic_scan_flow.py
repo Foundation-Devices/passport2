@@ -3,10 +3,7 @@
 #
 # magic_scan_flow.py - Scan a QR code and "magically" figure out which handler flow to run.
 
-from flows import Flow
-import microns
-from pages import ScanQRPage
-from data_codecs.data_format import get_flow_for_data
+from flows.flow import Flow
 
 
 class MagicScanFlow(Flow):
@@ -17,6 +14,10 @@ class MagicScanFlow(Flow):
         self.statusbar = statusbar
 
     async def scan_qr(self):
+        import microns
+        from pages.scan_qr_page import ScanQRPage
+        from data_codecs.data_format import get_flow_for_data
+
         result = await ScanQRPage(
             card_header=self.card_header, statusbar=self.statusbar, right_micron=microns.Checkmark)
         if result is None:

@@ -3,12 +3,7 @@
 #
 # list_files_flow.py - Flow to let user view microSD card files and view the SHA256 of the chosen file
 
-from flows import Flow, FilePickerFlow
-from pages import SuccessPage, ErrorPage, ProgressPage, InsertMicroSDPage
-from tasks import calculate_file_sha256_task
-from utils import start_task, get_basename
-from errors import Error
-import microns
+from flows.flow import Flow
 
 
 class ListFilesFlow(Flow):
@@ -23,6 +18,8 @@ class ListFilesFlow(Flow):
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
+        from flows.file_picker_flow import FilePickerFlow
+
         result = await FilePickerFlow(show_folders=True, select_text='Info').run()
         if result is None:
             self.set_result(False)
@@ -34,6 +31,15 @@ class ListFilesFlow(Flow):
             self.goto(self.show_sha256)
 
     async def show_sha256(self):
+        from pages.success_page import SuccessPage
+        from pages.error_page import ErrorPage
+        from pages.progress_page import ProgressPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from tasks import calculate_file_sha256_task
+        from utils import start_task, get_basename
+        from errors import Error
+        import microns
+
         self.progress_page = ProgressPage(
             'Calculating SHA256...', left_micron=microns.Cancel, right_micron=microns.Checkmark)
 

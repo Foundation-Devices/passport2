@@ -3,7 +3,7 @@
 #
 # magic_scan_sign_psbt_flow.py - Import a multisig file
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class MagicScanSignPsbtFlow(Flow):

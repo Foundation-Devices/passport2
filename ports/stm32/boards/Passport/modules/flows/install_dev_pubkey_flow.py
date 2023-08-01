@@ -3,12 +3,7 @@
 #
 # install_dev_pubkey_flow.py - Flow to let the user choose a dev pubkey file and install it
 
-from flows import Flow, FilePickerFlow
-from files import CardMissingError, CardSlot
-from pages import ErrorPage, SuccessPage
-from pages.insert_microsd_page import InsertMicroSDPage
-from utils import clear_cached_pubkey
-from ubinascii import hexlify
+from flows.flow import Flow
 
 
 class InstallDevPubkeyFlow(Flow):
@@ -16,6 +11,9 @@ class InstallDevPubkeyFlow(Flow):
         super().__init__(initial_state=self.choose_file)
 
     async def choose_file(self):
+        from flows.file_picker_flow import FilePickerFlow
+        from files import CardSlot
+
         root_path = CardSlot.get_sd_root()
 
         result = await FilePickerFlow(initial_path=root_path, suffix='-pub.bin', show_folders=True).run()
@@ -30,6 +28,12 @@ class InstallDevPubkeyFlow(Flow):
 
     async def load_dev_pubkey(self):
         from common import system
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from files import CardMissingError
+        from files import CardSlot
+        from utils import clear_cached_pubkey
 
         try:
             with CardSlot() as card:

@@ -3,7 +3,7 @@
 #
 # page_flow.py - Flow class to present a single Page that doesn't forward to other pages (e.g., a settings Page)
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class PageFlow(Flow):

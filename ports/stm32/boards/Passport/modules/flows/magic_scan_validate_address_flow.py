@@ -3,7 +3,7 @@
 #
 # magic_scan_validate_address_flow.py - Validate the given address
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class MagicScanValidateAddressFlow(Flow):

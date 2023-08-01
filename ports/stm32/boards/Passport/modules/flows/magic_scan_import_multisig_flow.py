@@ -3,7 +3,7 @@
 #
 # magic_scan_import_multisig_flow.py - Import a multisig file
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class MagicScanImportMultisigFlow(Flow):

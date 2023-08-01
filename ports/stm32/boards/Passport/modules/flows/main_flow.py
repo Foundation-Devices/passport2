@@ -3,7 +3,7 @@
 #
 # main_flow.py - Flow class to track position in a menu
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class MainFlow(Flow):

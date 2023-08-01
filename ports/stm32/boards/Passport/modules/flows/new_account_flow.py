@@ -3,18 +3,15 @@
 #
 # new_account_flow.py - Create a new random seed
 
-from constants import MAX_ACCOUNT_NAME_LEN, MAX_ACCOUNTS
-from flows import Flow
-import microns
-from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
-from tasks import save_new_account_task
-from utils import get_account_by_name, get_account_by_number, get_accounts, spinner_task
-from translations import t, T
-from wallets.utils import get_next_account_num
+from flows.flow import Flow
 
 
 class NewAccountFlow(Flow):
     def __init__(self):
+        from constants import MAX_ACCOUNTS
+        from utils import get_accounts
+        from wallets.utils import get_next_account_num
+
         initial_state = self.enter_account_num
         self.accounts = get_accounts()
         if len(self.accounts) >= MAX_ACCOUNTS:
@@ -32,10 +29,16 @@ class NewAccountFlow(Flow):
         self.spinner_page.set_result(error is None)
 
     async def show_account_limit_message(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(text='You\'ve reached the limit of {} accounts.'.format(MAX_ACCOUNTS)).show()
         self.set_result(False)
 
     async def enter_account_num(self):
+        import microns
+        from pages.error_page import ErrorPage
+        from pages.text_input_page import TextInputPage
+        from utils import get_account_by_number
 
         result = await TextInputPage(card_header={'title': 'Account Number'}, numeric_only=True,
                                      initial_text='' if self.account_num is None else str(self.account_num),
@@ -60,6 +63,12 @@ class NewAccountFlow(Flow):
             self.set_result(False)
 
     async def enter_account_name(self):
+        from constants import MAX_ACCOUNT_NAME_LEN
+        import microns
+        from pages.error_page import ErrorPage
+        from pages.text_input_page import TextInputPage
+        from utils import get_account_by_name
+
         result = await TextInputPage(card_header={'title': 'Account Name'},
                                      initial_text='' if self.account_name is None else self.account_name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -84,6 +93,11 @@ class NewAccountFlow(Flow):
 
     async def save_account(self):
         from common import ui
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
+        from tasks import save_new_account_task
+        from utils import spinner_task
+
         (error,) = await spinner_task('Saving New Account', save_new_account_task,
                                       args=[self.account_num, self.account_name])
         if error is None:
@@ -98,5 +112,7 @@ class NewAccountFlow(Flow):
             self.set_result(False)
 
     async def show_error(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(self.error).show()
         self.set_result(False)

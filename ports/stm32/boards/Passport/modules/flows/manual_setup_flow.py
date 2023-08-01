@@ -3,14 +3,7 @@
 #
 # manual_setup_flow.py - The main overall flow for manual setup - controls the process
 
-import lvgl as lv
-from flows import (
-    Flow,
-    SetInitialPINFlow,
-    UpdateFirmwareFlow,
-    InitialSeedSetupFlow,
-    ScvFlow,
-)
+from flows.flow import Flow
 
 
 class ManualSetupFlow(Flow):
@@ -19,7 +12,7 @@ class ManualSetupFlow(Flow):
         self.restore()
 
     async def show_intro(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         import microns
 
         result = await InfoPage(text='Manual setup is for advanced users who do not wish to use Envoy.',
@@ -30,7 +23,7 @@ class ManualSetupFlow(Flow):
             self.goto(self.show_setup_guide_url)
 
     async def show_setup_guide_url(self):
-        from pages import ShowQRPage
+        from pages.show_qr_page import ShowQRPage
 
         result = await ShowQRPage(
             qr_data='https://foundationdevices.com/setup',
@@ -50,6 +43,8 @@ class ManualSetupFlow(Flow):
             self.goto(self.show_scv)
 
     async def show_scv(self):
+        from flows import ScvFlow
+
         result = await ScvFlow(envoy=False).run()
         if not result:
             self.back()
@@ -57,6 +52,8 @@ class ManualSetupFlow(Flow):
             self.goto(self.set_initial_pin)
 
     async def set_initial_pin(self):
+        from flows import SetInitialPINFlow
+
         result = await SetInitialPINFlow().run()
         if not result:
             self.back()
@@ -64,8 +61,11 @@ class ManualSetupFlow(Flow):
             self.goto(self.update_firmware)
 
     async def update_firmware(self):
-        from pages import ErrorPage, QuestionPage
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
         import passport
+        import lvgl as lv
+        from flows import UpdateFirmwareFlow
 
         # Guards to ensure we can't get into a weird state
         if not self.ensure_pin_set():
@@ -103,6 +103,8 @@ class ManualSetupFlow(Flow):
         self.goto(self.setup_seed)
 
     async def setup_seed(self):
+        from flows import InitialSeedSetupFlow
+
         # Guards to ensure we can't get into a weird state
         if not self.ensure_pin_set():
             return
@@ -117,14 +119,14 @@ class ManualSetupFlow(Flow):
             self.goto(self.show_success)
 
     async def show_success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
 
         await SuccessPage(text='Passport configured successfully. You can now start using your device.').show()
         self.set_result(True, forget_state=True)
 
     async def ensure_logged_in(self):
         from utils import is_logged_in
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         from flows import LoginFlow
 
         if not is_logged_in():
