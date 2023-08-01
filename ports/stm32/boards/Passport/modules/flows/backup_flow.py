@@ -3,18 +3,14 @@
 #
 # backup_flow.py - Backup Passport to microSD
 
-import lvgl as lv
-from flows import Flow
-from constants import TOTAL_BACKUP_CODE_DIGITS
-from errors import Error
-import microns
-from pages.question_page import QuestionPage
-from styles.colors import HIGHLIGHT_TEXT_HEX
+from flows.flow import Flow
 
 
 class BackupFlow(Flow):
     def __init__(self):
         from common import settings
+        from constants import TOTAL_BACKUP_CODE_DIGITS
+
         super().__init__(initial_state=self.show_intro, name='BackupFlow')
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
@@ -22,9 +18,13 @@ class BackupFlow(Flow):
         self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
 
     async def show_intro(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
+        from pages.question_page import QuestionPage
         from utils import recolor
         import stash
+        import lvgl as lv
+        import microns
+        from styles.colors import HIGHLIGHT_TEXT_HEX
 
         if self.backup_quiz_passed:
             msgs = ['Passport is about to create an updated microSD backup.',
@@ -56,7 +56,7 @@ class BackupFlow(Flow):
     async def get_backup_code(self):
         from utils import spinner_task
         from tasks import get_backup_code_task
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         (self.backup_code, error) = await spinner_task('Retrieving Backup Code', get_backup_code_task)
         if error is None:
@@ -69,7 +69,9 @@ class BackupFlow(Flow):
             self.set_result(False)
 
     async def show_backup_code(self):
-        from pages import InfoPage, BackupCodePage
+        from pages.info_page import InfoPage
+        from pages.backup_code_page import BackupCodePage
+        import lvgl as lv
 
         result = await BackupCodePage(
             digits=self.backup_code,
@@ -88,7 +90,10 @@ class BackupFlow(Flow):
             self.back()
 
     async def do_backup_code_quiz(self):
-        from pages import BackupCodePage, SuccessPage, ErrorPage
+        from pages.backup_code_page import BackupCodePage
+        from pages.success_page import SuccessPage
+        from pages.error_page import ErrorPage
+        from constants import TOTAL_BACKUP_CODE_DIGITS
 
         result = await BackupCodePage(digits=self.quiz_result, card_header={'title': 'Enter Backup Code'}).show()
         if result is not None:

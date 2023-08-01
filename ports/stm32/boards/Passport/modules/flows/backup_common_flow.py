@@ -3,7 +3,7 @@
 #
 # backup_common_flow.py - Save a backup to microSD
 
-from flows import SaveToMicroSDFlow
+from flows.save_to_microsd_flow import SaveToMicroSDFlow
 
 
 class BackupCommonFlow(SaveToMicroSDFlow):

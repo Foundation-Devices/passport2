@@ -3,7 +3,7 @@
 #
 # apply_passphrase_flow.py - Ask user to enter a passphrase, then apply it.
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ApplyPassphraseFlow(Flow):
@@ -32,7 +32,7 @@ class ApplyPassphraseFlow(Flow):
             self.set_result(False)
 
     async def explainer(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         import microns
 
         text = '''Type with care. All passphrases are valid.\n
@@ -47,7 +47,7 @@ Passport will clear your passphrase upon shutdown.'''
         self.goto(self.enter_passphrase)
 
     async def enter_passphrase(self):
-        from pages import TextInputPage
+        from pages.text_input_page import TextInputPage
         from constants import MAX_PASSPHRASE_LENGTH
 
         passphrase = await TextInputPage(card_header={'title': 'Enter Passphrase'},
@@ -74,7 +74,7 @@ Passport will clear your passphrase upon shutdown.'''
         self.goto(self.apply_passphrase)
 
     async def clear_passphrase(self):
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
         result = await QuestionPage(text='Clear the active passphrase?').show()
 
         if not result:
@@ -90,7 +90,7 @@ Passport will clear your passphrase upon shutdown.'''
         from utils import spinner_task
         from errors import Error
         from tasks import apply_passphrase_task
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         (error,) = await spinner_task("{}ing passphrase".format(self.msg),
                                       apply_passphrase_task,
@@ -109,7 +109,8 @@ Passport will clear your passphrase upon shutdown.'''
     async def confirm_xfp(self):
         import common
         from utils import start_task, xfp2str
-        from pages import QuestionPage, SuccessPage
+        from pages.question_page import QuestionPage
+        from pages.success_page import SuccessPage
 
         # Make a success page
         if len(self.passphrase) == 0 or self.passphrase == self.prev_passphrase:

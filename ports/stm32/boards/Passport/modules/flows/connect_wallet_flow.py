@@ -3,40 +3,12 @@
 #
 # connect_wallet_flow.py - Connect a new software wallet with Passport.
 
-import lvgl as lv
-from flows import Flow, ImportMultisigWalletFlow
-from pages import (
-    AddressTypeChooserPage,
-    ExportModeChooserPage,
-    ErrorPage,
-    InfoPage,
-    InsertMicroSDPage,
-    QuestionPage,
-    ShowQRPage,
-    SigTypeChooserPage,
-    SuccessPage,
-    SWWalletChooserPage)
-from tasks import (
-    create_wallet_export_task,
-    generate_addresses_task)
-from wallets.utils import (
-    get_deriv_path_from_address_and_acct,
-    get_addr_type_from_address,
-    get_deriv_path_from_addr_type_and_acct,
-    get_addr_type_from_deriv,
-    derive_address)
-from public_constants import TRUST_PSBT
-from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
-from wallets.sw_wallets import supported_software_wallets
-from utils import random_hex, spinner_task
-from foundation import ur
-import common
-import microns
-import foundation
-from errors import Error
+from flows.flow import Flow
 
 
 def find_wallet_by_label(label, default_value):
+    from wallets.sw_wallets import supported_software_wallets
+
     for _, entry in enumerate(supported_software_wallets):
         if entry.get('label') == label:
             return entry
@@ -68,6 +40,7 @@ def find_export_mode_by_id(sw_wallet, id, default_value):
 
 def get_addresses_in_range(start, end, addr_type, acct_num, ms_wallet):
     # print('addr_type={} acct_num={} ms_wallet={}'.format(addr_type, acct_num, ms_wallet))
+    from wallets.utils import get_deriv_path_from_addr_type_and_acct, derive_address
 
     entries = []
     for i in range(start, end):
@@ -80,6 +53,8 @@ def get_addresses_in_range(start, end, addr_type, acct_num, ms_wallet):
 
 class ConnectWalletFlow(Flow):
     def __init__(self, sw_wallet=None, statusbar=None):
+        import common
+
         self.sw_wallet = find_wallet_by_label(sw_wallet, None)
         if self.sw_wallet is not None:
             start_state = self.choose_sig_type
@@ -164,6 +139,8 @@ class ConnectWalletFlow(Flow):
         self.addr_type = data.get('addr_type', None)
 
     async def choose_sw_wallet(self):
+        from pages.sw_wallet_chooser_page import SWWalletChooserPage
+
         result = await SWWalletChooserPage(initial_value=self.sw_wallet).show()
         if result is None:
             self.set_result(False)
@@ -175,6 +152,8 @@ class ConnectWalletFlow(Flow):
         self.goto(self.choose_sig_type)
 
     async def choose_sig_type(self):
+        from pages.sig_type_chooser_page import SigTypeChooserPage
+
         save_curr = True
         if len(self.sw_wallet['sig_types']) == 1:
             # print('Only 1 sig type...skipping')
@@ -200,6 +179,8 @@ class ConnectWalletFlow(Flow):
             self.goto(self.choose_export_mode, save_curr=save_curr)
 
     async def choose_address_type(self):
+        from pages.address_type_chooser_page import AddressTypeChooserPage
+
         result = await AddressTypeChooserPage(initial_value=self.addr_type).show()
         if result is None:
             if not self.back():
@@ -213,6 +194,8 @@ class ConnectWalletFlow(Flow):
         self.goto(self.choose_export_mode)
 
     async def choose_export_mode(self):
+        from pages.export_mode_chooser_page import ExportModeChooserPage
+
         save_curr = True
         # We can skip this step if there is only a single export mode
         if len(self.sw_wallet['export_modes']) == 1:
@@ -232,6 +215,11 @@ class ConnectWalletFlow(Flow):
         self.goto(self.show_connect_message, save_curr=save_curr)
 
     async def show_connect_message(self):
+        from pages.info_page import InfoPage
+        import lvgl as lv
+        from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
+        import microns
+
         if self.export_mode['id'] == EXPORT_MODE_QR:
             msg = self.get_custom_text(
                 'pairing_qr', 'Next, scan the QR code on the following screen into {}.'.format(self.sw_wallet['label']))
@@ -259,6 +247,13 @@ class ConnectWalletFlow(Flow):
             self.goto(self.export_by_microsd)
 
     async def export_by_qr(self):
+        from pages.info_page import InfoPage
+        from pages.show_qr_page import ShowQRPage
+        from public_constants import TRUST_PSBT
+        from utils import spinner_task
+        import common
+        from tasks import create_wallet_export_task
+
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
             'Preparing Data',
@@ -313,9 +308,13 @@ class ConnectWalletFlow(Flow):
             self.goto_address_verification_method(save_curr=False)
 
     async def export_by_microsd(self):
-        from utils import xfp2str, get_folder_path
+        from utils import xfp2str, get_folder_path, spinner_task
         from flows import SaveToMicroSDFlow
-        from public_constants import DIR_WALLET_CONFIGS
+        from public_constants import DIR_WALLET_CONFIGS, TRUST_PSBT
+        from pages.info_page import InfoPage
+        import common
+        from foundation import sha256
+        from tasks import create_wallet_export_task
 
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
@@ -332,7 +331,7 @@ class ConnectWalletFlow(Flow):
                   None])
 
         data_hash = bytearray(32)
-        foundation.sha256(data, data_hash)
+        sha256(data, data_hash)
 
         # Write the data to SD with the filename the wallet prefers
         if self.is_multisig():
@@ -382,6 +381,11 @@ class ConnectWalletFlow(Flow):
             self.goto_address_verification_method(save_curr=False)
 
     async def import_multisig_config_from_qr(self):
+        from pages.error_page import ErrorPage
+        from pages.info_page import InfoPage
+        from foundation import ur
+        import microns
+
         msg = self.get_custom_text(
             'multisig_import_qr', 'Next, import the multisig configuration from {} via QR code.'.format(
                 self.sw_wallet['label']))
@@ -419,6 +423,8 @@ class ConnectWalletFlow(Flow):
         self.goto(self.do_multisig_config_import)
 
     async def import_multisig_config_from_microsd(self):
+        from pages.info_page import InfoPage
+
         msg = self.get_custom_text('multisig_import_microsd',
                                    'Next, import the multisig configuration from {} via microSD card.'.format(
                                        self.sw_wallet['label']))
@@ -438,6 +444,10 @@ class ConnectWalletFlow(Flow):
 
     async def do_multisig_config_import(self):
         from multisig_wallet import MultisigWallet
+        from pages.info_page import InfoPage
+        from flows.import_multisig_wallet_flow import ImportMultisigWalletFlow
+        from public_constants import TRUST_PSBT
+        import common
 
         try:
             ms = await MultisigWallet.from_file(self.multisig_import_data)
@@ -480,6 +490,10 @@ class ConnectWalletFlow(Flow):
             self.goto_address_verification_method()
 
     async def scan_rx_address_intro(self):
+        from pages.info_page import InfoPage
+        import lvgl as lv
+        import microns
+
         msgs = ['Next, let\'s check that the wallet connected correctly.',
                 'On the next page, scan a receive address from {}.'.format(self.sw_wallet['label'])
                 ]
@@ -498,6 +512,9 @@ class ConnectWalletFlow(Flow):
 
     async def scan_rx_address(self):
         from flows import VerifyAddressFlow
+        from pages.info_page import InfoPage
+        from pages.question_page import QuestionPage
+        import microns
 
         result = await VerifyAddressFlow(sig_type=self.sig_type, multisig_wallet=self.multisig_wallet).run()
         if result:
@@ -513,7 +530,7 @@ class ConnectWalletFlow(Flow):
                 self.set_result(False)
 
     async def show_rx_address_intro(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         import microns
 
         msgs = ['Next, let\'s check that the wallet connected correctly.',
@@ -535,9 +552,12 @@ class ConnectWalletFlow(Flow):
         self.goto(self.show_rx_address)
 
     async def show_rx_address(self):
-        from utils import split_to_lines
+        from utils import split_to_lines, spinner_task
         from pages import LongTextPage
         from math import ceil
+        from pages.error_page import ErrorPage
+        from tasks import generate_addresses_task
+
         NUM_ADDRESSES = 1
 
         (addresses, error) = await spinner_task(
@@ -568,10 +588,14 @@ class ConnectWalletFlow(Flow):
         self.goto(self.complete)
 
     async def complete(self):
+        from pages.success_page import SuccessPage
+
         await SuccessPage(text='Connection Complete').show()
         self.set_result(True)
 
     async def show_error(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(text=self.error).show()
         self.error = None
         self.reset(self.choose_sig_type)
@@ -609,6 +633,8 @@ class ConnectWalletFlow(Flow):
             self.goto(self.show_rx_address_intro, save_curr=save_curr)
 
     def goto_multisig_import_mode(self):
+        from wallets.constants import EXPORT_MODE_QR
+
         if 'multisig_import_mode' in self.export_mode:
             if self.export_mode['multisig_import_mode'] == EXPORT_MODE_QR:
                 self.goto(self.import_multisig_config_from_qr, save_curr=False)
@@ -628,6 +654,12 @@ class ConnectWalletFlow(Flow):
         return default_text
 
     def infer_wallet_info(self, address=None, ms_wallet=None):
+        from wallets.utils import (
+            get_deriv_path_from_address_and_acct,
+            get_addr_type_from_address,
+            get_deriv_path_from_addr_type_and_acct,
+            get_addr_type_from_deriv)
+
         # Ensure we have an addr_type, if possible yet
         if not self.addr_type:
             if self.sig_type['addr_type']:

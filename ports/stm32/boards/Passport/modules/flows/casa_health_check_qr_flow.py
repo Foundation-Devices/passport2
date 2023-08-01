@@ -3,14 +3,7 @@
 #
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
-from flows import Flow
-from pages import ErrorPage, SuccessPage
-from pages.show_qr_page import ShowQRPage
-from utils import validate_sign_text, spinner_task
-from tasks import sign_text_file_task
-from public_constants import AF_CLASSIC, RFC_SIGNATURE_TEMPLATE
-from data_codecs.qr_type import QRType
-from foundation import ur
+from flows.flow import Flow
 
 
 class CasaHealthCheckQRFlow(Flow):
@@ -21,8 +14,11 @@ class CasaHealthCheckQRFlow(Flow):
         self.subpath = None
 
     async def scan_qr(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from flows import ScanQRFlow
+        from utils import validate_sign_text
+        from data_codecs.qr_type import QRType
+        from foundation import ur
 
         result = await ScanQRFlow(qr_types=[QRType.UR2],
                                   ur_types=[ur.Value.BYTES],
@@ -57,6 +53,10 @@ class CasaHealthCheckQRFlow(Flow):
         self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
+        from utils import spinner_task
+        from tasks import sign_text_file_task
+        from public_constants import AF_CLASSIC
+
         (signature, address, error) = await spinner_task('Performing Health Check',
                                                          sign_text_file_task,
                                                          args=[self.text, self.subpath, AF_CLASSIC])
@@ -71,6 +71,10 @@ class CasaHealthCheckQRFlow(Flow):
 
     async def show_signed_message(self):
         from ubinascii import b2a_base64
+        from pages.show_qr_page import ShowQRPage
+        from public_constants import RFC_SIGNATURE_TEMPLATE
+        from data_codecs.qr_type import QRType
+        from foundation import ur
 
         sig = b2a_base64(self.signature).decode('ascii').strip()
 

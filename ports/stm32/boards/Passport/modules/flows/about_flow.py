@@ -3,12 +3,7 @@
 #
 # about_flow.py - About Passport, and regulatory info
 
-import lvgl as lv
-from flows import Flow
-from pages import LongTextPage
-from utils import xfp2str, swab32, recolor
-import microns
-from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
+from flows.flow import Flow
 
 
 class AboutFlow(Flow):
@@ -18,6 +13,9 @@ class AboutFlow(Flow):
     async def about_page(self):
         from common import settings, system
         from utils import has_seed
+        from pages.long_text_page import LongTextPage
+        from utils import xfp2str, swab32, recolor
+        from styles.colors import HIGHLIGHT_TEXT_HEX
 
         serial = system.get_serial_number()
         my_xfp = settings.get('xfp', 0)
@@ -59,6 +57,10 @@ class AboutFlow(Flow):
 
     async def regulatory_page(self):
         from common import ui
+        import lvgl as lv
+        from utils import recolor
+        import microns
+        from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
 
         msg = """
 {title}

@@ -3,12 +3,7 @@
 #
 # change_pin_flow.py - Change the user's PIN
 
-from flows import Flow
-from pages import PINEntryPage, ErrorPage, SuccessPage
-from tasks import change_pin_task
-from utils import spinner_task
-from translations import t, T
-import microns
+from flows.flow import Flow
 
 
 class ChangePINFlow(Flow):
@@ -16,6 +11,9 @@ class ChangePINFlow(Flow):
         super().__init__(initial_state=self.enter_old_pin, name='ChangePINFlow')
 
     async def enter_old_pin(self):
+        from pages.pin_entry_page import PINEntryPage
+        import microns
+
         (self.old_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter Current PIN'},
             security_words_message='Recognize these Security Words?',
@@ -29,6 +27,9 @@ class ChangePINFlow(Flow):
             self.goto(self.enter_new_pin)
 
     async def enter_new_pin(self):
+        from pages.pin_entry_page import PINEntryPage
+        import microns
+
         (self.new_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter New PIN'},
             security_words_message='Remember these Security Words',
@@ -41,6 +42,9 @@ class ChangePINFlow(Flow):
             self.goto(self.confirm_new_pin)
 
     async def confirm_new_pin(self):
+        from pages.pin_entry_page import PINEntryPage
+        import microns
+
         (confirmed_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Confirm New PIN'},
             security_words_message='Remember these Security Words',
@@ -55,6 +59,9 @@ class ChangePINFlow(Flow):
                 self.goto(self.new_pin_mismatch)
 
     async def change_pin(self):
+        from tasks import change_pin_task
+        from utils import spinner_task
+
         (result, error) = await spinner_task('Changing PIN', change_pin_task,
                                              args=[self.old_pin, self.new_pin])
         if result:
@@ -63,15 +70,21 @@ class ChangePINFlow(Flow):
             self.goto(self.show_error)
 
     async def new_pin_mismatch(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(text='Unable to change PIN.\n\nThe new PINs don\'t match.').show()
         self.reset(self.enter_old_pin)
 
     async def show_error(self):
+        from pages.error_page import ErrorPage
+
         if await ErrorPage(text='Unable to change PIN.\n\nThe current PIN is incorrect.').show():
             self.reset(self.enter_old_pin)
         else:
             self.set_result(False)
 
     async def show_success(self):
+        from pages.success_page import SuccessPage
+
         await SuccessPage(text='PIN changed successfully!\n\nIt will take effect after rebooting.').show()
         self.set_result(True)

@@ -3,7 +3,7 @@
 #
 # casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
 
-from flows import Flow
+from flows.flow import Flow
 
 
 def is_health_check(filename, path=None):

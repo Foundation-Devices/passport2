@@ -16,7 +16,7 @@ class AutoBackupFlow(Flow):
 
     async def check_for_microsd(self):
         from files import CardSlot, CardMissingError
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
 
         try:
             with CardSlot() as card:
@@ -42,7 +42,7 @@ class AutoBackupFlow(Flow):
         if error is None:
             self.goto(self.do_backup, save_curr=False)
         else:
-            from pages import ErrorPage
+            from pages.error_page import ErrorPage
             await ErrorPage(text='Unable to retrieve backup code: {}'.format(error)).show(
                 auto_close_timeout=MSG_CLOSE_TIMEOUT)
             self.set_result(False)
