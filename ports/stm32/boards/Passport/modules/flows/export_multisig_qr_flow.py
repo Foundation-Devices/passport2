@@ -3,8 +3,7 @@
 #
 # export_multisig_qr_flow.py - Export a multisig wallet via QR code
 
-from flows import Flow
-from foundation import ur
+from flows.flow import Flow
 
 
 class ExportMultisigQRFlow(Flow):
@@ -20,6 +19,7 @@ class ExportMultisigQRFlow(Flow):
         from pages import ShowQRPage
         from data_codecs.qr_type import QRType
         from multisig_wallet import MultisigWallet
+        from foundation import ur
 
         await ShowQRPage(qr_type=QRType.UR2, qr_data=ur.new_bytes(self.ms_text)).show()
         self.set_result(True)

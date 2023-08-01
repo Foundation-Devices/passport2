@@ -4,14 +4,7 @@
 # erase_passport_flow.py - Confirm the user wants to erase Passport, then erase Passport's wallet
 #                          and reset wallet-related settings.
 
-import lvgl as lv
-from flows import Flow
-from pages import SuccessPage, QuestionPage, LongQuestionPage
-from tasks import erase_passport_task
-from utils import spinner_task
-from translations import t, T
-import microns
-import passport
+from flows.flow import Flow
 
 
 class ErasePassportFlow(Flow):
@@ -24,6 +17,10 @@ class ErasePassportFlow(Flow):
         self.success_page.set_result(True)
 
     async def confirm_erase(self):
+        from pages.question_page import QuestionPage
+        from pages.long_question_page import LongQuestionPage
+        import passport
+
         if not await QuestionPage(
                 'Are you sure you want to erase this Passport? All funds will be lost if not backed up.').show():
             self.set_result(False)
@@ -40,7 +37,13 @@ class ErasePassportFlow(Flow):
 
     async def do_erase(self):
         import machine
-        from pages import ShutdownPage, ErrorPage
+        from pages.shutdown_page import ShutdownPage
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
+        import lvgl as lv
+        from tasks import erase_passport_task
+        from utils import spinner_task
+        import microns
 
         from common import system
         (error,) = await spinner_task('Erasing Passport', erase_passport_task, args=[False])

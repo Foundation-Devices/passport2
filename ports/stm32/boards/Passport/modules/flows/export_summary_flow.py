@@ -3,7 +3,7 @@
 #
 # export_summary_flow.py - Flow to export a summary of the current wallet
 
-from flows import Flow
+from flows.flow import Flow
 
 
 def generate_public_contents():
@@ -125,7 +125,7 @@ class ExportSummaryFlow(Flow):
                 fd.write(part.encode())
 
     async def confirm_export(self):
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
 
         result = await QuestionPage(text='Export wallet info to microSD?').show()
         if result:

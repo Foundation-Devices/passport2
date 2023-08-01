@@ -3,7 +3,7 @@
 #
 # export_derived_key_flow.py - Export a derived key
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ExportDerivedKeyFlow(Flow):
@@ -19,8 +19,8 @@ class ExportDerivedKeyFlow(Flow):
     async def generate_key(self):
         from utils import spinner_task, B2A, get_folder_path
         from derived_key import get_key_type_from_tn
-        from pages import ErrorPage
-        from flows import ViewSeedWordsFlow
+        from pages.error_page import ErrorPage
+        from flows.view_seed_words_flow import ViewSeedWordsFlow
         from public_constants import DIR_KEY_MNGR
 
         self.key_type = get_key_type_from_tn(self.key['tn'])
@@ -59,7 +59,7 @@ class ExportDerivedKeyFlow(Flow):
         self.goto(self.choose_export_mode)
 
     async def choose_export_mode(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
 
         options = [{'label': 'Export via QR', 'value': self.show_qr_code},
                    {'label': 'Export via microSD', 'value': self.save_to_sd}]
@@ -73,7 +73,7 @@ class ExportDerivedKeyFlow(Flow):
         self.goto(mode)
 
     async def show_qr_code(self):
-        from pages import ShowQRPage
+        from pages.show_qr_page import ShowQRPage
         from flows import SeedWarningFlow
         import microns
 
@@ -93,7 +93,8 @@ class ExportDerivedKeyFlow(Flow):
         self.goto(self.confirm_qr)
 
     async def confirm_qr(self):
-        from pages import InfoPage, LongTextPage
+        from pages.info_page import InfoPage
+        from pages.long_text_page import LongTextPage
         import microns
 
         text = 'Confirm the exported {} on the following page'.format(self.key_type['title'])

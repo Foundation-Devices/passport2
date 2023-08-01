@@ -3,7 +3,7 @@
 #
 # export_multisig_microsd_flow.py - Export a multisig wallet via microSD
 
-from flows import SaveToMicroSDFlow
+from flows.save_to_microsd_flow import SaveToMicroSDFlow
 
 
 class ExportMultisigMicrosdFlow(SaveToMicroSDFlow):
