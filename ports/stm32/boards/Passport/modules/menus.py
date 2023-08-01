@@ -187,7 +187,7 @@ def nostr_menu():
     from utils import is_dev_build
 
     if is_dev_build():
-        from developer import NostrDelegationFlow
+        from developer.nostr_delegation_flow import NostrDelegationFlow
         return [{'icon': 'ICON_SIGN', 'label': 'Delegate', 'flow': NostrDelegationFlow}]
     return []
 
@@ -364,13 +364,11 @@ def developer_menu():
             NewSeedFlow,
             SetInitialPINFlow,
         )
-        from developer import (
-            BatteryPage,
-            DeleteDerivedKeysFlow,
-            DeveloperFunctionsFlow,
-            FCCTestFlow,
-            SpinDelayFlow,
-        )
+        from developer.battery_page import BatteryPage
+        from developer.delete_derived_keys_flow import DeleteDerivedKeysFlow
+        from developer.developer_functions_flow import DeveloperFunctionsFlow
+        from developer.fcc_test_flow import FCCTestFlow
+        from developer.spin_delay_flow import SpinDelayFlow
         from pages import StatusPage, ShowQRPage
         from data_codecs.qr_type import QRType
         from foundation import ur

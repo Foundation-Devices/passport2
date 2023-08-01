@@ -3,14 +3,13 @@
 #
 # fcc_copy_files_task.py - Task to perform the copy from microSD to flash and back.
 
-import math
-from uasyncio import sleep_ms
-from files import CardSlot, CardMissingError
-from errors import Error
-
 
 async def fcc_copy_files_task(file_path, file_size, set_progress, set_text, on_done):
     from common import sf
+    import math
+    from uasyncio import sleep_ms
+    from files import CardSlot, CardMissingError
+    from errors import Error
 
     # ==========================================================================================================
     # First, write some data to the specified file

@@ -23,6 +23,7 @@ class DeleteDerivedKeysFlow(Flow):
     async def do_delete(self):
         from common import settings
         from pages import SuccessPage
+
         settings.remove('derived_keys')
         settings.save()
         await SuccessPage(text='Keys Deleted').show()

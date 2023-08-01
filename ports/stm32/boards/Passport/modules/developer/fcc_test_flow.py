@@ -3,18 +3,7 @@
 #
 # fcc_test_flow.py - Flow to iterate through a test loop indefinitely
 
-from animations.constants import TRANSITION_DIR_POP
-import lvgl as lv
-from flows import Flow, ScanQRFlow
-import microns
-from pages import ProgressPage
-from styles.colors import COPPER
-from developer import fcc_copy_files_task
-from utils import start_task
-from files import CardSlot
-import common
-from uasyncio import sleep_ms
-from errors import Error
+from flows import Flow
 
 _CAMERA_DISPLAY_DURATION_SECS = const(5 * 1000)
 _FILE_SIZE_TO_CREATE = const(250 * 1024)
@@ -26,6 +15,8 @@ class FCCTestFlow(Flow):
         self.progress_page = None
 
     async def show_camera(self):
+        from flows import ScanQRFlow
+
         result = await ScanQRFlow(auto_close_timeout=_CAMERA_DISPLAY_DURATION_SECS,
                                   data_description='a normal QR code').run()
 
@@ -37,6 +28,13 @@ class FCCTestFlow(Flow):
         self.goto(self.copy_files)
 
     async def copy_files(self):
+        from developer.fcc_copy_files_task import fcc_copy_files_task
+        import microns
+        from pages import ProgressPage
+        from utils import start_task
+        from files import CardSlot
+        from uasyncio import sleep_ms
+
         self.progress_page = ProgressPage(card_header={'title': 'Copy Files'},
                                           text='Copying files from microSD to flash and back.',
                                           left_micron=microns.Cancel,
@@ -63,6 +61,12 @@ class FCCTestFlow(Flow):
         self.back()
 
     async def on_done(self, error):
+        import lvgl as lv
+        from animations.constants import TRANSITION_DIR_POP
+        from styles.colors import COPPER
+        import common
+        from errors import Error
+
         # If user backed out, long_text_page will be None, so nothing to do
         if self.progress_page is None:
             return
