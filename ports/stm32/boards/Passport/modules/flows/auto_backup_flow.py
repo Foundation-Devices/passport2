@@ -3,7 +3,7 @@
 #
 # auto_backup_flow.py - Check to see if microSD is inserted and, if so, backup automatically
 
-from flows import Flow
+from flows.flow import Flow
 
 MSG_CLOSE_TIMEOUT = 1000
 

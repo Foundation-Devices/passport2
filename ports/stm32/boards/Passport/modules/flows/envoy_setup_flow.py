@@ -3,16 +3,7 @@
 #
 # envoy_setup_flow.py - The main overall flow for Envoy setup - controls the process
 
-import lvgl as lv
-from flows import (
-    Flow,
-    ConnectWalletFlow,
-    SetInitialPINFlow,
-    UpdateFirmwareFlow,
-    InitialSeedSetupFlow,
-    ScvFlow,
-)
-import microns
+from flows.flow import Flow
 
 
 class EnvoySetupFlow(Flow):
@@ -23,9 +14,11 @@ class EnvoySetupFlow(Flow):
     # Open Envoy and select "Setup a New Passport"
 
     async def check_if_envoy_installed(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX
+        import lvgl as lv
+        import microns
 
         options = [{'label': 'Continue on Envoy', 'value': True},
                    {'label': 'Install Envoy App', 'value': False}]
@@ -44,7 +37,7 @@ class EnvoySetupFlow(Flow):
             self.goto(self.show_envoy_app_url)
 
     async def show_envoy_app_url(self):
-        from pages import ShowQRPage
+        from pages.show_qr_page import ShowQRPage
 
         result = await ShowQRPage(
             qr_data='https://foundationdevices.com/download',
@@ -55,6 +48,8 @@ class EnvoySetupFlow(Flow):
             self.goto(self.scv_flow)
 
     async def scv_flow(self):
+        from flows.scv_flow import ScvFlow
+
         result = await ScvFlow(envoy=True).run()
         if result is None or not result:
             # self.set_result(None, forget_state=True)
@@ -63,6 +58,8 @@ class EnvoySetupFlow(Flow):
             self.goto(self.set_initial_pin)
 
     async def set_initial_pin(self):
+        from flows.set_initial_pin_flow import SetInitialPINFlow
+
         result = await SetInitialPINFlow().run()
         if not result:
             self.back()
@@ -70,8 +67,11 @@ class EnvoySetupFlow(Flow):
             self.goto(self.update_firmware)
 
     async def update_firmware(self):
-        from pages import ErrorPage, QuestionPage
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
         import passport
+        import lvgl as lv
+        from flows.update_firmware_flow import UpdateFirmwareFlow
 
         # Guards to ensure we can't get into a weird state
         if not self.ensure_pin_set():
@@ -109,6 +109,8 @@ class EnvoySetupFlow(Flow):
         self.goto(self.setup_seed)
 
     async def setup_seed(self):
+        from flows.initial_seed_setup_flow import InitialSeedSetupFlow
+
         # Guards to ensure we can't get into a weird state
         if not self.ensure_pin_set():
             return
@@ -124,7 +126,7 @@ class EnvoySetupFlow(Flow):
             self.goto(self.connect_with_envoy_intro)
 
     async def connect_with_envoy_intro(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         from utils import has_seed
 
         # Can't connect if we don't have a seed yet!
@@ -147,6 +149,7 @@ class EnvoySetupFlow(Flow):
         import common
         from constants import DEFAULT_ACCOUNT_ENTRY
         from utils import has_seed
+        from flows.connect_wallet_flow import ConnectWalletFlow
 
         # Guards to ensure we can't get into a weird state
         if not self.ensure_pin_set():
@@ -173,13 +176,13 @@ class EnvoySetupFlow(Flow):
         if result:
             self.goto(self.show_success)
         else:
-            from pages import InfoPage
+            from pages.info_page import InfoPage
             await InfoPage(text='You can connect Passport with Envoy or another wallet at a later time.').show()
             common.settings.set('terms_ok', 1)
             self.set_result(True, forget_state=True)
 
     async def show_success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
         import common
 
         await SuccessPage(text='Passport configured successfully. You can now start using your device.').show()
@@ -188,7 +191,7 @@ class EnvoySetupFlow(Flow):
 
     async def ensure_logged_in(self):
         from utils import is_logged_in
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         from flows import LoginFlow
 
         if not is_logged_in():

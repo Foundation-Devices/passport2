@@ -3,8 +3,7 @@
 #
 # delete_multisig_flow.py - Delete the specified multisig config
 
-from flows import Flow
-from translations import t, T
+from flows.flow import Flow
 
 
 class DeleteMultisigFlow(Flow):
@@ -25,7 +24,7 @@ class DeleteMultisigFlow(Flow):
         super().__init__(initial_state=initial_state, name='DeleteMultisigFlow')
 
     async def confirm_delete(self):
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
         result = await QuestionPage(text='Are you sure you to delete want this multisig config?\n\n{}'.format(
             self.ms.name)).show()
         if result:
@@ -37,7 +36,7 @@ class DeleteMultisigFlow(Flow):
         import lvgl as lv
         from common import keypad
         from tasks import delete_multisig_task
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
         from utils import spinner_task
         import passport
 
@@ -57,6 +56,6 @@ class DeleteMultisigFlow(Flow):
             self.goto(self.show_error)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         await ErrorPage(self.error).show()
         self.set_result(False)

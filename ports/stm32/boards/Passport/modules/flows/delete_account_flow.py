@@ -3,12 +3,7 @@
 #
 # delete_account_flow.py - Delete the current account
 
-import lvgl as lv
-from flows import Flow
-from pages import ErrorPage, SuccessPage, QuestionPage, ErrorPage
-from tasks import delete_account_task
-from utils import spinner_task
-from translations import t, T
+from flows.flow import Flow
 
 
 class DeleteAccountFlow(Flow):
@@ -27,6 +22,8 @@ class DeleteAccountFlow(Flow):
         super().__init__(initial_state=initial_state, name='DeleteAccountFlow')
 
     async def check_account_zero(self):
+        from pages.error_page import ErrorPage
+
         if self.account.get('acct_num') == 0:
             await ErrorPage(text='You can\'t delete account ##0.').show()
             self.set_result(False)
@@ -34,6 +31,8 @@ class DeleteAccountFlow(Flow):
             self.goto(self.confirm_delete)
 
     async def confirm_delete(self):
+        from pages.question_page import QuestionPage
+
         result = await QuestionPage(text='Delete this account?\n\n{}\n(##{})'.format(
             self.account.get('name'), self.account.get('acct_num'))).show()
         if result:
@@ -42,6 +41,10 @@ class DeleteAccountFlow(Flow):
             self.set_result(False)
 
     async def do_delete(self):
+        from pages.success_page import SuccessPage
+        from tasks import delete_account_task
+        from utils import spinner_task
+
         (error,) = await spinner_task('Deleting Account', delete_account_task,
                                       args=[self.account.get('acct_num')])
         if error is None:
@@ -66,5 +69,7 @@ class DeleteAccountFlow(Flow):
             self.goto(self.show_error)
 
     async def show_error(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(self.error).show()
         self.set_result(False)
