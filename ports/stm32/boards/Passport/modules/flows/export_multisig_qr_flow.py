@@ -16,7 +16,7 @@ class ExportMultisigQRFlow(Flow):
         self.ms_text = self.ms.to_file()
 
     async def show_qr_code(self):
-        from pages import ShowQRPage
+        from pages.show_qr_page import ShowQRPage
         from data_codecs.qr_type import QRType
         from multisig_wallet import MultisigWallet
         from foundation import ur

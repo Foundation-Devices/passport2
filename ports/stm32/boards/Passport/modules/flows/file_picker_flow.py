@@ -3,15 +3,7 @@
 #
 # file_picker_flow.py - Allow the user to pick a file and (optionally) navigate up/down folder hierarchy
 
-import lvgl as lv
-from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
-from files import CardMissingError, CardSlot
-from flows import Flow, SelectedFileFlow
-from pages import FilePickerPage, StatusPage, InsertMicroSDPage
-from styles.colors import COPPER
-import microns
-import common
-from utils import get_file_list
+from flows.flow import Flow
 
 
 def file_key(f):
@@ -74,6 +66,10 @@ class FilePickerFlow(Flow):
             return True
 
     async def on_file_result(self, res):
+        from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
+        from flows.select_file_flow import SelectedFileFlow
+        import common
+
         # No file selected - go back to previous page
         if res is None:
             common.page_transition_dir = TRANSITION_DIR_POP
@@ -101,6 +97,13 @@ class FilePickerFlow(Flow):
     async def show_file_picker(self):
         from utils import show_page_with_sd_card, get_backups_folder_path, get_folder_path
         from public_constants import DIR_TRANSACTIONS
+        from files import CardSlot, CardMissingError
+        import lvgl as lv
+        from pages.file_picker_page import FilePickerPage
+        from pages.status_page import StatusPage
+        from styles.colors import COPPER
+        import microns
+        from utils import get_file_list
 
         while True:
             # Get list of files/folders at the current path

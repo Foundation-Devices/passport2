@@ -3,7 +3,7 @@
 #
 # import_multisig_wallet_from_microsd_flow.py - Import a multisig wallet from microSD
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ImportMultisigWalletFromMicroSDFlow(Flow):
@@ -14,7 +14,8 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
 
     async def choose_wallet_file(self):
         from flows import FilePickerFlow
-        from pages import InsertMicroSDPage, ErrorPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from pages.error_page import ErrorPage
         from tasks import read_file_task
         from utils import spinner_task
         from errors import Error
@@ -56,7 +57,7 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
 
     async def do_import(self):
         from flows import ImportMultisigWalletFlow
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
 
         # Show the wallet to the user for import
         result = await ImportMultisigWalletFlow(self.ms).run()
@@ -65,7 +66,8 @@ class ImportMultisigWalletFromMicroSDFlow(Flow):
         self.set_result(result)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+
         await ErrorPage(text=self.error).show()
         self.error = None
         self.reset(self.choose_wallet_file)

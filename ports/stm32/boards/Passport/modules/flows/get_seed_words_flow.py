@@ -3,7 +3,7 @@
 #
 # get_seed_words_flow.py - Get seed words from the root or an external key
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class GetSeedWordsFlow(Flow):
@@ -14,7 +14,7 @@ class GetSeedWordsFlow(Flow):
     async def get_words(self):
         from tasks import get_seed_words_task
         from utils import spinner_task, get_words_from_seed
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         if self.external_key:
             (words, error) = get_words_from_seed(self.external_key)

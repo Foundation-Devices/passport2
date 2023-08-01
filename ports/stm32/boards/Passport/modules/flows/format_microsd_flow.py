@@ -3,12 +3,7 @@
 #
 # format_microsd_flow.py - Ask the user to confirm, then format the microsd card
 
-from flows import Flow
-from tasks import format_microsd_task, make_microsd_file_system_task
-from pages import ProgressPage, QuestionPage, SuccessPage, ErrorPage, InsertMicroSDPage
-from utils import spinner_task, start_task
-from errors import Error
-import pyb
+from flows.flow import Flow
 
 
 class FormatMicroSDFlow(Flow):
@@ -18,6 +13,10 @@ class FormatMicroSDFlow(Flow):
         self.prev_card_header = None
 
     async def check_for_microsd(self):
+        from pages.error_page import ErrorPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        import pyb
+
         sd = pyb.SDCard()
         if not sd:
             await ErrorPage(text='Unable to communicate with microSD card controller.')
@@ -32,6 +31,8 @@ class FormatMicroSDFlow(Flow):
                 self.set_result(False)
 
     async def confirm_format(self):
+        from pages.question_page import QuestionPage
+
         self.result = await QuestionPage(text='Erase and reformat the microSD card?').show()
         if self.result:
             self.goto(self.do_format)
@@ -43,6 +44,11 @@ class FormatMicroSDFlow(Flow):
         self.progress_page.set_result(error is None)
 
     async def do_format(self):
+        from tasks import format_microsd_task
+        from pages.progress_page import ProgressPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from utils import start_task
+
         # Could implement something like progress_task() similar to spinner_task() to clean up ProgressPage handling
         self.progress_page = ProgressPage(text='Formatting microSD')
 
@@ -57,6 +63,13 @@ class FormatMicroSDFlow(Flow):
                 self.set_result(False)
 
     async def make_file_system(self):
+        from tasks import make_microsd_file_system_task
+        from pages.success_page import SuccessPage
+        from pages.error_page import ErrorPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from utils import spinner_task
+        from errors import Error
+
         (error,) = await spinner_task('Creating new file system', make_microsd_file_system_task)
         if error is None:
             await SuccessPage(text='Formatting complete.').show()

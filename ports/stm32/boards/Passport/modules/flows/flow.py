@@ -3,10 +3,6 @@
 #
 # flow.py - Base class for all UI flows
 
-from animations.constants import TRANSITION_DIR_REPLACE, TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
-from utils import handle_fatal_error
-import common
-
 
 class Flow():
     def __init__(self,
@@ -14,6 +10,9 @@ class Flow():
                  name='Flow',
                  settings_key=None,
                  statusbar=None):
+        from animations.constants import TRANSITION_DIR_PUSH
+        import common
+
         self.state = initial_state
         self.name = name
         self.prev_states = []
@@ -26,6 +25,8 @@ class Flow():
 
     # Subclasses can call super().get_save_data() first to get a dict, and then add to it and return it
     def get_save_data(self):
+        from common import page_transition_dir
+
         # print('=======================')
         # print('state={}'.format(self.state.__name__))
         # print('=======================')
@@ -33,7 +34,7 @@ class Flow():
             'state': self.state.__name__,
             'name': self.name,
             'prev_states': self.serialize_prev_states(),
-            'page_transition_dir': common.page_transition_dir
+            'page_transition_dir': page_transition_dir
         }
 
     def serialize_prev_states(self):
@@ -53,23 +54,33 @@ class Flow():
         return stack
 
     def save(self):
+        from common import settings
+
         if self.settings_key is not None:
             save_data = self.get_save_data()
-            common.settings.set(self.settings_key, save_data)
+            settings.set(self.settings_key, save_data)
 
     def restore_items(self, data):
+        import common
+
+        from animations.constants import TRANSITION_DIR_PUSH
+
         # print('restore_items = {}'.format(data))
         common.page_transition_dir = data.get('page_transition_dir', TRANSITION_DIR_PUSH)
         self.prev_states = self.deserialize_prev_states(data.get('prev_states', []))
         self.state = getattr(self, data.get('state'))
 
     def erase_settings(self):
+        from common import settings
+
         if self.settings_key is not None:
-            common.settings.remove(self.settings_key)
+            settings.remove(self.settings_key)
 
     def restore(self):
+        from common import settings
+
         if self.settings_key is not None:
-            data = common.settings.get(self.settings_key, None)
+            data = settings.get(self.settings_key, None)
             if data is not None:
                 self.restore_items(data)
 
@@ -80,6 +91,9 @@ class Flow():
         # mem_info(label='{}.cleanup(): '.format(self.name), map=False)
 
     def goto(self, new_state, save_curr=True):
+        from animations.constants import TRANSITION_DIR_PUSH
+        import common
+
         if save_curr:
             self.prev_states.append(self.state)
         common.page_transition_dir = TRANSITION_DIR_PUSH
@@ -99,6 +113,9 @@ class Flow():
         self.cleanup()
 
     def back(self):
+        from animations.constants import TRANSITION_DIR_REPLACE, TRANSITION_DIR_POP
+        import common
+
         # print('back() len={}'.format(len(self.prev_states)))
         if len(self.prev_states) > 0:
             prev_state = self.prev_states.pop()
@@ -117,6 +134,8 @@ class Flow():
 
     async def wait_to_die(self):
         from uasyncio import sleep_ms
+        from animations.constants import TRANSITION_DIR_POP
+
         # This task just started an operation that will cede control to another card_task,
         # and if we were to keep going, there would be a race condition for control of the UI
         # between this card_task and the new one, so we just wait here.  The old card_task
@@ -124,6 +143,9 @@ class Flow():
         await sleep_ms(10000)
 
     def set_result(self, result, forget_state=True):
+        from utils import handle_fatal_error
+        import common
+
         common.page_transition_dir = TRANSITION_DIR_POP
         self.result = result
         self.done = True
@@ -134,16 +156,18 @@ class Flow():
             self.erase_settings()
 
     async def run(self):
+        from common import ui
+
         try:
             prev_statusbar = None
             if self.statusbar is not None:
-                prev_statusbar = common.ui.set_statusbar(**self.statusbar)
+                prev_statusbar = ui.set_statusbar(**self.statusbar)
 
             while not self.done:
                 await self.state()
 
             if prev_statusbar is not None:
-                common.ui.set_statusbar(**prev_statusbar)
+                ui.set_statusbar(**prev_statusbar)
 
             return self.result
         except Exception as e:

@@ -3,8 +3,7 @@
 #
 # initial_seed_setup_flow.py - Menu to let user choose seed setup method
 
-import lvgl as lv
-from flows import Flow
+from flows.flow import Flow
 
 
 class InitialSeedSetupFlow(Flow):
@@ -15,9 +14,10 @@ class InitialSeedSetupFlow(Flow):
         self.allow_backtrack = allow_backtrack
 
     async def show_intro(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         from utils import has_seed
         import microns
+        import lvgl as lv
 
         # Pass silently if seed already exists
         if has_seed():
@@ -39,9 +39,10 @@ class InitialSeedSetupFlow(Flow):
             self.set_result(None)
 
     async def show_seed_setup_menu(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
         from flows import NewSeedFlow, RestoreSeedFlow, RestoreBackupFlow
         import microns
+        import lvgl as lv
 
         options = [{'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)},

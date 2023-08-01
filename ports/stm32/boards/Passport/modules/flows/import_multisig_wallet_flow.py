@@ -3,8 +3,7 @@
 #
 # import_multisig_wallet_flow.py - Show user details of a wallet to be imported, then save if accepted
 
-from flows import Flow
-from pages import LongTextPage, ErrorPage
+from flows.flow import Flow
 
 
 class ImportMultisigWalletFlow(Flow):
@@ -13,6 +12,9 @@ class ImportMultisigWalletFlow(Flow):
         self.ms = ms
 
     async def show_overview(self):
+        from pages.long_text_page import LongTextPage
+        from pages.error_page import ErrorPage
+
         msg, is_dup = self.ms.format_overview()
 
         if is_dup:
@@ -31,6 +33,8 @@ class ImportMultisigWalletFlow(Flow):
         from errors import Error
         from utils import spinner_task
         from tasks import save_multisig_wallet_task
+        from pages.long_text_page import LongTextPage
+        from pages.error_page import ErrorPage
 
         msg = self.ms.format_details()
 

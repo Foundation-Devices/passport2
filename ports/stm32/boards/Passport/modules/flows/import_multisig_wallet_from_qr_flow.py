@@ -3,7 +3,7 @@
 #
 # import_multisig_wallet_from_qr_flow.py - Import a multisig wallet from a QR code
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ImportMultisigWalletFromQRFlow(Flow):
@@ -40,7 +40,7 @@ class ImportMultisigWalletFromQRFlow(Flow):
 
     async def do_import(self):
         from flows import ImportMultisigWalletFlow
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
 
         # Show the wallet to the user for import
         result = await ImportMultisigWalletFlow(self.ms).run()
@@ -49,7 +49,8 @@ class ImportMultisigWalletFromQRFlow(Flow):
         self.set_result(result)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+
         await ErrorPage(text=self.error).show()
         self.error = None
         self.reset(self.scan_qr_code)
