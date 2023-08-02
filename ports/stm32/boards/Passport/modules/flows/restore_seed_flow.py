@@ -19,7 +19,7 @@ class RestoreSeedFlow(Flow):
         self.autobackup = autobackup
 
     async def choose_restore_method(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
         from data_codecs.qr_type import QRType
         from public_constants import SEED_LENGTHS
 
@@ -81,7 +81,7 @@ class RestoreSeedFlow(Flow):
         self.goto(self.validate_seed_words)
 
     async def explain_input_method(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
 
         result = await InfoPage([
             "Passport uses predictive text input to help you restore your seed words.",

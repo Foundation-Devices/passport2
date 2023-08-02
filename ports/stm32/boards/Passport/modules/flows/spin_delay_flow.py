@@ -4,7 +4,7 @@
 # spin_delay_flow.py - Show a spinner that will display until the given delay has expired.
 
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class SpinDelayFlow(Flow):
@@ -24,6 +24,6 @@ class SpinDelayFlow(Flow):
         self.goto(self.show_success)
 
     async def show_success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
         await SuccessPage(text='Delay Complete').show()
         self.set_result(True)

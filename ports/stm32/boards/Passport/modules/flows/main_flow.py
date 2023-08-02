@@ -11,7 +11,7 @@ class MainFlow(Flow):
         super().__init__(initial_state=self.start, name='MainFlow')
 
     async def start(self):
-        import common
+        from common import ui
         from utils import start_task, is_logged_in, has_seed
         from flows import SelectSetupModeFlow, LoginFlow, InitialSeedSetupFlow
 
@@ -24,10 +24,10 @@ class MainFlow(Flow):
             await InitialSeedSetupFlow(allow_backtrack=False).run()
 
         # Create initial cards by calling ui.update_cards()
-        common.ui.update_cards(is_init=True)
+        ui.update_cards(is_init=True)
 
         async def start_main_task():
-            common.ui.start_card_task(card_idx=common.ui.active_card_idx)
+            ui.start_card_task(card_idx=ui.active_card_idx)
 
         start_task(start_main_task())
 

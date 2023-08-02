@@ -3,14 +3,7 @@
 #
 # sign_text_file_flow.py - Ask user to choose a file from microSD and then sign it.
 
-from files import CardMissingError, CardSlot
-from flows import Flow, FilePickerFlow
-from pages import SuccessPage, ErrorPage, InsertMicroSDPage
-from tasks import sign_text_file_task
-from utils import spinner_task, validate_sign_text
-from translations import t, T
-from public_constants import AF_CLASSIC, MSG_SIGNING_MAX_LENGTH, RFC_SIGNATURE_TEMPLATE
-import sys
+from flows.flow import Flow
 
 
 def is_signable(filename, path=None):
@@ -30,6 +23,8 @@ class SignTextFileFlow(Flow):
         super().__init__(initial_state=self.select_file, name='SignTextFileFlow')
 
     async def select_file(self):
+        from flows.file_picker_flow import FilePickerFlow
+
         result = await FilePickerFlow(filter_fn=is_signable, show_folders=True).run()
         if result is None:
             self.set_result(False)
@@ -42,6 +37,10 @@ class SignTextFileFlow(Flow):
 
     async def validate_file(self):
         from common import system
+        from files import CardSlot
+        from pages.error_page import ErrorPage
+        from utils import validate_sign_text
+        from public_constants import MSG_SIGNING_MAX_LENGTH
 
         with CardSlot() as card:
             with open(self.file_path, 'rb') as fd:
@@ -81,6 +80,11 @@ class SignTextFileFlow(Flow):
                 self.goto(self.do_sign)
 
     async def do_sign(self):
+        from pages.error_page import ErrorPage
+        from tasks import sign_text_file_task
+        from utils import spinner_task
+        from public_constants import AF_CLASSIC
+
         (signature, address, error) = await spinner_task('Signing File', sign_text_file_task,
                                                          args=[self.text, self.subpath, AF_CLASSIC])
         if error is None:

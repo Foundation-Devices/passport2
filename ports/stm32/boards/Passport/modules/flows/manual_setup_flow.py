@@ -89,12 +89,12 @@ class ManualSetupFlow(Flow):
         ).run()
         if result:
             import machine
-            import common
+            from common import settings
 
             self.goto(self.setup_seed)
 
             # Force a save before the reset
-            common.settings.save()
+            settings.save()
 
             machine.reset()
         else:

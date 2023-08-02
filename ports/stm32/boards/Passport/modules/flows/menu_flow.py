@@ -24,7 +24,7 @@ class MenuFlow(Flow):
         MenuFlow.latest_menu = self
 
     async def show_menu(self):
-        from common import ui
+        from common import ui, page_transition_dir
         from pages.menu_page import MenuPage
         from pages.shutdown_page import ShutdownPage
         from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
@@ -59,13 +59,13 @@ class MenuFlow(Flow):
             if ui.is_top_level():
                 await ShutdownPage().show()
             else:
-                common.page_transition_dir = TRANSITION_DIR_POP
+                page_transition_dir = TRANSITION_DIR_POP
                 self.set_result(None)
 
             self.cleanup()
         else:
             self.selected_index, self.selected_item = result
-            common.page_transition_dir = TRANSITION_DIR_PUSH
+            page_transition_dir = TRANSITION_DIR_PUSH
             item = self.selected_item
 
             if item.get('submenu') is not None:

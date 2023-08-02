@@ -3,8 +3,7 @@
 #
 # sign_psbt_microsd_flow.py - Sign a PSBT from a microSD card
 
-from flows import Flow
-from pages import InsertMicroSDPage, QuestionPage, LongTextPage
+from flows.flow import Flow
 
 
 def is_psbt(filename, path):
@@ -51,7 +50,7 @@ class SignPsbtMicroSDFlow(Flow):
     async def copy_file_to_flash(self):
         import gc
         from utils import spinner_task
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from public_constants import TXN_INPUT_OFFSET
         from tasks import copy_psbt_file_to_external_flash_task
         from errors import Error
@@ -97,7 +96,7 @@ class SignPsbtMicroSDFlow(Flow):
 
     async def write_signed_transaction(self):
         from files import securely_blank_file
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from flows import SaveToMicroSDFlow
 
         orig_path, basename = self.file_path.rsplit('/', 1)
@@ -161,6 +160,8 @@ class SignPsbtMicroSDFlow(Flow):
         import microns
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
+        from pages.long_text_page import LongTextPage
+
         msg = "Updated PSBT is:\n\n%s" % self.out_fn
         if self.out2_fn:
             msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.out2_fn

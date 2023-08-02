@@ -58,7 +58,6 @@ class RenameAccountFlow(Flow):
         (error,) = await spinner_task('Renaming account', rename_account_task,
                                       args=[self.account.get('acct_num'), self.new_account_name])
         if error is None:
-            import common
             from utils import start_task
             from flows import AutoBackupFlow
 
@@ -67,10 +66,10 @@ class RenameAccountFlow(Flow):
 
             await AutoBackupFlow().run()
 
-            common.ui.update_cards(stay_on_same_card=True)
+            ui.update_cards(stay_on_same_card=True)
 
             async def start_main_task():
-                common.ui.start_card_task(card_idx=common.ui.active_card_idx)
+                ui.start_card_task(card_idx=ui.active_card_idx)
 
             start_task(start_main_task())
 

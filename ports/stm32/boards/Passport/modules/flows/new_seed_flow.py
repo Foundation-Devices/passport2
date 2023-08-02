@@ -63,7 +63,7 @@ class NewSeedFlow(Flow):
         self.goto(self.show_success)
 
     async def show_success(self):
-        import common
+        from common import ui
         from flows import AutoBackupFlow, BackupFlow
         from pages.success_page import SuccessPage
 
@@ -74,7 +74,7 @@ class NewSeedFlow(Flow):
             await AutoBackupFlow(offer=True).run()
 
         if self.refresh_cards_when_done:
-            common.ui.full_cards_refresh()
+            ui.full_cards_refresh()
 
             await self.wait_to_die()
         else:

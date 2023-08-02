@@ -25,7 +25,7 @@ class SignPsbtQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow, SignPsbtMicroSDFlow
         from errors import Error
-        from pages import YesNoChooserPage
+        from pages.yes_no_chooser_page import YesNoChooserPage
         import microns
         import passport
 
@@ -77,7 +77,7 @@ How would you like to proceed?"
         from tasks import copy_psbt_to_external_flash_task
         from public_constants import TXN_INPUT_OFFSET
         from errors import Error
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         gc.collect()  # Try to avoid excessive fragmentation
 
@@ -113,7 +113,7 @@ How would you like to proceed?"
     async def get_signed_bytes(self):
         import gc
         from foundation import FixedBytesIO
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from passport import mem
 
         # Copy signed txn into a bytearray and show the data as a UR
@@ -137,7 +137,8 @@ How would you like to proceed?"
         self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
-        from pages import ShowQRPage, ErrorPage
+        from pages.show_qr_page import ShowQRPage
+        from pages.error_page import ErrorPage
         from data_codecs.qr_type import QRType
         from ubinascii import hexlify as b2a_hex
         import microns
@@ -179,7 +180,7 @@ How would you like to proceed?"
 
     async def save_to_microsd(self):
         from flows import SaveToMicroSDFlow
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from utils import get_folder_path
         from public_constants import DIR_TRANSACTIONS
         from ubinascii import hexlify as b2a_hex
@@ -221,7 +222,7 @@ How would you like to proceed?"
         import microns
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
-        from pages import LongTextPage
+        from pages.long_text_page import LongTextPage
 
         msg = "Updated PSBT is:\n\n%s" % self.filename
         result = await LongTextPage(text=msg,

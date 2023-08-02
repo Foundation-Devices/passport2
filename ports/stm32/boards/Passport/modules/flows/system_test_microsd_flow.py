@@ -3,8 +3,7 @@
 #
 # test_microsd_flow.py - Tests SD card by writing and reading a test file
 
-from flows import Flow
-from pages import SuccessPage, ErrorPage, InsertMicroSDPage
+from flows.flow import Flow
 
 
 class TestMicroSDFlow(Flow):
@@ -15,6 +14,9 @@ class TestMicroSDFlow(Flow):
         import os
         from files import CardSlot, CardMissingError
         from utils import file_exists
+        from pages.sucess_page import SuccessPage
+        from pages.error_page import ErrorPage
+        from pages.insert_microsd_page import InsertMicroSDPage
 
         while True:
             msg = 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks'

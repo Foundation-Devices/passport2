@@ -9,13 +9,7 @@
 #
 # sign_psbt_common_flow.py - Sign a PSBT from a microSD card
 
-import lvgl as lv
-from flows import Flow
-import microns
-from pages.chooser_page import ChooserPage
-from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
-from tasks import sign_psbt_task, validate_psbt_task
-from utils import spinner_task, recolor
+from flows.flow import Flow
 
 
 class SignPsbtCommonFlow(Flow):
@@ -27,7 +21,9 @@ class SignPsbtCommonFlow(Flow):
         self.chain = chains.current_chain()
 
     async def validate_psbt(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+        from tasks import validate_psbt_task
+        from utils import spinner_task
 
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
@@ -40,7 +36,7 @@ class SignPsbtCommonFlow(Flow):
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
@@ -54,7 +50,10 @@ class SignPsbtCommonFlow(Flow):
 
     async def show_transaction_details(self):
         import uio
-        from pages import LongTextPage, ErrorPage
+        from pages.long_text_page import LongTextPage
+        from pages.error_page import ErrorPage
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor
 
         try:
             outputs = uio.StringIO()
@@ -102,7 +101,8 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
     async def show_change(self):
-        from pages import LongTextPage, ErrorPage
+        from pages.long_text_page import LongTextPage
+        from pages.error_page import ErrorPage
 
         try:
             msg = self.render_change_text()
@@ -120,7 +120,7 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(False)
 
     async def show_warnings(self):
-        from pages import LongTextPage
+        from pages.long_text_page import LongTextPage
 
         warnings = self.render_warnings()
         # print('warnings = "{}"'.format(warnings))
@@ -139,9 +139,11 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
-        from tasks import double_check_psbt_change_task
+        from tasks import double_check_psbt_change_task, sign_psbt_task
         from utils import spinner_task
-        from pages import ErrorPage, QuestionPage
+        from pages.question_page import QuestionPage
+        from pages.error_page import ErrorPage
+        import microns
 
         result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
         if not result:
@@ -174,6 +176,9 @@ class SignPsbtCommonFlow(Flow):
             # or in error self.set_result(None)
 
     def render_output(self, o):
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor
+
         # Pretty-print a transactions output.
         # - expects CTxOut object
         # - gives user-visible string
@@ -189,6 +194,7 @@ class SignPsbtCommonFlow(Flow):
 
     def render_change_text(self):
         import uio
+        from styles.colors import HIGHLIGHT_TEXT_HEX
 
         # Produce text report of what the "change" outputs are (based on our opinion).
         # - we don't really expect all users to verify these outputs, but just in case.
@@ -225,6 +231,8 @@ class SignPsbtCommonFlow(Flow):
 
     def render_warnings(self):
         import uio
+        from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
+        from utils import recolor
 
         with uio.StringIO() as msg:
             # # mention warning at top

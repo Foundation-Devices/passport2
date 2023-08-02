@@ -3,9 +3,7 @@
 #
 # system_test_camera_flow.py - Scans a QR code with the camera and shows the data in it
 
-from flows import Flow, ScanQRFlow
-from pages import SuccessPage, QuestionPage
-from foundation import ur
+from flows.flow import Flow
 
 
 class TestCameraFlow(Flow):
@@ -13,6 +11,10 @@ class TestCameraFlow(Flow):
         super().__init__(initial_state=self.scan_qr, name='TestCameraFlow')
 
     async def scan_qr(self):
+        from flows.scan_qr_flow import ScanQRFlow
+        from pages.success_page import SuccessPage
+        from pages.question_page import QuestionPage
+
         result = await ScanQRFlow(data_description='a normal QR code').run()
         if result is None:
             skip = await QuestionPage(text='Skip the Camera test?').show()
