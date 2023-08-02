@@ -4,7 +4,7 @@
 # recovery_mode_chooser_page.py - Chooser to select the type of password for recovering a backup.
 
 
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 from Enum import enum
 import microns
 

@@ -2,16 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-import lvgl as lv
-from data_codecs.data_decoder import DecodeError
-from pages import Page
-from styles.colors import TEXT_GREY
-from styles.style import Stylize
-from constants import MENU_ITEM_CORNER_RADIUS
-from views import CameraQRScanner, Label
+from pages.page import Page
 import microns
-import common
-import passport
 
 
 def progress_text(p):
@@ -29,6 +21,13 @@ class ScanQRPage(Page):
                  right_micron=None,
                  qr_type=None,
                  max_frames=None):
+        import lvgl as lv
+        from styles.colors import TEXT_GREY
+        from styles.style import Stylize
+        from constants import MENU_ITEM_CORNER_RADIUS
+        from views import CameraQRScanner, Label
+        import passport
+
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
@@ -83,14 +82,19 @@ class ScanQRPage(Page):
         self.set_children([self.camera, self.progress_label])
 
     def attach(self, group):
+        import lvgl as lv
+        from common import ui
+
         super().attach(group)
-        self.prev_card_header = common.ui.hide_card_header()
+        self.prev_card_header = ui.hide_card_header()
         self.camera.attach(group)
         self.timer = lv.timer_create(lambda timer: self.update(), 100, None)
 
     def detach(self):
+        from common import ui
+
         if self.prev_card_header is not None:
-            common.ui.set_card_header(**self.prev_card_header, force_all=True)
+            ui.set_card_header(**self.prev_card_header, force_all=True)
             self.prev_card_header = None
 
         if self.timer is not None:
@@ -104,6 +108,8 @@ class ScanQRPage(Page):
         super().detach()
 
     def update(self):
+        from data_codecs.data_decoder import DecodeError
+
         if self.is_attached():
             try:
                 self.camera.update()

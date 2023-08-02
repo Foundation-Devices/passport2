@@ -3,7 +3,7 @@
 #
 # spinner_page.py
 
-from pages import StatusPage
+from pages.status_page import StatusPage
 import microns
 
 
@@ -26,17 +26,17 @@ class ProgressPage(StatusPage):
             right_micron=right_micron)
 
     def attach(self, group):
-        import common
+        from common import settings
 
         super().attach(group)
         # Never auto-shutdown during progress
-        common.settings.set_volatile('shutdown_timeout', 0)
+        settings.set_volatile('shutdown_timeout', 0)
 
     def detach(self):
-        import common
+        from common import settings
         from keypad import feedback
 
         # reset auto-shutdown timer before returning to normal setting
         feedback()
-        common.settings.clear_volatile('shutdown_timeout')
+        settings.clear_volatile('shutdown_timeout')
         super().detach()

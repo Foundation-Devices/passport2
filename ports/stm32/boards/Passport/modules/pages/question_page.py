@@ -4,7 +4,7 @@
 # question_page.py
 
 import lvgl as lv
-from pages import StatusPage
+from pages.status_page import StatusPage
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import microns
 

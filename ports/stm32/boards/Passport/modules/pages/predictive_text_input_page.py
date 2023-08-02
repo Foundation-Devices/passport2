@@ -3,17 +3,8 @@
 #
 # predictive_text_input_page.py
 
-
-import lvgl as lv
-from styles.colors import BLACK, SCROLLBAR_BG_COLOR
-from pages import Page
-from utils import InputMode, set_list
-from views import TextInput, Label, View, ListItem, TextInput
-from styles import Stylize
-from keys import KEY_0, KEY_9
+from pages.page import Page
 import microns
-from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers
-import passport
 
 
 class PredictiveTextInputPage(Page):
@@ -31,6 +22,13 @@ class PredictiveTextInputPage(Page):
                  initial_prefixes=[],
                  left_micron=microns.Back,
                  right_micron=microns.Forward):
+        import lvgl as lv
+        from styles.colors import BLACK, SCROLLBAR_BG_COLOR
+        from utils import InputMode
+        from styles import Stylize
+        import passport
+        from views import TextInput, Label, View
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          right_micron=right_micron,
@@ -85,6 +83,11 @@ class PredictiveTextInputPage(Page):
         self.title_view.set_text(self.get_title())
 
     def update_predictions(self):
+        import lvgl as lv
+        from utils import set_list
+        from predictive_utils import get_words_matching_prefix
+        from views import ListItem
+
         if self.is_mounted():
             prefix = self.input.get_text()
         else:
@@ -148,6 +151,9 @@ class PredictiveTextInputPage(Page):
         return self.title.format(word_idx=self.word_idx + 1, total_words=self.total_words)
 
     def right_action(self, is_pressed):
+        from utils import set_list
+        from predictive_utils import word_to_keypad_numbers
+
         if not is_pressed:
             # TODO: Get the index of the selected word (see how menu_page does it)
             #       Then add to the list of words
@@ -189,16 +195,23 @@ class PredictiveTextInputPage(Page):
                 self.set_result(None)
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
         group.add_obj(self.lvgl_root)
         self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
 
     def detach(self):
+        import lvgl as lv
+
         self.lvgl_root.remove_event_cb(self.on_key)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 
     def on_key(self, event):
+        import lvgl as lv
+        from keys import KEY_0, KEY_9
+
         # print('KEY!')
         key = event.get_key()
         if key == lv.KEY.RIGHT:

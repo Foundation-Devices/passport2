@@ -3,19 +3,9 @@
 #
 # pin_entry_page.py
 
-
-import lvgl as lv
-from styles.colors import BLACK, TEXT_GREY, WHITE, COPPER, PIN_ENTRY_MESSAGE_COLOR
-from pages import Page
-from tasks import get_security_words_task
-from utils import InputMode
-from views import Label, View, PINInput, Icon
-from constants import MENU_ITEM_CORNER_RADIUS
-from styles import Stylize
-from t9 import T9
+from styles.colors import PIN_ENTRY_MESSAGE_COLOR
+from pages.page import Page
 import microns
-import common
-from common import pa
 
 NUM_ATTEMPTS_LEFT_BRICK_WARNING = 5
 
@@ -34,12 +24,20 @@ class PINEntryPage(Page):
                  check_pin_prefix=False,
                  left_micron=microns.Back,
                  right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles.colors import BLACK, TEXT_GREY
+        from utils import InputMode
+        from styles import Stylize
+        from t9 import T9
+        from common import settings, pa
+        from views import Label, PINInput
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
                          right_micron=right_micron)
 
-        self.user_wants_to_see_security_words = common.settings.get('security_words', False)
+        self.user_wants_to_see_security_words = settings.get('security_words', False)
 
         self.title = title
         self.pin = pin
@@ -93,6 +91,9 @@ class PINEntryPage(Page):
         self.arrows = [lv.KEY.UP, lv.KEY.DOWN, lv.KEY.RIGHT, lv.KEY.LEFT]
 
     def show_brick_warning(self):
+        from styles.colors import COPPER
+        from common import pa
+
         if not self.brick_warning_shown:
             if pa.attempts_left == 1:
                 message = 'This is your FINAL attempt before Passport is permanently disabled.'
@@ -104,6 +105,12 @@ class PINEntryPage(Page):
 
     def update_message(self, show_security_words=False, title=None, icon=None,
                        message=None, color=PIN_ENTRY_MESSAGE_COLOR):
+        import lvgl as lv
+        from styles.colors import TEXT_GREY, WHITE
+        from constants import MENU_ITEM_CORNER_RADIUS
+        from styles import Stylize
+        from views import Label, View, Icon
+
         # Avoid updating if showing brick warning again
         if not show_security_words and self.brick_warning_shown:
             return
@@ -204,6 +211,8 @@ class PINEntryPage(Page):
                 self.words_container.mount(self.security_container.lvgl_root)
 
     def right_action(self, is_pressed):
+        from common import pa
+
         if not is_pressed:
             if self.displaying_security_words:
                 self.displaying_security_words = False
@@ -230,20 +239,28 @@ class PINEntryPage(Page):
             self.set_result((pin, False))
 
     def attach(self, group):
+        import lvgl as lv
+        from common import keypad
+
         super().attach(group)
         group.add_obj(self.lvgl_root)
         # self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
-        common.keypad.set_intercept_key_cb(self.on_key)
-        common.keypad.set_key_repeat(lv.KEY.UP, False)
+        keypad.set_intercept_key_cb(self.on_key)
+        keypad.set_key_repeat(lv.KEY.UP, False)
 
     def detach(self):
+        import lvgl as lv
+        from common import keypad
+
         # self.lvgl_root.remove_event_cb(self.on_key)
-        common.keypad.set_intercept_key_cb(None)
-        common.keypad.set_key_repeat(lv.KEY.UP, True)
+        keypad.set_intercept_key_cb(None)
+        keypad.set_key_repeat(lv.KEY.UP, True)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 
     def on_key(self, key, pressed):
+        import lvgl as lv
+
         # Disable backspace if viewing the security words
         if self.disable_backspace and key == lv.KEY.BACKSPACE:
             return
@@ -266,13 +283,15 @@ class PINEntryPage(Page):
 
     async def on_security_words(self, security_words, error):
         from serializations import sha256
+        from common import settings, pa
+
         # NOTE: Be aware that this is called from the context of another task
         # TODO: error not handled
         if error is None:
             self.security_words = security_words
             self.displaying_security_words = True
             new_pin_sha = sha256(self.pin)
-            true_pin_sha = common.settings.get('pin_prefix_hash')
+            true_pin_sha = settings.get('pin_prefix_hash')
             if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
                 self.security_words_message = ("Your PIN is incorrect.\n"
                                                "Try again.")
@@ -286,6 +305,8 @@ class PINEntryPage(Page):
 
     def on_ready(self, prefix):
         from utils import start_task
+        from tasks import get_security_words_task
+        from common import pa
 
         if self.user_wants_to_see_security_words:
             # Only perform security words check here when input is ready, otherwise user might enter
