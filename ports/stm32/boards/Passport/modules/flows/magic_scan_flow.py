@@ -26,7 +26,7 @@ class MagicScanFlow(Flow):
         else:
             # Got a scan result (aka QRScanResult): good data or error
             if result.error is not None:
-                from pages import ErrorPage
+                from pages.error_page import ErrorPage
 
                 # Unable to scan QR code - show error?
                 await ErrorPage(text='Unable to scan QR code.'.show())

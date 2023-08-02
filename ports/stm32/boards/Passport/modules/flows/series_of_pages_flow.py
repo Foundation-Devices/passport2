@@ -3,8 +3,7 @@
 #
 # series_of_pages_flow.py - Display a series of pages
 
-from flows import Flow
-from foundation import ur
+from flows.flow import Flow
 
 
 class SeriesOfPagesFlow(Flow):

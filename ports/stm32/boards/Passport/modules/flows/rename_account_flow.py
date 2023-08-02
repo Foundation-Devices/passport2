@@ -3,13 +3,7 @@
 #
 # rename_account_flow.py - Rename an account
 
-from constants import MAX_ACCOUNT_NAME_LEN
-from flows import Flow
-import microns
-from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
-from tasks import rename_account_task
-from utils import get_account_by_name, spinner_task
-from translations import t, T
+from flows.flow import Flow
 
 
 class RenameAccountFlow(Flow):
@@ -29,6 +23,12 @@ class RenameAccountFlow(Flow):
         super().__init__(initial_state=initial_state, name='RenameAccountFLow')
 
     async def ask_for_name(self):
+        from constants import MAX_ACCOUNT_NAME_LEN
+        import microns
+        from pages.error_page import ErrorPage
+        from pages.text_input_page import TextInputPage
+        from utils import get_account_by_name
+
         name = self.account.get('name') if self.new_account_name is None else self.new_account_name
         result = await TextInputPage(initial_text=name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -50,6 +50,11 @@ class RenameAccountFlow(Flow):
 
     async def do_rename(self):
         from common import ui
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
+        from tasks import rename_account_task
+        from utils import spinner_task
+
         (error,) = await spinner_task('Renaming account', rename_account_task,
                                       args=[self.account.get('acct_num'), self.new_account_name])
         if error is None:
@@ -76,5 +81,7 @@ class RenameAccountFlow(Flow):
             self.set_result(False)
 
     async def show_error(self):
+        from pages.error_page import ErrorPage
+
         await ErrorPage(self.error).show()
         self.set_result(False)

@@ -4,12 +4,7 @@
 # restore_seed_flow.py -Restore a seed to Passport by entering the seed words.
 
 
-from flows import Flow
-import microns
-from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
-from utils import spinner_task
-from tasks import save_seed_task
-from public_constants import SEED_LENGTHS
+from flows.flow import Flow
 
 
 class RestoreSeedFlow(Flow):
@@ -26,6 +21,7 @@ class RestoreSeedFlow(Flow):
     async def choose_restore_method(self):
         from pages import ChooserPage
         from data_codecs.qr_type import QRType
+        from public_constants import SEED_LENGTHS
 
         options = [{'label': '24 words', 'value': 24},
                    {'label': '12 words', 'value': 12},
@@ -52,7 +48,9 @@ class RestoreSeedFlow(Flow):
 
     async def scan_qr(self):
         from flows import ScanQRFlow
-        from pages import InfoPage, SeedWordsListPage, ErrorPage
+        from pages.info_page import InfoPage
+        from pages.seed_words_list_page import SeedWordsListPage
+        from pages.error_page import ErrorPage
         import microns
         from data_codecs.qr_type import QRType
 
@@ -92,6 +90,9 @@ class RestoreSeedFlow(Flow):
         self.goto(self.enter_seed_words)
 
     async def enter_seed_words(self):
+        from pages.predictive_text_input_page import PredictiveTextInputPage
+        from pages.question_page import QuestionPage
+
         result = await PredictiveTextInputPage(
             word_list='bip39',
             total_words=self.seed_length,
@@ -117,6 +118,10 @@ class RestoreSeedFlow(Flow):
             self.goto(self.valid_seed)
 
     async def invalid_seed(self):
+        import microns
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
+
         result = await ErrorPage(text='{} is invalid. One or more of your seed words is incorrect.'
                                       .format(self.validate_text),
                                  left_micron=microns.Cancel, right_micron=microns.Retry).show()
@@ -133,6 +138,10 @@ class RestoreSeedFlow(Flow):
     async def valid_seed(self):
         from foundation import bip39
         from flows import AutoBackupFlow, BackupFlow
+        from tasks import save_seed_task
+        from utils import spinner_task
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
 
         entropy = bytearray(33)  # Includes an extra byte for the checksum bits
 

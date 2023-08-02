@@ -3,7 +3,7 @@
 #
 # seed_warning_flow.py - Confirm the user wants to see this sensitive info.
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class SeedWarningFlow(Flow):
@@ -18,7 +18,7 @@ class SeedWarningFlow(Flow):
     async def show_intro(self):
         import lvgl as lv
         import microns
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         import stash
 
         if self.mention_passphrase and stash.bip39_passphrase:
@@ -36,7 +36,7 @@ class SeedWarningFlow(Flow):
             self.set_result(False)
 
     async def confirm_show(self):
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
 
         result = await QuestionPage(
             'Anyone who knows this information can {}.\n\nContinue?'.format(self.continue_text)).show()

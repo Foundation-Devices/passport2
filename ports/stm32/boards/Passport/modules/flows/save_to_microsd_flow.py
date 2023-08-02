@@ -3,7 +3,7 @@
 #
 # save_to_microsd_flow.py - Save a file to the microSD card
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class SaveToMicroSDFlow(Flow):
@@ -45,7 +45,7 @@ class SaveToMicroSDFlow(Flow):
             fd.write(self.data)
 
     async def check_inputs(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         if (not self.data and not self.write_fn) or (self.data and self.write_fn):
             await ErrorPage("Either data or a write function is required to save a file.").show()
@@ -56,7 +56,7 @@ class SaveToMicroSDFlow(Flow):
 
     async def save(self):
         from files import CardSlot, CardMissingError
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from utils import spinner_task, ensure_folder_exists
         from errors import Error
         from tasks import custom_microsd_write_task
@@ -100,7 +100,7 @@ class SaveToMicroSDFlow(Flow):
                 .show(auto_close_timeout=self.auto_timeout)
 
     async def success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
         await SuccessPage(text='Saved {} as {}'.format(self.success_text, self.out_full),
                           right_micron=self.show_check) \
             .show(auto_close_timeout=self.auto_timeout)

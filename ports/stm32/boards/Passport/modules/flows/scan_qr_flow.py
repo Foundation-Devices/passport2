@@ -1,10 +1,7 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from data_codecs.qr_type import QRType
-from flows import Flow
-from pages import ScanQRPage, LongErrorPage
-from foundation import ur
+from flows.flow import Flow
 
 
 class ScanQRFlow(Flow):
@@ -18,6 +15,8 @@ class ScanQRFlow(Flow):
                  data_description=None,
                  max_frames=None,
                  failure_message=None):
+        from data_codecs.qr_type import QRType
+
         """
         Initialize the scan QR flow.
 
@@ -54,6 +53,9 @@ class ScanQRFlow(Flow):
 
     async def scan(self):
         from errors import Error
+        from pages.scan_qr_page import ScanQRPage
+        from pages.long_error_page import LongErrorPage
+        from foundation import ur
 
         result = await ScanQRPage(max_frames=self.max_frames,
                                   qr_type=self.explicit_type) \
@@ -79,6 +81,8 @@ class ScanQRFlow(Flow):
             self.goto(self.handle_qr)
 
     async def handle_ur(self):
+        from data_codecs.qr_type import QRType
+
         if QRType.UR2 not in self.qr_types and QRType.UR2 != self.explicit_type:
             await ErrorPage(text='Scan failed.\n'
                                  'Expected to scan a QR code containing '
@@ -97,6 +101,8 @@ class ScanQRFlow(Flow):
         self.set_result(self.data)
 
     async def handle_qr(self):
+        from data_codecs.qr_type import QRType
+
         if QRType.QR not in self.qr_types and QRType.QR != self.explicit_type:
             await ErrorPage(text='Scan. failed.\n'
                                  'Expected to scan a Uniform Resource containing '

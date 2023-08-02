@@ -3,7 +3,7 @@
 #
 # rename_derived_key_flow.py - Rename a derived key
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class RenameDerivedKeyFlow(Flow):
@@ -15,7 +15,8 @@ class RenameDerivedKeyFlow(Flow):
 
     async def enter_name(self):
         from constants import MAX_ACCOUNT_NAME_LEN
-        from pages import TextInputPage, ErrorPage
+        from pages.text_input_page import TextInputPage
+        from pages.error_page import ErrorPage
         import microns
         from utils import get_derived_key_by_name
         from derived_key import get_key_type_from_tn
@@ -74,6 +75,6 @@ class RenameDerivedKeyFlow(Flow):
             self.goto(self.show_error)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         await ErrorPage(self.error).show()
         self.set_result(False)

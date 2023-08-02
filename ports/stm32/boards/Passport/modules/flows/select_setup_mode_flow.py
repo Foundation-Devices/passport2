@@ -3,18 +3,17 @@
 #
 # select_setup_mode_flow.py - The main overall flow for Envoy setup - controls the process
 
-import lvgl as lv
-from flows import Flow
-import common
-import microns
+from flows.flow import Flow
 
 
 class SelectSetupModeFlow(Flow):
     def __init__(self):
         super().__init__(initial_state=self.show_welcome, settings_key='setup_flow', name='SelectSetupModeFlow')
+        from common import settings
+
         self.restore()
 
-        setup_mode = common.settings.get('setup_mode')
+        setup_mode = settings.get('setup_mode')
         if setup_mode is not None and setup_mode.endswith('done'):
             self.set_result(True)
             return
@@ -22,7 +21,9 @@ class SelectSetupModeFlow(Flow):
         self.statusbar = {'title': 'PASSPORT SETUP', 'icon': 'ICON_SETUP'}
 
     async def show_welcome(self):
-        from pages import BrandmarkPage, ShutdownPage
+        from pages.brandmark_page import BrandmarkPage
+        from pages.shutdown_page import ShutdownPage
+        import microns
 
         result = await BrandmarkPage(
             text='Welcome to Passport\n\nCongratulations on taking custody of your Bitcoin ' +
@@ -36,15 +37,17 @@ class SelectSetupModeFlow(Flow):
             await ShutdownPage().show()
 
     async def select_mode(self):
-        from pages import SetupModeChooserPage
+        from pages.setup_mode_chooser_page import SetupModeChooserPage
+        from common import settings
+        import microns
 
-        setup_mode = common.settings.get('setup_mode')
+        setup_mode = settings.get('setup_mode')
         if setup_mode is None:
             setup_mode = await SetupModeChooserPage(left_micron=microns.Back).show()
             if setup_mode is None:
                 self.back()
                 return
-            common.settings.set('setup_mode', setup_mode)
+            settings.set('setup_mode', setup_mode)
 
         if setup_mode is 'envoy':
             self.goto(self.show_envoy_mode)
@@ -56,22 +59,24 @@ class SelectSetupModeFlow(Flow):
 
     async def show_envoy_mode(self):
         from flows import EnvoySetupFlow
+        from common import settings
 
         result = await EnvoySetupFlow().run()
         if not result:
-            common.settings.remove('setup_mode')
+            settings.remove('setup_mode')
             self.back()
             return
-        common.settings.set('setup_mode', 'envoy_done')
+        settings.set('setup_mode', 'envoy_done')
         self.set_result(True, forget_state=True)
 
     async def show_manual_mode(self):
         from flows import ManualSetupFlow
+        from common import settings
 
         result = await ManualSetupFlow().run()
         if not result:
-            common.settings.remove('setup_mode')
+            settings.remove('setup_mode')
             self.back()
             return
-        common.settings.set('setup_mode', 'manual_done')
+        settings.set('setup_mode', 'manual_done')
         self.set_result(True, forget_state=True)

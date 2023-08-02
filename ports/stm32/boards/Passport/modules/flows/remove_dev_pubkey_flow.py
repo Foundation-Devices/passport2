@@ -3,9 +3,7 @@
 #
 # remove_dev_pubkey_flow.py - Flow to remove the currently installed dev pubkey (after confirming removal)
 
-from flows import Flow
-from pages import SuccessPage, ErrorPage, QuestionPage
-from utils import clear_cached_pubkey
+from flows.flow import Flow
 
 
 class RemoveDevPubkeyFlow(Flow):
@@ -14,6 +12,7 @@ class RemoveDevPubkeyFlow(Flow):
 
     async def check_for_user_signed_firmware(self):
         from common import system
+        from pages.error_page import ErrorPage
 
         if system.is_user_firmware_installed():
             result = await ErrorPage(
@@ -25,6 +24,11 @@ class RemoveDevPubkeyFlow(Flow):
 
     async def remove_dev_pubkey(self):
         from common import system
+        from pages.succes_page import SuccessPage
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
+        from utils import clear_cached_pubkey
+
         zero_pubkey = bytearray(64)
 
         # Confirm the user knows the potential consequences

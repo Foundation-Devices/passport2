@@ -3,9 +3,7 @@
 #
 # set_initial_pin_flow.py - Change the user's PIN
 
-import lvgl as lv
-from flows import Flow
-import microns
+from flows.flow import Flow
 
 
 class SetInitialPINFlow(Flow):
@@ -16,7 +14,9 @@ class SetInitialPINFlow(Flow):
 
     async def intro(self):
         from common import pa
-        from pages import InfoPage
+        from pages.info_page import InfoPage
+        import lvgl as lv
+        import microns
 
         if not pa.is_blank():
             # Just let the parent flow continue on
@@ -36,7 +36,9 @@ class SetInitialPINFlow(Flow):
             self.set_result(False)
 
     async def enter_new_pin(self):
-        from pages import PINEntryPage
+        from pages.pin_entry_page import PINEntryPage
+        import microns
+
         (self.new_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter PIN'},
             security_words_message='Remember these Security Words',
@@ -48,9 +50,10 @@ class SetInitialPINFlow(Flow):
             self.goto(self.confirm_new_pin)
 
     async def confirm_new_pin(self):
-        from pages import PINEntryPage
+        from pages.pin_entry_page import PINEntryPage
         from tasks import set_initial_pin_task, login_task
         from utils import spinner_task
+        import microns
 
         (confirmed_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Confirm PIN'},
@@ -77,19 +80,21 @@ class SetInitialPINFlow(Flow):
                 self.goto(self.new_pin_mismatch)
 
     async def new_pin_mismatch(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+        import microns
 
         await ErrorPage(text='Unable to set initial PIN.\n\nThe PINs don\'t match.', right_micron=microns.Retry).show()
         self.reset(self.enter_new_pin)
 
     async def show_success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
 
         await SuccessPage(text='PIN set successfully!').show()
         self.set_result(True)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+        import microns
 
         # print('set_initial_pin_flow: error')
         await ErrorPage(text='Unable to set initial PIN!', right_micron=microns.Retry).show()

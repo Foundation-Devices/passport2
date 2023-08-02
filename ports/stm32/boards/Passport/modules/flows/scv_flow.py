@@ -3,19 +3,7 @@
 #
 # scv_flow.py - Supply Chain Validation Flow
 
-import lvgl as lv
-from flows import Flow, ScanQRFlow
-from pages import ShowQRPage, QuestionPage, ChooserPage
-from styles.colors import HIGHLIGHT_TEXT_HEX
-from data_codecs.qr_type import QRType
-from utils import a2b_hex, recolor
-from ubinascii import hexlify as b2a_hex
-from pincodes import PinAttempt
-from foundation import ur
-import microns
-import foundation
-import passport
-import common
+from flows.flow import Flow
 
 
 class ScvFlow(Flow):
@@ -33,7 +21,7 @@ class ScvFlow(Flow):
         self.uuid = None
 
     async def show_intro(self):
-        from pages import ShieldPage
+        from pages.shield_page import ShieldPage
         from flows import SeriesOfPagesFlow
 
         if self.envoy:
@@ -51,6 +39,14 @@ class ScvFlow(Flow):
             self.set_result(False)
 
     async def scan_qr_challenge(self):
+        from flows.scan_qr_flow import ScanQRFlow
+        from data_codecs.qr_type import QRType
+        from utils import a2b_hex
+        from ubinascii import hexlify as b2a_hex
+        from pincodes import PinAttempt
+        from foundation import ur, sha256
+        import passport
+
         qr_types = [QRType.UR2] if self.envoy else None
         ur_types = [ur.Value.PASSPORT_REQUEST] if self.envoy else None
         result = await ScanQRFlow(qr_types=qr_types,
@@ -81,7 +77,7 @@ class ScvFlow(Flow):
                 return
 
         id_hash = bytearray(32)
-        foundation.sha256(b2a_hex(scv_id), id_hash)
+        sha256(b2a_hex(scv_id), id_hash)
 
         signature_valid = passport.verify_supply_chain_server_signature(id_hash, scv_signature)
         if not signature_valid:
@@ -95,7 +91,10 @@ class ScvFlow(Flow):
             self.goto(self.show_manual_response)
 
     async def show_envoy_scan_msg(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor
+        import microns
 
         result = await InfoPage(
             text='On Envoy, select {next}, and scan the following QR code.'
@@ -109,6 +108,10 @@ class ScvFlow(Flow):
 
     async def show_envoy_response(self):
         from common import system
+        from pages.show_qr_page import ShowQRPage
+        from data_codecs.qr_type import QRType
+        from foundation import ur
+        import microns
 
         (version, _, _, _, _) = system.get_software_info()
         crypto_response = ur.new_passport_response(uuid=self.uuid,
@@ -130,7 +133,8 @@ class ScvFlow(Flow):
             self.goto(self.ask_if_valid)
 
     async def show_manual_response(self):
-        from pages import ShieldPage
+        from pages.shield_page import ShieldPage
+        import microns
 
         lines = ['{}. {}\n'.format(idx + 1, word) for idx, word in enumerate(self.words)]
         words = ''.join(lines)
@@ -143,7 +147,11 @@ class ScvFlow(Flow):
             self.goto(self.ask_if_valid)
 
     async def ask_if_valid(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
+        from pages.chooser_page import ChooserPage
+        import lvgl as lv
+        import microns
+        from common import settings
 
         options = [{'label': 'Passed', 'value': True}, {'label': 'Failed', 'value': False}]
         result = await ChooserPage(
@@ -156,7 +164,7 @@ class ScvFlow(Flow):
         if result is None:
             self.back()
         elif result is True:
-            common.settings.set('validated_ok', True)
+            settings.set('validated_ok', True)
             self.set_result(True)
         else:
             result = await ErrorPage(text='''This Passport may have been tampered with.
@@ -169,9 +177,13 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
                 self.goto(self.prompt_skip)
 
     async def prompt_skip(self):
+        from pages.question_page import QuestionPage
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor
+        from common import settings
 
         if not self.ask_to_skip:
-            common.settings.set('validated_ok', True)
+            settings.set('validated_ok', True)
             self.set_result(True)
             return
 
@@ -180,13 +192,13 @@ foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retr
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
         ).show()
         if skip:
-            common.settings.set('validated_ok', True)
+            settings.set('validated_ok', True)
             self.set_result(True)
         else:
             self.back()
 
     async def show_error(self, message):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         await ErrorPage(text=message).show()
         self.reset(self.show_intro)

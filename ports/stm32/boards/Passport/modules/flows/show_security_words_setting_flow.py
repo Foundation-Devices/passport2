@@ -3,10 +3,7 @@
 #
 # show_security_words_setting_flow.py - Choose to decide to show security words at login or not.
 
-import lvgl as lv
-from flows import Flow
-from pages import PINEntryPage, ShowSecurityWordsSettingPage
-import microns
+from flows.flow import Flow
 
 
 class ShowSecurityWordsSettingFlow(Flow):
@@ -14,6 +11,8 @@ class ShowSecurityWordsSettingFlow(Flow):
         super().__init__(initial_state=self.select_setting, name='LoginFlow')
 
     async def select_setting(self):
+        from pages.show_security_words_setting_page import ShowSecurityWordsSettingPage
+
         selected_value = await ShowSecurityWordsSettingPage().show()
         if selected_value:
             self.goto(self.enter_pin)
@@ -21,6 +20,9 @@ class ShowSecurityWordsSettingFlow(Flow):
             self.set_result(None)
 
     async def enter_pin(self):
+        from pages.pin_entry_page import PINEntryPage
+        import microns
+
         (pin, is_done) = await PINEntryPage(
             card_header={'title': 'Enter PIN'},
             security_words_message='Remember these Security Words',

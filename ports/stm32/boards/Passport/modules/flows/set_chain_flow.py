@@ -3,9 +3,7 @@
 #
 # set_chain_flow.py - Set the chain to testnet or mainnet, then if testnet was chosen, show a warning
 
-import lvgl as lv
-from flows import Flow
-from pages import ChainSettingPage, ErrorPage
+from flows.flow import Flow
 
 
 class SetChainFlow(Flow):
@@ -13,6 +11,9 @@ class SetChainFlow(Flow):
         super().__init__(initial_state=self.show_setting_page, name='SetChainFlow')
 
     async def show_setting_page(self):
+        from pages.error_page import ErrorPage
+        from pages.chain_setting_page import ChainSettingPage
+
         network = await ChainSettingPage(card_header={'title': 'Network', 'icon': 'ICON_NETWORK'}).show()
 
         if network is 'TBTC':

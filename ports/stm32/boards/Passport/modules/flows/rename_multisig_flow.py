@@ -3,9 +3,7 @@
 #
 # rename_multisig_flow.py - Rename a multisig entry
 
-from flows import Flow
-import microns
-from translations import t, T
+from flows.flow import Flow
 
 
 class RenameMultisigFlow(Flow):
@@ -28,7 +26,8 @@ class RenameMultisigFlow(Flow):
 
     async def ask_for_name(self):
         from constants import MAX_MULTISIG_NAME_LEN
-        from pages import TextInputPage
+        from pages.text_input_page import TextInputPage
+        import microns
 
         name = self.ms.name if self.new_name is None else self.new_name
         result = await TextInputPage(title='New Multisig Name',
@@ -56,7 +55,8 @@ class RenameMultisigFlow(Flow):
         from common import keypad
         from tasks import rename_multisig_task
         from utils import spinner_task
-        from pages import ErrorPage, SuccessPage
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
         import passport
 
         (error,) = await spinner_task('Renaming multisig', rename_multisig_task,
@@ -77,7 +77,7 @@ class RenameMultisigFlow(Flow):
             self.set_result(False)
 
     async def show_error(self):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         await ErrorPage(self.error).show()
         self.set_result(False)

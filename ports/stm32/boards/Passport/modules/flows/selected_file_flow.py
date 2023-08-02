@@ -3,7 +3,7 @@
 #
 # select_file_flow.py - Decide what to do with a selected file
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class SelectedFileFlow(Flow):
@@ -15,7 +15,7 @@ class SelectedFileFlow(Flow):
         self.select_text = select_text
 
     async def choose_action(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
         options = [{'label': 'Navigate' if self.is_folder else self.select_text, 'value': 0},
                    {'label': 'Delete', 'value': 1}]
 
@@ -32,7 +32,7 @@ class SelectedFileFlow(Flow):
 
     async def delete_selected_file(self):
         from utils import delete_file
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
 
         confirmation_text = 'Are you sure you want to delete {}?'.format(self.file_name)
         confirmation = await QuestionPage(text=confirmation_text).show()

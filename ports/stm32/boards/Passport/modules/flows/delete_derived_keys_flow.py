@@ -3,7 +3,7 @@
 #
 # delete_deriveds_key_flow.py - Delete derived keys
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class DeleteDerivedKeysFlow(Flow):

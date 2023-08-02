@@ -3,28 +3,13 @@
 #
 # restore_backup_flow.py -Restore a selected backup file to Passport.
 
-import lvgl as lv
-from constants import TOTAL_BACKUP_CODE_DIGITS, NUM_BACKUP_PASSWORD_WORDS
-from flows import Flow, FilePickerFlow, ErasePassportFlow
-import microns
-from pages import (
-    BackupCodePage,
-    ErrorPage,
-    InsertMicroSDPage,
-    PredictiveTextInputPage,
-    QuestionPage,
-    RecoveryModeChooserPage,
-    SuccessPage,
-    YesNoChooserPage
-)
-from utils import get_backups_folder_path, spinner_task, get_backup_code_as_password
-from tasks import restore_backup_task, get_backup_code_task
-from errors import Error
-import common
+from flows.flow import Flow
 
 
 class RestoreBackupFlow(Flow):
     def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
+        from constants import TOTAL_BACKUP_CODE_DIGITS
+
         super().__init__(initial_state=self.check_if_erased, name='RestoreBackupFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.backup_code = [None] * TOTAL_BACKUP_CODE_DIGITS
@@ -35,6 +20,10 @@ class RestoreBackupFlow(Flow):
 
     async def check_if_erased(self):
         from common import pa
+        import lvgl as lv
+        from flows.erase_passport_flow import ErasePassportFlow
+        from pages.yes_no_chooser_page import YesNoChooserPage
+
         if not pa.is_secret_blank():
             result = await YesNoChooserPage(
                 icon=lv.LARGE_ICON_QUESTION,
@@ -52,6 +41,9 @@ class RestoreBackupFlow(Flow):
             self.goto(self.choose_file)
 
     async def choose_file(self):
+        from flows.file_picker_flow import FilePickerFlow
+        from utils import get_backups_folder_path
+
         backups_path = get_backups_folder_path()
         result = await FilePickerFlow(initial_path=backups_path, suffix='.7z', show_folders=True).run()
         if result is None:
@@ -65,7 +57,7 @@ class RestoreBackupFlow(Flow):
             self.goto(self.select_recovery_mode)
 
     async def select_recovery_mode(self):
-        from pages.recovery_mode_chooser_page import RecoveryMode
+        from pages.recovery_mode_chooser_page import RecoveryModeChooserPage
 
         result = await RecoveryModeChooserPage().show()
         if result is None:
@@ -77,6 +69,10 @@ class RestoreBackupFlow(Flow):
                 self.goto(self.enter_backup_password)
 
     async def enter_backup_password(self):
+        from constants import NUM_BACKUP_PASSWORD_WORDS
+        from pages.predictive_text_input_page import PredictiveTextInputPage
+        from pages.question_page import QuestionPage
+
         result = await PredictiveTextInputPage(
             word_list='bytewords',
             total_words=NUM_BACKUP_PASSWORD_WORDS,
@@ -93,6 +89,9 @@ class RestoreBackupFlow(Flow):
             self.goto(self.do_restore)
 
     async def enter_backup_code(self):
+        from utils import get_backup_code_as_password
+        from pages.backup_code_page import BackupCodePage
+
         result = await BackupCodePage(digits=self.backup_code, card_header={'title': 'Enter Backup Code'}).show()
         if result is not None:
             self.backup_code = result
@@ -103,9 +102,16 @@ class RestoreBackupFlow(Flow):
             self.back()
 
     async def do_restore(self):
-        from utils import start_task
+        from utils import start_task, spinner_task
         from flows import AutoBackupFlow, BackupFlow
-        from pages import InfoPage
+        from pages.info_page import InfoPage
+        from pages.error_page import ErrorPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+        from pages.success_page import SuccessPage
+        import microns
+        from tasks import restore_backup_task, get_backup_code_task
+        from errors import Error
+        from common import ui
 
         # TODO: Change from spinner to ProgressPage and pass on_progress instead of None below.
         (error,) = await spinner_task(
@@ -127,10 +133,10 @@ class RestoreBackupFlow(Flow):
                 await AutoBackupFlow(offer=True).run()
 
             if self.refresh_cards_when_done:
-                common.ui.update_cards(is_init=True)
+                ui.update_cards(is_init=True)
 
                 async def start_main_task():
-                    common.ui.start_card_task(card_idx=common.ui.active_card_idx)
+                    ui.start_card_task(card_idx=ui.active_card_idx)
 
                 start_task(start_main_task())
 
