@@ -3,7 +3,7 @@
 #
 # view_seed_words_flow.py - Confirm the user wants to see this sensitive info, then show it.
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ViewSeedWordsFlow(Flow):
@@ -35,7 +35,7 @@ class ViewSeedWordsFlow(Flow):
         self.goto(self.choose_mode)
 
     async def choose_mode(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
         from data_codecs.qr_type import QRType
         import microns
 
@@ -70,7 +70,7 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_qr(self):
         from flows import SeedWarningFlow
-        from pages import ShowQRPage
+        from pages.show_qr_page import ShowQRPage
         import microns
 
         result = await SeedWarningFlow(action_text="display your seed as a QR code",
@@ -88,7 +88,7 @@ class ViewSeedWordsFlow(Flow):
         self.goto(self.confirm_qr)
 
     async def confirm_qr(self):
-        from pages import InfoPage
+        from pages.info_page import InfoPage
         import microns
 
         plural_label = 's' if len(self.words) == 24 else ''
@@ -126,7 +126,7 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_seed_words(self):
         from flows import SeedWarningFlow
-        from pages import SeedWordsListPage
+        from pages.seed_words_list_page import SeedWordsListPage
 
         if not self.qr_type:  # We already gave the seed warning flow
             result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase).run()
@@ -147,7 +147,7 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_passphrase(self):
         import stash
-        from pages import InfoPage
+        from pages.info_page import InfoPage
 
         if stash.bip39_passphrase != '' and not self.external_key:
             await InfoPage(text='Passphrase: {}'.format(stash.bip39_passphrase)).show()

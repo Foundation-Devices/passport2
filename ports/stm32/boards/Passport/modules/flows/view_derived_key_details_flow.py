@@ -3,7 +3,7 @@
 #
 # view_derived_key_details_flow.py - Show user details of a derived key
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class ViewDerivedKeyDetailsFlow(Flow):
@@ -14,7 +14,8 @@ class ViewDerivedKeyDetailsFlow(Flow):
     async def show_overview(self):
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX
-        from pages import LongTextPage, ErrorPage
+        from pages.long_text_page import LongTextPage
+        from pages.error_page import ErrorPage
         from derived_key import get_key_type_from_tn
         import microns
 

@@ -10,9 +10,7 @@
 # verify_address_flow.py - Scan an address QR code and verify that it belongs to this Passport.
 
 
-from flows import Flow
-from common import ui
-import microns
+from flows.flow import Flow
 
 
 _RECEIVE_ADDR = const(0)
@@ -22,6 +20,8 @@ _NUM_TO_CHECK = const(50)
 
 class VerifyAddressFlow(Flow):
     def __init__(self, sig_type=None, multisig_wallet=None):
+        from common import ui
+
         if sig_type is not None:
             initial_state = self.scan_address
         else:
@@ -46,7 +46,7 @@ class VerifyAddressFlow(Flow):
         self.high_size = [0, 0]
 
     async def choose_sig_type(self):
-        from pages import SinglesigMultisigChooserPage
+        from pages.singlesig_multisig_chooser_page import SinglesigMultisigChooserPage
         from multisig_wallet import MultisigWallet
 
         if MultisigWallet.get_count() == 0:
@@ -67,7 +67,7 @@ class VerifyAddressFlow(Flow):
 
     async def scan_address(self):
         import chains
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
         from flows import ScanQRFlow
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
         from utils import is_valid_btc_address, get_next_addr
@@ -187,8 +187,10 @@ class VerifyAddressFlow(Flow):
             self.goto(self.not_found)
 
     async def not_found(self):
-        from pages import ErrorPage, LongErrorPage
+        from pages.error_page import ErrorPage
+        from pages.long_error_page import LongErrorPage
         import passport
+        import microns
 
         # Address was not found in that batch of 100, so offer to keep searching
         msg = 'Address Not Found\nRanges Checked:\n'
@@ -211,7 +213,8 @@ class VerifyAddressFlow(Flow):
             self.set_result(False)
 
     async def found(self):
-        from pages import SuccessPage, LongSuccessPage
+        from pages.success_page import SuccessPage
+        from pages.long_success_page import LongSuccessPage
         from utils import save_next_addr, format_btc_address
         import passport
 

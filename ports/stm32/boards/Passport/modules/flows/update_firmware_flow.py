@@ -3,15 +3,7 @@
 #
 # update_firmware_flow.py - Flow to update firmware on Passport
 
-import lvgl as lv
-from files import CardSlot
-from constants import FW_HEADER_SIZE, FW_MAX_SIZE
-import machine
-from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage
-from tasks import copy_firmware_to_spi_flash_task
-from flows import Flow, FilePickerFlow
-from utils import read_user_firmware_pubkey, is_all_zero, start_task
-from errors import Error
+from flows.flow import Flow
 
 
 class UpdateFirmwareFlow(Flow):
@@ -29,9 +21,9 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
-        root_path = CardSlot.get_sd_root()
+        from flows.file_picker_flow import FilePickerFlow
 
-        result = await FilePickerFlow(initial_path=root_path, suffix='-passport.bin', show_folders=True).run()
+        result = await FilePickerFlow(suffix='-passport.bin', show_folders=True).run()
         if result is None:
             self.set_result(False)
             return
@@ -42,7 +34,13 @@ class UpdateFirmwareFlow(Flow):
             self.goto(self.show_firmware_details)
 
     async def show_firmware_details(self):
-        import common
+        from common import system
+        from files import CardSlot
+        from constants import FW_HEADER_SIZE, FW_MAX_SIZE
+        from utils import read_user_firmware_pubkey, is_all_zero
+        from pages.error_page import ErrorPage
+        from pages.question_page import QuestionPage
+
         with CardSlot() as card:
             with open(self.update_file_path, 'rb') as fp:
                 import os
@@ -68,7 +66,7 @@ class UpdateFirmwareFlow(Flow):
                     return
 
                 # Validate the header
-                is_valid, version, error_msg, is_user_signed = common.system.validate_firmware_header(header)
+                is_valid, version, error_msg, is_user_signed = system.validate_firmware_header(header)
                 # print('is_valid={}, version={}, error_msg={}, is_user_signed={}'.format(
                 #     is_valid, version, error_msg, is_user_signed))
                 self.version = version
@@ -96,6 +94,14 @@ class UpdateFirmwareFlow(Flow):
 
     async def copy_to_flash(self):
         from common import settings, system, ui
+        import lvgl as lv
+        import machine
+        from errors import Error
+        from utils import start_task
+        from tasks import copy_firmware_to_spi_flash_task
+        from pages.progress_page import ProgressPage
+        from pages.success_page import SuccessPage
+        from pages.insert_microsd_page import InsertMicroSDPage
 
         self.progress_page = ProgressPage(text='Preparing Update', left_micron=None, right_micron=None)
 

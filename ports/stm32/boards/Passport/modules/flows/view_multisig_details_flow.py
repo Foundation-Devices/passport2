@@ -3,8 +3,7 @@
 #
 # view_multisig_details_flow.py - Show user details of an existing wallet
 
-from flows import Flow
-from pages import LongTextPage
+from flows.flow import Flow
 
 
 class ViewMultisigDetailsFlow(Flow):
@@ -17,6 +16,8 @@ class ViewMultisigDetailsFlow(Flow):
         self.ms = MultisigWallet.get_by_idx(self.storage_idx)
 
     async def show_overview(self):
+        from pages.long_text_page import LongTextPage
+
         msg, _ = self.ms.format_overview(importing=False)
 
         result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
@@ -28,6 +29,8 @@ class ViewMultisigDetailsFlow(Flow):
 
     async def show_details(self):
         import microns
+        from pages.long_text_page import LongTextPage
+
         msg = self.ms.format_details()
 
         result = await LongTextPage(card_header={'title': self.ms.name},

@@ -3,13 +3,7 @@
 #
 # verify_backup_flow.py - Verify a selected backup file.
 
-
-from flows import Flow, FilePickerFlow
-from pages import ErrorPage, SuccessPage, LongSuccessPage, InsertMicroSDPage
-from utils import get_backups_folder_path, spinner_task
-from tasks import verify_backup_task
-from errors import Error
-import passport
+from flows.flow import Flow
 
 
 class VerifyBackupFlow(Flow):
@@ -17,6 +11,9 @@ class VerifyBackupFlow(Flow):
         super().__init__(initial_state=self.choose_file, name='VerifyBackupFlow')
 
     async def choose_file(self):
+        from flows.file_picker_flow import FilePickerFlow
+        from utils import get_backups_folder_path
+
         backups_path = get_backups_folder_path()
         result = await FilePickerFlow(initial_path=backups_path, suffix='.7z', show_folders=True).run()
         if result is None:
@@ -30,6 +27,15 @@ class VerifyBackupFlow(Flow):
             self.goto(self.do_verify)
 
     async def do_verify(self):
+        import passport
+        from errors import Error
+        from tasks import verify_backup_task
+        from utils import spinner_task
+        from pages.error_page import ErrorPage
+        from pages.success_page import SuccessPage
+        from pages.long_success_page import LongSuccessPage
+        from pages.insert_microsd_page import InsertMicroSDPage
+
         (error,) = await spinner_task(
             'Verifying Backup',
             verify_backup_task,

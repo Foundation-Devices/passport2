@@ -3,9 +3,7 @@
 #
 # view_current_firmware_flow.py - View the current firmware information
 
-from flows import Flow
-from pages import SuccessPage
-import microns
+from flows.flow import Flow
 
 
 class ViewCurrentFirmwareFlow(Flow):
@@ -14,6 +12,9 @@ class ViewCurrentFirmwareFlow(Flow):
 
     async def show_info(self):
         from common import system, ui
+        from pages.success_page import SuccessPage
+        import microns
+
         (fw_version, fw_timestamp, boot_counter, user_signed, fw_date) = system.get_software_info()
 
         msg = '''Version {fw_version}

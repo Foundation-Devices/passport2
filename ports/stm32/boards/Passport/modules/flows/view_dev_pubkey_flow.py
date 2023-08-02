@@ -3,10 +3,7 @@
 #
 # view_dev_pubkey_flow.py - Flow to show the developer pubkey to the user
 
-from flows import Flow
-from pages import StatusPage
-import microns
-from utils import read_user_firmware_pubkey, bytes_to_hex_str, split_to_lines
+from flows.flow import Flow
 
 
 class ViewDevPubkeyFlow(Flow):
@@ -14,6 +11,10 @@ class ViewDevPubkeyFlow(Flow):
         super().__init__(initial_state=self.show_dev_pubkey)
 
     async def show_dev_pubkey(self):
+        from pages.status_page import StatusPage
+        import microns
+        from utils import read_user_firmware_pubkey, bytes_to_hex_str, split_to_lines
+
         pubkey_result, pubkey = read_user_firmware_pubkey()
         if pubkey_result:
             pubkey = bytes_to_hex_str(pubkey)

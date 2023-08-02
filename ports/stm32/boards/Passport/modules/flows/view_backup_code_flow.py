@@ -3,10 +3,7 @@
 #
 # view_backup_code_flow.py - Confirm the user wants to see this sensitive info, then show it.
 
-from pages import QuestionPage, ErrorPage, BackupCodePage
 from flows import Flow
-from tasks import get_backup_code_task
-from utils import spinner_task
 
 
 class ViewBackupCodeFlow(Flow):
@@ -14,6 +11,8 @@ class ViewBackupCodeFlow(Flow):
         super().__init__(initial_state=self.confirm_show, name='ViewBackupCodeFlow')
 
     async def confirm_show(self):
+        from pages.question_page import QuestionPage
+
         result = await QuestionPage(
             'The next screen will show your backup code.\n\n' +
             'Display this sensitive information?').show()
@@ -24,6 +23,11 @@ class ViewBackupCodeFlow(Flow):
             self.set_result(False)
 
     async def show_backup_code(self):
+        from utils import spinner_task
+        from tasks import get_backup_code_task
+        from pages.error_page import ErrorPage
+        from pages.backup_code_page import BackupCodePage
+
         (backup_code, error) = await spinner_task('Retrieving\nBackup Code', get_backup_code_task)
         if error is None:
             await BackupCodePage(digits=backup_code, editable=False, card_header={'title': 'Backup Code'}).show()
