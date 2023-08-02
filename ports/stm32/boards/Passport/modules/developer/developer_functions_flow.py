@@ -3,7 +3,7 @@
 #
 # developer_functions_flow.py - Run a named developer function
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class DeveloperFunctionsFlow(Flow):
@@ -23,7 +23,7 @@ class DeveloperFunctionsFlow(Flow):
             from flows import ChangePINFlow
             from tasks import erase_passport_task
             from utils import spinner_task
-            from pages import ErrorPage
+            from pages.error_page import ErrorPage
             import common
             from common import system
 

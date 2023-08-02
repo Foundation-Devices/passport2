@@ -3,9 +3,7 @@
 #
 # accept_terms_chooser_page.py - Chooser to accept terms or not.
 
-
-import lvgl as lv
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 
 
 class AcceptTermsChooserPage(ChooserPage):
@@ -15,6 +13,8 @@ class AcceptTermsChooserPage(ChooserPage):
     ]
 
     def __init__(self):
+        import lvgl as lv
+
         super().__init__(
             options=self.OPTIONS,
             icon=lv.LARGE_ICON_INFO,

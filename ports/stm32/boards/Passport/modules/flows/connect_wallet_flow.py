@@ -553,7 +553,7 @@ class ConnectWalletFlow(Flow):
 
     async def show_rx_address(self):
         from utils import split_to_lines, spinner_task
-        from pages import LongTextPage
+        from pages.long_text_page import LongTextPage
         from math import ceil
         from pages.error_page import ErrorPage
         from tasks import generate_addresses_task

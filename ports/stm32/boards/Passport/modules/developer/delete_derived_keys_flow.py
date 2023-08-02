@@ -3,7 +3,7 @@
 #
 # delete_deriveds_key_flow.py - Delete derived keys
 
-from flows import Flow
+from flows.flow import Flow
 
 
 class DeleteDerivedKeysFlow(Flow):
@@ -11,7 +11,7 @@ class DeleteDerivedKeysFlow(Flow):
         super().__init__(initial_state=self.confirm_delete, name='DeleteDerivedKeysFlow')
 
     async def confirm_delete(self):
-        from pages import QuestionPage
+        from pages.question_page import QuestionPage
 
         result = await QuestionPage(text='Delete all Child Keys?').show()
 
@@ -22,7 +22,7 @@ class DeleteDerivedKeysFlow(Flow):
 
     async def do_delete(self):
         from common import settings
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
 
         settings.remove('derived_keys')
         settings.save()

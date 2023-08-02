@@ -3,7 +3,7 @@
 #
 # fcc_test_flow.py - Flow to iterate through a test loop indefinitely
 
-from flows import Flow
+from flows.flow import Flow
 
 _CAMERA_DISPLAY_DURATION_SECS = const(5 * 1000)
 _FILE_SIZE_TO_CREATE = const(250 * 1024)
@@ -30,7 +30,7 @@ class FCCTestFlow(Flow):
     async def copy_files(self):
         from developer.fcc_copy_files_task import fcc_copy_files_task
         import microns
-        from pages import ProgressPage
+        from pages.progress_page import ProgressPage
         from utils import start_task
         from files import CardSlot
         from uasyncio import sleep_ms

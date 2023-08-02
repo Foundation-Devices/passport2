@@ -3,7 +3,7 @@
 #
 # nostr_delegation_flow.py - Sign a nostr delegation token
 
-from flows import Flow
+from flows.flow import Flow
 
 
 def created_at_helper(carrot, created_at):
@@ -204,7 +204,7 @@ class NostrDelegationFlow(Flow):
         self.goto(self.choose_mode)
 
     async def choose_mode(self):
-        from pages import ChooserPage
+        from pages.chooser_page import ChooserPage
 
         options = [{'label': 'Delegate via QR', 'value': True},
                    {'label': 'Delegate via microSD', 'value': False}]
@@ -220,7 +220,9 @@ class NostrDelegationFlow(Flow):
 
     async def export_npub(self):
         from utils import spinner_task, get_folder_path
-        from pages import ShowQRPage, ErrorPage, InfoPage
+        from pages.show_qr_page import ShowQRPage
+        from pages.error_page import ErrorPage
+        from pages.info_page import InfoPage
         from flows import SaveToMicroSDFlow
         from ubinascii import unhexlify as a2b_hex
         import microns
@@ -263,7 +265,8 @@ class NostrDelegationFlow(Flow):
         self.goto(self.scan_delegation_string)
 
     async def scan_delegation_string(self):
-        from pages import ErrorPage, InfoPage
+        from pages.error_page import ErrorPage
+        from pages.info_page import InfoPage
         import microns
         from flows import FilePickerFlow, ReadFileFlow, ScanQRFlow
 
@@ -309,7 +312,7 @@ class NostrDelegationFlow(Flow):
         self.goto(self.display_details)
 
     async def display_details(self):
-        from pages import LongTextPage
+        from pages.long_text_page import LongTextPage
         import microns
 
         details = format_delegation_string(self.delegatee_npub,
@@ -331,7 +334,8 @@ class NostrDelegationFlow(Flow):
     async def sign_delegation(self):
         from serializations import sha256
         from utils import nostr_sign, B2A
-        from pages import ShowQRPage, InfoPage
+        from pages.show_qr_page import ShowQRPage
+        from pages.info_page import InfoPage
         import microns
         from flows import SaveToMicroSDFlow
 
@@ -363,7 +367,7 @@ class NostrDelegationFlow(Flow):
         self.goto(self.show_success)
 
     async def show_success(self):
-        from pages import SuccessPage
+        from pages.success_page import SuccessPage
         import microns
 
         result = await SuccessPage(text='Delegation complete',

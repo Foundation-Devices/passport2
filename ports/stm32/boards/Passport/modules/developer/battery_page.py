@@ -3,7 +3,7 @@
 #
 # info_page.py
 
-from pages import StatusPage
+from pages.status_page import StatusPage
 import microns
 
 

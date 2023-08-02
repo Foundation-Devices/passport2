@@ -83,7 +83,8 @@ def start_task(task):
 
 
 async def spinner_task(text, task, args=(), left_micron=None, right_micron=None, min_duration_ms=1000, no_anim=False):
-    from pages import SpinnerPage, StatusPage
+    from pages.spinner_page import SpinnerPage
+    from pages.status_page import StatusPage
     from uasyncio import sleep_ms
     from utime import ticks_ms
     from common import ui
@@ -182,7 +183,7 @@ async def save_error_log_to_microsd_task(msg, filename):
 def handle_fatal_error(exc):
     import common
     from styles.colors import BLACK
-    from pages import LongTextPage
+    from pages.long_text_page import LongTextPage
     from flows import PageFlow
     import microns
     from tasks import card_task
@@ -1164,7 +1165,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     :return: None
     """
     from files import CardMissingError
-    from pages import ErrorPage
+    from pages.error_page import ErrorPage
 
     sd_card_change = False
     prev_sd_card_cb = None
@@ -1376,7 +1377,7 @@ def timestamp_to_str(time):
 
 # This is a flow function, so it needs to be async
 async def show_card_missing(flow):
-    from pages import InsertMicroSDPage
+    from pages.insert_microsd_page import InsertMicroSDPage
 
     # This makes the return type consistent with the caller
     if hasattr(flow, "return_bool") and flow.return_bool:
