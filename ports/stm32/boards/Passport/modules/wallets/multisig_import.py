@@ -15,13 +15,14 @@
 #       connect_wallet_flow.py, and that probably needs to be modified during the refactoring.
 
 async def read_multisig_config_from_qr():
-    from pages import ScanQRPage
+    from pages.scan_qr_page import ScanQRPage
     return await ScanQRPage().show()
 
 
 async def read_multisig_config_from_microsd():
     from flows import FilePickerFlow
-    from pages import InsertMicroSDPage, ErrorPage
+    from pages.insert_microsd_page import InsertMicroSDPage
+    from pages.error_page import ErrorPage
     from tasks import read_file_task
     from utils import spinner_task
     from errors import Error

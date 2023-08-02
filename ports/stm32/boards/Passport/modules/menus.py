@@ -29,7 +29,7 @@ from utils import has_seed
 
 def manage_account_menu():
     from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow
-    from pages import AccountDetailsPage
+    from pages.account_details_page import AccountDetailsPage
 
     return [
         {'icon': 'ICON_FOLDER', 'label': 'Account Details', 'page': AccountDetailsPage},
@@ -110,7 +110,8 @@ def plus_menu():
 
 def device_menu():
     from flows import AboutFlow, ChangePINFlow
-    from pages import AutoShutdownSettingPage, BrightnessSettingPage
+    from pages.auto_shutdown_setting_page import AutoShutdownSettingPage
+    from pages.brightness_setting_page import BrightnessSettingPage
     from utils import is_logged_in
 
     return [
@@ -228,7 +229,7 @@ def key_manager_menu():
 
 def bitcoin_menu():
     from flows import SetChainFlow
-    from pages import UnitsSettingPage
+    from pages.units_setting_page import UnitsSettingPage
     from utils import is_logged_in
 
     return [
@@ -294,7 +295,8 @@ def multisig_item_menu():
 
 def multisig_menu():
     from multisig_wallet import MultisigWallet
-    from pages import MultisigPolicySettingPage, ErrorPage
+    from pages.multisig_policy_setting_page import MultisigPolicySettingPage
+    from pages.error_page import ErrorPage
     from flows import ImportMultisigWalletFromMicroSDFlow, ImportMultisigWalletFromQRFlow
 
     if not MultisigWallet.exists():
@@ -368,7 +370,8 @@ def developer_menu():
         from developer.developer_functions_flow import DeveloperFunctionsFlow
         from developer.fcc_test_flow import FCCTestFlow
         from developer.spin_delay_flow import SpinDelayFlow
-        from pages import StatusPage, ShowQRPage
+        from pages.status_page import StatusPage
+        from pages.show_qr_page import ShowQRPage
         from data_codecs.qr_type import QRType
         from foundation import ur
 

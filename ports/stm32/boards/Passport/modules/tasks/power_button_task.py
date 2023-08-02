@@ -28,7 +28,7 @@ irq = ExtInt(pin, ExtInt.IRQ_FALLING,
 
 
 async def power_button_task():
-    from pages import ShutdownPage
+    from pages.shutdown_page import ShutdownPage
     import common
     import passport
     from uasyncio import sleep_ms

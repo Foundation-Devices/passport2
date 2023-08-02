@@ -54,7 +54,7 @@ async def fuelgauge_task():
 
     global soc_int_event
 
-    from pages import ShutdownPage
+    from pages.shutdown_page import ShutdownPage
     from utils import is_logged_in
     from styles.colors import COPPER
 
