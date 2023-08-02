@@ -4,7 +4,7 @@
 # export_mode_chooser_page.py - Chooser to select export mode (e.g., QR vs. microSD)
 
 
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 
 
 class ExportModeChooserPage(ChooserPage):

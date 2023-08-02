@@ -3,17 +3,9 @@
 #
 # backup_code_page.py
 
-
-import lvgl as lv
-from styles import Stylize
-from styles.colors import TEXT_GREY
-from pages import Page
-from views import BackupCodeSection, Label
-from keys import KEY_0, KEY_9
-from utils import flatten_list, split_backup_code
-from constants import (NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION, TOTAL_BACKUP_CODE_DIGITS)
+from pages.page import Page
+from constants import TOTAL_BACKUP_CODE_DIGITS
 import microns
-import common
 
 
 class BackupCodePage(Page):
@@ -21,6 +13,12 @@ class BackupCodePage(Page):
     def __init__(self, digits=[None] * TOTAL_BACKUP_CODE_DIGITS, editable=True,
                  card_header=None, statusbar=None,
                  left_micron=microns.Back, right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles import Stylize
+        from views import BackupCodeSection
+        from utils import split_backup_code
+        from constants import NUM_BACKUP_CODE_SECTIONS
+
         super().__init__(
             flex_flow=lv.FLEX_FLOW.COLUMN,
             card_header=card_header,
@@ -59,6 +57,8 @@ class BackupCodePage(Page):
             self.sections.append(section)
 
     def right_action(self, is_pressed):
+        from utils import flatten_list
+
         if not is_pressed:
             backup_code = flatten_list(self.digits_by_row)
             self.set_result(backup_code)
@@ -68,6 +68,9 @@ class BackupCodePage(Page):
             self.set_result(None)
 
     def attach(self, group):
+        import lvgl as lv
+        from common import ui
+
         super().attach(group)
 
         if self.editable:
@@ -75,17 +78,23 @@ class BackupCodePage(Page):
             self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
             self.curr_section().focus(self.curr_col)
 
-            self.prev_top_level = common.ui.set_is_top_level(False)
+            self.prev_top_level = ui.set_is_top_level(False)
 
     def detach(self):
+        import lvgl as lv
+        from common import ui
+
         if self.editable:
-            common.ui.set_is_top_level(self.prev_top_level)
+            ui.set_is_top_level(self.prev_top_level)
             self.lvgl_root.remove_event_cb(self.on_key)
             lv.group_remove_obj(self.lvgl_root)
 
         super().detach()
 
     def on_key(self, event):
+        import lvgl as lv
+        from keys import KEY_0, KEY_9
+
         if not self.editable:
             return
 
@@ -117,6 +126,8 @@ class BackupCodePage(Page):
         self.prev_digit()
 
     def prev_digit(self):
+        from constants import NUM_DIGITS_PER_BACKUP_CODE_SECTION
+
         if not self.prev_col():
             if self.prev_row():
                 # Only update if we changed rows upward
@@ -131,6 +142,8 @@ class BackupCodePage(Page):
                 self.curr_section().set_focused_idx(self.curr_col)
 
     def prev_col(self):
+        from constants import NUM_DIGITS_PER_BACKUP_CODE_SECTION
+
         if self.curr_col > 0:
             self.curr_col -= 1
             self.curr_section().set_focused_idx(self.curr_col)
@@ -146,6 +159,8 @@ class BackupCodePage(Page):
             return False
 
     def next_col(self):
+        from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
+
         if self.curr_col < NUM_DIGITS_PER_BACKUP_CODE_SECTION - 1:
             self.curr_col += 1
             self.curr_section().set_focused_idx(self.curr_col)
@@ -169,6 +184,8 @@ class BackupCodePage(Page):
             return False
 
     def next_row(self):
+        from constants import NUM_BACKUP_CODE_SECTIONS
+
         if self.curr_row < NUM_BACKUP_CODE_SECTIONS - 1:
             self.curr_section().defocus()
             self.curr_row += 1

@@ -5,7 +5,6 @@
 
 import lvgl as lv
 from utils import has_seed
-# from pages import ColorPickerPage
 
 ########################################################################################
 # Menu Item Fields
@@ -392,7 +391,6 @@ def developer_menu():
             {'icon': 'ICON_SETTINGS', 'label': 'FCC Test', 'flow': FCCTestFlow},
             # {'icon': 'ICON_SETTINGS', 'label': 'I\'m Busy!', 'page': LongTextPage,
             #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
-            # {'icon': 'ICON_ABOUT', 'label': 'Color Picker', 'page': ColorPickerPage},
             # {'icon': 'ICON_CHANGE_PIN', 'label': 'Enter PIN', 'page': PINEntryPage,
             #  'args': {'title': 'Enter Initial PIN'}},
             # {'icon': 'ICON_FOLDER', 'label': 'Rename Account', 'page': TextInputPage,

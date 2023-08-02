@@ -3,9 +3,7 @@
 #
 # brandmark_page.py - Show a message along with the Passport brandmark.
 
-import lvgl as lv
-from pages import StatusPage
-from styles.colors import COPPER
+from pages.status_page import StatusPage
 import microns
 
 
@@ -17,6 +15,7 @@ class BrandmarkPage(StatusPage):
             statusbar=None,
             left_micron=None,
             right_micron=microns.Checkmark):
+        import lvgl as lv
 
         super().__init__(
             text=text,

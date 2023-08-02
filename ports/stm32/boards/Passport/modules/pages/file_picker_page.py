@@ -3,13 +3,7 @@
 #
 # file_picker_page.py - View to render a title and a list of files/folders.
 
-
-import lvgl as lv
-import microns
-from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
-from styles import Stylize
-from pages import Page
-from views import FileItem, View
+from pages.page import Page
 from micropython import const
 import passport
 
@@ -21,6 +15,12 @@ class FilePickerPage(Page):
                  files=[],
                  card_header=None,
                  statusbar=None,):
+        import lvgl as lv
+        import microns
+        from styles import Stylize
+        from styles.colors import SCROLLBAR_BG_COLOR
+        from views import FileItem, View
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          flex_flow=lv.FLEX_FLOW.COLUMN,
@@ -63,7 +63,7 @@ class FilePickerPage(Page):
         self.add_child(self.scroll_container)
 
     async def display(self, auto_close_timeout=None):
-        from pages import ErrorPage
+        from pages.error_page import ErrorPage
 
         if len(self.files) > MAX_FILE_DISPLAY:
             await ErrorPage(text="Unable to display all files. Displaying the first "
@@ -72,6 +72,8 @@ class FilePickerPage(Page):
         await super().display()
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
 
         # Ensure scrollbars are enabled again
@@ -82,6 +84,8 @@ class FilePickerPage(Page):
         group.add_obj(self.scroll_container.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
     def detach(self):
+        import lvgl as lv
+
         lv.group_remove_obj(self.scroll_container.lvgl_root)
 
         # Hide scrollbars during transitions
@@ -97,6 +101,8 @@ class FilePickerPage(Page):
         return 0
 
     def get_focused_item_index(self):
+        import lvgl as lv
+
         if self.is_mounted():
             focused_item = lv.gridnav_get_focused(self.scroll_container.lvgl_root)
 

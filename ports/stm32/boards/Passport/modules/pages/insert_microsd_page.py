@@ -3,15 +3,16 @@
 #
 # insert_microsd_page.py
 
-import lvgl as lv
-from pages import StatusPage
-from styles.colors import DEFAULT_LARGE_ICON_COLOR
+from pages.status_page import StatusPage
 import microns
 
 
 class InsertMicroSDPage(StatusPage):
     def __init__(self, text=None, card_header={'title': 'No microSD'},
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Retry):
+        import lvgl as lv
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+
         if text is None:
             text = 'Please insert a\nmicroSD card.'
 

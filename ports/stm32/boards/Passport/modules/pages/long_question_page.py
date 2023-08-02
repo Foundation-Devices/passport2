@@ -4,7 +4,7 @@
 # long_question_page.py
 
 import lvgl as lv
-from pages import LongTextPage
+from pages.long_text_page import LongTextPage
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import microns
 

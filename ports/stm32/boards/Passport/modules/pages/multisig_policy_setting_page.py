@@ -3,7 +3,7 @@
 #
 # multisig_policy_setting_page.py - Set the multisig policy
 
-from pages import SettingPage
+from pages.setting_page import SettingPage
 from public_constants import TRUST_OFFER, TRUST_VERIFY, TRUST_PSBT
 
 # Chooser for trust policy

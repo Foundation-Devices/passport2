@@ -3,13 +3,8 @@
 #
 # long_text_page.py
 
-import lvgl as lv
-from styles.style import Stylize
-from views import Label, View, Icon
-from pages import Page
-from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
+from pages.page import Page
 import microns
-import passport
 
 
 class LongTextPage(Page):
@@ -22,6 +17,12 @@ class LongTextPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=microns.Forward):
+        import lvgl as lv
+        from styles.style import Stylize
+        from views import Label, View, Icon
+        from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
+        import passport
+
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -75,6 +76,8 @@ class LongTextPage(Page):
             self.add_child(self.container)
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
 
         # Setup gridnav for the layout

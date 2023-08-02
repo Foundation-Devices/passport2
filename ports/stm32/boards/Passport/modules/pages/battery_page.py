@@ -3,8 +3,7 @@
 #
 # info_page.py
 
-import lvgl as lv
-from pages import StatusPage
+from pages.status_page import StatusPage
 import microns
 
 
@@ -29,6 +28,8 @@ class BatteryPage(StatusPage):
         self.update_battery()
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
 
         # Create a timer to update the battery

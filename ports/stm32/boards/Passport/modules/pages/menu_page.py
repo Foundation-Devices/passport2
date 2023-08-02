@@ -3,15 +3,7 @@
 #
 # menu_page.py - View to render a list of menu items
 
-
-import lvgl as lv
-from styles import Stylize
-from styles.colors import SCROLLBAR_BG_COLOR
-from pages import Page
-from views import MenuItem
-import common
-import microns
-import passport
+from pages.page import Page
 
 
 class MenuPage(Page):
@@ -24,6 +16,11 @@ class MenuPage(Page):
                  statusbar=None,
                  left_micron=None,
                  right_micron=None):
+        import lvgl as lv
+        from styles import Stylize
+        from styles.colors import SCROLLBAR_BG_COLOR
+        import passport
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -53,6 +50,9 @@ class MenuPage(Page):
         self.set_no_scroll()
 
     def mount(self, lvgl_parent):
+        from views import MenuItem
+        from common import ui
+
         # Filter to ones that are visible before calling base class since the base class
         # is where children are connected to the parent.
         # This is re-evaluated each time the view is mounted.
@@ -76,14 +76,20 @@ class MenuPage(Page):
         super().mount(lvgl_parent)
 
         if self.is_top_level is not None:
-            common.ui.set_is_top_level(self.is_top_level)
+            ui.set_is_top_level(self.is_top_level)
 
     def unmount(self):
+        from common import ui
+
         super().unmount()
         if self.is_top_level is not None:
-            common.ui.set_is_top_level(False)
+            ui.set_is_top_level(False)
 
     def attach(self, group):
+        import lvgl as lv
+        from common import ui
+        import microns
+
         super().attach(group)
 
         # Attach child views
@@ -103,9 +109,11 @@ class MenuPage(Page):
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
         lv.gridnav_set_focused(self.lvgl_root, initial_focus, False)
 
-        common.ui.set_left_micron(microns.Shutdown if common.ui.is_top_level() else microns.Back)
+        ui.set_left_micron(microns.Shutdown if ui.is_top_level() else microns.Back)
 
     def detach(self):
+        import lvgl as lv
+
         # Update this so that we can restore to the same index later if this MenuPage is
         # remounted/reattached (e.g., when the power button is pressed, then shutdown is canceled).
         self.focus_idx, _ = self.get_focused_item()
@@ -120,6 +128,8 @@ class MenuPage(Page):
         super().detach()
 
     def get_focused_item(self):
+        import lvgl as lv
+
         if self.is_mounted():
             focused_item = lv.gridnav_get_focused(self.lvgl_root)
 
@@ -133,9 +143,11 @@ class MenuPage(Page):
             return None
 
     def left_action(self, is_pressed):
+        from common import ui
+
         # Don't allow going back when already at the top level
         if not is_pressed:
-            if common.ui.is_top_level():
+            if ui.is_top_level():
                 self.set_result(None)
             else:
                 # print('GO BACK UP!')

@@ -3,11 +3,7 @@
 #
 # brightness_setting_page.py - Set the screen brightness and save it
 
-
-from pages import SettingPage
-from utils import get_screen_brightness, set_screen_brightness
-import passport
-import common
+from pages.setting_page import SettingPage
 
 
 class BrightnessSettingPage(SettingPage):
@@ -20,6 +16,8 @@ class BrightnessSettingPage(SettingPage):
     ]
 
     def __init__(self, card_header=None, statusbar=None):
+        import passport
+
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -30,10 +28,16 @@ class BrightnessSettingPage(SettingPage):
             scroll_fix=not passport.IS_COLOR)
 
     def on_change(self, new_value):
-        common.display.set_brightness(new_value)
+        from common import display
+
+        display.set_brightness(new_value)
 
     def get_setting(self):
+        from utils import get_screen_brightness
+
         return get_screen_brightness(self.default_value)
 
     def save_setting(self, new_value):
+        from utils import set_screen_brightness
+
         set_screen_brightness(new_value)

@@ -3,10 +3,8 @@
 #
 # account_details_page.py - Show a page with information for the current account.
 
-import lvgl as lv
-from pages import LongTextPage
+from pages.long_text_page import LongTextPage
 import microns
-from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class AccountDetailsPage(LongTextPage):
@@ -22,6 +20,7 @@ class AccountDetailsPage(LongTextPage):
         import chains
         from public_constants import AF_P2WPKH
         from wallets.utils import get_bip_num_from_addr_type
+        from styles.colors import HIGHLIGHT_TEXT_HEX
 
         self.account = ui.get_active_account()
 

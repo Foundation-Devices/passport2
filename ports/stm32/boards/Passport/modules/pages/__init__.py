@@ -17,7 +17,6 @@ from .backup_code_page import *
 from .brandmark_page import *
 from .brightness_setting_page import *
 from .chain_setting_page import *
-from .color_picker_page import *
 from .error_page import *
 from .export_mode_chooser_page import *
 from .file_picker_page import *

@@ -3,13 +3,8 @@
 #
 # chooser_page.py - A page to let the user choose from a list of options.
 
-
-import lvgl as lv
-import microns
-from styles.colors import CHOOSER_ICON, SCROLLBAR_BG_COLOR
-from styles import Stylize
-from pages import Page
-import common
+from styles.colors import CHOOSER_ICON
+from pages.page import Page
 
 # The `options` parameter is an array of dicts as shown in the following examples:
 #
@@ -27,6 +22,10 @@ class ChooserPage(Page):
 
         from views import ListItem, View
         import passport
+        import lvgl as lv
+        import microns
+        from styles.colors import SCROLLBAR_BG_COLOR
+        from styles import Stylize
 
         left_micron = left_micron or microns.Cancel
         right_micron = right_micron or microns.Checkmark
@@ -116,6 +115,8 @@ class ChooserPage(Page):
         self.add_child(self.scroll_container)
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
 
         # Ensure scrollbars are enabled again
@@ -132,6 +133,8 @@ class ChooserPage(Page):
             self.scroll_selected_to_visible()
 
     def detach(self):
+        import lvgl as lv
+
         lv.group_remove_obj(self.scroll_container.lvgl_root)
 
         # Hide scrollbars during transitions
@@ -139,6 +142,8 @@ class ChooserPage(Page):
         super().detach()
 
     def scroll_selected_to_visible(self):
+        import lvgl as lv
+
         """Scrolls the menu list to make the selected option visible."""
         selected = self.scroll_container.children[self.selected_idx].get_lvgl_root()
         if selected is not None:
@@ -165,6 +170,8 @@ class ChooserPage(Page):
         return 0
 
     def get_focused_item_index(self):
+        import lvgl as lv
+
         if self.is_mounted():
             focused_item = lv.gridnav_get_focused(self.scroll_container.lvgl_root)
 

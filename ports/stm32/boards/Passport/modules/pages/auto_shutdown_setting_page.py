@@ -3,7 +3,7 @@
 #
 # auto_shutdown_setting_page.py - Set the auto-shutdown timeout
 
-from pages import SettingPage
+from pages.settings_page import SettingPage
 
 
 class AutoShutdownSettingPage(SettingPage):

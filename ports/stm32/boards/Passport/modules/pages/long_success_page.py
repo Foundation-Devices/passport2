@@ -3,9 +3,7 @@
 #
 # long_success_page.py
 
-import lvgl as lv
-from pages import LongTextPage
-from styles.colors import DEFAULT_LARGE_ICON_COLOR
+from pages.long_text_page import LongTextPage
 import microns
 
 
@@ -17,6 +15,9 @@ class LongSuccessPage(LongTextPage):
             statusbar=None,
             left_micron=None,
             right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+
         super().__init__(
             text=text,
             card_header=card_header,

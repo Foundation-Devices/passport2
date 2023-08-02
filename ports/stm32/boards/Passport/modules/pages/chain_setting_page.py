@@ -3,8 +3,7 @@
 #
 # chain_setting_page.py - Set the current chain to Bitcoin mainnet or testnet
 
-from pages import SettingPage
-import common
+from pages.setting_page import SettingPage
 
 
 class ChainSettingPage(SettingPage):
@@ -22,7 +21,9 @@ class ChainSettingPage(SettingPage):
             default_value=self.OPTIONS[0].get('value'))
 
     def save_setting(self, new_value):
-        common.settings.set_volatile(self.setting_name, new_value)
+        from common import settings
+
+        settings.set_volatile(self.setting_name, new_value)
 
         try:
             # Refresh volatile XPB and XFP settings

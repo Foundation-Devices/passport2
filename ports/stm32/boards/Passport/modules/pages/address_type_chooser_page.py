@@ -4,7 +4,7 @@
 # address_type_chooser_page.py - Chooser to select address type.
 
 
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 from public_constants import AF_P2WPKH, AF_P2WPKH_P2SH, AF_CLASSIC
 
 
