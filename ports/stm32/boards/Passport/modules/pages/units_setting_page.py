@@ -3,14 +3,15 @@
 #
 # units_setting_page.py - Set the current units (e.g., Sats/Bitcoin) based on the active chain
 
-from pages import SettingPage
-from constants import UNIT_TYPE_BTC, UNIT_TYPE_SATS
-import chains
+from pages.setting_page import SettingPage
 
 
 class UnitsSettingPage(SettingPage):
 
     def __init__(self, card_header=None, statusbar=None):
+        from constants import UNIT_TYPE_BTC, UNIT_TYPE_SATS
+        import chains
+
         chain = chains.current_chain()
         options = [
             {'label': chain.ctype, 'value': UNIT_TYPE_BTC},

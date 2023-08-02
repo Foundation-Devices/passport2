@@ -3,9 +3,7 @@
 #
 # success_page.py
 
-import lvgl as lv
-from pages import StatusPage
-from styles.colors import DEFAULT_LARGE_ICON_COLOR
+from pages.status_page import StatusPage
 import microns
 
 
@@ -17,6 +15,9 @@ class SuccessPage(StatusPage):
             statusbar=None,
             left_micron=None,
             right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+
         super().__init__(
             text=text,
             card_header=card_header,

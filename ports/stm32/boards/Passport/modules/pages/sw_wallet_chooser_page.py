@@ -4,13 +4,13 @@
 # sw_wallet_chooser_page.py - Chooser to select a specific softwre wallet to which to connect
 
 
-from pages import ChooserPage
-
-from wallets.sw_wallets import supported_software_wallets
+from pages.chooser_page import ChooserPage
 
 
 class SWWalletChooserPage(ChooserPage):
     def __init__(self, card_header={'title': 'Software Wallet'}, initial_value=None):
+        from wallets.sw_wallets import supported_software_wallets
+
         options = []
         for wallet in supported_software_wallets:
             options.append({'label': wallet['label'], 'value': wallet})

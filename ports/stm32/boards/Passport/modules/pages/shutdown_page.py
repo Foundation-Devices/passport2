@@ -5,8 +5,7 @@
 
 import lvgl as lv
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
-import common
-from pages import QuestionPage
+from pages.question_page import QuestionPage
 
 
 class ShutdownPage(QuestionPage):
@@ -17,11 +16,15 @@ class ShutdownPage(QuestionPage):
         super().__init__(icon=icon, icon_color=icon_color, text=text)
 
     def attach(self, group):
+        from common import keypad
+
         super().attach(group)
-        common.keypad.enable_global_nav_keys(False)
+        keypad.enable_global_nav_keys(False)
 
     def detach(self):
-        common.keypad.enable_global_nav_keys(True)
+        from common import keypad
+
+        keypad.enable_global_nav_keys(True)
         super().detach()
 
     def left_action(self, is_pressed):
@@ -29,5 +32,7 @@ class ShutdownPage(QuestionPage):
             self.set_result(None)
 
     def right_action(self, is_pressed):
+        from common import system
+
         if not is_pressed:
-            common.system.shutdown()
+            system.shutdown()

@@ -3,8 +3,7 @@
 #
 # sig_type_chooser_page.py - Chooser to select signature type.
 
-
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 
 
 class SigTypeChooserPage(ChooserPage):

@@ -3,8 +3,7 @@
 #
 # singlesig_multisig_chooser_page.py - Chooser to select singlesig or a specific multisig config
 
-
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 
 
 class SinglesigMultisigChooserPage(ChooserPage):

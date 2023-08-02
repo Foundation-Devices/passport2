@@ -3,9 +3,7 @@
 #
 # show_security_words_setting_page.py - Chooser to decide to show security words at login or not.
 
-
-import lvgl as lv
-from pages import SettingPage
+from pages.setting_page import SettingPage
 
 
 class ShowSecurityWordsSettingPage(SettingPage):

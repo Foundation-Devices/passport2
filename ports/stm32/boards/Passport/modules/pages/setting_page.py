@@ -3,8 +3,7 @@
 #
 # setting_page.py - A ChooserPage that can get the current value from settings and save it to settings.
 
-from pages import ChooserPage
-import common
+from pages.chooser_page import ChooserPage
 
 
 class SettingPage(ChooserPage):
@@ -31,8 +30,12 @@ class SettingPage(ChooserPage):
             self.on_setting_change(selected_value)
 
     def get_setting(self):
-        return common.settings.get(self.setting_name, self.default_value)
+        from common import settings
+
+        return settings.get(self.setting_name, self.default_value)
 
     def save_setting(self, new_value):
+        from common import settings
+
         # print('SettingPage.save_setting() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        common.settings.set(self.setting_name, new_value)
+        settings.set(self.setting_name, new_value)

@@ -3,17 +3,10 @@
 #
 # show_qr_page.py - Show a QR code
 
-import lvgl as lv
 import microns
-import common
-from pages import Page
-from views import QRCode
-from styles.style import Stylize
+from pages.page import Page
 from micropython import const
 from data_codecs.qr_type import QRType
-from data_codecs.qr_factory import make_qr_encoder
-from constants import CARD_BORDER_WIDTH
-from utils import get_screen_brightness
 
 _FRAME_TIME = const(300)
 
@@ -46,6 +39,12 @@ class ShowQRPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=microns.Forward):
+        import lvgl as lv
+        from common import ui, settings
+        from views import QRCode
+        from styles.style import Stylize
+        from constants import CARD_BORDER_WIDTH
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -67,9 +66,9 @@ class ShowQRPage(Page):
         self.curr_brightness = 100
 
         self.prev_card_descs = None
-        self.prev_card_idx = common.ui.active_card_idx
+        self.prev_card_idx = ui.active_card_idx
         self.prev_top_level = False
-        self.qr_size_idx = common.settings.get('last_qr_size_idx', 0)
+        self.qr_size_idx = settings.get('last_qr_size_idx', 0)
         self.qr_card_descs = [
             {'page_micron': microns.PageQRSmall},
             {'page_micron': microns.PageQRMedium},
@@ -107,28 +106,32 @@ class ShowQRPage(Page):
         return self.qr_type not in [QRType.QR, QRType.SEED_QR, QRType.COMPACT_SEED_QR]
 
     def attach(self, group):
+        import lvgl as lv
+        from common import ui, keypad, showing_qr, settings, display
+        from utils import get_screen_brightness
+
         super().attach(group)
         self.qrcode.attach(group)
         self.timer = lv.timer_create(lambda timer: self.update(), _FRAME_TIME, None)
-        self.prev_card_header = common.ui.hide_card_header()
+        self.prev_card_header = ui.hide_card_header()
 
         # Intercept keys for size and brightness level change
-        common.keypad.set_intercept_key_cb(self.on_key)
-        common.showing_qr = True
+        keypad.set_intercept_key_cb(self.on_key)
+        showing_qr = True
 
         if self.is_qr_resizable():
-            self.prev_top_level = common.ui.set_is_top_level(False)
+            self.prev_top_level = ui.set_is_top_level(False)
 
-            self.prev_card_descs = common.ui.set_micron_bar_cards(self.qr_card_descs, force_show=True)
-            common.ui.set_micron_bar_active_idx(self.qr_size_idx)
+            self.prev_card_descs = ui.set_micron_bar_cards(self.qr_card_descs, force_show=True)
+            ui.set_micron_bar_active_idx(self.qr_size_idx)
 
         self.prev_part = None
 
         self.prev_brightness = get_screen_brightness(100)
 
         # We set the screen brightness to the level the user last left it at when on this page
-        self.curr_brightness = common.settings.get('last_qr_brightness', self.prev_brightness)
-        common.display.set_brightness(self.curr_brightness)
+        self.curr_brightness = settings.get('last_qr_brightness', self.prev_brightness)
+        display.set_brightness(self.curr_brightness)
 
         try:
             self.curr_brightness_idx = brightness_levels.index(self.curr_brightness)
@@ -136,28 +139,30 @@ class ShowQRPage(Page):
             self.curr_brightness_idx = 4
 
     def detach(self):
+        from common import settings, display, ui, keypad, showing_qr
+
         # Save the last qr settings on the way out
-        common.settings.set('last_qr_size_idx', self.qr_size_idx)
-        common.settings.set('last_qr_brightness', self.curr_brightness)
+        settings.set('last_qr_size_idx', self.qr_size_idx)
+        settings.set('last_qr_brightness', self.curr_brightness)
 
         # Restore the previous screen brightness
-        common.display.set_brightness(self.prev_brightness)
+        display.set_brightness(self.prev_brightness)
 
         if self.is_qr_resizable():
             # Restore the card descs and header, if they were overridden
             if self.prev_card_descs is not None:
-                common.ui.set_micron_bar_cards(self.prev_card_descs, force_show=False)
-                common.ui.set_micron_bar_active_idx(self.prev_card_idx)
+                ui.set_micron_bar_cards(self.prev_card_descs, force_show=False)
+                ui.set_micron_bar_active_idx(self.prev_card_idx)
                 self.prev_card_descs = None
 
-            common.ui.set_is_top_level(self.prev_top_level)
+            ui.set_is_top_level(self.prev_top_level)
 
         # Stop intercepting key presses
-        common.keypad.set_intercept_key_cb(None)
-        common.showing_qr = False
+        keypad.set_intercept_key_cb(None)
+        showing_qr = False
 
         if self.prev_card_header is not None:
-            common.ui.set_card_header(**self.prev_card_header, force_all=True)
+            ui.set_card_header(**self.prev_card_header, force_all=True)
 
         if self.timer is not None:
             self.timer._del()  # noqa
@@ -168,8 +173,10 @@ class ShowQRPage(Page):
         super().detach()
 
     def on_key(self, key, pressed):
-        from common import ui
+        from common import ui, display
         import passport
+        import lvgl as lv
+
         is_sim = passport.IS_SIMULATOR
 
         if pressed:
@@ -190,14 +197,16 @@ class ShowQRPage(Page):
                 if self.curr_brightness_idx < len(brightness_levels) - 1:
                     self.curr_brightness_idx += 1
                     self.curr_brightness = brightness_levels[self.curr_brightness_idx]
-                    common.display.set_brightness(self.curr_brightness)
+                    display.set_brightness(self.curr_brightness)
             elif key == lv.KEY.DOWN:
                 if self.curr_brightness_idx > 0:
                     self.curr_brightness_idx -= 1
                     self.curr_brightness = brightness_levels[self.curr_brightness_idx]
-                    common.display.set_brightness(self.curr_brightness)
+                    display.set_brightness(self.curr_brightness)
 
     def update(self):
+        from data_codecs.qr_factory import make_qr_encoder
+
         if self.is_attached():
             if self.qr_encoder is None:
                 self.qr_encoder = make_qr_encoder(self.qr_type)

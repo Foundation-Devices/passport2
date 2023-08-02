@@ -4,9 +4,7 @@
 # yes_no_chooser_page.py - Chooser to select a yes or not response.
 
 
-import lvgl as lv
-from pages import ChooserPage
-import microns
+from pages.chooser_page import ChooserPage
 
 
 class YesNoChooserPage(ChooserPage):

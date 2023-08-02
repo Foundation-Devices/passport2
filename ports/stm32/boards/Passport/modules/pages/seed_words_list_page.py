@@ -3,15 +3,9 @@
 #
 # account_details_page.py - Show a page with information for the current account.
 
-import lvgl as lv
-from pages import Page
-from styles.style import Stylize
-from views import View, Label
+from pages.page import Page
 import microns
-from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY, SCROLLBAR_BG_COLOR
 from micropython import const
-import common
-import passport
 
 _NUM_COLUMNS = const(2)
 
@@ -24,6 +18,11 @@ class SeedWordsListPage(Page):
             statusbar=None,
             left_micron=None,
             right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles.style import Stylize
+        from views import View
+        from styles.colors import SCROLLBAR_BG_COLOR
+        import passport
 
         self.words = words
         self.page_idx = 0
@@ -74,6 +73,12 @@ class SeedWordsListPage(Page):
 
     def update(self):
         from utils import recolor
+        import lvgl as lv
+        from styles.style import Stylize
+        from views import View, Label
+        from styles.colors import HIGHLIGHT_TEXT_HEX, TEXT_GREY
+        from common import ui
+
         if self.is_mounted():
             self.container.unmount_children()
             self.container.set_children([])
@@ -136,21 +141,23 @@ class SeedWordsListPage(Page):
             self.container.mount_children()
 
         # Update the page micron index
-        common.ui.set_micron_bar_active_idx(self.page_idx)
+        ui.set_micron_bar_active_idx(self.page_idx)
 
         # Update microns
         if self.num_pages > 1:
             if self.page_idx == 0:
-                common.ui.set_left_micron(self.left_micron)
-                common.ui.set_right_micron(microns.Forward)
+                ui.set_left_micron(self.left_micron)
+                ui.set_right_micron(microns.Forward)
             else:
-                common.ui.set_left_micron(microns.Back)
-                common.ui.set_right_micron(microns.Checkmark)
+                ui.set_left_micron(microns.Back)
+                ui.set_right_micron(microns.Checkmark)
         else:
-            common.ui.set_left_micron(self.left_micron)
-            common.ui.set_right_micron(microns.Checkmark)
+            ui.set_left_micron(self.left_micron)
+            ui.set_right_micron(microns.Checkmark)
 
     def attach(self, group):
+        from common import ui
+
         super().attach(group)
         group.add_obj(self.lvgl_root)
 
@@ -160,14 +167,16 @@ class SeedWordsListPage(Page):
             for i in range(self.num_pages):
                 micron_bar_card_descs.append({'page_micron': microns.PageDot})
 
-            self.prev_card_idx = common.ui.active_card_idx
-            self.prev_card_descs = common.ui.set_micron_bar_cards(micron_bar_card_descs, force_show=True)
-            common.ui.set_micron_bar_active_idx(self.page_idx)
+            self.prev_card_idx = ui.active_card_idx
+            self.prev_card_descs = ui.set_micron_bar_cards(micron_bar_card_descs, force_show=True)
+            ui.set_micron_bar_active_idx(self.page_idx)
 
     def detach(self):
+        import lvgl as lv
+
         if self.prev_card_descs is not None:
-            common.ui.set_micron_bar_cards(self.prev_card_descs, force_show=False)
-            common.ui.set_micron_bar_active_idx(self.prev_card_idx)
+            ui.set_micron_bar_cards(self.prev_card_descs, force_show=False)
+            ui.set_micron_bar_active_idx(self.prev_card_idx)
             self.prev_card_descs = None
 
         lv.group_remove_obj(self.lvgl_root)

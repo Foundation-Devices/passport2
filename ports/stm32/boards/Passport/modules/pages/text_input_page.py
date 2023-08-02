@@ -3,16 +3,9 @@
 #
 # text_input_page.py
 
-import lvgl as lv
-from styles.colors import NORMAL_TEXT
 from utils import InputMode
-from pages import Page
-from views import Label, TextInput, SymbolPicker
-from styles import Stylize
-from t9 import T9
-from keys import KEY_1
+from pages.page import Page
 import microns
-import passport
 from constants import MAX_TEXT_INPUT_LENGTH
 
 
@@ -28,6 +21,13 @@ class TextInputPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=microns.Checkmark):
+        import lvgl as lv
+        from styles.colors import NORMAL_TEXT
+        from views import Label, TextInput
+        from styles import Stylize
+        from t9 import T9
+        import passport
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -90,6 +90,8 @@ class TextInputPage(Page):
             self.set_result(None)
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
         group.add_obj(self.lvgl_root)
         self.lvgl_root.add_event_cb(self.on_key, lv.EVENT.KEY, None)
@@ -97,11 +99,15 @@ class TextInputPage(Page):
         self.update_symbol_picker()
 
     def detach(self):
+        import lvgl as lv
+
         self.lvgl_root.remove_event_cb(self.on_key)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 
     def update_symbol_picker(self):
+        from views import SymbolPicker
+
         if self.is_mounted():
             if self.symbol_picker is not None:
                 self.symbol_picker.detach()
@@ -122,6 +128,9 @@ class TextInputPage(Page):
         self.input.set_cursor_pos(self.t9.cursor_pos)
 
     def on_key(self, event):
+        import lvgl as lv
+        from keys import KEY_1
+
         key = event.get_key()
 
         if self.t9.mode != InputMode.NUMERIC and key == KEY_1:

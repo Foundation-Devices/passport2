@@ -3,9 +3,7 @@
 #
 # setup_mode_chooser_page.py - Chooser to select address type.
 
-
-import lvgl as lv
-from pages import ChooserPage
+from pages.chooser_page import ChooserPage
 import microns
 
 
@@ -16,6 +14,8 @@ class SetupModeChooserPage(ChooserPage):
     ]
 
     def __init__(self, left_micron=microns.Back):
+        import lvgl as lv
+
         super().__init__(
             options=self.OPTIONS,
             icon=lv.LARGE_ICON_SETUP,

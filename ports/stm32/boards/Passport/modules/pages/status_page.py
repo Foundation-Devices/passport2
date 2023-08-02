@@ -3,14 +3,8 @@
 #
 # status_page.py
 
-import lvgl as lv
-from styles.style import Stylize
-from views import Arc, Label, View, Icon, Spinner
-from pages import Page
-from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR
+from pages.page import Page
 import microns
-import common
-import passport
 
 
 class StatusPage(Page):
@@ -19,6 +13,12 @@ class StatusPage(Page):
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
+        import lvgl as lv
+        from styles.style import Stylize
+        from views import View
+        from styles.colors import SCROLLBAR_BG_COLOR
+        import passport
+
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -59,18 +59,24 @@ class StatusPage(Page):
         self.update()
 
     def update(self):
+        import lvgl as lv
+        from styles.style import Stylize
+        from views import Arc, Label, View, Icon, Spinner
+        from styles.colors import DEFAULT_SPINNER, TEXT_GREY
+        from common import ui
+
         if self.is_mounted():
             self.container.unmount_children()
             self.container.set_children([])
 
         # Update microns in a special way for array text
         if self.is_list_mode:
-            common.ui.set_left_micron(microns.Back)
-            common.ui.set_right_micron(microns.Forward)
+            ui.set_left_micron(microns.Back)
+            ui.set_right_micron(microns.Forward)
             if self.page_idx == 0:
-                common.ui.set_left_micron(self.left_micron)
+                ui.set_left_micron(self.left_micron)
             elif self.page_idx == len(self.text):
-                common.ui.set_right_micron(self.right_micron)
+                ui.set_right_micron(self.right_micron)
 
         # center container so we can center the icon or progress in it
         self.center_container = View()
@@ -124,6 +130,8 @@ class StatusPage(Page):
             self.container.mount_children()
 
     def update_progress(self):
+        from views import Arc
+
         self.progress_label.set_text(self.get_percent_text())
         angle = int(360 * (self.percent / 100))
 
@@ -151,6 +159,8 @@ class StatusPage(Page):
         self.update()
 
     def attach(self, group):
+        import lvgl as lv
+
         super().attach(group)
 
         # Setup gridnav for the layout
@@ -158,6 +168,8 @@ class StatusPage(Page):
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
     def detach(self):
+        import lvgl as lv
+
         lv.group_remove_obj(self.lvgl_root)
         super().detach()
 

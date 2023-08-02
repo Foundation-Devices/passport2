@@ -3,9 +3,7 @@
 #
 # info_page.py
 
-import lvgl as lv
-from pages import StatusPage
-from styles.colors import DEFAULT_LARGE_ICON_COLOR
+from pages.status_page import StatusPage
 import microns
 
 
@@ -18,6 +16,9 @@ class ShieldPage(StatusPage):
             statusbar=None,
             left_micron=microns.Back,
             right_micron=microns.Forward):
+        import lvgl as lv
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
+
         super().__init__(
             text=text,
             icon=lv.LARGE_ICON_SHIELD,
