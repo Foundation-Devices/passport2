@@ -85,5 +85,7 @@ class LongTextPage(Page):
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
     def detach(self):
+        import lvgl as lv
+
         lv.group_remove_obj(self.lvgl_root)
         super().detach()

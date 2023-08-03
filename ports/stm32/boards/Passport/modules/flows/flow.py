@@ -114,27 +114,26 @@ class Flow():
 
     def back(self):
         from animations.constants import TRANSITION_DIR_REPLACE, TRANSITION_DIR_POP
-        import common
+        from common import page_transition_dir
 
         # print('back() len={}'.format(len(self.prev_states)))
         if len(self.prev_states) > 0:
             prev_state = self.prev_states.pop()
             # print('{}: Go BACK from {} to {}'.format(self.name, self.state, prev_state))
             self.state = prev_state
-            common.page_transition_dir = TRANSITION_DIR_POP
+            page_transition_dir = TRANSITION_DIR_POP
 
             # Auto-save
             self.save()
             self.cleanup()
             return True  # Was able to go back
         else:
-            common.page_transition_dir = TRANSITION_DIR_REPLACE
+            page_transition_dir = TRANSITION_DIR_REPLACE
             self.cleanup()
             return False  # Was NOT able to go back, which means we are probably exiting the flow
 
     async def wait_to_die(self):
         from uasyncio import sleep_ms
-        from animations.constants import TRANSITION_DIR_POP
 
         # This task just started an operation that will cede control to another card_task,
         # and if we were to keep going, there would be a race condition for control of the UI
@@ -143,10 +142,10 @@ class Flow():
         await sleep_ms(10000)
 
     def set_result(self, result, forget_state=True):
-        from utils import handle_fatal_error
-        import common
+        from animations.constants import TRANSITION_DIR_POP
+        from common import page_transition_dir
 
-        common.page_transition_dir = TRANSITION_DIR_POP
+        page_transition_dir = TRANSITION_DIR_POP
         self.result = result
         self.done = True
 
@@ -156,6 +155,7 @@ class Flow():
             self.erase_settings()
 
     async def run(self):
+        from utils import handle_fatal_error
         from common import ui
 
         try:

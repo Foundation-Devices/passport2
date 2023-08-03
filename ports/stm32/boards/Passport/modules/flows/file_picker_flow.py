@@ -67,7 +67,7 @@ class FilePickerFlow(Flow):
 
     async def on_file_result(self, res):
         from animations.constants import TRANSITION_DIR_POP, TRANSITION_DIR_PUSH
-        from flows.select_file_flow import SelectedFileFlow
+        from flows.selected_file_flow import SelectedFileFlow
         import common
 
         # No file selected - go back to previous page

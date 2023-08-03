@@ -195,6 +195,7 @@ class SignPsbtCommonFlow(Flow):
     def render_change_text(self):
         import uio
         from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor
 
         # Produce text report of what the "change" outputs are (based on our opinion).
         # - we don't really expect all users to verify these outputs, but just in case.
