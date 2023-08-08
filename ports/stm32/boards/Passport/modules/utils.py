@@ -949,23 +949,23 @@ def get_width_from_num_words(num_words):
 #     return False
 
 
-def make_next_addr_key(acct_num, addr_type, is_change):
-    return '{}/{}{}'.format(acct_num, addr_type, '/1' if is_change else '')
+def make_next_addr_key(acct_num, addr_type, xfp, is_change):
+    return '{}.{}/{}{}'.format(xfp, acct_num, addr_type, '/1' if is_change else '')
 
 
-def get_next_addr(acct_num, addr_type, is_change):
+def get_next_addr(acct_num, addr_type, xfp, is_change):
     from common import settings
     next_addrs = settings.get('next_addrs', {})
-    key = make_next_addr_key(acct_num, addr_type, is_change)
+    key = make_next_addr_key(acct_num, addr_type, xfp, is_change)
     return next_addrs.get(key, 0)
 
 # Save the next address to use for the specific account and address type
 
 
-def save_next_addr(acct_num, addr_type, addr_idx, is_change, force_update=False):
+def save_next_addr(acct_num, addr_type, addr_idx, xfp, is_change, force_update=False):
     from common import settings
     next_addrs = settings.get('next_addrs', {})
-    key = make_next_addr_key(acct_num, addr_type, is_change)
+    key = make_next_addr_key(acct_num, addr_type, xfp, is_change)
 
     # Only save the found index if it's newer
     if next_addrs.get(key, -1) < addr_idx or force_update:
