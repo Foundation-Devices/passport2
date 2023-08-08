@@ -72,6 +72,7 @@ class VerifyAddressFlow(Flow):
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
         from utils import is_valid_btc_address, get_next_addr
         from data_codecs.qr_type import QRType
+        from common import settings
 
         result = await ScanQRFlow(qr_types=[QRType.QR],
                                   data_description='a Bitcoin address').run()
@@ -100,7 +101,15 @@ class VerifyAddressFlow(Flow):
         self.deriv_path = get_deriv_path_from_addr_type_and_acct(self.addr_type, self.acct_num, self.is_multisig)
 
         # Setup initial ranges
-        a = [get_next_addr(self.acct_num, self.addr_type, False), get_next_addr(self.acct_num, self.addr_type, True)]
+        xfp = settings.get('xfp')
+        a = [get_next_addr(self.acct_num,
+                           self.addr_type,
+                           xfp,
+                           False),
+             get_next_addr(self.acct_num,
+                           self.addr_type,
+                           xfp,
+                           True)]
         self.low_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
         self.high_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
 
@@ -214,9 +223,10 @@ class VerifyAddressFlow(Flow):
         from pages import SuccessPage, LongSuccessPage
         from utils import save_next_addr, format_btc_address
         import passport
+        from common import settings
 
         # Remember where to start from next time
-        save_next_addr(self.acct_num, self.addr_type, self.found_addr_idx, self.found_is_change)
+        save_next_addr(self.acct_num, self.addr_type, self.found_addr_idx, settings.get('xfp'), self.found_is_change)
         address = format_btc_address(self.address, self.addr_type)
 
         msg = '''{}
