@@ -25,4 +25,5 @@ Error = enum(
     'USER_SETTINGS_FULL',
     'PSBT_TOO_LARGE',
     'PSBT_OVERSIZED',
+    'QR_TOO_LARGE',
 )

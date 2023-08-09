@@ -18,6 +18,7 @@ class ScanQRFlow(Flow):
                  data_description=None,
                  max_frames=None,
                  failure_message=None):
+                 pass_error=False):
         """
         Initialize the scan QR flow.
 
@@ -42,6 +43,7 @@ class ScanQRFlow(Flow):
         self.data = None
         self.max_frames = max_frames
         self.failure_message = failure_message or 'Unable to scan QR code.\n\n{}'
+        self.pass_error = pass_error
 
         if len(self.qr_types) == 0:
             raise ValueError('At least one QR type must be provided')
@@ -64,6 +66,10 @@ class ScanQRFlow(Flow):
             return
 
         if result.is_failure():
+            if self.pass_error:
+                self.set_result(Error.QR_TOO_LARGE)
+                return
+
             await LongErrorPage(text=self.failure_message.format(result.error)).show()
             self.set_result(None)
             return
