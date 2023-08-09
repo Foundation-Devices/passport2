@@ -24,14 +24,15 @@ class SignPsbtQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow, SignPsbtMicroSDFlow
         from errors import Error
-        from pages import YesNoChooserPage
+        from pages import YesNoChooserPage, ErrorPage
         import microns
         import passport
 
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
-                                  max_frames=self.max_frames).run()
+                                  max_frames=self.max_frames,
+                                  pass_error=True).run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
@@ -55,6 +56,13 @@ How would you like to proceed?"
                 result = await SignPsbtMicroSDFlow().run()
                 self.set_result(result)
             return  # Run it again with no max frames if the user wants
+
+        if result == Error.QR_TOO_LARGE:
+            await ErrorPage("This QR sequence is too large for Passport to handle. \
+\nSpend fewer coins in a single transaction or sign via microSD card.").show()
+
+            self.set_result(False)
+            return
 
         if isinstance(result, ur.Value):
             self.ur_type = result.ur_type()
