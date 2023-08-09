@@ -87,10 +87,10 @@ class VerifyAddressFlow(Flow):
         self.address = result
 
         # Simple check on the data type first
-        chain_name = chains.current_chain().name
+        chain = chains.current_chain()
         self.address, is_valid_btc = is_valid_btc_address(self.address)
         if not is_valid_btc:
-            await ErrorPage("Not a valid {} address.".format(chain_name)).show()
+            await ErrorPage("Not a valid {} address.".format(chain.name)).show()
             return
 
         # Get the address type from the address
@@ -105,10 +105,12 @@ class VerifyAddressFlow(Flow):
         a = [get_next_addr(self.acct_num,
                            self.addr_type,
                            xfp,
+                           chain.b44_cointype,
                            False),
              get_next_addr(self.acct_num,
                            self.addr_type,
                            xfp,
+                           chain.b44_cointype,
                            True)]
         self.low_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
         self.high_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
@@ -224,9 +226,15 @@ class VerifyAddressFlow(Flow):
         from utils import save_next_addr, format_btc_address
         import passport
         from common import settings
+        import chains
 
         # Remember where to start from next time
-        save_next_addr(self.acct_num, self.addr_type, self.found_addr_idx, settings.get('xfp'), self.found_is_change)
+        save_next_addr(self.acct_num,
+                       self.addr_type,
+                       self.found_addr_idx,
+                       settings.get('xfp'),
+                       chains.current_chain().b44_cointype,
+                       self.found_is_change)
         address = format_btc_address(self.address, self.addr_type)
 
         msg = '''{}
