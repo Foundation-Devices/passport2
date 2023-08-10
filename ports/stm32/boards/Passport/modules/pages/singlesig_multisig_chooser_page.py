@@ -10,12 +10,18 @@ from pages import ChooserPage
 class SinglesigMultisigChooserPage(ChooserPage):
     def __init__(self, card_header={'title': 'Single/Multisig'}, initial_value=None):
         from multisig_wallet import MultisigWallet
+        from common import settings
 
         options = [{'label': 'Single-sig', 'value': ('single-sig', None)}]
 
+        xfp = settings.get('xfp')
+
         for ms in MultisigWallet.get_all():
-            label = '%d/%d: %s' % (ms.M, ms.N, ms.name)
-            options.append({'label': label, 'value': ('multisig', ms)})
+            for xpub in ms.xpubs:
+                if xfp == xpub[0]:  # XFP entry in the multisig's xpub tuple
+                    label = '%d/%d: %s' % (ms.M, ms.N, ms.name)
+                    options.append({'label': label, 'value': ('multisig', ms)})
+                    continue
 
         super().__init__(
             card_header=card_header,
