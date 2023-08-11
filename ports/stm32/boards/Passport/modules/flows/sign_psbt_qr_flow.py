@@ -62,8 +62,8 @@ How would you like to proceed?"
             return  # Run it again with no max frames if the user wants
 
         if result == Error.QR_TOO_LARGE:
-            await ErrorPage("This QR sequence is too large for Passport to handle. \
-\nSpend fewer coins in a single transaction or sign via microSD card.").show()
+            await ErrorPage("This transaction is too large for QR signing. \
+\nSpend fewer coins or sign via microSD card.").show()
 
             self.set_result(False)
             return
