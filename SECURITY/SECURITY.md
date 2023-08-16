@@ -293,10 +293,7 @@ Note that if you change Passport to a different seed value, the backup password 
 
 If the need arises to restore a backup, simply insert the microSD card into Passport and select the highest-numbered backup file to restore the most recent backup configuration.
 
-### 11.12 Seed Display
-The user can choose to display the wallet seed on screen. Once this is complete, Passport internally erases all memory that held the seed entropy bits and/or the seed phrase.
-
-### 11.13 Verify Address
+### 11.12 Verify Address
 
 Passport empowers users to scan single-sig and multisig addresses from any wallet that can display addresses as QR codes and determine if the address belongs to that Passport.
 
@@ -304,7 +301,7 @@ If you have a single account configured, simply select Verify Address, scan the 
 
 If you have more than one account configured, you may need to select the account, and also select whether the address is a single-sig address or multisig address.  From there, scanning and searching proceeds as described in the previous paragraph.
 
-### 11.14 Alternative PINs
+### 11.13 Alternative PINs
 Some hardware wallets support the concept of alternative PINs, such as duress and self-destruct PINs. We believe that these alternative PINs cause more harm than good, and therefore chose not to include them in Passport.
 
 Duress PINs are alternative PINs that users can enter when under duress (e.g., a physical attack). The duress PIN can unlock an alternative wallet loaded with a smaller amount of Bitcoin – so that the attackers believe they have successfully stolen the funds.
