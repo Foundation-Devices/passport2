@@ -7,6 +7,12 @@ assignees: ''
 
 ---
 
+<!--
+SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 ### **Firmware Version:**
 
 The current firmware version on your Passport can be seen when starting the device as well as under Settings>Firmware>Current Version.
