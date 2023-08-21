@@ -72,6 +72,7 @@ class VerifyAddressFlow(Flow):
         from wallets.utils import get_addr_type_from_address, get_deriv_path_from_addr_type_and_acct
         from utils import is_valid_btc_address, get_next_addr
         from data_codecs.qr_type import QRType
+        from common import settings
 
         result = await ScanQRFlow(qr_types=[QRType.QR],
                                   data_description='a Bitcoin address').run()
@@ -86,10 +87,10 @@ class VerifyAddressFlow(Flow):
         self.address = result
 
         # Simple check on the data type first
-        chain_name = chains.current_chain().name
+        chain = chains.current_chain()
         self.address, is_valid_btc = is_valid_btc_address(self.address)
         if not is_valid_btc:
-            await ErrorPage("Not a valid {} address.".format(chain_name)).show()
+            await ErrorPage("Not a valid {} address.".format(chain.name)).show()
             return
 
         # Get the address type from the address
@@ -100,7 +101,17 @@ class VerifyAddressFlow(Flow):
         self.deriv_path = get_deriv_path_from_addr_type_and_acct(self.addr_type, self.acct_num, self.is_multisig)
 
         # Setup initial ranges
-        a = [get_next_addr(self.acct_num, self.addr_type, False), get_next_addr(self.acct_num, self.addr_type, True)]
+        xfp = settings.get('xfp')
+        a = [get_next_addr(self.acct_num,
+                           self.addr_type,
+                           xfp,
+                           chain.b44_cointype,
+                           False),
+             get_next_addr(self.acct_num,
+                           self.addr_type,
+                           xfp,
+                           chain.b44_cointype,
+                           True)]
         self.low_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
         self.high_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
 
@@ -214,9 +225,16 @@ class VerifyAddressFlow(Flow):
         from pages import SuccessPage, LongSuccessPage
         from utils import save_next_addr, format_btc_address
         import passport
+        from common import settings
+        import chains
 
         # Remember where to start from next time
-        save_next_addr(self.acct_num, self.addr_type, self.found_addr_idx, self.found_is_change)
+        save_next_addr(self.acct_num,
+                       self.addr_type,
+                       self.found_addr_idx,
+                       settings.get('xfp'),
+                       chains.current_chain().b44_cointype,
+                       self.found_is_change)
         address = format_btc_address(self.address, self.addr_type)
 
         msg = '''{}
