@@ -12,7 +12,7 @@ class MainFlow(Flow):
 
     async def start(self):
         import common
-        from utils import start_task, is_logged_in, has_seed
+        from utils import start_task, is_logged_in, has_seed, xfp2str
         from flows import SelectSetupModeFlow, LoginFlow, InitialSeedSetupFlow
 
         await SelectSetupModeFlow().run()
@@ -22,6 +22,14 @@ class MainFlow(Flow):
 
         if not has_seed():
             await InitialSeedSetupFlow(allow_backtrack=False).run()
+
+        # Update old next_addrs keys to include the coin type and xfp
+        next_addrs = common.settings.get('next_addrs', {})
+        xfp = xfp2str(common.settings.get('xfp'))
+        for key in next_addrs:
+            if "." not in key:  # new key format uses periods to prepend coin type and xfp
+                next_addrs["0.{}.".format(xfp) + key] = next_addrs[key]
+                del next_addrs[key]
 
         # Create initial cards by calling ui.update_cards()
         common.ui.update_cards(is_init=True)
