@@ -31,7 +31,10 @@ class UpdateFirmwareFlow(Flow):
     async def choose_file(self):
         root_path = CardSlot.get_sd_root()
 
-        result = await FilePickerFlow(initial_path=root_path, suffix='-passport.bin', show_folders=True).run()
+        result = await FilePickerFlow(initial_path=root_path,
+                                      suffix='-passport.bin',
+                                      show_folders=True,
+                                      allow_delete=False).run()
         if result is None:
             self.set_result(False)
             return
