@@ -16,7 +16,6 @@ from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 from utils import spinner_task, recolor
-import passport
 
 
 class SignPsbtCommonFlow(Flow):
