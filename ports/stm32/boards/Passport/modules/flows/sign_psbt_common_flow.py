@@ -26,7 +26,7 @@ class SignPsbtCommonFlow(Flow):
         self.psbt = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
-        self.header = 'Transaction Details' if passport.IS_COLOR else 'Transaction Info'
+        self.header = 'Transaction Info'
 
     async def validate_psbt(self):
         from pages import ErrorPage
