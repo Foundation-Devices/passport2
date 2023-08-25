@@ -63,6 +63,10 @@ def calc_battery_percent(current, voltage):
 
 
 async def battery_adc_task():
+    import passport
+    if not passport.HAS_FUEL_GAUGE:
+        return
+
     while True:
         # Read the current values -- repeat this a number of times and average for better results
         total_current = 0
