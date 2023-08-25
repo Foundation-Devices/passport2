@@ -93,7 +93,7 @@ class MainScreen(View):
                 idx = NUM_ACCOUNT_TEXTURES
 
             overlay_name = 'IMAGE_SCREEN_OVERLAY_{}'.format(idx)
-            print('overlay_name={}'.format(overlay_name))
+            # print('overlay_name={}'.format(overlay_name))
             with LocalStyle(self.overlay) as default:
                 default.bg_img(getattr(lv, overlay_name))
                 default.radius(8)
@@ -110,7 +110,7 @@ class MainScreen(View):
                 idx = NUM_ACCOUNT_TEXTURES
 
             overlay_name = 'IMAGE_SCREEN_OVERLAY_{}'.format(idx)
-            print('overlay_name={}'.format(overlay_name))
+            # print('overlay_name={}'.format(overlay_name))
             with LocalStyle(self.overlay) as default:
                 default.bg_img(getattr(lv, overlay_name))
                 default.radius(8)

@@ -6,6 +6,8 @@ import passport
 
 if passport.HAS_FUEL_GAUGE:
     from .fuelgauge_task import fuelgauge_task
+else:
+    from .battery_adc_task import battery_adc_task
 
 from .apply_passphrase_task import apply_passphrase_task
 from .auto_shutdown_task import auto_shutdown_task
