@@ -7,7 +7,7 @@
 import lvgl as lv
 from micropython import const
 from views import View, Icon
-from styles.colors import BATTERY_FILL_COLOR, WHITE, TEXT_GREY
+from styles.colors import BATTERY_FILL_COLOR, BATTERY_FILL_BG_COLOR, WHITE
 from styles import Stylize, LocalStyle
 
 _LEFT_MARGIN = const(2)
@@ -32,7 +32,7 @@ class BatteryIndicator(View):
         self.bg_fill.set_size(_FILL_MAX_WIDTH, _FILL_HEIGHT)
         self.bg_fill.set_pos(_LEFT_MARGIN, _TOP_MARGIN)
         with Stylize(self.bg_fill) as default:
-            default.bg_color(TEXT_GREY)
+            default.bg_color(BATTERY_FILL_BG_COLOR)
 
         self.fill = View()
         self.fill.set_height(_FILL_HEIGHT)
