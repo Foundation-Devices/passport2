@@ -236,12 +236,17 @@ class UI():
         elif stay_on_same_card:
             new_card_idx = self.active_card_idx
 
+        xfp = common.settings.get('xfp')
+
         # Only add these once there is a seed
         if has_seed():
             import stash
             for i in range(len(accounts)):
                 account = accounts[i]
                 # print('account[{}]={}'.format(account, i))
+
+                if account['xfp'] != xfp:
+                    continue
 
                 account_card = {
                     'right_icon': 'ICON_BITCOIN',
