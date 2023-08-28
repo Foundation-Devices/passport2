@@ -10,7 +10,8 @@ async def save_new_account_task(on_done, account_num, account_name):
     from common import settings
 
     accounts = get_accounts()
-    accounts.append({'name': account_name, 'acct_num': account_num})
+    xfp = settings.get('xfp')
+    accounts.append({'name': account_name, 'acct_num': account_num, 'xfp': xfp})
     settings.set('accounts', accounts)
     settings.save()
     # TODO: This can fail, so may need a try/except handler here
