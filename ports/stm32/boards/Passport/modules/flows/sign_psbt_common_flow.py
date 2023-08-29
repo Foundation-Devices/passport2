@@ -25,6 +25,7 @@ class SignPsbtCommonFlow(Flow):
         self.psbt = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
+        self.header = 'Transaction Info'
 
     async def validate_psbt(self):
         from pages import ErrorPage
@@ -83,7 +84,7 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=outputs.getvalue(),
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header}
             ).show()
             if result:
                 if self.psbt.self_send:
@@ -109,7 +110,7 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=msg,
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header}
             ).show()
             if not result:
                 self.back()
@@ -129,7 +130,7 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=warnings,
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header}
             ).show()
             if not result:
                 self.back()
