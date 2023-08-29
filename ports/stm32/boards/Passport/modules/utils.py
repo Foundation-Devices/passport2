@@ -875,19 +875,19 @@ def get_accounts():
     return accounts
 
 
-def get_account_by_name(name):
+def get_account_by_name(name, xfp):
     accounts = get_accounts()
     for account in accounts:
-        if account.get('name') == name:
+        if account.get('name') == name and account.get('xfp') == xfp:
             return account
 
     return None
 
 
-def get_account_by_number(acct_num):
+def get_account_by_number(acct_num, xfp):
     accounts = get_accounts()
     for account in accounts:
-        if account.get('acct_num') == acct_num:
+        if account.get('acct_num') == acct_num and account.get('xfp') == xfp:
             return account
 
     return None
