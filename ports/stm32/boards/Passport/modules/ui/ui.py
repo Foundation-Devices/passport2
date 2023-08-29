@@ -193,8 +193,12 @@ class UI():
         # print('Setting update_cards_pending to True')
         self.update_cards_pending = True
 
-    def update_cards(
-            self, is_delete_account=False, stay_on_same_card=False, is_new_account=False, is_init=False):
+    def update_cards(self,
+                     is_delete_account=False,
+                     stay_on_same_card=False,
+                     is_new_account=False,
+                     is_init=False,
+                     stay_on_last_card=False):
         from flows import MenuFlow
         from utils import get_accounts, has_seed
         from menus import account_menu, plus_menu
@@ -245,7 +249,7 @@ class UI():
                 account = accounts[i]
                 # print('account[{}]={}'.format(account, i))
 
-                if account['xfp'] != xfp:
+                if account['xfp'] != xfp and account['acct_num'] != 0:
                     continue
 
                 account_card = {
@@ -283,6 +287,9 @@ class UI():
                 'args': {'menu': plus_menu, 'is_top_level': True}
             }
             card_descs.append(more_card)
+
+        if stay_on_last_card:
+            new_card_idx = len(card_descs) - 1
 
         if new_card_idx is None:
             new_card_idx = 1 if len(card_descs) > 1 else 0
