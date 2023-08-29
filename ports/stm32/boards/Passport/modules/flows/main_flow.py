@@ -50,7 +50,6 @@ class MainFlow(Flow):
         for extension in supported_extensions:
             old_key = 'ext.{}.{}'.format(extension['name'], 'enabled')
             if common.settings.get(old_key):
-                print("converting {} to {}".format(old_key, old_key + ".{}".format(string_xfp)))
                 common.settings.remove(old_key)
                 common.settings.set(old_key + ".{}".format(string_xfp), True)
 
