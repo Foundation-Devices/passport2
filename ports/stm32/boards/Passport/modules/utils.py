@@ -1232,11 +1232,13 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
 
 
 def make_extension_path(ext_name, ext_prop):
-    return 'ext.{}.{}'.format(ext_name, ext_prop)
+    from common import settings
+    xfp = xfp2str(settings.get('xfp'))
+    return 'ext.{}.{}.{}'.format(ext_name, ext_prop, xfp)
 
 
 def toggle_extension_enabled(ext_name):
-    from common import ui
+    from common import ui, settings
     ext_path = make_extension_path(ext_name, 'enabled')
     is_enabled = common.settings.get(ext_path, False)
     common.settings.set(ext_path, not is_enabled)
