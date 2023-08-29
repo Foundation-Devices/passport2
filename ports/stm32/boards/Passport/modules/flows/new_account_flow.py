@@ -11,6 +11,7 @@ from tasks import save_new_account_task
 from utils import get_account_by_name, get_account_by_number, get_accounts, spinner_task
 from translations import t, T
 from wallets.utils import get_next_account_num
+from common import settings
 
 
 class NewAccountFlow(Flow):
@@ -24,7 +25,8 @@ class NewAccountFlow(Flow):
         self.error = None
 
         # Suggest the next available account number to the user
-        self.account_num = get_next_account_num()
+        xfp = settings.get('xfp')
+        self.account_num = get_next_account_num(xfp)
         self.account_name = None
 
     def on_save_account_done(self, error=None):
@@ -49,7 +51,8 @@ class NewAccountFlow(Flow):
             self.account_num = int(result)
 
             # Check for existing account with this number
-            existing_account = get_account_by_number(self.account_num)
+            xfp = settings.get('xfp')
+            existing_account = get_account_by_number(self.account_num, xfp)
             if existing_account is not None:
                 await ErrorPage(text='An account named "{}" already exists with account number {}.'.format(
                     existing_account.get('name'), self.account_num)).show()
@@ -72,7 +75,8 @@ class NewAccountFlow(Flow):
             self.account_name = result
 
             # Check for existing account with this name
-            existing_account = get_account_by_name(self.account_name)
+            xfp = settings.get('xfp')
+            existing_account = get_account_by_name(self.account_name, xfp)
             if existing_account is not None:
                 await ErrorPage(text='Account ##{} already exists with the name "{}".'.format(
                     existing_account.get('acct_num'), self.account_name)).show()

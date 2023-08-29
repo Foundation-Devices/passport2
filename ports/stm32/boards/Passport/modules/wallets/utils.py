@@ -12,11 +12,11 @@ from utils import get_accounts, get_derived_keys
 
 # Dynamically find the next account number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder if we exceeded the gap limit.
-def get_next_account_num():
+def get_next_account_num(xfp):
     accts = get_accounts()
 
     acct_nums = []
-    for acct in accts:
+    for acct in (acct for acct in accts if acct['xfp'] == xfp or acct['acct_num'] == 0):
         acct_nums.append(acct['acct_num'])
 
     acct_nums.sort()
