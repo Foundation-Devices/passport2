@@ -200,7 +200,7 @@ class UI():
                      is_init=False,
                      stay_on_last_card=False):
         from flows import MenuFlow
-        from utils import get_accounts, has_seed
+        from utils import get_accounts, has_seed, is_extension_enabled
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
         from constants import MAX_ACCOUNTS
@@ -272,7 +272,7 @@ class UI():
             # Add special accounts
 
             for extension in supported_extensions:
-                if common.settings.get('ext.{}.enabled'.format(extension['name']), False):
+                if is_extension_enabled(extension['name']):
                     if len(stash.bip39_passphrase) > 0:
                         extension['card']['icon'] = 'ICON_PASSPHRASE'
                     else:
