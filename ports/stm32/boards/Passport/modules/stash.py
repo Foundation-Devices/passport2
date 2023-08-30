@@ -54,7 +54,7 @@ class SecretStash:
             # typical: seed bits without checksum bits
             vlen = len(seed_bits)
 
-            # TODO: Do we support all of these?s
+            # TODO: Do we support all of these?
             assert vlen in [16, 24, 32]
             nv[0] = 0x80 | ((vlen // 8) - 2)
             nv[1:1 + vlen] = seed_bits

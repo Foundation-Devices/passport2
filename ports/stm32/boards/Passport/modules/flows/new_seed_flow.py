@@ -17,6 +17,7 @@ class NewSeedFlow(Flow):
         self.autobackup = autobackup
         self.show_words = show_words
         self.full_backup = full_backup
+        self.seed_length = None
 
     async def confirm_generate(self):
         # Ensure we don't overwrite an existing seed
@@ -27,12 +28,28 @@ class NewSeedFlow(Flow):
 
         result = await QuestionPage(text='Generate a new seed phrase now?').show()
         if result:
-            self.goto(self.generate_seed)
+            self.goto(self.pick_length)
         else:
             self.set_result(False)
 
+    async def pick_length(self):
+        from public_constants import SEED_LENGTHS
+        from pages import ChooserPage
+
+        options = []
+        for length in SEED_LENGTHS:
+            options.append({'label': '{} Word Seed'.format(length), 'value': length})
+
+        self.seed_length = await ChooserPage(card_header={'title': 'Seed Length'}, options=options).show()
+        if not self.seed_length:
+            self.back()
+        else:
+            self.goto(self.generate_seed)
+
     async def generate_seed(self):
-        (seed, error) = await spinner_task('Generating Seed', new_seed_task)
+        (seed, error) = await spinner_task('Generating Seed',
+                                           new_seed_task,
+                                           args=[self.seed_length])
         if error is None:
             self.seed = seed
             self.goto(self.save_seed)
