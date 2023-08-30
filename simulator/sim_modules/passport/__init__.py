@@ -33,10 +33,16 @@ class Noise:
 
 class Powermon:
     def __init__(self):
-        pass
+        self.level = 2350
+        self.increment = -25
 
     def read(self):
-        return (0, 3500)
+        result = (0, self.level)
+        self.level += self.increment
+        if self.level <= 1750 or self.level >= 2350:
+            self.increment = -self.increment
+        # print('Powermon simulator: {}'.format(result))
+        return result
 
 
 class System:
