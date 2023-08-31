@@ -12,25 +12,21 @@ from translations import t, T
 
 class NewSeedFlow(Flow):
     def __init__(self, refresh_cards_when_done=False, autobackup=True, show_words=False, full_backup=False):
-        super().__init__(initial_state=self.confirm_generate, name='NewSeedFlow')
+        super().__init__(initial_state=self.check_for_seed, name='NewSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.autobackup = autobackup
         self.show_words = show_words
         self.full_backup = full_backup
         self.seed_length = None
 
-    async def confirm_generate(self):
+    async def check_for_seed(self):
         # Ensure we don't overwrite an existing seed
         if has_secrets():
             await ErrorPage(text='Passport already has a seed!').show()
             self.set_result(False)
             return
 
-        result = await QuestionPage(text='Generate a new seed phrase now?').show()
-        if result:
-            self.goto(self.pick_length)
-        else:
-            self.set_result(False)
+        self.goto(self.pick_length)
 
     async def pick_length(self):
         from public_constants import SEED_LENGTHS
@@ -38,13 +34,20 @@ class NewSeedFlow(Flow):
 
         options = []
         for length in SEED_LENGTHS:
-            options.append({'label': '{} Word Seed'.format(length), 'value': length})
+            options.append({'label': '{} Words'.format(length), 'value': length})
 
         self.seed_length = await ChooserPage(card_header={'title': 'Seed Length'}, options=options).show()
         if not self.seed_length:
-            self.back()
+            self.set_result(False)
         else:
+            self.goto(self.confirm_generate)
+
+    async def confirm_generate(self):
+        result = await QuestionPage(text='Generate a new seed phrase now?').show()
+        if result:
             self.goto(self.generate_seed)
+        else:
+            self.back()
 
     async def generate_seed(self):
         (seed, error) = await spinner_task('Generating Seed',
