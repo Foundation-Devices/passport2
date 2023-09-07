@@ -16,7 +16,8 @@ def get_next_account_num(xfp):
     accts = get_accounts()
 
     acct_nums = []
-    for acct in (acct for acct in accts if acct['xfp'] == xfp or acct['acct_num'] == 0):
+    current_accounts = [acct for acct in accts if acct['xfp'] == xfp or acct['acct_num'] == 0]
+    for acct in current_accounts:
         acct_nums.append(acct['acct_num'])
 
     acct_nums.sort()
