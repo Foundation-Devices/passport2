@@ -39,7 +39,7 @@ class SelectSetupModeFlow(Flow):
         from pages import InfoPage, ShutdownPage
 
         result = await InfoPage(
-            text='Make sure you are in a quiet and secure place with access to a pen, paper and the internet.',
+            text='Make sure you are in a quiet and secure place, with access to a pen, paper, and the internet.',
             left_micron=microns.Shutdown,
             right_micron=microns.Forward).show()
         if result:
