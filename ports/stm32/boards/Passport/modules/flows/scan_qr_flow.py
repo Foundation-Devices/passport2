@@ -17,7 +17,7 @@ class ScanQRFlow(Flow):
                  explicit_type=None,
                  data_description=None,
                  max_frames=None,
-                 failure_message=None):
+                 failure_message=None,
                  pass_error=False):
         """
         Initialize the scan QR flow.
