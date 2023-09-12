@@ -113,6 +113,10 @@ STATIC mp_obj_t modtcc_bech32_encode(size_t n_args, const mp_obj_t *args) {
     const uint32_t segwit_version = mp_obj_int_get_checked(args[1]);
     uint32_t       bech32_version = BECH32_ENCODING_BECH32;
 
+    if (segwit_version > 0) {
+        bech32_version = BECH32_ENCODING_BECH32M;
+    }
+
     if (n_args == 4) {
         bech32_version = mp_obj_int_get_checked(args[3]);
     }

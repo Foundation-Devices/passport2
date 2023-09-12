@@ -12,7 +12,7 @@
 import trezorcrypto
 import tcc
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
-from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED
+from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED, AFC_BECH32M
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
@@ -116,6 +116,8 @@ class ChainsBase:
         if addr_fmt & AFC_BECH32:
             # bech32 encoded segwit p2pkh
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
+        elif addr_fmt & AFC_BECH32M:
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, raw)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH

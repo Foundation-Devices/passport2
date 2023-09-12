@@ -24,6 +24,7 @@ async def search_for_address_task(
     import stash
     from errors import Error
     from uasyncio import sleep_ms
+    from ubinascii import hexlify as b2a_hex
 
     try:
         with stash.SensitiveValues() as sv:
@@ -50,9 +51,11 @@ async def search_for_address_task(
                     addr_path = '{}/{}/{}'.format(path, is_change, curr_idx)  # Zero for non-change address
                     # print('Singlesig: addr_path={}'.format(addr_path))
                     node = sv.derive_path(addr_path)
+                    print(b2a_hex(node.public_key()))
                     curr_address = sv.chain.address(node, addr_type)
                     # print('           curr_idx={}: path={} addr_type={} curr_address = {}'.format(curr_idx, addr_path,
                     #       addr_type, curr_address))
+                    print("path: {}, address: {}".format(addr_path, curr_address))
                     if curr_address == address:
                         await on_done(curr_idx, addr_path, None)
                         return
