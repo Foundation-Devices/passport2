@@ -27,8 +27,8 @@ class RestoreSeedFlow(Flow):
         from pages import ChooserPage
         from data_codecs.qr_type import QRType
 
-        options = [{'label': '24 words', 'value': 24},
-                   {'label': '12 words', 'value': 12},
+        options = [{'label': '12 words', 'value': 12},
+                   {'label': '24 words', 'value': 24},
                    {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
                    {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
