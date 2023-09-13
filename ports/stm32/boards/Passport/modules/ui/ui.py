@@ -249,7 +249,7 @@ class UI():
                 account = accounts[i]
                 # print('account[{}]={}'.format(account, i))
 
-                if account['xfp'] != xfp and account['acct_num'] != 0:
+                if account.get('xfp', xfp) != xfp and account['acct_num'] != 0:
                     continue
 
                 account_card = {
