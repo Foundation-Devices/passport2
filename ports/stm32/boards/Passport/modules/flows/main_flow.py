@@ -53,6 +53,8 @@ class MainFlow(Flow):
                 common.settings.remove(old_key)
                 common.settings.set(old_key + ".{}".format(string_xfp), True)
 
+        common.settings.save()
+
         # Create initial cards by calling ui.update_cards()
         common.ui.update_cards(is_init=True)
 
