@@ -6,12 +6,12 @@
 from utils import get_accounts
 
 
-async def rename_account_task(on_done, account_num, account_name):
+async def rename_account_task(on_done, account_num, account_name, xfp):
     from common import settings
 
     accounts = get_accounts()
     for account in accounts:
-        if account.get('acct_num') == account_num:
+        if account.get('acct_num') == account_num and account.get('xfp') == xfp:
             account['name'] = account_name
             break
 
