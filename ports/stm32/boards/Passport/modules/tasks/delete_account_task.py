@@ -6,11 +6,11 @@
 from utils import get_accounts
 
 
-async def delete_account_task(on_done, account_num):
+async def delete_account_task(on_done, account_num, xfp):
     from common import settings
 
     accounts = get_accounts()
-    accounts = list(filter(lambda acct: acct.get('acct_num') != account_num, accounts))
+    accounts = list(filter(lambda acct: (acct.get('acct_num') != account_num or acct.get('xfp') != xfp), accounts))
     settings.set('accounts', accounts)
     settings.save()
 
