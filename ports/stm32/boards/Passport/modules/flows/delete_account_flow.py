@@ -42,8 +42,11 @@ class DeleteAccountFlow(Flow):
             self.set_result(False)
 
     async def do_delete(self):
+        from common import settings
+
         (error,) = await spinner_task('Deleting Account', delete_account_task,
-                                      args=[self.account.get('acct_num')])
+                                      args=[self.account.get('acct_num'),
+                                            settings.get('xfp')])
         if error is None:
             import common
             from utils import start_task
