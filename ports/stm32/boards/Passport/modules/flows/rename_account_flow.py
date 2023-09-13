@@ -29,6 +29,8 @@ class RenameAccountFlow(Flow):
         super().__init__(initial_state=initial_state, name='RenameAccountFLow')
 
     async def ask_for_name(self):
+        from common import settings
+
         name = self.account.get('name') if self.new_account_name is None else self.new_account_name
         result = await TextInputPage(initial_text=name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -38,7 +40,7 @@ class RenameAccountFlow(Flow):
             self.new_account_name = result
 
             # Check for existing account with this name
-            existing_account = get_account_by_name(self.new_account_name)
+            existing_account = get_account_by_name(self.new_account_name, settings.get('xfp'))
             if existing_account is not None:
                 await ErrorPage(text='Account #{} already exists with the name "{}".'.format(
                     existing_account.get('acct_num'), self.new_account_name)).show()
@@ -49,9 +51,12 @@ class RenameAccountFlow(Flow):
             self.set_result(False)
 
     async def do_rename(self):
-        from common import ui
+        from common import ui, settings
+
         (error,) = await spinner_task('Renaming account', rename_account_task,
-                                      args=[self.account.get('acct_num'), self.new_account_name])
+                                      args=[self.account.get('acct_num'),
+                                            self.new_account_name,
+                                            settings.get('xfp')])
         if error is None:
             import common
             from utils import start_task
