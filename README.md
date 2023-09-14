@@ -35,7 +35,7 @@ Code specific to Passport is included in the following folders:
         -   [`add-secrets`](ports/stm32/boards/Passport/tools/add-secrets) - Simple tool for Foundation developers to append Secure Element secrets to the bootloader when testing new versions.
         -   [`cosign`](ports/stm32/boards/Passport/tools/cosign) - A C-based utility that implements the code signing that keeps Passport's firmware safe.
         -   [`pubkey-to-c`](ports/stm32/boards/Passport/tools/pubkey-to-c) - A C-based utility that converts a pubkey to a C data structure for inclusion in the firmware and bootloader.
-        -   [`se_config_gen`](ports/stm32/boards/Passport/tools/se_config_gen) - Tool for specifying how Passport will use the slots of the Secure Element and generating the configuration data to pass to the chip during provisioning.  The conriguration gets locked down during provisioning and cannot be changed.
+        -   [`se_config_gen`](ports/stm32/boards/Passport/tools/se_config_gen) - Tool for specifying how Passport will use the slots of the Secure Element and generating the configuration data to pass to the chip during provisioning.  The configuration gets locked down during provisioning and cannot be changed.
         -   [`version_info`](ports/stm32/boards/Passport/tools/version_info) - A simple bash script for creating a date and version number available in C.
         -   [`word_list_gen`](ports/stm32/boards/Passport/tools/word_list_gen) - Simple utility for creating optimized word lookup metadata for BIP-39 and bytewords.
 
