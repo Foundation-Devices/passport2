@@ -10,7 +10,9 @@
 #include "lv_obj.h"
 #include "lv_indev.h"
 #include "lv_disp.h"
+#if LV_TOUCHSCREEN
 #include "lv_indev_scroll.h"
+#endif
 
 /*********************
  *      DEFINES
@@ -419,10 +421,12 @@ bool lv_obj_is_scrolling(const lv_obj_t * obj)
 
 void lv_obj_update_snap(lv_obj_t * obj, lv_anim_enable_t anim_en)
 {
+    #if LV_TOUCHSCREEN
     lv_obj_update_layout(obj);
     lv_point_t p;
     lv_indev_scroll_get_snap_dist(obj, &p);
     lv_obj_scroll_by(obj, p.x, p.y, anim_en);
+    #endif
 }
 
 void lv_obj_get_scrollbar_area(lv_obj_t * obj, lv_area_t * hor_area, lv_area_t * ver_area)
