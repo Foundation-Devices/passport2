@@ -7,6 +7,12 @@ assignees: ''
 
 ---
 
+<!--
+SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 ### **Description:**
 
 [Describe the new feature or improvement you would like to see in the Passport firmware. Provide as much detail as possible about the functionality, use cases, and how it would benefit users.]
