@@ -27,7 +27,7 @@ Passport uses the following key components:
 
 * STMicroelectronics STM32H753 microcontroller. Our open source MicroPython code runs on this processor. This is the only chip in Passport that executes code, and we know 100% of the code running on this chip.<br/>
 
-* Microchip ATECC608A secure element. This security chip is explicitly designed to safeguard private keys, but is simple enough that it does not execute any code. We use the 608a primarily for its secure key storage slots.<br/>
+* Microchip ATECC608B secure element. This security chip is explicitly designed to safeguard private keys, but is simple enough that it does not execute any code. We use the 608B primarily for its secure key storage slots.<br/>
 
 * Sharp LS018B7DH02 memory display. In addition to being ultra low power, this screen has its circuitry etched directly into glass instead of using an embedded processor. Its circuitry can be visually inspected, and is therefore considered tamper-evident.<br/>
 
@@ -58,7 +58,7 @@ The following definitions are used in the descriptions in the remainder of this 
 
 * **RDP** - An acronym for **R**ea**D**-out **P**rotection, which is a security feature of STM32 microprocessors which can prevent attackers from accessing the MCU using a JTAG debugger.<br/>
 
-* **Secure Element** - A security ASIC that provides secure storage and retrieval of secret data, also allowing for supply chain attestations, PKI support and other security-related hardware functions. Passport uses the Microchip ATECC608A Secure Element.
+* **Secure Element** - A security ASIC that provides secure storage and retrieval of secret data, also allowing for supply chain attestations, PKI support and other security-related hardware functions. Passport uses the Microchip ATECC608B Secure Element.
 
 * **XFP** - The e**X**tended **F**inger**P**rint is obtained from the first 4 bytes of the RIPEMD160 hash of the SHA256 hash of a public key.  This is usually the master public key, resulting in what is sometimes referred to as the Master XFP. An XFP is just a shorthand way of identifying a wallet or a signer in a multisig quorum.  An XFP is typically formatted in hexadecimal, for example, 0xA1B2C3D4.  Note that some wallets byte-reverse the XFP, so 0xA1B2C3D4 is sometimes displayed as 0xD4C3B2A1.
 
@@ -203,13 +203,13 @@ The Memory Protection Unit (MPU) is used to restrict access to various regions o
 NOTE: Since no unsigned code can be loaded onto the device, these features are not strictly necessary, but provide additional defense-in-depth.
 
 ## 9. Secure Element Slot Configuration
-Passport uses the ATECC608A Secure Element chip, which contains 16 slots that can be configured in various ways. Reading from and writing to some of the slots in Passport is configured so that it requires first proving knowledge of the value in another slot.
+Passport uses the ATECC608B Secure Element chip, which contains 16 slots that can be configured in various ways. Reading from and writing to some of the slots in Passport is configured so that it requires first proving knowledge of the value in another slot.
 
 For example, in order to update the Last Login Counter or the PIN itself, you must prove that you know the PIN. Other slots are completely unreadable but can be used internally by the Secure Element in combination with some MAC (Message Authentication Code) checks that are frequently performed.
 
 <p align="center">
-    <img src="slotconfig.png" alt="ATECC608A Secure Element Slot Configuration"><br/>
-    <i>Figure 1 - ATECC608A Secure Element Slot Configuration</i>
+    <img src="slotconfig.png" alt="ATECC608B Secure Element Slot Configuration"><br/>
+    <i>Figure 1 - ATECC608B Secure Element Slot Configuration</i>
 </p>
 
 
