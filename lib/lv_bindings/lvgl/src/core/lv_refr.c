@@ -19,7 +19,7 @@
 #include "../font/lv_font_fmt_txt.h"
 
 #if LV_USE_PERF_MONITOR || LV_USE_MEM_MONITOR
-    #include "../widgets/lv_label.h"
+#include "../widgets/lv_label.h"
 #endif
 
 /*********************
@@ -807,7 +807,7 @@ static void lv_refr_obj(lv_obj_t * obj, const lv_area_t * mask_ori_p)
     }
 }
 
-static void draw_buf_rotate_180(lv_disp_drv_t * drv, lv_area_t * area, lv_color_t * color_p)
+#ifdef LV_ROTATE_DRAW_BUF
 {
     lv_coord_t area_w = lv_area_get_width(area);
     lv_coord_t area_h = lv_area_get_height(area);
@@ -983,6 +983,7 @@ static void draw_buf_rotate(lv_area_t * area, lv_color_t * color_p)
         if(rot_buf != NULL) lv_mem_buf_release(rot_buf);
     }
 }
+#endif
 
 /**
  * Flush the content of the draw buffer
@@ -1010,11 +1011,14 @@ static void draw_buf_flush(void)
     else draw_buf->flushing_last = 0;
 
     if(disp->driver->flush_cb) {
+#ifdef LV_ROTATE_DRAW_BUF
         /*Rotate the buffer to the display's native orientation if necessary*/
         if(disp->driver->rotated != LV_DISP_ROT_NONE && disp->driver->sw_rotate) {
             draw_buf_rotate(&draw_buf->area, draw_buf->buf_act);
         }
-        else {
+        else
+#endif
+        {
             call_flush_cb(disp->driver, &draw_buf->area, color_p);
         }
     }
@@ -1063,4 +1067,3 @@ static void mem_monitor_init(mem_monitor_t * _mem_monitor)
     _mem_monitor->mem_label = NULL;
 }
 #endif
-

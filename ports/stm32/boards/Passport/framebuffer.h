@@ -7,7 +7,9 @@
 
 #include <stdint.h>
 
+#ifndef FACTORY_TEST
 #include "lvgl/lvgl.h"
+#endif
 
 #if defined(SCREEN_MODE_MONO) && defined(SCREEN_MODE_COLOR)
 #error "SCREEN_MODE_MONO and SCREEN_MODE_COLOR cannot be used at the same time"
