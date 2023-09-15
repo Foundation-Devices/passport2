@@ -146,7 +146,7 @@
 #define MICROPY_PY_UCTYPES          (1)
 #endif
 #ifndef MICROPY_PY_UZLIB
-#define MICROPY_PY_UZLIB (0)
+#define MICROPY_PY_UZLIB (1)
 #endif
 #ifndef MICROPY_PY_UJSON
 #define MICROPY_PY_UJSON            (1)
