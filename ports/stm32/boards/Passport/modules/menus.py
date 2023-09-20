@@ -193,7 +193,7 @@ def nostr_menu():
 
 
 def key_manager_menu():
-    from utils import get_derived_keys, are_hidden_keys_showing
+    from utils import get_derived_keys, are_hidden_keys_showing, escape_text
     from derived_key import get_key_type_from_tn
     from common import settings
 
@@ -210,7 +210,7 @@ def key_manager_menu():
             if not key_type:
                 continue
 
-            title = "{} ({})".format(key['name'], key['index'])
+            title = "{} ({})".format(escape_text(key['name']), key['index'])
 
             result.append({'icon': key_type['icon'],
                            'label': title,
@@ -297,6 +297,7 @@ def multisig_menu():
     from multisig_wallet import MultisigWallet
     from pages import MultisigPolicySettingPage, ErrorPage
     from flows import ImportMultisigWalletFromMicroSDFlow, ImportMultisigWalletFromQRFlow
+    from utils import escape_text
 
     if not MultisigWallet.exists():
         items = [{'icon': 'ICON_TWO_KEYS', 'label': '(None setup yet)', 'page': ErrorPage,
@@ -304,7 +305,7 @@ def multisig_menu():
     else:
         items = []
         for ms in MultisigWallet.get_all():
-            nice_name = '%d/%d: %s' % (ms.M, ms.N, ms.name)
+            nice_name = '%d/%d: %s' % (ms.M, ms.N, escape_text(ms.name))
             items.append({
                 'icon': 'ICON_TWO_KEYS',
                 'label': nice_name,

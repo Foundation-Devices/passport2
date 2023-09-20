@@ -1434,4 +1434,8 @@ def is_key_hidden(key):
     return updated['hidden']
 
 
+def escape_text(text):
+    return text.replace("#", "##")
+
+
 # EOF

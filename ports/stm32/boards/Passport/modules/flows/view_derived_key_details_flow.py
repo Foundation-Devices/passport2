@@ -17,6 +17,7 @@ class ViewDerivedKeyDetailsFlow(Flow):
         from pages import LongTextPage, ErrorPage
         from derived_key import get_key_type_from_tn
         import microns
+        from utils import escape_text
 
         key_type = get_key_type_from_tn(self.key['tn'])
 
@@ -30,7 +31,7 @@ class ViewDerivedKeyDetailsFlow(Flow):
                                           recolor(HIGHLIGHT_TEXT_HEX, 'Key Index'),
                                           self.key['index'])
 
-        await LongTextPage(card_header={'title': self.key['name']},
+        await LongTextPage(card_header={'title': escape_text(self.key['name'])},
                            text=msg,
                            left_micron=None,
                            right_micron=microns.Checkmark,

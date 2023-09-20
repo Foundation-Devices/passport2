@@ -29,12 +29,12 @@ class ImportMultisigWalletFlow(Flow):
 
     async def show_details(self):
         from errors import Error
-        from utils import spinner_task
+        from utils import spinner_task, escape_text
         from tasks import save_multisig_wallet_task
 
         msg = self.ms.format_details()
 
-        result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
+        result = await LongTextPage(card_header={'title': escape_text(self.ms.name)}, text=msg, centered=True).show()
         if not result:
             self.back()
         else:
