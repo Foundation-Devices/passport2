@@ -614,7 +614,7 @@ class MultisigWallet:
                     ln = ln[1:]
                 else:
                     continue
-            elif comm != -1:
+            elif comm != -1 and ln[0:4] != "Name":
                 if not ln[comm + 1:comm + 2].isdigit():
                     ln = ln[0:comm]
 
@@ -944,7 +944,7 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
         return derivs, dsum
 
     def format_overview(self, importing=True):
-        from utils import recolor
+        from utils import recolor, escape_text
         from styles.colors import HIGHLIGHT_TEXT_HEX, COPPER_HEX
 
         M, N = self.M, self.N
@@ -1002,7 +1002,7 @@ wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.jo
             M=M,
             N=N,
             name_title=recolor(HIGHLIGHT_TEXT_HEX, 'Wallet Name'),
-            name=self.name,
+            name=escape_text(self.name),
             policy_title=recolor(HIGHLIGHT_TEXT_HEX, 'Policy:'),
             exp=exp,
             addr_title=recolor(HIGHLIGHT_TEXT_HEX, 'Addresses'),

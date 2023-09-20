@@ -7,6 +7,7 @@ import lvgl as lv
 from pages import LongTextPage
 import microns
 from styles.colors import HIGHLIGHT_TEXT_HEX
+from utils import escape_text
 
 
 class AccountDetailsPage(LongTextPage):
@@ -45,7 +46,7 @@ class AccountDetailsPage(LongTextPage):
 {deriv_title}
 {deriv}'''.format(
             acct_name_title=recolor(HIGHLIGHT_TEXT_HEX, 'Account Name'),
-            acct_name=self.account.get('name'),
+            acct_name=escape_text(self.account.get('name')),
             acct_num_title=recolor(HIGHLIGHT_TEXT_HEX, 'Account Number'),
             acct_num=self.account.get('acct_num'),
             deriv_title=recolor(HIGHLIGHT_TEXT_HEX, 'Derivation Path'),
