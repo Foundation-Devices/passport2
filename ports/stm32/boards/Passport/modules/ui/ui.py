@@ -200,7 +200,7 @@ class UI():
                      is_init=False,
                      stay_on_last_card=False):
         from flows import MenuFlow
-        from utils import get_accounts, has_seed, is_extension_enabled
+        from utils import get_accounts, has_seed, is_extension_enabled, escape_text
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
         from constants import MAX_ACCOUNTS
@@ -257,7 +257,7 @@ class UI():
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': 'ICON_FOLDER', 'fg_color': get_account_fg(account)},
-                    'title': account.get('name'),
+                    'title': escape_text(account.get('name')),
                     'page_micron': microns.PageDot,
                     'bg_color': get_account_bg(account),
                     'flow': MenuFlow,
