@@ -31,7 +31,7 @@ version = "0.7"
 features = ["cm7", "critical-section-single-core"]
 
 [features]
-default = []
+default = ["std"]
 std = [
     "critical-section/std",
     "rand/std",
