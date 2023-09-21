@@ -1,0 +1,10 @@
+[package]
+name = "passport-platform"
+version = "0.1.0"
+edition = "2021"
+
+[target.'cfg(all(target_family = "unix"))'.dependencies]
+passport-platform-unix = { path = "unix" }
+
+[target.'cfg(all(target_arch = "arm", target_os = "none"))'.dependencies]
+passport-platform-stm32 = { path = "stm32" }

@@ -122,15 +122,11 @@ dependencies = [
 name = "foundation"
 version = "0.1.0"
 dependencies = [
- "cortex-m",
- "critical-section",
  "foundation-ur",
  "foundation-urtypes",
  "heapless",
  "minicbor",
- "once_cell",
- "rand",
- "rand_core",
+ "passport-platform",
  "secp256k1",
  "uuid",
 ]
@@ -273,6 +269,35 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 dependencies = [
  "atomic-polyfill",
  "critical-section",
+]
+
+[[package]]
+name = "passport-platform"
+version = "0.1.0"
+dependencies = [
+ "passport-platform-stm32",
+ "passport-platform-unix",
+]
+
+[[package]]
+name = "passport-platform-stm32"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "critical-section",
+ "embedded-hal",
+ "once_cell",
+ "rand",
+ "rand_core",
+ "secp256k1",
+]
+
+[[package]]
+name = "passport-platform-unix"
+version = "0.1.0"
+dependencies = [
+ "rand",
+ "secp256k1",
 ]
 
 [[package]]

@@ -2,7 +2,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [workspace]
-members = ["bindings"]
+members = [
+    "bindings",
+    "platform",
+    "platform/unix",
+    "platform/stm32",
+]
 
 [profile.release]
 lto = "fat"

@@ -1,0 +1,8 @@
+[package]
+name = "passport-platform-unix"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+secp256k1 = { version = "0.27", features = ["global-context"] }

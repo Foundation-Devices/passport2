@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "passport-platform-stm32"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-m = { version = "0.7", features = ["cm7", "critical-section-single-core"] }
+critical-section = "1"
+embedded-hal = "0.2.7"
+once_cell = { version = "1", features = ["critical-section"], default-features = false }
+rand = { version = "0.8.5", default-features = false }
+rand_core = { version = "0.6.4", default-features = false }
+secp256k1 = { version = "0.27", features = ["rand"], default-features = false }

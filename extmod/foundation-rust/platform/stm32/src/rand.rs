@@ -1,22 +1,36 @@
 // SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Interface to Passport random number generator.
+//! # Passport random number generator.
+//!
+//! This implements the interface for usage with [`rand`] to the Passport'so
+//! random number generator.
 
 use core::{ffi::c_void, num::NonZeroU32};
 
-use rand::{CryptoRng, Error, RngCore};
+use crate::ffi::{
+    noise_disable, noise_enable, noise_get_random_bytes, NOISE_ALL,
+};
 
-const ERROR_CODE_FATAL: u32 = 1;
+pub const ERROR_CODE_FATAL: u32 = 1;
+
+/// Constructs a Passport RNG.
+pub fn passport_rng() -> PassportRng {
+    PassportRng { __private: () }
+}
 
 /// Passport cryptographically secure random number generator.
 ///
 /// Uses the board's avalanche noise source, the MCU RNG and the
 /// hardware RNG.
+///
+/// Created with [`passport_rng`].
 #[derive(Debug, Clone, Copy)]
-pub struct PassportRng;
+pub struct PassportRng {
+    __private: (),
+}
 
-impl RngCore for PassportRng {
+impl rand_core::RngCore for PassportRng {
     fn next_u32(&mut self) -> u32 {
         rand_core::impls::next_u32_via_fill(self)
     }
@@ -29,7 +43,10 @@ impl RngCore for PassportRng {
         self.try_fill_bytes(dest).expect("fatal Passport RNG error");
     }
 
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+    fn try_fill_bytes(
+        &mut self,
+        dest: &mut [u8],
+    ) -> Result<(), rand_core::Error> {
         const MIN_LEN: usize = 4;
 
         // 4 bytes at least are required to fill.
@@ -40,16 +57,18 @@ impl RngCore for PassportRng {
             (dest.as_mut_ptr() as *mut c_void, dest.len())
         };
 
-        unsafe { noise_enable() };
-        let succeed =
-            unsafe { noise_get_random_bytes(NOISE_ALL, buf, buf_len) };
+        let succeed = unsafe {
+            noise_enable();
+            let ret = noise_get_random_bytes(NOISE_ALL, buf, buf_len);
+            noise_disable();
+            ret
+        };
+
         if !succeed {
-            unsafe { noise_disable() };
-            return Err(Error::from(
+            return Err(rand_core::Error::from(
                 NonZeroU32::new(ERROR_CODE_FATAL).unwrap(),
             ));
         }
-        unsafe { noise_disable() };
 
         if dest.len() < MIN_LEN {
             dest.copy_from_slice(&tmp[..dest.len()]);
@@ -59,20 +78,4 @@ impl RngCore for PassportRng {
     }
 }
 
-impl CryptoRng for PassportRng {}
-
-const NOISE_AVALANCHE_SOURCE: u8 = 1 << 0;
-const NOISE_MCU_RNG_SOURCE: u8 = 1 << 1;
-const NOISE_SE_RNG_SOURCE: u8 = 1 << 2;
-const NOISE_ALL: u8 =
-    NOISE_AVALANCHE_SOURCE | NOISE_MCU_RNG_SOURCE | NOISE_SE_RNG_SOURCE;
-
-extern "C" {
-    fn noise_enable();
-    fn noise_disable();
-    fn noise_get_random_bytes(
-        sources: u8,
-        buf: *mut c_void,
-        buf_len: usize,
-    ) -> bool;
-}
+impl rand_core::CryptoRng for PassportRng {}

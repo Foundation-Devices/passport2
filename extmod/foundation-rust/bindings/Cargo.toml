@@ -15,25 +15,14 @@ name = "sizes"
 required-features = ["std"]
 
 [dependencies]
-critical-section = "1"
 foundation-ur = { branch = "main", git = "https://github.com/Foundation-Devices/foundation-rs", default-features = false }
 foundation-urtypes = { branch = "main", git = "https://github.com/Foundation-Devices/foundation-rs", default-features = false }
 heapless = { version = "0.8", git = "https://github.com/japaric/heapless", default-features = false }
 minicbor = { version = "0.19", default-features = false }
-once_cell = { version = "1", features = ["critical-section"], default-features = false }
-rand_core = { version = "0.6.4", default-features = false }
-rand = { version = "0.8.5", default-features = false }
+passport-platform = { path = "../platform" }
 secp256k1 = { version = "0.27", features = ["rand"], default-features = false }
 uuid = { version = "1", default-features = false }
 
-[target.'cfg(target_arch = "arm")'.dependencies.cortex-m]
-version = "0.7"
-features = ["cm7", "critical-section-single-core"]
-
 [features]
 default = ["std"]
-std = [
-    "critical-section/std",
-    "rand/std",
-    "rand/std_rng",
-]
+std = []

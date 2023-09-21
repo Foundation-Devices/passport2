@@ -1,21 +1,8 @@
 // SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use once_cell::sync::Lazy;
-use secp256k1::{
-    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1,
-};
-
-/// cbindgen:ignore
-static mut PRE_ALLOCATED_CTX_BUF: [AlignedType; 20] = [AlignedType::ZERO; 20];
-
-/// cbindgen:ignore
-static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
-    Lazy::new(|| {
-        let buf = unsafe { &mut PRE_ALLOCATED_CTX_BUF };
-        Secp256k1::preallocated_new(buf)
-            .expect("the pre-allocated context buf should have enough space")
-    });
+use passport_platform::{rand, secp256k1::SECP256K1};
+use secp256k1::{KeyPair, Message};
 
 /// Computes a Schnorr signature over the message `data`.
 ///
@@ -28,21 +15,14 @@ pub extern "C" fn secp256k1_sign_schnorr(
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
 ) {
-    let keypair = KeyPair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+    let keypair = KeyPair::from_seckey_slice(&SECP256K1, secret_key)
         .expect("invalid secret key");
 
     let msg = Message::from_slice(data).unwrap();
-    let sig =
-        PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
+    let sig = SECP256K1.sign_schnorr_with_rng(
+        &msg,
+        &keypair,
+        &mut rand::passport_rng(),
+    );
     signature.copy_from_slice(sig.as_ref());
-}
-
-#[cfg(target_arch = "arm")]
-fn rng() -> crate::rand::PassportRng {
-    crate::rand::PassportRng
-}
-
-#[cfg(not(target_arch = "arm"))]
-fn rng() -> rand::rngs::ThreadRng {
-    rand::thread_rng()
 }
