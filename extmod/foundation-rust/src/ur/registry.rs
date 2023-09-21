@@ -1,70 +1,28 @@
 // SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use crate::ur::UR_Error;
 use core::{ffi::c_char, num::NonZeroU32, slice, str};
-use ur::registry::{
-    crypto_hdkey::{
-        BaseHDKey, CoinType, CryptoCoinInfo, CryptoKeypath, DerivedKey,
-        PathComponent,
-    },
-    crypto_request::Empty,
-    BaseValue,
-};
-use ur_foundation::{
+
+use foundation_urtypes::{
     passport::Model,
-    registry::passport::{PassportRequest, PassportResponse},
+    registry::PassportRequest,
+    registry::{
+        CoinType, CryptoCoinInfo, CryptoHDKey, CryptoKeypath, DerivedKey,
+        PassportResponse, PathComponents,
+    },
     supply_chain_validation::{Challenge, Solution},
-    ur,
+    value::Value,
 };
+
 use uuid::Uuid;
+
+use crate::ur::UR_Error;
 
 /// `mainnet` network.
 pub const UR_NETWORK_MAINNET: u32 = 0;
 
 /// `testnet` network.
 pub const UR_NETWORK_TESTNET: u32 = 1;
-
-/// Maximum number of components that a `crypto-keypath` can have.
-pub const UR_MAX_PATH_COMPONENTS: usize = 4;
-
-/// cbindgen:ignore
-type PathComponents = heapless::Vec<PathComponent, UR_MAX_PATH_COMPONENTS>;
-/// cbindgen:ignore
-type StandardValue<'a> = BaseValue<'a, Empty, PathComponents>;
-
-/// cbindgen:ignore
-#[derive(Debug)]
-pub enum Value<'a> {
-    Standard(StandardValue<'a>),
-    PassportRequest(PassportRequest),
-    PassportResponse(PassportResponse<'a>),
-}
-
-impl<'a> Value<'a> {
-    pub fn encode<W: minicbor::encode::Write>(
-        &self,
-        w: W,
-    ) -> Result<(), minicbor::encode::Error<W::Error>> {
-        match self {
-            Value::Standard(ref standard) => minicbor::encode(standard, w),
-            Value::PassportRequest(ref passport_request) => {
-                minicbor::encode(passport_request, w)
-            }
-            Value::PassportResponse(ref passport_response) => {
-                minicbor::encode(passport_response, w)
-            }
-        }
-    }
-
-    pub fn ur_type(&self) -> &'static str {
-        match self {
-            Value::Standard(value) => value.ur_type(),
-            Value::PassportRequest(_) => "crypto-request",
-            Value::PassportResponse(_) => "crypto-response",
-        }
-    }
-}
 
 /// A uniform resource.
 #[repr(C)]
@@ -90,34 +48,25 @@ impl UR_Value {
         ur_type: &str,
         message: &[u8],
     ) -> Result<Self, UR_Error> {
-        let value = match ur_type {
-            "crypto-request" => Value::PassportRequest(
-                minicbor::decode(message).map_err(|e| UR_Error::other(&e))?,
-            ),
-            _ => Value::Standard(
-                StandardValue::from_ur(ur_type, message)
-                    .map_err(|e| UR_Error::other(&e))?,
-            ),
-        };
+        let value = Value::from_ur(ur_type, message)
+            .map_err(|e| UR_Error::other(&e))?;
 
         let value = match value {
-            Value::Standard(StandardValue::Bytes(bytes)) => UR_Value::Bytes {
+            Value::Bytes(bytes) => UR_Value::Bytes {
                 data: bytes.as_ptr(),
                 len: bytes.len(),
             },
-            Value::Standard(StandardValue::CryptoPSBT(psbt)) => {
-                UR_Value::CryptoPSBT {
-                    data: psbt.as_ptr(),
-                    len: psbt.len(),
-                }
-            }
+            Value::CryptoPsbt(psbt) => UR_Value::CryptoPSBT {
+                data: psbt.as_ptr(),
+                len: psbt.len(),
+            },
             Value::PassportRequest(passport_request) => {
                 UR_Value::PassportRequest(passport_request.into())
             }
             _ => {
                 return Err(UR_Error::unsupported(
                     &"Unsupported uniform resource",
-                ))
+                ));
             }
         };
 
@@ -135,15 +84,13 @@ impl UR_Value {
         match self {
             UR_Value::Bytes { data, len } => {
                 let buf = unsafe { slice::from_raw_parts(*data, *len) };
-                Value::Standard(StandardValue::Bytes(buf.into()))
+                Value::Bytes(buf)
             }
             UR_Value::CryptoPSBT { data, len } => {
                 let buf = unsafe { slice::from_raw_parts(*data, *len) };
-                Value::Standard(StandardValue::CryptoPSBT(buf.into()))
+                Value::CryptoPsbt(buf)
             }
-            UR_Value::CryptoHDKey(v) => {
-                Value::Standard(StandardValue::CryptoHDKey(v.into()))
-            }
+            UR_Value::CryptoHDKey(v) => Value::CryptoHDKey(v.into()),
             UR_Value::PassportRequest(_) => panic!(
                 "Not implemented as it isn't needed. Should be unreachable"
             ),
@@ -158,14 +105,11 @@ pub enum UR_HDKey {
     DerivedKey(UR_DerivedKey),
 }
 
-impl<'a, C> From<&'a UR_HDKey> for BaseHDKey<'a, C>
-where
-    C: ur::collections::Vec<PathComponent>,
-{
-    fn from(value: &'a UR_HDKey) -> BaseHDKey<'a, C> {
+impl<'a> From<&'a UR_HDKey> for CryptoHDKey<'a> {
+    fn from(value: &'a UR_HDKey) -> CryptoHDKey<'a> {
         match value {
             UR_HDKey::DerivedKey(v) => {
-                BaseHDKey::DerivedKey(DerivedKey::from(v))
+                CryptoHDKey::DerivedKey(DerivedKey::from(v))
             }
         }
     }
@@ -196,11 +140,8 @@ pub struct UR_DerivedKey {
     pub parent_fingerprint: u32,
 }
 
-impl<'a, C> From<&'a UR_DerivedKey> for DerivedKey<'a, C>
-where
-    C: ur::collections::Vec<PathComponent>,
-{
-    fn from(value: &'a UR_DerivedKey) -> DerivedKey<'a, C> {
+impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
+    fn from(value: &'a UR_DerivedKey) -> DerivedKey<'a> {
         DerivedKey {
             is_private: value.is_private,
             key_data: value.key_data,
@@ -272,11 +213,9 @@ pub struct UR_CryptoKeypath {
     /// Whether `depth` is present.
     pub has_depth: bool,
 }
-impl<C> From<CryptoKeypath<C>> for UR_CryptoKeypath
-where
-    C: ur::collections::Vec<PathComponent>,
-{
-    fn from(v: CryptoKeypath<C>) -> UR_CryptoKeypath {
+
+impl<'a> From<CryptoKeypath<'a>> for UR_CryptoKeypath {
+    fn from(v: CryptoKeypath<'a>) -> UR_CryptoKeypath {
         UR_CryptoKeypath {
             source_fingerprint: v
                 .source_fingerprint
@@ -288,13 +227,10 @@ where
     }
 }
 
-impl<C> From<&UR_CryptoKeypath> for CryptoKeypath<C>
-where
-    C: ur::collections::Vec<PathComponent>,
-{
-    fn from(v: &UR_CryptoKeypath) -> CryptoKeypath<C> {
+impl<'a> From<&'a UR_CryptoKeypath> for CryptoKeypath<'a> {
+    fn from(v: &UR_CryptoKeypath) -> CryptoKeypath<'a> {
         CryptoKeypath {
-            components: C::default(),
+            components: PathComponents::from(&[]),
             source_fingerprint: NonZeroU32::new(v.source_fingerprint),
             depth: if v.has_depth { Some(v.depth) } else { None },
         }
@@ -522,6 +458,7 @@ pub extern "C" fn ur_registry_new_crypto_psbt(
 ) {
     *value = UR_Value::CryptoPSBT { data, len };
 }
+
 /// Create a new Passport ustom `crypto-response` UR.
 #[no_mangle]
 pub extern "C" fn ur_registry_new_passport_response(
