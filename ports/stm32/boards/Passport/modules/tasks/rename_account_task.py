@@ -11,7 +11,7 @@ async def rename_account_task(on_done, account_num, account_name, xfp):
 
     accounts = get_accounts()
     for account in accounts:
-        if account.get('acct_num') == account_num and account.get('xfp') == xfp:
+        if account.get('acct_num') == account_num and (account.get('xfp') == xfp or account_num == 0):
             account['name'] = account_name
             break
 
