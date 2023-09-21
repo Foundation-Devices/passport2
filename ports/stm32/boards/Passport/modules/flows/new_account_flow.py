@@ -8,7 +8,7 @@ from flows import Flow
 import microns
 from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
 from tasks import save_new_account_task
-from utils import get_account_by_name, get_account_by_number, get_accounts, spinner_task
+from utils import get_account_by_name, get_account_by_number, get_accounts_by_xfp, spinner_task
 from translations import t, T
 from wallets.utils import get_next_account_num
 from common import settings
@@ -17,7 +17,8 @@ from common import settings
 class NewAccountFlow(Flow):
     def __init__(self):
         initial_state = self.enter_account_num
-        self.accounts = get_accounts()
+        xfp = settings.get('xfp')
+        self.accounts = get_accounts_by_xfp(xfp)
         if len(self.accounts) >= MAX_ACCOUNTS:
             initial_state = self.show_account_limit_message
 
@@ -25,7 +26,6 @@ class NewAccountFlow(Flow):
         self.error = None
 
         # Suggest the next available account number to the user
-        xfp = settings.get('xfp')
         self.account_num = get_next_account_num(xfp)
         self.account_name = None
 
