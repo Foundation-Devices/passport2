@@ -7,17 +7,16 @@
 import chains
 import common
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH
-from utils import get_accounts, get_derived_keys
+from utils import get_accounts_by_xfp, get_derived_keys
 
 
 # Dynamically find the next account number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder if we exceeded the gap limit.
 def get_next_account_num(xfp):
-    accts = get_accounts()
+    accounts = get_accounts_by_xfp(xfp)
 
     acct_nums = []
-    current_accounts = [acct for acct in accts if acct['xfp'] == xfp or acct['acct_num'] == 0]
-    for acct in current_accounts:
+    for acct in accounts:
         acct_nums.append(acct['acct_num'])
 
     acct_nums.sort()
