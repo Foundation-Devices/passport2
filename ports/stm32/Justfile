@@ -353,6 +353,7 @@ hash filepath screen="mono" output_file="":
 
     if [ -z "{{output_file}}" ]; then
         echo -e "$output"
+        echo -e "$output" > ${directory}/${release_name}-hashes.md
     else
         echo -e "$output" > "{{output_file}}"
     fi
