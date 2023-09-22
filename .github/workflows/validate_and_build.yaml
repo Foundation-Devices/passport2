@@ -45,8 +45,8 @@ jobs:
       matrix:
         build:
           [
-            { screen: 'mono', suffix: '-founders-passport', hash_suffix: '' },
-            { screen: 'color', suffix: '-passport', hash_suffix: '-founders' },
+            { screen: 'mono', suffix: '-founders-passport', hash_suffix: '-founders'},
+            { screen: 'color', suffix: '-passport', hash_suffix: ''},
           ]
 
     services:
@@ -81,7 +81,7 @@ jobs:
           echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
           just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
-          just hash
+          just hash ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
         env:
           SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
