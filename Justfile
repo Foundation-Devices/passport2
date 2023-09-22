@@ -74,50 +74,6 @@ test:
 # Lint the codebase.
 lint: (run-in-docker "just ports/stm32/lint") (run-in-docker "just extmod/foundation-rust/lint")
 
-# Hash the files
-hash filepath screen="mono" output_file="":
-    #!/usr/bin/env bash
-
-    if [ "{{screen}}" != "mono" ] && [ "{{screen}}" != "color" ]; then
-        echo "Screen must be either 'mono' or 'color', the default value is 'mono'."
-        exit 1
-    fi
-
-    set -e
-    filename=`basename {{filepath}}`
-    directory=`dirname {{filepath}}`
-    release_name=${filename::-13}
-
-    # SHA256
-    sha=`shasum -b -a 256 {{filepath}} | sed -rn 's/^(.*) .*$/\1/p'`
-    echo "$sha" > ${directory}/${release_name}-sha256
-
-    # MD5
-    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p' | xargs`
-    echo "$md5" > ${directory}/${release_name}-md5
-
-    # Build Hash
-    build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
-    echo "$build_hash" > ${directory}/${release_name}-build-hash
-
-    output="## RELEASE HASHES\n\n"
-
-    if [ -n "{{output_file}}" ]; then
-        output+="### $filename:\n\n"
-    fi
-
-    output+="SHA256: \`$sha\`\nMD5: \`$md5\`\n\nYou can check these hashes with the following commands on most operating systems:\n\n"
-
-    output+="SHA256: \`shasum -b -a 256 $filename\`\nMD5: \`md5 $filename\` or \`mdsum $filename\` or \`md5sum $filename\`\n\n"
-    output+="### DEVELOPERS ONLY\n\nBuild Hash: \`$build_hash\`"
-
-    if [ -z "{{output_file}}" ]; then
-        echo -e "$output"
-        echo -e "$output" > ${directory}/${release_name}-hashes.md
-    else
-        echo -e "$output" > "{{output_file}}"
-    fi
-
 [private]
 mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-docker")
 
