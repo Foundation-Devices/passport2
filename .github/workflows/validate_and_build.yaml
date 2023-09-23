@@ -81,7 +81,6 @@ jobs:
           echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
           just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
-          which cosign
           just ports/stm32/hash build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
         env:
           SIGNING_KEY: ${{ secrets.UserSigningKey }}
