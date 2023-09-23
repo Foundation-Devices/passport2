@@ -30,7 +30,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha
           tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+      - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
       - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
       - name: Lint the codebase
