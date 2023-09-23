@@ -80,7 +80,6 @@ jobs:
           version=$(cat version.txt)
           echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
-# just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
           just hash signing_key.pem "${version}" ports/stm32/build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
         env:
           SIGNING_KEY: ${{ secrets.UserSigningKey }}
