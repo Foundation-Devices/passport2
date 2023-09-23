@@ -101,25 +101,25 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: v${{env.version}}${{ matrix.build.hash_suffix }}-md5
-          path: ports/stm32/build-Passport/v${{env.version}}-beta-md5
+          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-md5
 
       - name: Upload Build Hash
         uses: actions/upload-artifact@v2
         with:
           name: v${{env.version}}${{ matrix.build.hash_suffix }}-build-hash
-          path: ports/stm32/build-Passport/v${{env.version}}-beta-build-hash
+          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-build-hash
 
       - name: Upload SHA256 Hash
         uses: actions/upload-artifact@v2
         with:
           name: v${{env.version}}${{ matrix.build.hash_suffix }}-sha256
-          path: ports/stm32/build-Passport/v${{env.version}}-beta-sha256
+          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-sha256
 
       - name: Upload Hashes Markdown
         uses: actions/upload-artifact@v2
         with:
           name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
-          path: ports/stm32/build-Passport/v${{env.version}}-beta-hashes.md
+          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
 
   build-bootloader:
     name: Build Bootloader
