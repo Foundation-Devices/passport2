@@ -337,9 +337,7 @@ hash filepath screen="mono" output_file="":
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
-    which cosign
-    testing=`which cosign`
-    build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
+    build_hash=$(cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p')
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
     output="## RELEASE HASHES\n\n"
