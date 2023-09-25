@@ -11,9 +11,12 @@ async def rename_account_task(on_done, account_num, account_name, xfp):
 
     accounts = get_accounts()
     for account in accounts:
-        if account.get('acct_num') == account_num and (account.get('xfp') == xfp or account_num == 0):
+        if account.get('acct_num') == account_num and account.get('xfp') == xfp:
             account['name'] = account_name
             break
+    else:
+        # If account wasn't found, it's likely an unsaved default account being renamed
+        accounts.append({'acct_num': account_num, 'name': account_name, 'xfp': xfp})
 
     settings.set('accounts', accounts)
     settings.save()
