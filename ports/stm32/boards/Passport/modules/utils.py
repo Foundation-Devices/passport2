@@ -874,7 +874,6 @@ def get_accounts():
     default['xfp'] = settings.get('root_xfp')
     accounts = settings.get('accounts', [default])
     accounts.sort(key=lambda a: a.get('acct_num', 0))
-    print(accounts)
     return accounts
 
 
