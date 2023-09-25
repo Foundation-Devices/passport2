@@ -17,24 +17,24 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-      - uses: docker/build-push-action@v4
-        with:
-          push: true
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha
-          tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
-      - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
-      - name: Lint the codebase
-        run: just lint
+    - name: Lint the codebase
+      run: just lint
 
   build-firmware:
     name: Build Firmware
@@ -56,69 +56,69 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-      - uses: docker/build-push-action@v4
-        with:
-          push: true
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha
-          tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
-      - run: |
-          echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
-          echo "SCREEN_MODE=$(echo "${{ matrix.build.screen }}" | tr a-z A-Z)" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: |
+        echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+        echo "SCREEN_MODE=$(echo "${{ matrix.build.screen }}" | tr a-z A-Z)" >> $GITHUB_ENV
 
-      - name: Build
-        run: |
-          echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
-          version=$(cat version.txt)
-          echo "version=$(cat version.txt)" >> $GITHUB_ENV
+    - name: Build
+      run: |
+        echo "$SIGNING_KEY" > ports/stm32/signing_key.pem
+        version=$(cat version.txt)
+        echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
-          just hash signing_key.pem "${version}" build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
-        env:
-          SIGNING_KEY: ${{ secrets.UserSigningKey }}
+        just hash signing_key.pem "${version}" build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
+      env:
+        SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
-      - name: Upload firmware (unsigned)
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
-          path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
+    - name: Upload firmware (unsigned)
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
+        path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
-      - name: Upload firmware (signed)
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
-          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
+    - name: Upload firmware (signed)
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
 
-      - name: Upload MD5 Hash
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}${{ matrix.build.hash_suffix }}-md5
-          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-md5
+    - name: Upload MD5 Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-md5
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-md5
 
-      - name: Upload Build Hash
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}${{ matrix.build.hash_suffix }}-build-hash
-          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-build-hash
+    - name: Upload Build Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-build-hash
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-build-hash
 
-      - name: Upload SHA256 Hash
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}${{ matrix.build.hash_suffix }}-sha256
-          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-sha256
+    - name: Upload SHA256 Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-sha256
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-sha256
 
-      - name: Upload Hashes Markdown
-        uses: actions/upload-artifact@v2
-        with:
-          name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
-          path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
+    - name: Upload Hashes Markdown
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
 
   build-bootloader:
     name: Build Bootloader
@@ -137,32 +137,32 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-      - uses: docker/build-push-action@v4
-        with:
-          push: true
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha
-          tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
-      - run: |
-          echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
-          echo "SCREEN_MODE=$(echo ${{ matrix.screen }} | tr a-z A-Z)" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: |
+        echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+        echo "SCREEN_MODE=$(echo ${{ matrix.screen }} | tr a-z A-Z)" >> $GITHUB_ENV
 
-      - name: Build
-        run: just build-bootloader ${{ matrix.screen }}
+    - name: Build
+      run: just build-bootloader ${{ matrix.screen }}
 
-      - name: Upload bootloader
-        uses: actions/upload-artifact@v2
-        with:
-          name: bootloader-${{ env.SCREEN_MODE }}.bin
-          path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
+    - name: Upload bootloader
+      uses: actions/upload-artifact@v2
+      with:
+        name: bootloader-${{ env.SCREEN_MODE }}.bin
+        path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
 
   build-simulator:
     name: Build Simulator
@@ -180,24 +180,24 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-      - uses: docker/build-push-action@v4
-        with:
-          push: true
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha
-          tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
-      - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
-      - name: Build
-        run: just build-simulator ${{ matrix.screen }}
+    - name: Build
+      run: just build-simulator ${{ matrix.screen }}
 
   build-tools:
     name: Build Tools
@@ -211,21 +211,21 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-      - uses: docker/build-push-action@v4
-        with:
-          push: true
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha
-          tags: localhost:5000/foundation-devices/passport2:latest
-      - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
-      - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: docker/setup-buildx-action@v2
+      with:
+        driver-opts: network=host
+    - uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: .
+        cache-from: type=gha
+        cache-to: type=gha
+        tags: localhost:5000/foundation-devices/passport2:latest
+    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
-      - name: Build
-        run: just tools
+    - name: Build
+      run: just tools
