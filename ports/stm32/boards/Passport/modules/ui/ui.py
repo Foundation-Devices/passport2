@@ -203,7 +203,7 @@ class UI():
         from utils import get_accounts_by_xfp, has_seed, is_extension_enabled, escape_text
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
-        from constants import MAX_ACCOUNTS, DEFAULT_ACCOUNT_ENTRY
+        from constants import DEFAULT_ACCOUNT_ENTRY
         from styles.colors import DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
@@ -216,10 +216,8 @@ class UI():
         # Add the account cards
         xfp = common.settings.get('xfp')
         accounts = get_accounts_by_xfp(xfp)
-        # accounts = accounts[:MAX_ACCOUNTS]
 
         # If current xfp doesn't have a saved account 0, add it
-        print(accounts)
         acct_0 = [acct for acct in accounts if acct.get('acct_num') == 0]
         if len(acct_0) == 0:
             default = DEFAULT_ACCOUNT_ENTRY
