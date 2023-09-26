@@ -962,6 +962,18 @@ int ecdsa_read_pubkey(const ecdsa_curve *curve, const uint8_t *pub_key,
   return 0;
 }
 
+int ecdsa_get_x(const ecdsa_curve *curve, const uint8_t *pub_key, uint8_t * x) {
+  curve_point pub = {0};
+
+  if (!ecdsa_read_pubkey(curve, pub_key, &pub)) {
+    return 0;
+  }
+
+  bn_write_be(&pub.x, x);
+
+  return 1;
+}
+
 // Verifies that:
 //   - pub is not the point at infinity.
 //   - pub->x and pub->y are in range [0,p-1].
