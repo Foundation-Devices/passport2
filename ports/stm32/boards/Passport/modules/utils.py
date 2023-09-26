@@ -1442,4 +1442,15 @@ def escape_text(text):
     return text.replace("#", "##")
 
 
+def precomputed_tagged_hash(tag_hash, data):
+    from serializations import sha256
+
+    return sha256(tag_hash + tag_hash + data)
+
+
+def lift_x(pubkey):
+    field_size = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    x = pubkey
+
+
 # EOF

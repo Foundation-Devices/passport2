@@ -117,6 +117,22 @@ class ChainsBase:
             # bech32 encoded segwit p2pkh
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
         elif addr_fmt & AFC_BECH32M:
+            from utils import precomputed_tagged_hash
+            from ubinascii import unhexlify as a2b_hex
+            from ubinascii import hexlify as b2a_hex
+            from trezorcrypto import ecdsa
+
+            print("here 1")
+            tap_tweak_sha256 = a2b_hex("e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9")
+            print("here 2")
+
+            x = ecdsa.get_x(node.public_key())
+            print("here 3")
+            print(b2a_hex(x))
+            print("here 4")
+            hash_tap_tweaked_pubkey = precomputed_tagged_hash(tap_tweak_sha256, x)
+            # point = lift_x(pubkey) + hash_tap_tweaked_pubkey * secp256k1_generator()
+            # tweaked_pubkey = point.x()
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, raw)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section

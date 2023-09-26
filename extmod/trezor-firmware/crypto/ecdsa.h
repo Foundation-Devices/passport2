@@ -113,6 +113,7 @@ int ecdsa_address_decode(const char *addr, uint32_t version,
                          HasherType hasher_base58, uint8_t *out);
 int ecdsa_read_pubkey(const ecdsa_curve *curve, const uint8_t *pub_key,
                       curve_point *pub);
+int ecdsa_get_x(const ecdsa_curve *curve, const uint8_t *pub_key, uint8_t * x);
 int ecdsa_validate_pubkey(const ecdsa_curve *curve, const curve_point *pub);
 int ecdsa_verify(const ecdsa_curve *curve, HasherType hasher_sign,
                  const uint8_t *pub_key, const uint8_t *sig, const uint8_t *msg,
