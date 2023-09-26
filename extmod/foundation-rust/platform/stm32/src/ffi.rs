@@ -31,6 +31,13 @@ pub const NOISE_SE_RNG_SOURCE: u8 = 1 << 2;
 pub const NOISE_ALL: u8 =
     NOISE_AVALANCHE_SOURCE | NOISE_MCU_RNG_SOURCE | NOISE_SE_RNG_SOURCE;
 
+#[repr(C)]
+pub struct spi_t {
+    spi: *mut c_void,            // SPI_HandleTypeDef *.
+    tx_dma_descr: *const c_void, // dma_descr_t *.
+    rx_dma_descr: *const c_void, // dma_descr_t *.
+}
+
 extern "C" {
     // C standard library.
     pub fn putchar(c: c_int) -> c_int;
@@ -43,4 +50,14 @@ extern "C" {
         buf: *mut c_void,
         buf_len: usize,
     ) -> bool;
+
+    // SPI.
+    pub static spi_obj: [spi_t; 6];
+    pub fn spi_transfer(
+        self_: *const spi_t,
+        len: usize,
+        src: *const u8,
+        dest: *mut u8,
+        timeout: u32,
+    );
 }
