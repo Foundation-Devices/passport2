@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "spi-nor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitflags = { version = "2", default-features = false }
+embedded-hal = "0.2.1"

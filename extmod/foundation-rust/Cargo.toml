@@ -7,6 +7,7 @@ members = [
     "platform",
     "platform/unix",
     "platform/stm32",
+    "spi-nor",
 ]
 
 [profile.release]
