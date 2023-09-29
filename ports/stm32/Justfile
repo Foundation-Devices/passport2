@@ -333,11 +333,11 @@ hash filepath screen="mono" output_file="":
     echo "$sha" > ${directory}/${release_name}-sha256
 
     # MD5
-    md5=`mdsum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p' | xargs`
+    md5=`md5sum {{filepath}} | sed -rn 's/^(.*) .*$/\1/p' | xargs`
     echo "$md5" > ${directory}/${release_name}-md5
 
     # Build Hash
-    build_hash=`cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p'`
+    build_hash=$(cosign -t {{screen}} -p -f {{filepath}} | sed -rn 's/^FW Build Hash:    (.*)$/\1/p')
     echo "$build_hash" > ${directory}/${release_name}-build-hash
 
     output="## RELEASE HASHES\n\n"
@@ -353,6 +353,7 @@ hash filepath screen="mono" output_file="":
 
     if [ -z "{{output_file}}" ]; then
         echo -e "$output"
+        echo -e "$output" > ${directory}/${release_name}-hashes.md
     else
         echo -e "$output" > "{{output_file}}"
     fi

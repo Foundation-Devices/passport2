@@ -47,6 +47,9 @@ build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
 # Sign the built firmware using a private key and the cosign tool
 sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
 
+# Produce hashes of the firmware
+hash keypath version file screen="mono": (sign keypath version screen) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/hash " + file + " " + screen))
+
 # Clean firmware build
 clean: (run-in-docker "just ports/stm32/clean")
 

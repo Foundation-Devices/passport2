@@ -30,7 +30,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha
         tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@aa5d15c144db4585980a44ebfdd2cf337c4f14cb
+    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
     - name: Lint the codebase
@@ -43,7 +43,11 @@ jobs:
 
     strategy:
       matrix:
-        build: [{screen: "mono", suffix: "-founders-passport"}, {screen: "color", suffix: "-passport"}]
+        build:
+          [
+            { screen: 'mono', suffix: '-founders-passport', hash_suffix: '-founders'},
+            { screen: 'color', suffix: '-passport', hash_suffix: ''},
+          ]
 
     services:
       registry:
@@ -76,7 +80,7 @@ jobs:
         version=$(cat version.txt)
         echo "version=$(cat version.txt)" >> $GITHUB_ENV
 
-        just sign signing_key.pem "${version}" ${{ matrix.build.screen }}
+        just hash signing_key.pem "${version}" build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
@@ -92,6 +96,30 @@ jobs:
         name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
 
+    - name: Upload MD5 Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-md5
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-md5
+
+    - name: Upload Build Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-build-hash
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-build-hash
+
+    - name: Upload SHA256 Hash
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-sha256
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-sha256
+
+    - name: Upload Hashes Markdown
+      uses: actions/upload-artifact@v2
+      with:
+        name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
+        path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
+
   build-bootloader:
     name: Build Bootloader
     runs-on: ubuntu-20.04
@@ -100,7 +128,7 @@ jobs:
     # TODO: PASS1-665.
     strategy:
       matrix:
-        screen: ["color"]
+        screen: ['color']
 
     services:
       registry:
@@ -143,7 +171,7 @@ jobs:
 
     strategy:
       matrix:
-        screen: ["mono", "color"]
+        screen: ['mono', 'color']
 
     services:
       registry:
