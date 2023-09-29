@@ -870,24 +870,31 @@ def folder_exists(path):
 def get_accounts():
     from common import settings
     from constants import DEFAULT_ACCOUNT_ENTRY
-    accounts = settings.get('accounts', [DEFAULT_ACCOUNT_ENTRY])
+    default = DEFAULT_ACCOUNT_ENTRY
+    default['xfp'] = settings.get('root_xfp')
+    accounts = settings.get('accounts', [default])
     accounts.sort(key=lambda a: a.get('acct_num', 0))
     return accounts
 
 
-def get_account_by_name(name, xfp):
+def get_accounts_by_xfp(xfp):
     accounts = get_accounts()
+    return [acct for acct in accounts if acct.get('xfp', None) == xfp]
+
+
+def get_account_by_name(name, xfp):
+    accounts = get_accounts_by_xfp(xfp)
     for account in accounts:
-        if account.get('name') == name and account.get('xfp') == xfp:
+        if account.get('name') == name:
             return account
 
     return None
 
 
 def get_account_by_number(acct_num, xfp):
-    accounts = get_accounts()
+    accounts = get_accounts_by_xfp(xfp)
     for account in accounts:
-        if account.get('acct_num') == acct_num and account.get('xfp') == xfp:
+        if account.get('acct_num') == acct_num:
             return account
 
     return None

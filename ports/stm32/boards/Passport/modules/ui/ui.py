@@ -200,10 +200,10 @@ class UI():
                      is_init=False,
                      stay_on_last_card=False):
         from flows import MenuFlow
-        from utils import get_accounts, has_seed, is_extension_enabled, escape_text
+        from utils import get_accounts_by_xfp, has_seed, is_extension_enabled, escape_text
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
-        from constants import MAX_ACCOUNTS
+        from constants import DEFAULT_ACCOUNT_ENTRY
         from styles.colors import DARK_GREY, LIGHT_GREY, LIGHT_TEXT, WHITE
         import microns
 
@@ -214,8 +214,15 @@ class UI():
         card_descs = [settings_card]
 
         # Add the account cards
-        accounts = get_accounts()
-        accounts = accounts[:MAX_ACCOUNTS]
+        xfp = common.settings.get('xfp')
+        accounts = get_accounts_by_xfp(xfp)
+
+        # If current xfp doesn't have a saved account 0, add it
+        acct_0 = [acct for acct in accounts if acct.get('acct_num') == 0]
+        if len(acct_0) == 0:
+            default = DEFAULT_ACCOUNT_ENTRY
+            default['xfp'] = xfp
+            accounts.insert(0, default)
 
         new_card_idx = None
 
@@ -240,17 +247,12 @@ class UI():
         elif stay_on_same_card:
             new_card_idx = self.active_card_idx
 
-        xfp = common.settings.get('xfp')
-
         # Only add these once there is a seed
         if has_seed():
             import stash
             for i in range(len(accounts)):
                 account = accounts[i]
                 # print('account[{}]={}'.format(account, i))
-
-                if account.get('xfp', xfp) != xfp and account['acct_num'] != 0:
-                    continue
 
                 account_card = {
                     'right_icon': 'ICON_BITCOIN',
