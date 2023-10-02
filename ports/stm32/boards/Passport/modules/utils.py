@@ -869,10 +869,7 @@ def folder_exists(path):
 
 def get_accounts():
     from common import settings
-    from constants import DEFAULT_ACCOUNT_ENTRY
-    default = DEFAULT_ACCOUNT_ENTRY
-    default['xfp'] = settings.get('root_xfp')
-    accounts = settings.get('accounts', [default])
+    accounts = settings.get('accounts', [])
     accounts.sort(key=lambda a: a.get('acct_num', 0))
     return accounts
 
