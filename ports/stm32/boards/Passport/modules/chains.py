@@ -117,14 +117,11 @@ class ChainsBase:
             # bech32 encoded segwit p2pkh
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
         elif addr_fmt & AFC_BECH32M:
-            # from utils import precomputed_tagged_hash
-            # from ubinascii import unhexlify as a2b_hex
+            from ubinascii import unhexlify as a2b_hex
             from ubinascii import hexlify as b2a_hex
-            # from trezorcrypto import ecdsa
-            from trezorcrypto import bip340
 
-            tweaked = bip340.tweak_public_key(node.public_key())
-            print(b2a_hex(tweaked))
+            # tweaked = bip340.tweak_public_key(node.public_key())
+            # print(b2a_hex(tweaked))
 
             # print("here 1")
             # tap_tweak_sha256 = a2b_hex("e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9")
