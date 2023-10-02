@@ -36,7 +36,7 @@ class MainFlow(Flow):
                 del next_addrs[key]
         common.settings.set('next_addrs', next_addrs)
 
-        # Update account settings to include a show_all xfp
+        # Update account settings to include the default xfp
         accounts = get_accounts()
         for i in range(len(accounts)):
             account = accounts[i]
