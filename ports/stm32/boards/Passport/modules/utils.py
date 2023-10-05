@@ -4,6 +4,9 @@
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
 # SPDX-License-Identifier: GPL-3.0-only
 #
+# SPDX-FileCopyrightText: 2021 Emanuele Bellocchia
+# SPDX-License-Identifier: MIT
+#
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
@@ -1442,9 +1445,11 @@ def escape_text(text):
     return text.replace("#", "##")
 
 
-def precomputed_tagged_hash(tag_hash, data):
+def hash_tap_tweak(data):
     from serializations import sha256
+    from public_constants import TAP_TWEAK_SHA256
 
+    tag_hash = a2b_hex(TAP_TWEAK_SHA256)
     return sha256(tag_hash + tag_hash + data)
 
 

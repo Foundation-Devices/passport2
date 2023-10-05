@@ -4,6 +4,9 @@
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
 # SPDX-License-Identifier: GPL-3.0-only
 #
+# SPDX-FileCopyrightText: 2021 Emanuele Bellocchia
+# SPDX-License-Identifier: MIT
+#
 # Constants and various "limits" shared between embedded and desktop USB protocol
 #
 try:
@@ -129,5 +132,5 @@ Derivation: {}
 {}: {}
 '''
 
-
+TAP_TWEAK_SHA256 = "e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9"
 # EOF
