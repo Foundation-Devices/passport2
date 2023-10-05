@@ -3,7 +3,7 @@
 
 use once_cell::sync::Lazy;
 use secp256k1::{
-    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1, constants::PUBLIC_KEY_SIZE, constants::SCHNORR_PUBLIC_KEY_SIZE, PublicKey
+    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1, constants::PUBLIC_KEY_SIZE, constants::SCHNORR_PUBLIC_KEY_SIZE, PublicKey, XOnlyPublicKey, Scalar
 };
 
 /// cbindgen:ignore
@@ -37,7 +37,7 @@ pub extern "C" fn secp256k1_sign_schnorr(
     signature.copy_from_slice(sig.as_ref());
 }
 
-/// Returns an x-only public key given a public key
+/// Finds the x-only public key given a public key
 ///
 /// - `pubkey` is the original public key
 /// - `x_only_pubkey` is the resulting x-only public key
@@ -50,6 +50,24 @@ pub extern "C" fn secp256k1_x_only_public_key(
     let (x_only_struct, _) = pk_struct.x_only_public_key();
     let x_only_bytes = x_only_struct.serialize();
     x_only_pubkey.copy_from_slice(&x_only_bytes)
+}
+
+/// Adds a tweak to an x-only public key
+///
+/// - `x_only_pubkey` is the public key
+/// - `tweak` is the tweak value
+/// - `tweaked_pubkey` is the result of the tweak
+#[export_name = "foundation_secp256k1_add_tweak"]
+pub extern "C" fn secp256k1_add_tweak(
+    x_only_pubkey: &[u8; SCHNORR_PUBLIC_KEY_SIZE],
+    tweak: &[u8; SCHNORR_PUBLIC_KEY_SIZE],
+    tweaked_pubkey: &mut [u8; SCHNORR_PUBLIC_KEY_SIZE],
+) {
+    let pk_struct = XOnlyPublicKey::from_slice(x_only_pubkey).unwrap();
+    let tweak_struct = Scalar::from_le_bytes(*tweak).unwrap();
+    let (tweaked_pubkey_struct, _) = pk_struct.add_tweak(&PRE_ALLOCATED_CTX, &tweak_struct).unwrap();
+    let tweaked_pubkey_bytes = tweaked_pubkey_struct.serialize();
+    tweaked_pubkey.copy_from_slice(&tweaked_pubkey_bytes)
 }
 
 #[cfg(target_arch = "arm")]
