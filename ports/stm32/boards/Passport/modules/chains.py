@@ -130,9 +130,8 @@ class ChainsBase:
             print("x only: {}".format(b2a_hex(x)))
             hash_tap_tweaked_pubkey = hash_tap_tweak(x)
             print("hash tap tweaked: {}".format(b2a_hex(hash_tap_tweaked_pubkey)))
-            # lifted_x = lift_x(pubkey)
-            # point = lift_x(pubkey) + hash_tap_tweaked_pubkey * secp256k1_generator()
-            final_pubkey = secp256k1.add_tweak(x, hash_tap_tweaked_pubkey)
+            lifted_x = lift_x(x)
+            final_pubkey = secp256k1.add_tweak(lifted_x, hash_tap_tweaked_pubkey)
             print("final_pubkey: {}".format(final_pubkey))
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, final_pubkey)
 
