@@ -119,6 +119,7 @@ class ChainsBase:
         elif addr_fmt & AFC_BECH32M:
             from ubinascii import unhexlify as a2b_hex
             from ubinascii import hexlify as b2a_hex
+            from foundation import secp256k1
 
             # tweaked = bip340.tweak_public_key(node.public_key())
             # print(b2a_hex(tweaked))
@@ -127,7 +128,8 @@ class ChainsBase:
             # tap_tweak_sha256 = a2b_hex("e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9")
             # print("here 2")
 
-            # x = ecdsa.get_x(node.public_key())
+            x = secp256k1.x_only_public_key(node.public_key())
+            print("x only: {}".format(b2a_hex(x)))
             # print("here 3")
             # print(b2a_hex(x))
             # print("here 4")
