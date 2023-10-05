@@ -372,6 +372,14 @@ void foundation_secp256k1_schnorr_sign(const uint8_t (*data)[32],
                                        uint8_t (*signature)[64]);
 
 /**
+ * Returns an x-only public key given a public key
+ * - `pubkey` is the original public key
+ * - `x_only_pubkey` is the resulting x-only public key
+ */
+void foundation_secp256k1_x_only_public_key(const uint8_t (*pubkey)[33],
+                                            uint8_t (*x_only_pubkey)[32]);
+
+/**
  * Receive a Uniform Resource part.
  *
  * # Safety
@@ -500,6 +508,8 @@ void ur_registry_new_passport_response(UR_Value *value,
                                        UR_PassportModel passport_model,
                                        const char *passport_firmware_version,
                                        size_t passport_firmware_version_len);
+
+// TODO: add taproot functions
 
 #ifdef __cplusplus
 } // extern "C"
