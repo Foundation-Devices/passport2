@@ -33,8 +33,29 @@ STATIC mp_obj_t mod_foundation_secp256k1_sign_schnorr(mp_obj_t data_obj,
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_secp256k1_sign_schnorr_obj,
                                  mod_foundation_secp256k1_sign_schnorr);
 
+/// def x_only_public_key(public_key) -> x_only_public_key:
+///     """
+STATIC mp_obj_t mod_foundation_secp256k1_x_only_public_key(mp_obj_t public_key_obj)
+{
+    mp_buffer_info_t public_key;
+    uint8_t x_only_public_key[32];
+
+    mp_get_buffer_raise(public_key_obj, &public_key, MP_BUFFER_READ);
+
+    if (public_key.len != 33) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("public_key should be 33 bytes"));
+    }
+
+    foundation_secp256k1_x_only_public_key(public_key.buf, &x_only_public_key);
+
+    return mp_obj_new_bytes(x_only_public_key, sizeof(x_only_public_key));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_secp256k1_x_only_public_key_obj,
+                                 mod_foundation_secp256k1_x_only_public_key);
+
 STATIC const mp_rom_map_elem_t mod_foundation_secp256k1_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_schnorr_sign), MP_ROM_PTR(&mod_foundation_secp256k1_sign_schnorr_obj) },
+    { MP_ROM_QSTR(MP_QSTR_x_only_public_key), MP_ROM_PTR(&mod_foundation_secp256k1_x_only_public_key_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(mod_foundation_secp256k1_globals, mod_foundation_secp256k1_globals_table);
 
