@@ -4,6 +4,9 @@
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
 # SPDX-License-Identifier: GPL-3.0-only
 #
+# SPDX-FileCopyrightText: 2021 Emanuele Bellocchia
+# SPDX-License-Identifier: MIT
+#
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
@@ -120,22 +123,16 @@ class ChainsBase:
             from ubinascii import unhexlify as a2b_hex
             from ubinascii import hexlify as b2a_hex
             from foundation import secp256k1
+            from utils import hash_tap_tweak
 
-            # tweaked = bip340.tweak_public_key(node.public_key())
-            # print(b2a_hex(tweaked))
-
-            # print("here 1")
-            # tap_tweak_sha256 = a2b_hex("e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9")
-            # print("here 2")
-
-            x = secp256k1.x_only_public_key(node.public_key())
+            pubkey = node.public_key()
+            x = secp256k1.x_only_public_key(pubkey)
             print("x only: {}".format(b2a_hex(x)))
-            # print("here 3")
-            # print(b2a_hex(x))
-            # print("here 4")
-            # hash_tap_tweaked_pubkey = precomputed_tagged_hash(tap_tweak_sha256, x)
+            hash_tap_tweaked_pubkey = hash_tap_tweak(x)
+            print("hash tap tweaked: {}".format(b2a_hex(hash_tap_tweaked_pubkey)))
+            # lifted_x = lift_x(pubkey)
             # point = lift_x(pubkey) + hash_tap_tweaked_pubkey * secp256k1_generator()
-            # tweaked_pubkey = point.x()
+            # tweaked_pubkey = secp256k1.x_only_public_key(point)
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, raw)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
