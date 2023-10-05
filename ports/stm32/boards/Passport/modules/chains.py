@@ -132,8 +132,9 @@ class ChainsBase:
             print("hash tap tweaked: {}".format(b2a_hex(hash_tap_tweaked_pubkey)))
             # lifted_x = lift_x(pubkey)
             # point = lift_x(pubkey) + hash_tap_tweaked_pubkey * secp256k1_generator()
-            # tweaked_pubkey = secp256k1.x_only_public_key(point)
-            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, raw)
+            final_pubkey = secp256k1.add_tweak(x, hash_tap_tweaked_pubkey)
+            print("final_pubkey: {}".format(final_pubkey))
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, final_pubkey)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH

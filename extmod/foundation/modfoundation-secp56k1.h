@@ -53,9 +53,37 @@ STATIC mp_obj_t mod_foundation_secp256k1_x_only_public_key(mp_obj_t public_key_o
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_secp256k1_x_only_public_key_obj,
                                  mod_foundation_secp256k1_x_only_public_key);
 
+/// def add_tweak(x_only_public_key, tweak) -> tweaked_public_key:
+///     """
+//      """
+STATIC mp_obj_t mod_foundation_secp256k1_add_tweak(mp_obj_t x_only_public_key_obj, mp_obj_t tweak_obj)
+{
+    mp_buffer_info_t x_only_public_key;
+    mp_buffer_info_t tweak;
+    uint8_t tweaked_public_key[32];
+
+    mp_get_buffer_raise(x_only_public_key_obj, &x_only_public_key, MP_BUFFER_READ);
+    mp_get_buffer_raise(tweak_obj, &tweak, MP_BUFFER_READ);
+
+    if (x_only_public_key.len != 32) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("x_only_public_key should be 32 bytes"));
+    }
+
+    if (tweak.len != 32) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("tweak should be 32 bytes"));
+    }
+
+    foundation_secp256k1_add_tweak(x_only_public_key.buf, tweak.buf, &tweaked_public_key);
+
+    return mp_obj_new_bytes(tweaked_public_key, sizeof(tweaked_public_key));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_secp256k1_add_tweak_obj,
+                                 mod_foundation_secp256k1_add_tweak);
+
 STATIC const mp_rom_map_elem_t mod_foundation_secp256k1_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_schnorr_sign), MP_ROM_PTR(&mod_foundation_secp256k1_sign_schnorr_obj) },
     { MP_ROM_QSTR(MP_QSTR_x_only_public_key), MP_ROM_PTR(&mod_foundation_secp256k1_x_only_public_key_obj) },
+    { MP_ROM_QSTR(MP_QSTR_add_tweak), MP_ROM_PTR(&mod_foundation_secp256k1_add_tweak_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(mod_foundation_secp256k1_globals, mod_foundation_secp256k1_globals_table);
 
