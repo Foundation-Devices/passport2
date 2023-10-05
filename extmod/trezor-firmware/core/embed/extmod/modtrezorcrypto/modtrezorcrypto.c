@@ -46,7 +46,6 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-chacha20poly1305.h"
 #include "modtrezorcrypto-crc.h"
 #include "modtrezorcrypto-curve25519.h"
-#include "modtrezorcrypto-ecdsa.h"
 #if USE_KECCAK
 #include "modtrezorcrypto-ed25519.h"
 #endif
@@ -79,7 +78,6 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_aes), MP_ROM_PTR(&mod_trezorcrypto_AES_type)},
     {MP_ROM_QSTR(MP_QSTR_bip32), MP_ROM_PTR(&mod_trezorcrypto_bip32_module)},
     {MP_ROM_QSTR(MP_QSTR_bip39), MP_ROM_PTR(&mod_trezorcrypto_bip39_module)},
-    {MP_ROM_QSTR(MP_QSTR_ecdsa), MP_ROM_PTR(&mod_trezorcrypto_ecdsa_module)},
 #ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_blake256),
      MP_ROM_PTR(&mod_trezorcrypto_Blake256_type)},

@@ -509,8 +509,6 @@ void ur_registry_new_passport_response(UR_Value *value,
                                        const char *passport_firmware_version,
                                        size_t passport_firmware_version_len);
 
-// TODO: add taproot functions
-
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
