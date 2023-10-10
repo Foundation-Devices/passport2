@@ -48,13 +48,17 @@ class VerifyAddressFlow(Flow):
     async def choose_sig_type(self):
         from pages import SinglesigMultisigChooserPage
         from multisig_wallet import MultisigWallet
+        from common import settings
 
-        if MultisigWallet.get_count() == 0:
+        xfp = settings.get('xfp')
+        multisigs = MultisigWallet.get_by_xfp(xfp)
+
+        if len(multisigs) == 0:
             self.sig_type = 'single-sig'
             self.goto(self.scan_address, save_curr=False)  # Don't save this since we're skipping this state
         else:
             result = await SinglesigMultisigChooserPage(
-                initial_value=self.sig_type).show()
+                initial_value=self.sig_type, multisigs=multisigs).show()
             if result is None:
                 if not self.back():
                     self.set_result(False)
