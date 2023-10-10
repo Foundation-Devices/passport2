@@ -135,11 +135,12 @@ class SeedWordsListPage(Page):
         if self.is_mounted():
             self.container.mount_children()
 
-        # Update the page micron index
-        common.ui.set_micron_bar_active_idx(self.page_idx)
-
         # Update microns
         if self.num_pages > 1:
+
+            # Update the page micron index
+            common.ui.set_micron_bar_active_idx(self.page_idx)
+
             if self.page_idx == 0:
                 common.ui.set_left_micron(self.left_micron)
                 common.ui.set_right_micron(microns.Forward)
