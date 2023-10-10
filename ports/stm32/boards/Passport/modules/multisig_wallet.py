@@ -368,6 +368,19 @@ class MultisigWallet:
         return None
 
     @classmethod
+    def get_by_xfp(cls, xfp):
+        lst = cls.get_all()
+        lst_by_xfp = []
+
+        for ms in lst:
+            for xpub in ms.xpubs:
+                if xfp == xpub[0]:  # XFP entry in the multisig's xpub tuple
+                    lst_by_xfp.append(ms)
+                    break
+
+        return lst_by_xfp
+
+    @classmethod
     def delete_by_id(cls, id):
         from utils import to_str
         from common import settings
