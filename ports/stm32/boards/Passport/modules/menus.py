@@ -300,26 +300,25 @@ def multisig_menu():
     from utils import escape_text
     from common import settings
 
-    if not MultisigWallet.exists():
+    xfp = settings.get('xfp')
+    multisigs = MultisigWallet.get_by_xfp(xfp)
+
+    if len(multisigs) == 0:
         items = [{'icon': 'ICON_TWO_KEYS', 'label': '(None setup yet)', 'page': ErrorPage,
                   'args': {'text': "You haven't imported any multisig wallets yet."}}]
     else:
         items = []
-        xfp = settings.get('xfp')
-        for ms in MultisigWallet.get_all():
-            for xpub in ms.xpubs:
-                if xfp == xpub[0]:  # XFP entry in the multisig's xpub tuple
-                    nice_name = '%d/%d: %s' % (ms.M, ms.N, escape_text(ms.name))
-                    items.append({
-                        'icon': 'ICON_TWO_KEYS',
-                        'label': nice_name,
-                        'submenu': multisig_item_menu,
-                        # Adding this below causes the header to stick around after it shoudl be gone
-                        # Probably need MenuFlow() to pop it off after
-                        # 'args': {'card_header': {'title': nice_name}, 'context': ms.storage_idx}
-                        'args': {'context': ms.storage_idx}
-                    })
-                    break
+        for ms in multisigs:
+            nice_name = '%d/%d: %s' % (ms.M, ms.N, escape_text(ms.name))
+            items.append({
+                'icon': 'ICON_TWO_KEYS',
+                'label': nice_name,
+                'submenu': multisig_item_menu,
+                # Adding this below causes the header to stick around after it shoudl be gone
+                # Probably need MenuFlow() to pop it off after
+                # 'args': {'card_header': {'title': nice_name}, 'context': ms.storage_idx}
+                'args': {'context': ms.storage_idx}
+            })
 
     items.append({'icon': 'ICON_SCAN_QR', 'label': 'Import from QR', 'flow': ImportMultisigWalletFromQRFlow,
                  'statusbar': {'title': 'IMPORT'}})
