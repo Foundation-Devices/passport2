@@ -298,13 +298,17 @@ def multisig_menu():
     from pages import MultisigPolicySettingPage, ErrorPage
     from flows import ImportMultisigWalletFromMicroSDFlow, ImportMultisigWalletFromQRFlow
     from utils import escape_text
+    from common import settings
 
-    if not MultisigWallet.exists():
+    xfp = settings.get('xfp')
+    multisigs = MultisigWallet.get_by_xfp(xfp)
+
+    if len(multisigs) == 0:
         items = [{'icon': 'ICON_TWO_KEYS', 'label': '(None setup yet)', 'page': ErrorPage,
                   'args': {'text': "You haven't imported any multisig wallets yet."}}]
     else:
         items = []
-        for ms in MultisigWallet.get_all():
+        for ms in multisigs:
             nice_name = '%d/%d: %s' % (ms.M, ms.N, escape_text(ms.name))
             items.append({
                 'icon': 'ICON_TWO_KEYS',
