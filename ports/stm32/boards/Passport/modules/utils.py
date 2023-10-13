@@ -1450,26 +1450,9 @@ def hash_tap_tweak(data):
     from public_constants import TAP_TWEAK_SHA256
 
     tag_hash = a2b_hex(TAP_TWEAK_SHA256)
+    text = tag_hash + tag_hash + data
+    print("hash_tap_tweak text: {}".format(b2a_hex(text)))
     return sha256(tag_hash + tag_hash + data)
 
-
-def lift_x(x_only_pubkey):
-    from foundation import secp256k1
-
-    field_size = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
-    x = int.from_bytes(x_only_pubkey, "little")
-    x2 = int.from_bytes(x_only_pubkey, "big")
-    print("x: {}, x2: {}, x_original".format(x, x2, b2a_hex(x_only_pubkey)))
-
-    if x >= field_size:
-        raise ValueError("Unable to compute LiftX point")
-
-    c = (pow(x, 3, p) + 7) % p
-    y = pow(c, (p + 1) // 4, p)
-
-    if c != pow(y, 2, p):
-        raise ValueError("Unable to compute LiftX point")
-
-    return secp256k1.from_coordinates(x, y if y % 2 == 0 else p - y)
 
 # EOF
