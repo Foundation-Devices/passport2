@@ -125,15 +125,17 @@ class ChainsBase:
             from foundation import secp256k1
             from utils import hash_tap_tweak
 
+            # TODO: Move all this to rust in a single p2tr function
             pubkey = node.public_key()
-            x = secp256k1.x_only_public_key(pubkey)
-            print("x only: {}".format(b2a_hex(x)))
-            hash_tap_tweaked_pubkey = hash_tap_tweak(x)
-            print("hash tap tweaked: {}".format(b2a_hex(hash_tap_tweaked_pubkey)))
-            lifted_x = lift_x(x)
-            final_pubkey = secp256k1.add_tweak(lifted_x, hash_tap_tweaked_pubkey)
-            print("final_pubkey: {}".format(final_pubkey))
-            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, final_pubkey)
+            internal_key = secp256k1.x_only_public_key(pubkey)
+            print("internal_key: {}".format(b2a_hex(internal_key)))  # Correct up to and including this line
+            tweak = hash_tap_tweak(internal_key)
+            print("tweak: {}".format(b2a_hex(tweak)))
+            output_key = secp256k1.add_tweak(internal_key, tweak)
+            print("output_key: {}".format(b2a_hex(output_key)))
+            script_pubkey = a2b_hex('5120') + output_key
+            print("script_pubkey: {}".format(b2a_hex(script_pubkey)))
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script_pubkey)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH
