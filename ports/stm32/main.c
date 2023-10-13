@@ -73,7 +73,9 @@
 #include "pin.h"
 #include "extint.h"
 #include "usrsw.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 #include "rtc.h"
 #include "storage.h"
 #include "sdcard.h"

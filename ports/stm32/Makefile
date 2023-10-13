@@ -42,7 +42,9 @@ CMSIS_MCU_LOWER = $(shell echo $(CMSIS_MCU) | tr '[:upper:]' '[:lower:]')
 LD_DIR=boards
 CMSIS_DIR=$(TOP)/lib/stm32lib/CMSIS/STM32$(MCU_SERIES_UPPER)xx/Include
 HAL_DIR=lib/stm32lib/STM32$(MCU_SERIES_UPPER)xx_HAL_Driver
-USBDEV_DIR=usbdev
+# Disabled by Foundation Devices.
+#
+#USBDEV_DIR=usbdev
 #USBHOST_DIR=usbhost
 DFU=$(TOP)/tools/dfu.py
 MBOOT_PACK_DFU = mboot/mboot_pack_dfu.py
@@ -278,15 +280,22 @@ DRIVERS_SRC_C += $(addprefix drivers/,\
 	dht/dht.c \
 	)
 
+
+# Disabled by Foundation Devices. These were present on SRC_C.
+#
+#	usbd_conf.c \
+#	usbd_desc.c \
+#	usbd_cdc_interface.c \
+#	usbd_hid_interface.c \
+#	usbd_msc_interface.c \
+#	usb.c \
+#
+# As the USB stack is not used.
+
 SRC_C += \
 	boardctrl.c \
 	main.c \
 	stm32_it.c \
-	usbd_conf.c \
-	usbd_desc.c \
-	usbd_cdc_interface.c \
-	usbd_hid_interface.c \
-	usbd_msc_interface.c \
 	mphalport.c \
 	mpthreadport.c \
 	irq.c \
@@ -313,7 +322,6 @@ SRC_C += \
 	can.c \
 	fdcan.c \
 	pyb_can.c \
-	usb.c \
 	wdt.c \
 	eth.c \
 	gccollect.c \
@@ -400,11 +408,13 @@ HAL_SRC_C += $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
 	hal_ltdc.c \
 	)
 
-ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f4 f7 h7 l0 l4 wb))
-HAL_SRC_C += $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
-	ll_usb.c \
-	)
-endif
+# Disabled by Foundation Devices.
+#
+# ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f4 f7 h7 l0 l4 wb))
+# HAL_SRC_C += $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
+# 	ll_usb.c \
+# 	)
+# endif
 
 ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f4 f7 h7 l4))
 HAL_SRC_C += $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES)xx_,\
@@ -431,14 +441,18 @@ ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f0 f4 f7 h7 l4))
 endif
 endif
 
-USBDEV_SRC_C += $(addprefix $(USBDEV_DIR)/,\
-	core/src/usbd_core.c \
-	core/src/usbd_ctlreq.c \
-	core/src/usbd_ioreq.c \
-	class/src/usbd_cdc_msc_hid.c \
-	class/src/usbd_msc_bot.c \
-	class/src/usbd_msc_scsi.c \
-	)
+# Foundation Devices addition:
+#
+# Remove usbdev compilation.
+#
+# USBDEV_SRC_C += $(addprefix $(USBDEV_DIR)/,\
+# 	core/src/usbd_core.c \
+# 	core/src/usbd_ctlreq.c \
+# 	core/src/usbd_ioreq.c \
+# 	class/src/usbd_cdc_msc_hid.c \
+# 	class/src/usbd_msc_bot.c \
+# 	class/src/usbd_msc_scsi.c \
+# 	)
 
 ifeq ($(MICROPY_PY_BLUETOOTH),1)
 CFLAGS_MOD += -DMICROPY_PY_BLUETOOTH=1
@@ -731,10 +745,14 @@ GEN_PINS_AF_CONST = $(HEADER_BUILD)/pins_af_const.h
 GEN_PINS_AF_DEFS = $(HEADER_BUILD)/pins_af_defs.h
 GEN_PINS_AF_PY = $(BUILD)/pins_af.py
 
-INSERT_USB_IDS = $(TOP)/tools/insert-usb-ids.py
+# Disabled by Foundation Devices.
+#
+# INSERT_USB_IDS = $(TOP)/tools/insert-usb-ids.py
 FILE2H = $(TOP)/tools/file2h.py
 
-USB_IDS_FILE = usb.h
+# Disabled by Foundation Devices.
+#
+# USB_IDS_FILE = usb.h
 CDCINF_TEMPLATE = pybcdc.inf_template
 GEN_CDCINF_FILE = $(HEADER_BUILD)/pybcdc.inf
 GEN_CDCINF_HEADER = $(HEADER_BUILD)/pybcdc_inf.h
@@ -756,8 +774,10 @@ $(OBJ): | $(GEN_PINS_HDR)
 # options change.
 $(HEADER_BUILD)/qstrdefs.generated.h: $(BOARD_DIR)/mpconfigboard.h
 
+# Disabled $(GEN_CDCINF_HEADER) by Foundation Devices.
+#
 # main.c can't be even preprocessed without $(GEN_CDCINF_HEADER)
-main.c: $(GEN_CDCINF_HEADER)
+main.c: # $(GEN_CDCINF_HEADER)
 
 # Use a pattern rule here so that make will only call make-pins.py once to make
 # both pins_$(BOARD).c and pins.h
@@ -790,13 +810,15 @@ $(HEADER_BUILD)/%_const.h $(BUILD)/%_qstr.h: $(CMSIS_MCU_HDR) make-stmconst.py |
 	$(ECHO) "GEN stmconst $@"
 	$(Q)$(PYTHON) make-stmconst.py --qstr $(GEN_STMCONST_QSTR) --mpz $(GEN_STMCONST_MPZ) $(CMSIS_MCU_HDR) > $(GEN_STMCONST_HDR)
 
-$(GEN_CDCINF_HEADER): $(GEN_CDCINF_FILE) $(FILE2H) | $(HEADER_BUILD)
-	$(ECHO) "GEN $@"
-	$(Q)$(PYTHON) $(FILE2H) $< > $@
-
-$(GEN_CDCINF_FILE): $(CDCINF_TEMPLATE) $(INSERT_USB_IDS) $(USB_IDS_FILE) | $(HEADER_BUILD)
-	$(ECHO) "GEN $@"
-	$(Q)$(PYTHON) $(INSERT_USB_IDS) $(USB_IDS_FILE) $< > $@
+# Disabled by Foundation Devices.
+#
+# $(GEN_CDCINF_HEADER): $(GEN_CDCINF_FILE) $(FILE2H) | $(HEADER_BUILD)
+# 	$(ECHO) "GEN $@"
+# 	$(Q)$(PYTHON) $(FILE2H) $< > $@
+#
+# $(GEN_CDCINF_FILE): $(CDCINF_TEMPLATE) $(INSERT_USB_IDS) $(USB_IDS_FILE) | $(HEADER_BUILD)
+# 	$(ECHO) "GEN $@"
+# 	$(Q)$(PYTHON) $(INSERT_USB_IDS) $(USB_IDS_FILE) $< > $@
 
 include $(TOP)/py/mkrules.mk
 

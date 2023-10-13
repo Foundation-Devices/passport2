@@ -5,7 +5,9 @@
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "extmod/misc.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 #include "uart.h"
 
 // this table converts from HAL_StatusTypeDef to POSIX errno
