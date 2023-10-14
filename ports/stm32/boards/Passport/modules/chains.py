@@ -135,7 +135,7 @@ class ChainsBase:
             print("output_key: {}".format(b2a_hex(output_key)))
             script_pubkey = a2b_hex('5120') + output_key
             print("script_pubkey: {}".format(b2a_hex(script_pubkey)))  # Correct up to and including this line
-            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script_pubkey)
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH
