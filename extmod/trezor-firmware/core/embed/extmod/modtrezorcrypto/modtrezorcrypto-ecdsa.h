@@ -68,10 +68,62 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(
     mod_trezorcrypto_ecdsa_scalar_multiply_obj,
     mod_trezorcrypto_ecdsa_scalar_multiply);
 
+/// def (x1: bytes, y1: bytes, x2: bytes, y2: bytes) -> added_point: (bytes, bytes)
+///     """
+///     Add two ECDSA points
+///     """
+STATIC mp_obj_t mod_trezorcrypto_ecdsa_point_add(size_t n_args, const mp_obj_t * args) {
+
+    // Build the points
+    curve_point p1, p2;
+
+    // Get the coordinates from their objects
+    mp_buffer_info_t x1_buf;
+    mp_get_buffer_raise(args[0], &x1_buf, MP_BUFFER_READ);
+
+    mp_buffer_info_t y1_buf;
+    mp_get_buffer_raise(args[1], &y1_buf, MP_BUFFER_READ);
+
+    mp_buffer_info_t x2_buf;
+    mp_get_buffer_raise(args[2], &x2_buf, MP_BUFFER_READ);
+
+    mp_buffer_info_t y2_buf;
+    mp_get_buffer_raise(args[3], &y2_buf, MP_BUFFER_READ);
+
+    // Convert coordinates to bignums
+    bn_read_be((uint8_t *)x1_buf.buf, &p1.x);
+    bn_read_be((uint8_t *)y1_buf.buf, &p1.y);
+    bn_read_be((uint8_t *)x2_buf.buf, &p2.x);
+    bn_read_be((uint8_t *)y2_buf.buf, &p2.y);
+
+    // Add
+    point_add(&secp256k1, &p1, &p2);
+
+    // Retrieve x and y bytes from output point
+    vstr_t x_vstr, y_vstr;
+    vstr_init_len(&x_vstr, 32);
+    vstr_init_len(&y_vstr, 32);
+    bn_write_be(&p2.x, (uint8_t *)x_vstr.buf);
+    bn_write_be(&p2.y, (uint8_t *)y_vstr.buf);
+
+    // Put x and y bytes in a tuple
+    mp_obj_tuple_t * tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
+    tuple->items[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &x_vstr);
+    tuple->items[1] = mp_obj_new_str_from_vstr(&mp_type_bytes, &y_vstr);
+    return MP_OBJ_FROM_PTR(tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(
+    mod_trezorcrypto_ecdsa_point_add_obj,
+    4,
+    4,
+    mod_trezorcrypto_ecdsa_point_add);
+
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_ecdsa_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ecdsa)},
     {MP_ROM_QSTR(MP_QSTR_scalar_multiply),
      MP_ROM_PTR(&mod_trezorcrypto_ecdsa_scalar_multiply_obj)},
+    {MP_ROM_QSTR(MP_QSTR_point_add),
+     MP_ROM_PTR(&mod_trezorcrypto_ecdsa_point_add_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_ecdsa_globals,
                             mod_trezorcrypto_ecdsa_globals_table);
