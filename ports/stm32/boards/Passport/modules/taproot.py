@@ -8,6 +8,7 @@
 
 import ubinascii
 import utime
+from trezorcrypto import ecdsa
 
 # Set DEBUG to True to get a detailed debug output including
 # intermediate values during key generation, signing, and
@@ -74,13 +75,10 @@ def point_add(P1, P2):
     return (x3, (lam * (x(P1) - x3) - y(P1)) % p)
 
 
-def point_mul(P, n):
-    R = None
-    for i in range(256):
-        if (n >> i) & 1:
-            R = point_add(R, P)
-        P = point_add(P, P)
-    return R
+def scalar_multiply(n):
+    n = bytes_from_int(n)
+    (x, y) = ecdsa.scalar_multiply(n)
+    return (int_from_bytes(x), int_from_bytes(y))
 
 
 def bytes_from_int(x):
@@ -126,8 +124,8 @@ def tweak_internal_key(internal_key, h):
     if P is None:
         raise ValueError
     print("5 {}".format(utime.ticks_ms()))
-    # TODO: use trezor point_add and point_multiply
-    Q = point_add(P, point_mul(G, t))
+    # TODO: use trezor point_add
+    Q = point_add(P, scalar_multiply(t))
     print("6 {}".format(utime.ticks_ms()))
     return 0 if has_even_y(Q) else 1, bytes_from_int(x(Q))
 
