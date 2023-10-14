@@ -372,16 +372,6 @@ void foundation_secp256k1_schnorr_sign(const uint8_t (*data)[32],
                                        uint8_t (*signature)[64]);
 
 /**
- * Adds a tweak to an x-only public key
- * - `x_only_pubkey` is the public key
- * - `tweak` is the tweak value
- * - `tweaked_pubkey` is the result of the tweak
- */
-void foundation_secp256k1_add_tweak(const uint8_t (*x_only_pubkey)[32],
-                                    const uint8_t (*tweak)[32],
-                                    uint8_t (*tweaked_pubkey)[32]);
-
-/**
  * Receive a Uniform Resource part.
  *
  * # Safety
