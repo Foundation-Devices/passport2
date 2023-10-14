@@ -1442,12 +1442,4 @@ def escape_text(text):
     return text.replace("#", "##")
 
 
-def hash_tap_tweak(data):
-    from serializations import sha256
-    from public_constants import TAP_TWEAK_SHA256
-
-    tag_hash = a2b_hex(TAP_TWEAK_SHA256)
-    return sha256(tag_hash + tag_hash + data)
-
-
 # EOF
