@@ -109,20 +109,14 @@ def has_even_y(P):
 
 
 def tweak_internal_key(internal_key, h):
-    print("1 {}".format(utime.ticks_ms()))
     t = int_from_bytes(hash_tap_tweak(internal_key + h))
-    print("2 {}".format(utime.ticks_ms()))
     if t >= SECP256K1_ORDER:
         raise ValueError
-    print("3 {}".format(utime.ticks_ms()))
     P = lift_x(int_from_bytes(internal_key))
-    print("4 {}".format(utime.ticks_ms()))
     if P is None:
         raise ValueError
-    print("5 {}".format(utime.ticks_ms()))
     # TODO: use trezor point_add
     Q = point_add(P, scalar_multiply(t))
-    print("6 {}".format(utime.ticks_ms()))
     return 0 if has_even_y(Q) else 1, bytes_from_int(x(Q))
 
 
