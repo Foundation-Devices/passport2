@@ -1450,8 +1450,6 @@ def hash_tap_tweak(data):
     from public_constants import TAP_TWEAK_SHA256
 
     tag_hash = a2b_hex(TAP_TWEAK_SHA256)
-    text = tag_hash + tag_hash + data
-    print("hash_tap_tweak text: {}".format(b2a_hex(text)))
     return sha256(tag_hash + tag_hash + data)
 
 
