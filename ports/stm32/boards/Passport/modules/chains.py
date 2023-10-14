@@ -128,13 +128,13 @@ class ChainsBase:
             # TODO: Move all this to rust in a single p2tr function
             pubkey = node.public_key()
             internal_key = secp256k1.x_only_public_key(pubkey)
-            print("internal_key: {}".format(b2a_hex(internal_key)))  # Correct up to and including this line
+            print("internal_key: {}".format(b2a_hex(internal_key)))
             tweak = hash_tap_tweak(internal_key)
             print("tweak: {}".format(b2a_hex(tweak)))
             output_key = secp256k1.add_tweak(internal_key, tweak)
             print("output_key: {}".format(b2a_hex(output_key)))
             script_pubkey = a2b_hex('5120') + output_key
-            print("script_pubkey: {}".format(b2a_hex(script_pubkey)))
+            print("script_pubkey: {}".format(b2a_hex(script_pubkey)))  # Correct up to and including this line
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script_pubkey)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
