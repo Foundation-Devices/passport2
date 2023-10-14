@@ -61,18 +61,14 @@ def y(P):
 
 
 def point_add(P1, P2):
-    if P1 is None:
-        return P2
-    if P2 is None:
-        return P1
-    if (x(P1) == x(P2)) and (y(P1) != y(P2)):
-        return None
-    if P1 == P2:
-        lam = (3 * x(P1) * x(P1) * pow(2 * y(P1), p - 2, p)) % p
-    else:
-        lam = ((y(P2) - y(P1)) * pow(x(P2) - x(P1), p - 2, p)) % p
-    x3 = (lam * lam - x(P1) - x(P2)) % p
-    return (x3, (lam * (x(P1) - x3) - y(P1)) % p)
+
+    x1 = bytes_from_int(x(P1))
+    y1 = bytes_from_int(y(P1))
+    x2 = bytes_from_int(x(P2))
+    y2 = bytes_from_int(y(P2))
+
+    (x3, y3) = ecdsa.point_add(x1, y1, x2, y2)
+    return (int_from_bytes(x3), int_from_bytes(y3))
 
 
 def scalar_multiply(n):
