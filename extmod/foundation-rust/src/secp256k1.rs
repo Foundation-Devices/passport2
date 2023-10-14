@@ -3,7 +3,7 @@
 
 use once_cell::sync::Lazy;
 use secp256k1::{
-    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1, constants::PUBLIC_KEY_SIZE, constants::SCHNORR_PUBLIC_KEY_SIZE, PublicKey, XOnlyPublicKey, Scalar
+    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1, constants::SCHNORR_PUBLIC_KEY_SIZE, XOnlyPublicKey, Scalar
 };
 
 /// cbindgen:ignore
@@ -35,21 +35,6 @@ pub extern "C" fn secp256k1_sign_schnorr(
     let sig =
         PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
     signature.copy_from_slice(sig.as_ref());
-}
-
-/// Finds the x-only public key given a public key
-///
-/// - `pubkey` is the original public key
-/// - `x_only_pubkey` is the resulting x-only public key
-#[export_name = "foundation_secp256k1_x_only_public_key"]
-pub extern "C" fn secp256k1_x_only_public_key(
-    pubkey: &[u8; PUBLIC_KEY_SIZE],
-    x_only_pubkey: &mut [u8; SCHNORR_PUBLIC_KEY_SIZE],
-) {
-    let pk_struct = PublicKey::from_slice(pubkey).unwrap();
-    let (x_only_struct, _) = pk_struct.x_only_public_key();
-    let x_only_bytes = x_only_struct.serialize();
-    x_only_pubkey.copy_from_slice(&x_only_bytes)
 }
 
 /// Adds a tweak to an x-only public key
