@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # SPDX-FileCopyrightText: © 2020 Pieter Wuille, Jonas Nick, Tim Ruffing
 # SPDX-License-Identifier: BSD-2-Clause
 #
