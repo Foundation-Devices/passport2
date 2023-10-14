@@ -19,6 +19,8 @@ from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
+from foundation import secp256k1
+from utils import hash_tap_tweak
 
 # See SLIP 132 <https://github.com/satoshilabs/slips/blob/master/slip-0132.md>
 # for background on these version bytes. Not to be confused with SLIP-32 which involves Bech32.
@@ -120,21 +122,11 @@ class ChainsBase:
             # bech32 encoded segwit p2pkh
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
         elif addr_fmt & AFC_BECH32M:
-            from ubinascii import unhexlify as a2b_hex
-            from ubinascii import hexlify as b2a_hex
-            from foundation import secp256k1
-            from utils import hash_tap_tweak
 
-            # TODO: Move all this to rust in a single p2tr function
             pubkey = node.public_key()
             internal_key = secp256k1.x_only_public_key(pubkey)
-            print("internal_key: {}".format(b2a_hex(internal_key)))
             tweak = hash_tap_tweak(internal_key)
-            print("tweak: {}".format(b2a_hex(tweak)))
             output_key = secp256k1.add_tweak(internal_key, tweak)
-            print("output_key: {}".format(b2a_hex(output_key)))
-            script_pubkey = a2b_hex('5120') + output_key
-            print("script_pubkey: {}".format(b2a_hex(script_pubkey)))  # Correct up to and including this line
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
