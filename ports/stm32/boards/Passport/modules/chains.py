@@ -16,8 +16,8 @@ from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
-from foundation import secp256k1
 from utils import hash_tap_tweak
+from foundation import secp256k1
 
 # See SLIP 132 <https://github.com/satoshilabs/slips/blob/master/slip-0132.md>
 # for background on these version bytes. Not to be confused with SLIP-32 which involves Bech32.
@@ -123,7 +123,11 @@ class ChainsBase:
 
             pubkey = node.public_key()
             internal_key = pubkey[1::]
+            # internal_key = int.from_bytes(pubkey[1::], "big")
             tweak = hash_tap_tweak(internal_key)
+            # tweak = int.from_bytes(hash_tap_tweak(internal_key), "big")
+            # TODO: expose point_add and point_multiply
+            # output_key = internal_key + trezorcrypto.secp256k1.multiply(tweak, G)
             output_key = secp256k1.add_tweak(internal_key, tweak)
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
 
