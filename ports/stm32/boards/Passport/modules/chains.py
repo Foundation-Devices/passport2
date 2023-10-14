@@ -99,6 +99,7 @@ class ChainsBase:
 
     @classmethod
     def address(cls, node, addr_fmt):
+        from ubinascii import hexlify as b2a_hex
         # return a human-readable, properly formatted address
 
         if addr_fmt == AF_CLASSIC:
@@ -121,7 +122,7 @@ class ChainsBase:
         elif addr_fmt & AFC_BECH32M:
 
             pubkey = node.public_key()
-            internal_key = secp256k1.x_only_public_key(pubkey)
+            internal_key = pubkey[1::]
             tweak = hash_tap_tweak(internal_key)
             output_key = secp256k1.add_tweak(internal_key, tweak)
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
