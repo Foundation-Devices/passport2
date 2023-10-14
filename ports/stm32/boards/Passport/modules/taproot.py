@@ -120,6 +120,7 @@ def tweak_internal_key(internal_key, h):
     if P is None:
         raise ValueError
     print("5 {}".format(utime.ticks_ms()))
+    # TODO: use trezor point_add and point_multiply
     Q = point_add(P, point_mul(G, t))
     print("6 {}".format(utime.ticks_ms()))
     return 0 if has_even_y(Q) else 1, bytes_from_int(x(Q))
