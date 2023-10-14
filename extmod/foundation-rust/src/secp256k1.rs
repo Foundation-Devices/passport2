@@ -64,7 +64,7 @@ pub extern "C" fn secp256k1_add_tweak(
     tweaked_pubkey: &mut [u8; SCHNORR_PUBLIC_KEY_SIZE],
 ) {
     let pk_struct = XOnlyPublicKey::from_slice(x_only_pubkey).unwrap();
-    let tweak_struct = Scalar::from_le_bytes(*tweak).unwrap();
+    let tweak_struct = Scalar::from_be_bytes(*tweak).unwrap();
     let (tweaked_pubkey_struct, _) = pk_struct.add_tweak(&PRE_ALLOCATED_CTX, &tweak_struct).unwrap();
     let tweaked_pubkey_bytes = tweaked_pubkey_struct.serialize();
     tweaked_pubkey.copy_from_slice(&tweaked_pubkey_bytes)
