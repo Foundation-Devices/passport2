@@ -122,9 +122,7 @@ class ChainsBase:
         elif addr_fmt & AFC_BECH32M:
             pubkey = node.public_key()
             internal_key = pubkey[1::]
-            print("internal_key: {}".format(b2a_hex(internal_key)))
             output_key = output_script(internal_key, None)[2::]
-            print("output_key: {}".format(b2a_hex(output_key)))
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
