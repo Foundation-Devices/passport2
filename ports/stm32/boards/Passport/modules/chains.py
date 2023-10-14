@@ -7,7 +7,7 @@
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
-# chains.py - Magic values for the coins and altcoins we support
+# chains.py - Magic values for the bitcoin testnet and mainnet chains
 #
 import trezorcrypto
 import tcc

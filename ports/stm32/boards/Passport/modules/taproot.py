@@ -1,4 +1,10 @@
-# TODO: add BSD-2-Clause license for BIP340 and BSD-3-Clase for BIP341
+# SPDX-FileCopyrightText: © 2020 Pieter Wuille, Jonas Nick, Tim Ruffing
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# SPDX-FileCopyrightText: © 2020 Pieter Wuille, Jonas Nick, Anthony Towns
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# taproot.py - taproot helper functions
 
 import ubinascii
 import utime
