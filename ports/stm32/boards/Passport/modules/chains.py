@@ -11,7 +11,7 @@
 #
 import trezorcrypto
 import tcc
-from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
+from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2TR
 from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED, AFC_BECH32M
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
@@ -57,7 +57,7 @@ class ChainsBase:
     @classmethod
     def serialize_public(cls, node, addr_fmt=AF_CLASSIC):
         # output a xpub
-        addr_fmt = AF_CLASSIC if addr_fmt == AF_P2SH else addr_fmt
+        addr_fmt = AF_CLASSIC if (addr_fmt == AF_P2SH or addr_fmt == AF_P2TR) else addr_fmt
         return node.serialize_public(cls.slip132[addr_fmt].pub)
 
     @classmethod
