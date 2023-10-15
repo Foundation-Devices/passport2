@@ -98,7 +98,6 @@ class ChainsBase:
 
     @classmethod
     def address(cls, node, addr_fmt):
-        from ubinascii import hexlify as b2a_hex
         # return a human-readable, properly formatted address
 
         if addr_fmt == AF_CLASSIC:
