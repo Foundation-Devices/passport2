@@ -18,7 +18,7 @@ from foundation import ur
 from utils import xfp2str, to_str
 # from .multisig_json import create_multisig_json_wallet
 # from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
-from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH
+from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH, AF_P2TR
 from .utils import get_bip_num_from_addr_type
 
 

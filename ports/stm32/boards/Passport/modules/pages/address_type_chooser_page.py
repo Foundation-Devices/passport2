@@ -5,7 +5,7 @@
 
 
 from pages import ChooserPage
-from public_constants import AF_P2WPKH, AF_P2WPKH_P2SH, AF_CLASSIC
+from public_constants import AF_P2WPKH, AF_P2WPKH_P2SH, AF_CLASSIC, AF_P2TR
 
 
 class AddressTypeChooserPage(ChooserPage):
@@ -13,6 +13,7 @@ class AddressTypeChooserPage(ChooserPage):
         {'label': 'Native Segwit', 'value': AF_P2WPKH},
         {'label': 'P2SH-Segwit', 'value': AF_P2WPKH_P2SH},
         {'label': 'Legacy (P2PKH)', 'value': AF_CLASSIC},
+        {'label': 'Taproot (P2TR)', 'value': AF_P2TR},
     ]
 
     def __init__(self, card_header={'title': 'Address Type'}, initial_value=None):
