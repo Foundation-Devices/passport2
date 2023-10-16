@@ -50,7 +50,9 @@
 #include "servo.h"
 #include "dac.h"
 #include "lcd.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 #include "portmodules.h"
 #include "modmachine.h"
 #include "extmod/vfs.h"

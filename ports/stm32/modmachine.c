@@ -50,7 +50,9 @@
 #include "storage.h"
 #include "pin.h"
 #include "timer.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 #include "rtc.h"
 #include "i2c.h"
 #include "spi.h"

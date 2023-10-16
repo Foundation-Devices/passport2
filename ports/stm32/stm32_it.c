@@ -81,7 +81,9 @@
 #include "storage.h"
 #include "dma.h"
 #include "i2c.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 
 extern void __fatal_error(const char *);
 #if defined(MICROPY_HW_USB_FS)
