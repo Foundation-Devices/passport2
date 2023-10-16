@@ -199,7 +199,7 @@ class ConnectWalletFlow(Flow):
         else:
             self.goto(self.choose_export_mode, save_curr=save_curr)
 
-    async def choose_address_type(self):
+    async def choose_addr_type(self):
         result = await AddressTypeChooserPage(initial_value=self.addr_type).show()
         if result is None:
             if not self.back():
