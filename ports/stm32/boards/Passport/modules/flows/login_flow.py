@@ -23,7 +23,7 @@ class LoginFlow(Flow):
     async def enter_pin(self):
         try:
             (self.pin, is_done) = await PINEntryPage(
-                card_header={'title': 'Enter PIN'},
+                card_header={'title': common.settings.get('device_name', None) or 'Enter PIN'},
                 security_words_message='Recognize these Security Words?',
                 left_micron=microns.Shutdown,
                 right_micron=microns.Checkmark,
