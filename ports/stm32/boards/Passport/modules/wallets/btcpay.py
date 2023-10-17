@@ -6,7 +6,7 @@
 
 from .vault import create_vault_export
 from data_codecs.qr_type import QRType
-from public_constants import AF_P2WPKH
+from public_constants import AF_P2WPKH, AF_P2TR
 
 BtcPayWallet = {
     'label': 'BTCPay',
@@ -18,5 +18,7 @@ BtcPayWallet = {
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.QR},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-btcpay.json',
          'filename_pattern_multisig': '{xfp}-btcpay-multisig.json'}
-    ]
+    ],
+    'select_addr_type': True,
+    'addr_options': [AF_P2WPKH, AF_P2TR],
 }
