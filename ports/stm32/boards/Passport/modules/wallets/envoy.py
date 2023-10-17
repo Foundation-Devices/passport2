@@ -65,6 +65,8 @@ def create_envoy_export(sw_wallet=None,
         if acct is not None:
             acct_name = acct.get('name', '')
 
+    device_name = common.settings.get('device_name', '')
+
     rv = dict(derivation=acct_path,
               xfp=xfp,
               xpub=xpub,
@@ -72,7 +74,8 @@ def create_envoy_export(sw_wallet=None,
               acct_num=acct_num,
               hw_version=1.2 if passport.IS_COLOR else 1,
               fw_version=fw_version,
-              serial=serial_num)
+              serial=serial_num,
+              device_name=device_name)
 
     # Return the possible account mappings that the exported wallet can choose from
     # When we get the address back, we can determine the 'fmt' from the address and then look it up to
