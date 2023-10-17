@@ -110,7 +110,7 @@ def plus_menu():
 
 
 def device_menu():
-    from flows import AboutFlow, ChangePINFlow
+    from flows import AboutFlow, ChangePINFlow, RenameDeviceFlow
     from pages import AutoShutdownSettingPage, BrightnessSettingPage, BatteryPage
     from utils import is_logged_in
 
@@ -120,6 +120,7 @@ def device_menu():
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
         {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
         {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
+        {'icon': 'ICON_SIGN', 'label': 'Device Name', 'flow': RenameDeviceFlow},
     ]
 
 
