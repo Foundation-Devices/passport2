@@ -8,9 +8,8 @@ from flows import Flow
 
 
 class InitialSeedSetupFlow(Flow):
-    def __init__(self, is_envoy=True, allow_backtrack=True):
+    def __init__(self, allow_backtrack=True):
         super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
-        self.is_envoy = is_envoy
         self.statusbar = {'title': 'CREATE SEED', 'icon': 'ICON_SEED'}
         self.allow_backtrack = allow_backtrack
 
@@ -44,7 +43,7 @@ class InitialSeedSetupFlow(Flow):
         import microns
 
         options = [{'label': 'Create New Seed',
-                    'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)},
+                    'value': lambda: NewSeedFlow(full_backup=True)},
                    {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
                    {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
 
