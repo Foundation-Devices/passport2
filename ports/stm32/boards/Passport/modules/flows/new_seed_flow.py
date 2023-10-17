@@ -11,11 +11,10 @@ from translations import t, T
 
 
 class NewSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False, autobackup=True, show_words=False, full_backup=False):
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
         super().__init__(initial_state=self.check_for_seed, name='NewSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.autobackup = autobackup
-        self.show_words = show_words
         self.full_backup = full_backup
         self.seed_length = None
 
@@ -63,10 +62,7 @@ class NewSeedFlow(Flow):
     async def save_seed(self):
         (error,) = await spinner_task('Saving Seed', save_seed_task, args=[self.seed])
         if error is None:
-            if self.show_words:
-                self.goto(self.show_seed_words)
-            else:
-                self.goto(self.show_success)
+            self.goto(self.show_seed_words)
         else:
             self.error = 'Unable to save seed.'
             self.goto(self.show_error)

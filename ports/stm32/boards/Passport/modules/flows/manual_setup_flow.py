@@ -108,7 +108,7 @@ class ManualSetupFlow(Flow):
             return
         await self.ensure_logged_in()
 
-        result = await InitialSeedSetupFlow(is_envoy=False).run()
+        result = await InitialSeedSetupFlow().run()
         if result is None:
             self.back()
         elif not result:
