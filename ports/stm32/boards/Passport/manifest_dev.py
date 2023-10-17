@@ -6,7 +6,6 @@
 
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('developer/__init__.py',
-        'developer/battery_page.py',
         'developer/delete_derived_keys_flow.py',
         'developer/developer_functions_flow.py',
         'developer/fcc_test_flow.py',
