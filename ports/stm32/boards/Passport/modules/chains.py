@@ -7,15 +7,16 @@
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
-# chains.py - Magic values for the coins and altcoins we support
+# chains.py - Magic values for the bitcoin testnet and mainnet chains
 #
 import trezorcrypto
 import tcc
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
-from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED
+from public_constants import AFC_PUBKEY, AFC_SEGWIT, AFC_BECH32, AFC_SCRIPT, AFC_WRAPPED, AFC_BECH32M
 from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
+from taproot import output_script
 
 # See SLIP 132 <https://github.com/satoshilabs/slips/blob/master/slip-0132.md>
 # for background on these version bytes. Not to be confused with SLIP-32 which involves Bech32.
@@ -116,6 +117,12 @@ class ChainsBase:
         if addr_fmt & AFC_BECH32:
             # bech32 encoded segwit p2pkh
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 0, raw)
+
+        elif addr_fmt & AFC_BECH32M:
+            pubkey = node.public_key()
+            internal_key = pubkey[1::]
+            output_key = output_script(internal_key, None)[2::]
+            return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, output_key)
 
         # see bip-141, "P2WPKH nested in BIP16 P2SH" section
         assert addr_fmt == AF_P2WPKH_P2SH

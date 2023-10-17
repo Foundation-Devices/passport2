@@ -655,7 +655,7 @@
 #define MICROPY_LONGINT_IMPL_MPZ (2)
 
 #ifndef MICROPY_LONGINT_IMPL
-#define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_NONE)
+#define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_MPZ)
 #endif
 
 #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_LONGLONG
@@ -1075,7 +1075,7 @@ typedef double mp_float_t;
 
 // Support for calls to pow() with 3 integer arguments
 #ifndef MICROPY_PY_BUILTINS_POW3
-#define MICROPY_PY_BUILTINS_POW3 (0)
+#define MICROPY_PY_BUILTINS_POW3 (1)
 #endif
 
 // Whether to provide the help function
