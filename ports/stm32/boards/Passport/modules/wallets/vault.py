@@ -9,6 +9,7 @@ import stash
 import ujson
 from utils import xfp2str, to_str
 from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH
+from .utils import get_bip_num_from_addr_type
 
 
 def create_vault_export(sw_wallet=None,
@@ -22,8 +23,12 @@ def create_vault_export(sw_wallet=None,
 
     chain = chains.current_chain()
 
+    mode = get_bip_num_from_addr_type(addr_type, multisig)
+
     (fw_version, _, _, _, _) = system.get_software_info()
-    acct_path = "84'/{coin_type}'/{acct}'".format(coin_type=chain.b44_cointype, acct=acct_num)
+    acct_path = "{mode}'/{coin_type}'/{acct}'".format(mode=mode,
+                                                      coin_type=chain.b44_cointype,
+                                                      acct=acct_num)
     master_xfp = xfp2str(settings.get('xfp'))
 
     with stash.SensitiveValues() as sv:
