@@ -30,7 +30,9 @@ class RenameDeviceFlow(Flow):
             self.set_result(True)
             return
 
-        if sha256(result[:4]) == settings.get('pin_prefix_hash'):
+        prefix = result[:4]
+        hashes = [sha256(prefix), sha256(prefix.upper()), sha256(prefix.lower())]
+        if settings.get('pin_prefix_hash') in hashes:
             await ErrorPage("Don't use your pin as the device name, because it will be shown on the login page.").show()
             return
 
