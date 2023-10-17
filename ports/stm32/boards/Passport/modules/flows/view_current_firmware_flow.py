@@ -21,6 +21,8 @@ class ViewCurrentFirmwareFlow(Flow):
 
         title = settings.get("firmware_title", None)
         if title is not None:
+            if len(title) > 13:
+                title = title[:-13]
             msg += '\n{}'.format(title)
 
         # if user_signed:
