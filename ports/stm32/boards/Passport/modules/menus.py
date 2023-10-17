@@ -111,7 +111,7 @@ def plus_menu():
 
 def device_menu():
     from flows import AboutFlow, ChangePINFlow
-    from pages import AutoShutdownSettingPage, BrightnessSettingPage
+    from pages import AutoShutdownSettingPage, BrightnessSettingPage, BatteryPage
     from utils import is_logged_in
 
     return [
@@ -119,6 +119,7 @@ def device_menu():
         {'icon': 'ICON_COUNTDOWN', 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
         {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
+        {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
     ]
 
 
@@ -370,7 +371,6 @@ def developer_menu():
             SetInitialPINFlow,
         )
         from developer import (
-            BatteryPage,
             DeleteDerivedKeysFlow,
             DeveloperFunctionsFlow,
             FCCTestFlow,
@@ -381,7 +381,6 @@ def developer_menu():
         from foundation import ur
 
         return [
-            {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
             {'icon': 'ICON_ERASE', 'label': 'Factory Reset',
                 'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
             {'icon': 'ICON_RETRY', 'label': 'Spin!!!', 'flow': SpinDelayFlow, 'args': {'delay_ms': 10000}},

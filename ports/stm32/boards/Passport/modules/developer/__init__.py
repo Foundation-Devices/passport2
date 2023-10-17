@@ -3,7 +3,6 @@
 #
 # __init__.py
 
-from .battery_page import *
 from .delete_derived_keys_flow import *
 from .developer_functions_flow import *
 from .fcc_copy_files_task import *

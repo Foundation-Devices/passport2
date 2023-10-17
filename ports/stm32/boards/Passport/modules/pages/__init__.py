@@ -14,6 +14,7 @@ from .account_details_page import *
 from .address_type_chooser_page import *
 from .auto_shutdown_setting_page import *
 from .backup_code_page import *
+from .battery_page import *
 from .brandmark_page import *
 from .brightness_setting_page import *
 from .chain_setting_page import *
