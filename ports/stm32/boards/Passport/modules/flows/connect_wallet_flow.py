@@ -194,13 +194,14 @@ class ConnectWalletFlow(Flow):
 
         # NOTE: Nothing uses this option at the moment, but leaving it here in case we need it for a
         #       new wallet later.
-        if self.sw_wallet.get('options', {}).get('select_addr_type', False):
+        if self.sw_wallet.get('select_addr_type', False):
             self.goto(self.choose_addr_type, save_curr=save_curr)
         else:
             self.goto(self.choose_export_mode, save_curr=save_curr)
 
     async def choose_addr_type(self):
-        result = await AddressTypeChooserPage(initial_value=self.addr_type).show()
+        result = await AddressTypeChooserPage(initial_value=self.addr_type,
+                                              options=self.sw_wallet.get('addr_options', None)).show()
         if result is None:
             if not self.back():
                 self.set_result(False)
