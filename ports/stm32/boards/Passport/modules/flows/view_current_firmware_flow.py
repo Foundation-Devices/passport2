@@ -13,11 +13,15 @@ class ViewCurrentFirmwareFlow(Flow):
         super().__init__(initial_state=self.show_info, name='ViewCurrentFirmwareFlow')
 
     async def show_info(self):
-        from common import system, ui
+        from common import system, ui, settings
         (fw_version, fw_timestamp, boot_counter, user_signed, fw_date) = system.get_software_info()
 
         msg = '''Version {fw_version}
 {fw_date}'''.format(fw_version=fw_version, fw_date=fw_date)
+
+        title = settings.get("firmware_title", None)
+        if title is not None:
+            msg += '\n{}'.format(title)
 
         # if user_signed:
         #     msg += '\nSigned by User'
