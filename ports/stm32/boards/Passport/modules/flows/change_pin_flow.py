@@ -9,6 +9,8 @@ from tasks import change_pin_task
 from utils import spinner_task
 from translations import t, T
 import microns
+from common import settings
+from serializations import sha256
 
 
 class ChangePINFlow(Flow):
@@ -58,6 +60,7 @@ class ChangePINFlow(Flow):
         (result, error) = await spinner_task('Changing PIN', change_pin_task,
                                              args=[self.old_pin, self.new_pin])
         if result:
+            settings.set_volatile('pin_prefix_hash', sha256(self.new_pin[:4]))
             self.goto(self.show_success)
         else:
             self.goto(self.show_error)
