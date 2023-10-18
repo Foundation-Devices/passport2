@@ -1442,4 +1442,29 @@ def escape_text(text):
     return text.replace("#", "##")
 
 
+def stylize_address(address):
+    from styles.colors import TEXT_GREY_HEX, BLACK_HEX
+
+    stylized = ''
+    colors = [BLACK_HEX, TEXT_GREY_HEX]
+    color_index = 0
+    block = ''
+
+    for i in range(len(address)):
+        # Every 4 characters, append the recolored block of characters
+        if i % 4 == 0 and i != 0:
+            stylized += recolor(colors[color_index], block)
+            block = ''
+            color_index ^= 1
+            # Every 4 blocks, start a new line
+            if i % 16 == 0:
+                stylized += '\n'
+            else:
+                stylized += ' '
+        block += address[i]
+    stylized += recolor(colors[color_index], block)
+
+    return stylized
+
+
 # EOF
