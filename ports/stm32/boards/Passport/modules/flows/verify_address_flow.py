@@ -227,7 +227,7 @@ class VerifyAddressFlow(Flow):
 
     async def found(self):
         from pages import SuccessPage, LongSuccessPage
-        from utils import save_next_addr, format_btc_address
+        from utils import save_next_addr, format_btc_address, stylize_address
         import passport
         from common import settings
         import chains
@@ -239,12 +239,12 @@ class VerifyAddressFlow(Flow):
                        settings.get('xfp'),
                        chains.current_chain().b44_cointype,
                        self.found_is_change)
-        address = format_btc_address(self.address, self.addr_type)
+        address = stylize_address(self.address)
 
         msg = '''{}
 
 {} Address {}'''.format(
-            self.address,
+            address,
             'Change' if self.found_is_change == 1 else 'Receive',
             self.found_addr_idx)
 
