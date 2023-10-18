@@ -15,7 +15,7 @@ import microns
 from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
-from utils import spinner_task, recolor
+from utils import spinner_task, recolor, stylize_address
 
 
 class SignPsbtCommonFlow(Flow):
@@ -181,6 +181,8 @@ class SignPsbtCommonFlow(Flow):
         #
         val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
+
+        dest = stylize_address(dest)
 
         return '\n{}\n{}\n\n{}\n{}'.format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
