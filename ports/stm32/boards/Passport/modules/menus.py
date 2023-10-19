@@ -118,9 +118,9 @@ def device_menu():
         {'icon': 'ICON_BRIGHTNESS', 'label': 'Screen Brightness', 'page': BrightnessSettingPage},
         {'icon': 'ICON_COUNTDOWN', 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
-        {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
         {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
         {'icon': 'ICON_SIGN', 'label': 'Device Name', 'flow': RenameDeviceFlow},
+        {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
     ]
 
 
