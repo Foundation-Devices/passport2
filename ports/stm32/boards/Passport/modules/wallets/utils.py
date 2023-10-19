@@ -16,6 +16,11 @@ def get_next_account_num(xfp):
     accounts = get_accounts_by_xfp(xfp)
 
     acct_nums = []
+
+    # Mock out account 0, it always exists but may not be saved
+    if len(accounts) == 0 or accounts[0]['acct_num'] != 0:
+        acct_nums.append(0)
+
     for acct in accounts:
         acct_nums.append(acct['acct_num'])
 
