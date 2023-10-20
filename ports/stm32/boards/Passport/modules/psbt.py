@@ -1482,6 +1482,7 @@ class psbtObject(psbtProxy):
         # double SHA256
         return trezorcrypto.sha256(rv.digest()).digest()
 
+    # TODO: add taproot sighashes
     def make_txn_segwit_sighash(self, replace_idx, replacement, amount, scriptCode, sighash_type):
         # Implement BIP 143 hashing algo for signature of segwit programs.
         # see <https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki>
