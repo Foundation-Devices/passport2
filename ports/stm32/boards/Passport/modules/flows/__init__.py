@@ -55,6 +55,7 @@ from .read_file_flow import *
 from .remove_dev_pubkey_flow import *
 from .rename_account_flow import *
 from .rename_derived_key_flow import *
+from .rename_device_flow import *
 from .rename_multisig_flow import *
 from .reset_pin_flow import *
 from .restore_backup_flow import *

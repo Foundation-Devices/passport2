@@ -51,6 +51,8 @@ class SetInitialPINFlow(Flow):
         from pages import PINEntryPage
         from tasks import set_initial_pin_task, login_task
         from utils import spinner_task
+        from common import settings
+        from serializations import sha256
 
         (confirmed_pin, is_done) = await PINEntryPage(
             card_header={'title': 'Confirm PIN'},
@@ -61,6 +63,7 @@ class SetInitialPINFlow(Flow):
             self.back()
         else:
             if self.new_pin == confirmed_pin:
+                settings.set_volatile('pin_prefix_hash', sha256(self.new_pin[:4]))
 
                 (result, error) = await spinner_task('Setting initial PIN', set_initial_pin_task,
                                                      args=[self.new_pin])
