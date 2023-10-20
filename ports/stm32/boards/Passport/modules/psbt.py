@@ -432,6 +432,9 @@ class psbtOutputProxy(psbtProxy):
             # input is hash160 of a single public key
             assert len(addr_or_pubkey) == 20
             expect_pkh = hash160(expect_pubkey)
+        elif addr_type == 'p2tr':
+            # TODO: implement handling
+            assert(True)
         else:
             # we don't know how to "solve" this type of input
             return
@@ -459,7 +462,7 @@ class psbtInputProxy(psbtProxy):
                   'utxo', 'witness_utxo', 'sighash',
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
-                  'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig')
+                  'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig', 'is_taproot')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -482,6 +485,7 @@ class psbtInputProxy(psbtProxy):
         # self.is_segwit = None
         # self.is_multisig = None
         # self.is_p2sh = False
+        # self.is_taproot = None
 
         # self.required_key = None    # which of our keys will be used to sign input
         # self.scriptSig = None
@@ -615,6 +619,7 @@ class psbtInputProxy(psbtProxy):
         self.is_p2sh = False
         which_key = None
 
+        # TODO: add taproot to utxo.get_address()
         addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
         if addr_is_segwit and not self.is_segwit:
             self.is_segwit = True
@@ -685,6 +690,11 @@ class psbtInputProxy(psbtProxy):
             if addr_or_pubkey in self.subpaths:
                 which_key = addr_or_pubkey
 
+        elif addr_type == 'p2tr':
+            self.is_taproot = True
+            # TODO: implement taproot handling
+            # Should be similar to p2pkh, but also need to check for scripts
+
         else:
             # we don't know how to "solve" this type of input
             pass
@@ -735,6 +745,9 @@ class psbtInputProxy(psbtProxy):
                 #
                 assert not self.is_multisig
                 self.scriptCode = b'\x19\x76\xa9\x14' + addr + b'\x88\xac'
+            if addr_type == 'p2tr':
+                # TODO: add implementation
+                assert(True)
             elif not self.scriptCode:
                 # Segwit P2SH. We need the witness script to be provided.
                 if not self.witness_script:

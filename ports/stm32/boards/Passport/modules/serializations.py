@@ -343,6 +343,11 @@ class CTxOut(object):
             # aka. P2WSH
             return 'p2sh', self.scriptPubKey[2:2 + 32], True
 
+        if len(self.scriptPubKey) == 34 and \
+                self.scriptPubKey[0] == 81 and self.scriptPubKey[1] == 32:
+            # aka P2TR
+            return 'p2tr', self.scriptPubKey[2:2 + 32], True
+
         if self.is_p2pkh():
             return 'p2pkh', self.scriptPubKey[3:3 + 20], False
 
