@@ -18,6 +18,7 @@ async def sign_psbt_task(on_done, psbt):
     import trezorcrypto
     import stash
     import gc
+    from foundation import secp256k1
 
     try:
         with stash.SensitiveValues() as sv:
@@ -101,7 +102,10 @@ async def sign_psbt_task(on_done, psbt):
                 # print(" digest %s" % b2a_hex(digest).decode('ascii'))
 
                 # Do the ACTUAL signature ... finally!!!
-                result = trezorcrypto.secp256k1.sign(pk, digest)
+                if inp.is_taproot:
+                    result = secp256k1.schnorr_sign(digest, pk)
+                else:
+                    result = trezorcrypto.secp256k1.sign(pk, digest)
 
                 # private key no longer required
                 stash.blank_object(pk)
