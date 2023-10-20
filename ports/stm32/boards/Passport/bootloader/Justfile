@@ -72,7 +72,7 @@ flash screen="mono" rel="release" factory_test="": (build screen rel factory_tes
 flash-only screen="mono" rel="release": && (reset)
     just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin 0x8000000"
 
-# Build and flash the bootloader with no secrets (use to setup a new Secure Element)
+# Build and flash the bootloader with saved secrets (use to restore the bootloader of a bricked device)
 flash-with-secrets screen="mono" rel="release": && (reset)
     add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin" -s secrets
     just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
