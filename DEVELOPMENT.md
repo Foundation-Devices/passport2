@@ -88,6 +88,9 @@ To build and sign the firmware with a Developer Pubkey, use one of the following
 
     just sign 2.0.4 color
     just sign 2.0.4 mono
+    just sign 2.0.4bB color
+
+Note that beta numbers can be added, delimited by a lowercase 'b', followed by the beta number as an uppercase hexidecimal character.
 
 If you just want to build without signing, use one of the following commands:
 
