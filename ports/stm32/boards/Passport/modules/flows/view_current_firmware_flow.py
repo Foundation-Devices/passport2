@@ -16,17 +16,15 @@ class ViewCurrentFirmwareFlow(Flow):
         from common import system, ui, settings
         (fw_version, fw_timestamp, boot_counter, user_signed, fw_date) = system.get_software_info()
 
-        msg = '''Version {fw_version}
-{fw_date}'''.format(fw_version=fw_version, fw_date=fw_date)
+        # If there's a beta number, split the string, and convert to decimal
+        fw_strings = fw_version.split('b')
+        beta_version = ''
+        if len(fw_strings) > 1:
+            fw_version = fw_strings[0]
+            beta_version = " beta {}".format(int(fw_strings[1], 16))
 
-        title = settings.get("firmware_title", None)
-        if title is not None:
-            if len(title) > 13:
-                title = title[:-13]
-            msg += '\n{}'.format(title)
-
-        # if user_signed:
-        #     msg += '\nSigned by User'
+        msg = '''Version {fw_version}{beta_version}
+{fw_date}'''.format(fw_version=fw_version, beta_version=beta_version, fw_date=fw_date)
 
         msg += '''
 
