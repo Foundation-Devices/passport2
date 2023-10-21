@@ -1467,4 +1467,30 @@ def stylize_address(address):
     return stylized
 
 
+def get_single_address(xfp,
+                       chain,
+                       index,
+                       is_multisig,
+                       multisig_wallet,
+                       is_change,
+                       deriv_path,
+                       addr_type):
+    import stash
+
+    change_bit = 1 if is_change else 0
+    with stash.SensitiveValues() as sv:
+        if is_multisig:
+            (curr_idx, paths, address, script) = list(multisig_wallet.yield_addresses(
+                start_idx=index,
+                count=1,
+                change_idx=change_bit))[0]
+        else:
+            addr_path = '{}/{}/{}'.format(deriv_path, change_bit, index)
+            print(addr_path)
+            node = sv.derive_path(addr_path)
+            address = sv.chain.address(node, addr_type)
+
+    return address
+
+
 # EOF
