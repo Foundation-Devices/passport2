@@ -38,18 +38,22 @@ class AddressExplorerFlow(Flow):
         if len(multisigs) == 0:
             self.sig_type = 'single-sig'
             self.goto(self.choose_addr_type, save_curr=False)  # Skipping this state
-        else:
-            result = await SinglesigMultisigChooserPage(
-                initial_value=self.sig_type, multisigs=multisigs).show()
+            return
 
-            if result is None:
-                self.set_result(False)
-                return
+        result = await SinglesigMultisigChooserPage(
+            initial_value=self.sig_type, multisigs=multisigs).show()
 
-            (self.sig_type, self.multisig_wallet) = result
+        if result is None:
+            self.set_result(False)
+            return
 
-            self.is_multisig = self.sig_type == 'multisig'
+        (self.sig_type, self.multisig_wallet) = result
+        self.is_multisig = self.sig_type == 'multisig'
+        if not self.is_multisig:
             self.goto(self.choose_addr_type)
+            return
+
+        self.goto(self.explore)
 
     async def choose_addr_type(self):
         from pages import AddressTypeChooserPage
@@ -81,9 +85,8 @@ class AddressExplorerFlow(Flow):
 
     async def explore(self):
         import chains
-        from utils import get_next_addr, format_btc_address
+        from utils import get_next_addr, format_btc_address, get_single_address
         from common import settings
-        import stash
         import passport
         from pages import SuccessPage, LongSuccessPage
         import microns
@@ -97,20 +100,15 @@ class AddressExplorerFlow(Flow):
                               self.is_change)
 
         while True:
-            # TODO: break this into a util function
-            address = None
             try:
-                with stash.SensitiveValues() as sv:
-                    if self.is_multisig:
-                        (curr_idx, paths, address, script) = list(self.multisig_wallet.yield_addresses(
-                            start_idx=index,
-                            count=1,
-                            change_idx=1 if self.is_change else 0))[0]
-                    else:
-                        addr_path = '{}/{}/{}'.format(self.deriv_path, 1 if self.is_change else 0, index)
-                        print(addr_path)
-                        node = sv.derive_path(addr_path)
-                        address = sv.chain.address(node, self.addr_type)
+                address = get_single_address(xfp,
+                                             chain,
+                                             index,
+                                             self.is_multisig,
+                                             self.multisig_wallet,
+                                             self.is_change,
+                                             self.deriv_path,
+                                             self.addr_type)
             except Exception as e:
                 # TODO: make error page
                 break
