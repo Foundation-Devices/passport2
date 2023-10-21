@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#![cfg_attr(all(target_arch = "arm", target_os = "none"), no_std)]
+
 /// Enables STM32-specific code.
+#[macro_export]
 macro_rules! cfg_stm32 {
     ($($item:item)*) => {
         $(
@@ -12,6 +15,7 @@ macro_rules! cfg_stm32 {
 }
 
 /// Enables unix-specific code.
+#[macro_export]
 macro_rules! cfg_unix {
     ($($item:item)*) => {
         $(
@@ -22,11 +26,27 @@ macro_rules! cfg_unix {
 }
 
 cfg_stm32! {
-    pub use passport_platform_stm32::rand;
-    pub use passport_platform_stm32::secp256k1;
+    mod stm32;
+    pub use self::stm32::*;
+
+    /// Panic handler.
+    ///
+    /// This only serves as a debugging tool for Rust code on the development
+    /// boards because it only prints to the serial port the panic information.
+    ///
+    /// TODO: Pass this back as an exception to MicroPython, to avoid hangs.
+    #[panic_handler]
+    fn panic_handler(info: &core::panic::PanicInfo) -> ! {
+        use core::fmt::Write;
+
+        let mut stdout = crate::io::stdout();
+        writeln!(stdout, "{}", info).ok();
+
+        loop {}
+    }
 }
 
 cfg_unix! {
-    pub use passport_platform_unix::rand;
-    pub use passport_platform_unix::secp256k1;
+    mod unix;
+    pub use self::unix::*;
 }

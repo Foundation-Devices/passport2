@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use passport_platform::{rand, secp256k1::SECP256K1};
-use secp256k1::{KeyPair, Message};
+use secp256k1::{Keypair, Message};
 
 /// Computes a Schnorr signature over the message `data`.
 ///
@@ -15,10 +15,10 @@ pub extern "C" fn secp256k1_sign_schnorr(
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
 ) {
-    let keypair = KeyPair::from_seckey_slice(&SECP256K1, secret_key)
+    let keypair = Keypair::from_seckey_slice(&SECP256K1, secret_key)
         .expect("invalid secret key");
 
-    let msg = Message::from_slice(data).unwrap();
+    let msg = Message::from_digest_slice(data).unwrap();
     let sig = SECP256K1.sign_schnorr_with_rng(
         &msg,
         &keypair,

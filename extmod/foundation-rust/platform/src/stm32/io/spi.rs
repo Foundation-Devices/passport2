@@ -3,7 +3,7 @@
 
 use embedded_hal::blocking::spi::Transfer;
 
-use crate::ffi::{spi_obj, spi_t, spi_transfer};
+use crate::stm32::ffi::{spi_obj, spi_t, spi_transfer};
 
 #[derive(Debug)]
 pub struct Spi(*const spi_t);

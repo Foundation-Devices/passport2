@@ -6,8 +6,6 @@
 //! Runtime code and bindings for MicroPython STM32 port.  This crate assumes
 //! that it will be linked into MicroPython.
 
-#![no_std]
-
 // This forces Rust to include this crate as it provides symbols for
 // critical-section.
 use cortex_m as _;

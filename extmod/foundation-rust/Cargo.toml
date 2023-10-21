@@ -5,8 +5,6 @@
 members = [
     "bindings",
     "platform",
-    "platform/unix",
-    "platform/stm32",
     "spi-nor",
     "stm32h753-hal",
 ]

@@ -3,7 +3,7 @@
 
 pub mod spi;
 
-use crate::ffi;
+use crate::stm32::ffi;
 
 /// Returns a handle to the standard output.
 pub fn stdout() -> Stdout {

@@ -3,8 +3,21 @@ name = "passport-platform"
 version = "0.1.0"
 edition = "2021"
 
-[target.'cfg(all(target_family = "unix"))'.dependencies]
-passport-platform-unix = { path = "unix" }
+[features]
+std = [
+    "rand/std",
+    "rand/std_rng",
+    "secp256k1/std",
+    "secp256k1/global-context",
+]
+
+[dependencies]
+rand = { version = "0.8.5", default-features = false }
+rand_core = { version = "0.6.4", default-features = false }
+secp256k1 = { version = "0.28", features = ["rand"], default-features = false }
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))'.dependencies]
-passport-platform-stm32 = { path = "stm32" }
+once_cell = { version = "1", features = ["critical-section"], default-features = false }
+cortex-m = { version = "0.7", features = ["cm7", "critical-section-single-core"] }
+critical-section = "1"
+embedded-hal = "0.2.7"

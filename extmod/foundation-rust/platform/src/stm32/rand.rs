@@ -8,7 +8,7 @@
 
 use core::{ffi::c_void, num::NonZeroU32};
 
-use crate::ffi::{
+use crate::stm32::ffi::{
     noise_disable, noise_enable, noise_get_random_bytes, NOISE_ALL,
 };
 
