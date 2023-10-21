@@ -13,6 +13,13 @@ from flows import Flow
 
 
 class AddressExplorerFlow(Flow):
+    NAV_VALS = {
+        'up': -10,
+        'down': 10,
+        'left': -1,
+        'right': 1,
+    }
+
     def __init__(self):
         from common import ui
 
@@ -25,7 +32,7 @@ class AddressExplorerFlow(Flow):
         self.addr_type = None
         self.deriv_path = None
         self.is_change = None
-        self.curr_idx = 0
+        self.index = 0
 
     async def choose_sig_type(self):
         from pages import SinglesigMultisigChooserPage
@@ -53,7 +60,7 @@ class AddressExplorerFlow(Flow):
             self.goto(self.choose_addr_type)
             return
 
-        self.goto(self.explore)
+        self.goto(self.prepare)
 
     async def choose_addr_type(self):
         from pages import AddressTypeChooserPage
@@ -81,54 +88,64 @@ class AddressExplorerFlow(Flow):
             return
 
         self.is_change = not result
+        self.goto(self.prepare)
+
+    async def prepare(self):
+        from common import settings
+        import chains
+        from utils import get_next_addr
+
+        self.xfp = settings.get('xfp')
+        self.chain = chains.current_chain()
+        self.index = get_next_addr(self.acct_num,
+                                   self.addr_type,
+                                   self.xfp,
+                                   self.chain.b44_cointype,
+                                   self.is_change)
+
         self.goto(self.explore)
 
     async def explore(self):
-        import chains
-        from utils import get_next_addr, format_btc_address, get_single_address
-        from common import settings
+        from utils import stylize_address, get_single_address
         import passport
-        from pages import SuccessPage, LongSuccessPage
+        from pages import ShowQRPage, AddressExplorerPage
         import microns
 
-        xfp = settings.get('xfp')
-        chain = chains.current_chain()
-        index = get_next_addr(self.acct_num,
-                              self.addr_type,
-                              xfp,
-                              chain.b44_cointype,
-                              self.is_change)
+        try:
+            self.address = get_single_address(self.xfp,
+                                              self.chain,
+                                              self.index,
+                                              self.is_multisig,
+                                              self.multisig_wallet,
+                                              self.is_change,
+                                              self.deriv_path,
+                                              self.addr_type)
+        except Exception as e:
+            # TODO: make error page
+            self.set_result(False)
+            return
 
-        while True:
-            try:
-                address = get_single_address(xfp,
-                                             chain,
-                                             index,
-                                             self.is_multisig,
-                                             self.multisig_wallet,
-                                             self.is_change,
-                                             self.deriv_path,
-                                             self.addr_type)
-            except Exception as e:
-                # TODO: make error page
-                break
-            # TODO: use nice new address formatting
-            nice_address = format_btc_address(address, self.addr_type)
+        nice_address = stylize_address(self.address)
 
-            msg = '''{}
+        msg = '''{}
 
 {} Address {}'''.format(
-                nice_address,
-                'Change' if self.is_change else 'Receive',
-                index)
+            nice_address,
+            'Change' if self.is_change else 'Receive',
+            self.index)
 
-            # TODO: make a new page that allows navigation
-            page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
-            result = await page_class(msg, left_micron=microns.Cancel).show()
+        while True:
+            result = await AddressExplorerPage(msg,
+                                               left_micron=microns.Cancel,
+                                               right_micron=microns.ScanQR).show()
 
             if not result:
-                break
+                self.set_result(True)
+                return
+            elif result is True:
+                await ShowQRPage(qr_data=self.address,
+                                 left_micron=None,
+                                 right_micron=microns.Checkmark).show()
             else:
-                index += 1
-
-        self.set_result(True)
+                self.index = max(0, self.index + self.NAV_VALS[result])
+                break
