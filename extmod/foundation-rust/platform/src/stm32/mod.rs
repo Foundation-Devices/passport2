@@ -11,7 +11,6 @@
 use cortex_m as _;
 
 mod ffi;
-mod rt;
 
 pub mod io;
 pub mod rand;
