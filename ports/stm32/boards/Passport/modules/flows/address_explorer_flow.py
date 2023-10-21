@@ -94,6 +94,13 @@ class AddressExplorerFlow(Flow):
         from common import settings
         import chains
         from utils import get_next_addr
+        from pages import InfoPage
+
+        result = await InfoPage("TODO: explain navigation").show()
+
+        if not result:
+            self.back()
+            return
 
         self.xfp = settings.get('xfp')
         self.chain = chains.current_chain()
