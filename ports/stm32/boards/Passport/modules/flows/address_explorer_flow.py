@@ -79,7 +79,7 @@ class AddressExplorerFlow(Flow):
     async def choose_change(self):
         from pages import YesNoChooserPage
 
-        result = await YesNoChooserPage(text="Explore normal or change addresses?",
+        result = await YesNoChooserPage(text="\nExplore normal or change addresses?",
                                         yes_text="Normal",
                                         no_text="Change").show()
 
@@ -134,12 +134,11 @@ class AddressExplorerFlow(Flow):
 
         nice_address = stylize_address(self.address)
 
-        msg = '''{}
+        msg = '''{} Address {}
 
-{} Address {}'''.format(
-            nice_address,
-            'Change' if self.is_change else 'Receive',
-            self.index)
+{}'''.format('Change' if self.is_change else 'Receive',
+             self.index,
+             nice_address)
 
         while True:
             result = await AddressExplorerPage(msg,
