@@ -9,11 +9,32 @@ from flows import Flow
 class SeedWarningFlow(Flow):
     def __init__(self, mention_passphrase=False,
                  action_text="display your seed words",
-                 continue_text=None):
+                 continue_text=None,
+                 initial=False):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text
         self.continue_text = continue_text or "control your funds"
-        super().__init__(initial_state=self.show_intro, name='SeedWarningFlow')
+        initial_state = self.show_initial if initial else self.show_intro
+        super().__init__(initial_state=initial_state, name='SeedWarningFlow')
+
+    async def show_initial(self):
+        from pages import InfoPage
+        import microns
+        import lvgl as lv
+
+        text = '''After setup completion, your seed words can be viewed in the advanced menu.
+
+Would you like to view them now?'''
+
+        result = await InfoPage(text=text,
+                                icon=lv.LARGE_ICON_SEED,
+                                left_micron=microns.Cancel).show()
+
+        if not result:
+            self.set_result(False)
+            return
+
+        self.set_result(True)
 
     async def show_intro(self):
         import lvgl as lv
