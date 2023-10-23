@@ -99,3 +99,5 @@ simulator/snapshots/
 *.gif
 *.pem
 .vscode
+
+.env
