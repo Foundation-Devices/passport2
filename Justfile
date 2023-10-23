@@ -3,64 +3,78 @@
 #
 # Justfile - Root-level Justfile for Passport
 
-export DOCKER_IMAGE := env_var_or_default('DOCKER_IMAGE', 'foundation-devices/passport2:latest')
+export DOCKER_IMAGE := env_var_or_default("DOCKER_IMAGE", "foundation-devices/passport2:latest")
+
+set dotenv-load
 
 # Build the docker image
 build-docker:
     docker build -t ${DOCKER_IMAGE} .
 
-# Build the firmware inside docker.
-build-firmware screen="mono": mpy-cross (run-in-docker ("just ports/stm32/build " + screen))
+# Build the firmware.
+build-firmware screen="mono":
+    ./run.sh just ports/stm32/build {{screen}}
 
 # build the bootloader inside docker
-build-bootloader screen="mono": (run-in-docker ("just ports/stm32/boards/Passport/bootloader/build " + screen))
+build-bootloader screen="mono":
+    ./run.sh just ports/stm32/boards/Passport/bootloader/build {{screen}}
 
 # Run the built firmware through SHA256
 verify-sha sha screen="mono":
-    #!/usr/bin/env bash
-    sha=$(shasum -a 256 ports/stm32/build-Passport/firmware-{{uppercase(screen)}}.bin | awk '{print $1}')
+   #!/usr/bin/env bash
 
-    if [ -z "${sha}" ]; then
-        exit 1
-    fi
+   sha=$(shasum -a 256 ports/stm32/build-Passport/firmware-{{uppercase(screen)}}.bin | awk '{print $1}')
 
-    echo -e "Expected SHA:\t{{sha}}"
-    echo -e "Actual SHA:\t${sha}"
-    if [ "$sha" = "{{sha}}" ]; then
-        echo "Hashes match!"
-    else
-        echo "ERROR: Hashes DO NOT match!"
-        exit 1
-    fi
+   if [ -z "${sha}" ]; then
+       exit 1
+   fi
 
+   echo -e "Expected SHA:\t{{sha}}"
+   echo -e "Actual SHA:\t${sha}"
+   if [ "$sha" = "{{sha}}" ]; then
+       echo "Hashes match!"
+   else
+       echo "ERROR: Hashes DO NOT match!"
+       exit 1
+   fi
+
+# Build tools.
 tools: build-add-secrets build-cosign
 
 # Build the add-secrets tool.
-build-add-secrets: (run-in-docker "make -C ports/stm32/boards/Passport/tools/add-secrets")
+build-add-secrets:
+    ./run.sh make -C ports/stm32/boards/Passport/tools/add-secrets
 
 # Build the cosign tool.
-build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
+build-cosign:
+    ./run.sh make -C ports/stm32/boards/Passport/tools/cosign
 
 # Sign the built firmware using a private key and the cosign tool
-sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
+sign keypath version screen="mono": (build-firmware screen) (build-cosign)
+    ./run.sh just cosign_filepath=build-Passport/firmware-{{uppercase(screen)}}.bin \
+                  cosign_keypath={{keypath}} \
+                  {{version}} \
+                  {{screen}} \
+                  ports/stm32/sign
 
 # Clean firmware build
-clean: (run-in-docker "just ports/stm32/clean")
+clean:
+    ./run.sh just ports/stm32/clean
 
 # Clean bootloader build
-clean-firmware: (run-in-docker "just ports/stm32/clean")
-
-# Clean bootloader build
-clean-bootloader: (run-in-docker "just ports/stm32/boards/Passport/bootloader/clean")
+clean-bootloader:
+    ./run.sh just ports/stm32/boards/Passport/bootloader/clean
 
 # Clean simulator build
-clean-simulator: (run-in-docker "just simulator/clean")
+clean-simulator $USE_DOCKER="false":
+    just simulator/clean
 
 # Build simulator
-build-simulator screen="mono": (run-in-docker ("just simulator/build " + screen))
+build-simulator screen="mono" $USE_DOCKER="false":
+    just simulator/build {{screen}}
 
 # Run the simulator.
-sim screen="mono" ext="":
+sim screen="mono" ext="" $USE_DOCKER="false":
     just simulator/sim {{screen}} {{ext}}
 
 # Run unit tests.
@@ -69,18 +83,20 @@ test:
   cd ports/stm32/boards/Passport/modules/tests; python3 -m pytest . --simulatordir=$(pwd)/simulator
 
 # Lint the codebase.
-lint: (run-in-docker "just ports/stm32/lint") (run-in-docker "just extmod/foundation-rust/lint")
+lint:
+    ./run.sh just ports/stm32/lint
+    ./run.sh just extmod/foundation-rust/lint
 
-[private]
-mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-docker")
+# Build mpy-cross.
+mpy-cross:
+    #!/usr/bin/env bash
+    set -e
 
-[private]
-run-in-docker command:
-    docker run --rm -v "$PWD":/workspace \
-        -u $(id -u):$(id -g) \
-        -v $(pwd):/workspace \
-        -w /workspace \
-        -e MPY_CROSS="/workspace/mpy-cross/mpy-cross-docker" \
-        --entrypoint bash \
-        ${DOCKER_IMAGE} \
-        -c 'export PATH=$PATH:/workspace/ports/stm32/boards/Passport/tools/cosign/x86/release;{{command}}'
+    if [ "$USE_DOCKER" = true ];
+    then
+        ./run.sh make -C mpy-cross/ \
+                         PROG=mpy-cross-docker \
+                         BUILD=build-docker
+    else
+        ./run.sh make -C mpy-cross/
+    fi
