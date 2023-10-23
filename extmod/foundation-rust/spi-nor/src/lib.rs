@@ -12,7 +12,7 @@
 //!
 //! https://github.com/qemu/qemu/blob/master/hw/block/m25p80.c
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 use bitflags::bitflags;
 use embedded_hal::blocking::spi::Transfer;
@@ -72,13 +72,20 @@ impl<SPI: Transfer<u8>, CS: OutputPin> Flash<SPI, CS> {
         Ok(())
     }
 
+    /// Consume the driver and return the SPI device and CS pin.
+    pub fn into_inner(self) -> (SPI, CS) {
+        let Flash { spi, cs } = self;
+        (spi, cs)
+    }
+
     /// Reads the status register.
-    pub fn read_status(&mut self) -> Result<Status, Error<SPI, CS>> {
-        let mut buf = [Instruction::ReadStatusRegister as u8, 0];
+    fn read_status(&mut self) -> Result<Status, Error<SPI, CS>> {
+        let mut buf = [Instruction::ReadStatusRegister as u8];
         let res = self.instruction(&mut buf)?;
         Ok(Status::from_bits(res[0])
             .expect("all of status bits should be defined"))
     }
+
 
     fn instruction<'b>(
         &mut self,
@@ -91,7 +98,7 @@ impl<SPI: Transfer<u8>, CS: OutputPin> Flash<SPI, CS> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error<SPI: Transfer<u8>, CS: OutputPin> {
     /// SPI error.
     Spi(SPI::Error),
@@ -106,6 +113,7 @@ enum Instruction {
 }
 
 bitflags! {
+    /// Status register values.
     pub struct Status: u8 {
         const BUSY = 1 << 0;
         const WEL  = 1 << 1;
@@ -115,5 +123,97 @@ bitflags! {
         const TB   = 1 << 5;
         const SEC  = 1 << 6;
         const SRP  = 1 << 7;
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    use embedded_hal_mock::{pin, spi};
+
+    /// Test the SPI flash using a mock SPI bus and a mock CS pin.
+    fn test_flash(
+        spi_expectations: &[spi::Transaction],
+        cs_expectations: &[pin::Transaction],
+        body: impl FnOnce(&mut Flash<spi::Mock, pin::Mock>),
+    ) {
+        let spi = spi::Mock::new(spi_expectations);
+        let cs = pin::Mock::new(cs_expectations);
+
+        let mut flash = Flash::new(spi, cs);
+        body(&mut flash);
+
+        let (mut spi, mut cs) = flash.into_inner();
+        spi.done();
+        cs.done();
+    }
+
+    #[test]
+    fn test_read_status() {
+        test_flash(
+            &[spi::Transaction::transfer(
+                vec![Instruction::ReadStatusRegister as u8],
+                vec![0],
+            )],
+            &[
+                pin::Transaction::set(pin::State::Low),
+                pin::Transaction::set(pin::State::High),
+            ],
+            |flash| {
+                flash.read_status().unwrap();
+            },
+        )
+    }
+
+    #[test]
+    fn test_busy_read() {
+        test_flash(
+            &[spi::Transaction::transfer(
+                vec![Instruction::ReadStatusRegister as u8],
+                vec![Status::BUSY.bits()],
+            )],
+            &[
+                pin::Transaction::set(pin::State::Low),
+                pin::Transaction::set(pin::State::High),
+            ],
+            |flash| {
+                let result = flash.read(0, &mut []);
+                assert!(matches!(result, Err(nb::Error::WouldBlock)));
+            },
+        )
+    }
+
+    #[test]
+    fn test_read() {
+        let data = vec![0xAA, 0xBB, 0xCC, 0xDD];
+
+        test_flash(
+            &[
+                spi::Transaction::transfer(
+                    vec![Instruction::ReadStatusRegister as u8],
+                    vec![0],
+                ),
+                spi::Transaction::transfer(
+                    vec![Instruction::ReadData as u8, 0, 0xAA, 0xBB],
+                    vec![0, 0, 0, 0],
+                ),
+                spi::Transaction::transfer(
+                    vec![0, 0, 0, 0],
+                    data.clone(),
+                ),
+            ],
+            &[
+                pin::Transaction::set(pin::State::Low),
+                pin::Transaction::set(pin::State::High),
+                pin::Transaction::set(pin::State::Low),
+                pin::Transaction::set(pin::State::High),
+            ],
+            |flash| {
+                let mut buf = [0; 4];
+                flash.read(0x0000_AABB, &mut buf).unwrap();
+                assert_eq!(&buf, data.as_slice());
+            }
+        )
     }
 }

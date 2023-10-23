@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 [package]
 name = "passport-platform"
 version = "0.1.0"
@@ -15,9 +18,11 @@ std = [
 rand = { version = "0.8.5", default-features = false }
 rand_core = { version = "0.6.4", default-features = false }
 secp256k1 = { version = "0.28", features = ["rand"], default-features = false }
+spi-nor = { version = "0.1.0", path = "../spi-nor" }
 
 [target.'cfg(all(target_arch = "arm", target_os = "none"))'.dependencies]
 once_cell = { version = "1", features = ["critical-section"], default-features = false }
 cortex-m = { version = "0.7", features = ["cm7", "critical-section-single-core"] }
 critical-section = "1"
 embedded-hal = "0.2.7"
+stm32h753-hal = { version = "0.1", path = "../stm32h753-hal" }

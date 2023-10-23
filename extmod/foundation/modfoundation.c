@@ -27,6 +27,7 @@
 #include "modfoundation-bip39.h"
 #include "modfoundation-qr.h"
 #include "modfoundation-secp56k1.h"
+#include "modfoundation-spi.h"
 #include "modfoundation-ur.h"
 
 /// package: foundation

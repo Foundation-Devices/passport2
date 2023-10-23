@@ -26,4 +26,5 @@ heapless = { version = "0.8", git = "https://github.com/japaric/heapless", defau
 minicbor = { version = "0.19", default-features = false }
 passport-platform = { path = "../platform", default-features = false }
 secp256k1 = { version = "0.28", features = ["rand"], default-features = false }
+spi-nor = { version = "0.1", path = "../spi-nor" }
 uuid = { version = "1", default-features = false }

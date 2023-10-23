@@ -12,6 +12,15 @@ impl Spi {
     pub fn from_index(index: usize) -> Self {
         Self(unsafe { &spi_obj[index] as *const _ })
     }
+
+    fn timeout(&self, words: usize) -> u32 {
+        // Approximation of len*8*100/baudrate milliseconds.
+        //
+        // See ports/stm32/spi.h for more information.
+        //
+        // FIXME: Use baudrate for the calculation.
+        words as u32 + 100
+    }
 }
 
 impl Transfer<u8> for Spi {
@@ -21,20 +30,13 @@ impl Transfer<u8> for Spi {
         &mut self,
         words: &'w mut [u8],
     ) -> Result<&'w [u8], Self::Error> {
-        // Approximation of len*8*100/baudrate milliseconds.
-        //
-        // See ports/stm32/spi.h for more information.
-        //
-        // FIXME: Use baudrate for the calculation.
-        let timeout = words.len() + 100;
-
         unsafe {
             spi_transfer(
                 self.0,
                 words.len(),
                 words.as_ptr(),
                 words.as_mut_ptr(),
-                timeout as u32,
+                self.timeout(words.len()),
             )
         }
 

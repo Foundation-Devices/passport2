@@ -148,4 +148,6 @@ pub mod gpioe {
             rcc.ahb4enr.modify(|_, w| w.gpioeen().set_bit())
         }
     }
+
+    pub type PE11<M> = Pin<'E', 11, M>;
 }

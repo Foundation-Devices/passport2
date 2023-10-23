@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pub mod spi;
+pub mod spi_nor;
 
 use crate::stm32::ffi;
 

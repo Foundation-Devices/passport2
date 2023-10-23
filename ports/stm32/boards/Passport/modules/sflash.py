@@ -188,17 +188,7 @@ class SPIFlash:
             if not self.is_busy():
                 return
 
-    def chip_erase(self):
-        """Erase the entire SPI flash chip
-
-        This operation can take up to 6 seconds, calling `is_busy()` is
-        recommended.
-        """
-
-        # can take up to 6 seconds, so poll is_busy()
-        self._cmd(_CMD_WREN)
-        self._cmd(_CMD_CHIP_ERASE)
-
+    # NEEDED
     def sector_erase(self, address):
         """Erase a sector
 
@@ -212,6 +202,7 @@ class SPIFlash:
         self._cmd(_CMD_WREN)
         self._cmd(_CMD_SEC_ERASE, address)
 
+    # NEEDED
     def block_erase(self, address):
         """Erase a block
 

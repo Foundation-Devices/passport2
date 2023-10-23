@@ -85,7 +85,7 @@ build screen="mono" dev="" +ext='':
         {{ext}}
 
 # Sign current firmware build with the user.pem key and set specified version
-sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
+sign version="1.0.0" screen="mono" dev="" ext="": # (build screen dev ext)
     #!/usr/bin/env bash
     set -e
     SCREEN_EXT={{screen}}
