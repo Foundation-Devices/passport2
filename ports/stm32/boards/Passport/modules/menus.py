@@ -37,7 +37,8 @@ def manage_account_menu():
         {'icon': 'ICON_INFO', 'label': 'Rename Account', 'flow': RenameAccountFlow},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow},
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+         'statusbar': {'title': 'EXPLORE'}},
         {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
     ]
 
