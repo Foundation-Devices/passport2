@@ -68,7 +68,7 @@ class AddressExplorerFlow(Flow):
 
         result = await AddressTypeChooserPage().show()
 
-        if result is None:
+        if not result:
             self.back()
             return
 
@@ -79,8 +79,8 @@ class AddressExplorerFlow(Flow):
     async def choose_change(self):
         from pages import YesNoChooserPage
 
-        result = await YesNoChooserPage(text="\nExplore normal or change addresses?",
-                                        yes_text="Normal",
+        result = await YesNoChooserPage(text="\nExplore receive or change addresses?",
+                                        yes_text="Receive",
                                         no_text="Change").show()
 
         if result is None:
