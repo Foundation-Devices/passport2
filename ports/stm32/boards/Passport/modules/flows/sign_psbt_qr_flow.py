@@ -12,9 +12,7 @@ class SignPsbtQRFlow(Flow):
         self.raw_psbt = None
         self.ur_type = None
         self.psbt = None
-        self.txid = None
         self.is_comp = None
-        self.out2_fn = None
         self.written = False
         self.signed_bytes = None
         self.max_frames = 35
@@ -28,6 +26,7 @@ class SignPsbtQRFlow(Flow):
         from pages import YesNoChooserPage
         import microns
         import passport
+        import gc
 
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
@@ -55,6 +54,7 @@ How would you like to proceed?"
             if result is None or result:
                 self.max_frames = None
             else:
+                gc.collect()
                 result = await SignPsbtMicroSDFlow().run()
                 self.set_result(result)
             return  # Run it again with no max frames if the user wants
@@ -142,6 +142,7 @@ How would you like to proceed?"
         from ubinascii import hexlify as b2a_hex
         import microns
         from foundation import ur
+        import gc
 
         if self.ur_type is None:
             qr_type = QRType.QR
@@ -156,83 +157,90 @@ How would you like to proceed?"
                 raise RuntimeError('Unknown UR type: {}'.format(self.ur_type))
 
         result = False
+        # TODO: this should be removed when re-implementing switch to microsd option
+        self.signed_bytes = None
+        gc.collect()
+
         try:
             result = await ShowQRPage(qr_type=qr_type,
                                       qr_data=qr_data,
-                                      left_micron=microns.MicroSD,
+                                      left_micron=None,
                                       right_micron=microns.Checkmark).show()
         except MemoryError as e:
             result2 = await ErrorPage(text='Transaction is too complex: {}'.format(e),
-                                      left_micron=microns.MicroSD,
+                                      left_micron=None,
                                       right_micron=microns.Cancel).show()
-            if not result2:
-                self.goto(self.save_to_microsd)
-            else:
-                self.set_result(False)
-            return
-
-        if not result:
-            self.goto(self.save_to_microsd)
-            return
-
-        self.set_result(True)
-
-    async def save_to_microsd(self):
-        from flows import SaveToMicroSDFlow
-        from pages import ErrorPage
-        from utils import get_folder_path
-        from public_constants import DIR_TRANSACTIONS
-        from ubinascii import hexlify as b2a_hex
-
-        # Check that the psbt has been written
-        if self.written:
-            self.goto(self.show_success)
-            return
-
-        base = 'QR'
-
-        if not self.is_comp:
-            # Keep the filename under control during multiple passes
-            target_fname = base + '-part.psbt'
-        else:
-            # Add -signed to end. We won't offer to sign again.
-            target_fname = base + '-signed.psbt'
-
-        try:
-            self.filename = await SaveToMicroSDFlow(filename=target_fname,
-                                                    data=b2a_hex(self.signed_bytes),
-                                                    success_text="psbt",
-                                                    path=get_folder_path(DIR_TRANSACTIONS),
-                                                    automatic=False,
-                                                    auto_prompt=True).run()
-        except MemoryError as e:
-            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
             self.set_result(False)
-            return
 
-        if self.filename is None:
-            self.back()
-            return
-
-        self.written = True
-        self.goto(self.show_success)
-
-    async def show_success(self):
-        import microns
-        from lvgl import LARGE_ICON_SUCCESS
-        from styles.colors import DEFAULT_LARGE_ICON_COLOR
-        from pages import LongTextPage
-
-        msg = "Updated PSBT is:\n\n%s" % self.filename
-        result = await LongTextPage(text=msg,
-                                    centered=True,
-                                    left_micron=microns.ScanQR,
-                                    right_micron=microns.Checkmark,
-                                    icon=LARGE_ICON_SUCCESS,
-                                    icon_color=DEFAULT_LARGE_ICON_COLOR).show()
-
-        if not result:
-            self.goto(self.show_signed_transaction)
-            return
-
-        self.set_result(True)
+        self.set_result(result)
+#             if not result2:
+#                 self.goto(self.save_to_microsd)
+#             else:
+#                 self.set_result(False)
+#             return
+#
+#         if not result:
+#             self.goto(self.save_to_microsd)
+#             return
+#
+#         self.set_result(True)
+#
+#     async def save_to_microsd(self):
+#         from flows import SaveToMicroSDFlow
+#         from pages import ErrorPage
+#         from utils import get_folder_path
+#         from public_constants import DIR_TRANSACTIONS
+#         from ubinascii import hexlify as b2a_hex
+#
+#         # Check that the psbt has been written
+#         if self.written:
+#             self.goto(self.show_success)
+#             return
+#
+#         base = 'QR'
+#
+#         if not self.is_comp:
+#             # Keep the filename under control during multiple passes
+#             target_fname = base + '-part.psbt'
+#         else:
+#             # Add -signed to end. We won't offer to sign again.
+#             target_fname = base + '-signed.psbt'
+#
+#         try:
+#             self.filename = await SaveToMicroSDFlow(filename=target_fname,
+#                                                     data=b2a_hex(self.signed_bytes),
+#                                                     success_text="psbt",
+#                                                     path=get_folder_path(DIR_TRANSACTIONS),
+#                                                     automatic=False,
+#                                                     auto_prompt=True).run()
+#         except MemoryError as e:
+#             await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
+#             self.set_result(False)
+#             return
+#
+#         if self.filename is None:
+#             self.back()
+#             return
+#
+#         self.written = True
+#         self.goto(self.show_success)
+#
+#     async def show_success(self):
+#         import microns
+#         from lvgl import LARGE_ICON_SUCCESS
+#         from styles.colors import DEFAULT_LARGE_ICON_COLOR
+#         from pages import LongTextPage
+#
+#         msg = "Updated PSBT is:\n\n%s" % self.filename
+#         result = await LongTextPage(text=msg,
+#                                     centered=True,
+#                                     left_micron=microns.ScanQR,
+#                                     right_micron=microns.Checkmark,
+#                                     icon=LARGE_ICON_SUCCESS,
+#                                     icon_color=DEFAULT_LARGE_ICON_COLOR).show()
+#
+#         if not result:
+#             self.goto(self.show_signed_transaction)
+#             return
+#
+#         self.set_result(True)
