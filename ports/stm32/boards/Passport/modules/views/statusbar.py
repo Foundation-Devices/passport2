@@ -48,17 +48,18 @@ class StatusBar(View):
         if passport.IS_COLOR:
             self.add_child(self.battery)
         else:
-            battery_bg = Icon(icon='ICON_BATTERY_BACKGROUND', color=self.bg_color)
+            # battery_bg = Icon(icon='ICON_BATTERY_BACKGROUND', color=self.bg_color)
 
             self.battery_container = View(flex_flow=None)
             self.battery_container.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             # self.battery_container.set_size(24, 24)
             with Stylize(self.battery_container) as default:
+                default.bg_color(BLACK)
                 default.pad(left=0, right=0)
                 default.radius(4)
                 default.align(lv.ALIGN.CENTER)
 
-            self.battery_container.add_child(battery_bg)
+            # self.battery_container.add_child(battery_bg)
             self.battery.set_pos(1, 1)
             self.battery_container.add_child(self.battery)
             self.add_child(self.battery_container)
@@ -72,12 +73,14 @@ class StatusBar(View):
             self.icon = 'ICON_SETTINGS'
 
         icon_view = Icon(icon=self.icon, color=self.fg_color)
-        if not passport.IS_COLOR and isinstance(self.icon, str):
-            background_img = self.icon + '_BACKGROUND'
-            if hasattr(lv, background_img):
-                bg_view = Icon(icon=background_img, color=self.bg_color)
-            else:
-                bg_view = None
+
+        # TODO: Uncomment mono black background code when ready
+        # if not passport.IS_COLOR and isinstance(self.icon, str):
+        #     background_img = self.icon + '_BACKGROUND'
+        #     if hasattr(lv, background_img):
+        #         bg_view = Icon(icon=background_img, color=self.bg_color)
+        #     else:
+        #         bg_view = None
 
         if passport.IS_COLOR:
             self.icon_view = icon_view
@@ -85,15 +88,16 @@ class StatusBar(View):
             self.icon_view = View(flex_flow=None)
             self.icon_view.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
             with Stylize(self.icon_view) as default:
-                if bg_view is None:
-                    default.bg_color(BLACK)
-                    default.radius(4)
+                # if bg_view is None:
+                default.bg_color(BLACK)
+                default.radius(4)
+
                 default.pad(top=2, bottom=2)
                 default.align(lv.ALIGN.CENTER)
 
-            if bg_view:
-                self.icon_view.add_child(bg_view)
-                icon_view.set_pos(1, 1)
+            # if bg_view:
+            #     self.icon_view.add_child(bg_view)
+            #     icon_view.set_pos(1, 1)
 
             self.icon_view.add_child(icon_view)
 
