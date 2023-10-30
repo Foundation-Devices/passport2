@@ -17,6 +17,7 @@ class NewSeedFlow(Flow):
         self.autobackup = autobackup
         self.full_backup = full_backup
         self.seed_length = None
+        self.skip_seed_prompt = False
 
     async def check_for_seed(self):
         # Ensure we don't overwrite an existing seed
@@ -62,25 +63,40 @@ class NewSeedFlow(Flow):
     async def save_seed(self):
         (error,) = await spinner_task('Saving Seed', save_seed_task, args=[self.seed])
         if error is None:
-            self.goto(self.show_seed_words)
+            self.goto(self.do_backup)
         else:
             self.error = 'Unable to save seed.'
             self.goto(self.show_error)
 
+    async def do_backup(self):
+        from flows import AutoBackupFlow, BackupFlow
+
+        backup_flow = None
+
+        if self.full_backup:
+            backup_flow = BackupFlow()
+        elif self.autobackup:
+            backup_flow = AutoBackupFlow(offer=True)
+
+        if backup_flow is None:
+            self.goto(self.show_seed_words)
+            return
+
+        # Run whichever backup flow is used, and
+        # determine if the seed can be skipped
+        self.skip_seed_prompt = await backup_flow.run()
+        self.goto(self.show_seed_words)
+
     async def show_seed_words(self):
         from flows import ViewSeedWordsFlow
-        await ViewSeedWordsFlow(initial=True).run()
+        await ViewSeedWordsFlow(initial=self.skip_seed_prompt,
+                                allow_skip=self.skip_seed_prompt).run()
         self.goto(self.show_success)
 
     async def show_success(self):
         import common
-        from flows import AutoBackupFlow, BackupFlow
 
         await SuccessPage(text='New seed created and saved.').show()
-        if self.full_backup:
-            await BackupFlow().run()
-        elif self.autobackup:
-            await AutoBackupFlow(offer=True).run()
 
         if self.refresh_cards_when_done:
             common.ui.full_cards_refresh()

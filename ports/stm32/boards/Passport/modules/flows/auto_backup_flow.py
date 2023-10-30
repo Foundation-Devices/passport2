@@ -51,4 +51,5 @@ class AutoBackupFlow(Flow):
         from flows import BackupCommonFlow
 
         result = await BackupCommonFlow(self.backup_code, automatic=True).run()
-        self.set_result(result)
+        result_bool = result is not None
+        self.set_result(result_bool)
