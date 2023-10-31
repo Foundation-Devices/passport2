@@ -1486,7 +1486,6 @@ def get_single_address(xfp,
                 change_idx=change_bit))[0]
         else:
             addr_path = '{}/{}/{}'.format(deriv_path, change_bit, index)
-            print(addr_path)
             node = sv.derive_path(addr_path)
             address = sv.chain.address(node, addr_type)
 
