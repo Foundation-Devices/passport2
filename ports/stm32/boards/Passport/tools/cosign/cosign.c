@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
+#include <ctype.h>
 #include <libgen.h>
 #include <openssl/bio.h>
 #include <openssl/ec.h>
@@ -334,21 +335,26 @@ bool is_valid_version(char* version) {
     int  version_major;
     int  version_minor;
     int  version_rev;
+    char beta_num = NULL;
     char left_over;
 
-    num_matched = sscanf(version, "%u.%u.%u%c", &version_major, &version_minor, &version_rev, &left_over);
+    num_matched = sscanf(version, "%u.%u.%ub%c%c", &version_major, &version_minor, &version_rev, &beta_num, &left_over);
 
-    if (num_matched != 3) {
+    if (num_matched != 3 && num_matched != 4) {
         return false;
     }
 
     // Version major is restricted to only 0-9 while others are 0-99
     // Max version number string is 7 + null terminator
     if (version_major > 9 || version_major < 0 || version_minor > 99 || version_minor < 0 || version_rev > 99 ||
-        version_rev < 0) {
+        version_rev < 0 || (beta_num != NULL && (!isxdigit(beta_num) || beta_num != toupper(beta_num)))) {
         return false;
     } else {
-        sprintf(version, "%d.%d.%d", version_major, version_minor, version_rev);
+	if (num_matched == 3) {
+	    sprintf(version, "%d.%d.%d", version_major, version_minor, version_rev);
+	} else {
+	    sprintf(version, "%d.%d.%db%c", version_major, version_minor, version_rev, beta_num);
+	}
         return true;
     }
 }
@@ -505,7 +511,7 @@ static void sign_firmware(char* fw, char* key, char* version) {
         }
 
         if (!is_valid_version(version)) {
-            printf("ERROR: Incorrect version number. Correct format: <0-9>.<0-99>.<0-99> (e.g., 1.12.34)\n");
+            printf("ERROR: Incorrect version number. Correct format: <0-9>.<0-99>.<0-99><b><0-F> (e.g., 1.12.34 or 2.3.0bA)\n");
             exit(1);
             goto out;
         }
