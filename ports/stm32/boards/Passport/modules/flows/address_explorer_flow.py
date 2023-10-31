@@ -94,12 +94,28 @@ class AddressExplorerFlow(Flow):
         from common import settings
         import chains
         from utils import get_next_addr
-        from pages import InfoPage
+        from pages import LongTextPage
+        import microns
 
-        result = await InfoPage("TODO: explain navigation").show()
+        text1 = 'Use the directional pad to navigate through addresses. ' \
+                'Pressing left or right moves down/up the list one by one. ' \
+                'Pressing up or down moves +/- 10 addresses at a time for faster navigation.'
+
+        result = await LongTextPage(text=text1, centered=True).show()
 
         if not result:
             self.back()
+            return
+
+        text2 = 'Warning - Take care when using this feature to receive directly to Passport. ' \
+                'Passport cannot know if any displayed address has been used previously. ' \
+                'Connect Passport with a wallet like Envoy to remove the risk of reusing addresses.'
+
+        result2 = await LongTextPage(text=text2,
+                                     centered=True,
+                                     right_micron=microns.Checkmark).show()
+
+        if not result2:
             return
 
         self.xfp = settings.get('xfp')
