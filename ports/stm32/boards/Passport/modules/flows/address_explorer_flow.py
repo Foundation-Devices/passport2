@@ -94,12 +94,18 @@ class AddressExplorerFlow(Flow):
         from common import settings
         import chains
         from utils import get_next_addr
-        from pages import LongTextPage
+        from pages import LongTextPage, ErrorPage
         import microns
 
-        text1 = 'Use the directional pad to navigate through addresses. ' \
-                'Pressing left or right moves down/up the list one by one. ' \
-                'Pressing up or down moves +/- 10 addresses at a time for faster navigation.'
+        # text1 = 'Use the directional pad to navigate through addresses. ' \
+        #         'Pressing left or right moves down/up the list one by one. ' \
+        #         'Pressing up or down moves +/- 10 addresses at a time for faster navigation.'
+
+        text1 = '''\nUse the directional pad to navigate.\n
+up: -10
+down: +10
+left: -1
+right: +1'''
 
         result = await LongTextPage(text=text1, centered=True).show()
 
@@ -107,13 +113,16 @@ class AddressExplorerFlow(Flow):
             self.back()
             return
 
-        text2 = 'Warning - Take care when using this feature to receive directly to Passport. ' \
-                'Passport cannot know if any displayed address has been used previously. ' \
-                'Connect Passport with a wallet like Envoy to remove the risk of reusing addresses.'
+        # text2 = 'Warning - Take care when using this feature to receive directly to Passport. ' \
+        #         'Passport cannot know if any displayed address has been used previously. ' \
+        #         'Connect Passport with a wallet like Envoy to remove the risk of reusing addresses.'
+        text2 = 'Use your watch-only wallet of choice to avoid address reuse'
 
-        result2 = await LongTextPage(text=text2,
-                                     centered=True,
-                                     right_micron=microns.Checkmark).show()
+        # result2 = await LongTextPage(text=text2,
+        #                              centered=True,
+        #                              right_micron=microns.Checkmark).show()
+
+        result2 = await ErrorPage(text=text2).show()
 
         if not result2:
             return
