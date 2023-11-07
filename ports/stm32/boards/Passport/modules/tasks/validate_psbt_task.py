@@ -8,15 +8,20 @@
 # and is covered by GPLv3 license found in COPYING.
 #
 # validate_psbt_task.py - Sign a PSBT that is in external SPI flash
+from errors import Error
+from exceptions import FraudulentChangeOutput, FatalPSBTIssue
+from public_constants import TXN_INPUT_OFFSET
+from sffile import SFFile
+import gc
+from utils import mem_info
 
 
 async def validate_psbt_task(on_done, psbt_len):
-    from errors import Error
-    from exceptions import FraudulentChangeOutput, FatalPSBTIssue
+    mem_info('validate_psbt_task before import')
+
     from psbt import psbtObject
-    from public_constants import TXN_INPUT_OFFSET
-    from sffile import SFFile
-    import gc
+
+    mem_info('validate_psbt_task after import')
 
     error_msg = None
     error_code = None
@@ -26,12 +31,18 @@ async def validate_psbt_task(on_done, psbt_len):
     try:
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
+            mem_info('with sffile')
             psbt = psbtObject.read_psbt(fd)
 
+        mem_info('validate_psbt_task after read')
         await psbt.validate()
+        mem_info('validate_psbt_task after validate')
         psbt.consider_inputs()
+        mem_info('validate_psbt_task after consider_inputs')
         psbt.consider_keys()
+        mem_info('validate_psbt_task after consider_keys')
         psbt.consider_outputs()
+        mem_info('validate_psbt_task after consider_outputs')
 
         # All went well!
     except FraudulentChangeOutput as e:

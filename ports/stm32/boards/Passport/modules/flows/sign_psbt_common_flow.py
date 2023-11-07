@@ -10,24 +10,25 @@
 # sign_psbt_common_flow.py - Sign a PSBT from a microSD card
 
 import lvgl as lv
-from flows import Flow
+from flows import Flow, ImportMultisigWalletFlow
 import microns
-from pages.chooser_page import ChooserPage
+from pages import ChooserPage, LongTextPage, ErrorPage, QuestionPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
-from tasks import sign_psbt_task, validate_psbt_task
-from utils import spinner_task, recolor
+from tasks import sign_psbt_task, validate_psbt_task, double_check_psbt_change_task
+from utils import spinner_task, recolor, mem_info
+import uio
+import chains
 
 
 class SignPsbtCommonFlow(Flow):
     def __init__(self, psbt_len):
-        import chains
         super().__init__(initial_state=self.validate_psbt, name='SignPsbtCommonFlow')
         self.psbt = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
 
     async def validate_psbt(self):
-        from pages import ErrorPage
+        mem_info('validate_psbt')
 
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
@@ -39,8 +40,7 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.check_multisig_import)
 
     async def check_multisig_import(self):
-        from flows import ImportMultisigWalletFlow
-        from pages import ErrorPage
+        mem_info('check_multisig_import')
 
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
@@ -53,8 +53,7 @@ class SignPsbtCommonFlow(Flow):
         self.goto(self.show_transaction_details)
 
     async def show_transaction_details(self):
-        import uio
-        from pages import LongTextPage, ErrorPage
+        mem_info('show_transaction_details')
 
         try:
             outputs = uio.StringIO()
@@ -64,6 +63,7 @@ class SignPsbtCommonFlow(Flow):
 
             first = True
             for idx, tx_out in self.psbt.output_iter():
+                mem_info('rendering outputs {}'.format(idx))
                 outp = self.psbt.outputs[idx]
                 # Show change outputs if this is a self-send
                 if outp.is_change and not self.psbt.self_send:
@@ -75,6 +75,10 @@ class SignPsbtCommonFlow(Flow):
                     outputs.write('\n')
 
                 outputs.write(self.render_output(tx_out))
+
+                del outp
+
+            mem_info('after rendering outputs')
 
             # print('total_out={} total_in={}
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
@@ -102,7 +106,7 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
     async def show_change(self):
-        from pages import LongTextPage, ErrorPage
+        mem_info('show_change')
 
         try:
             msg = self.render_change_text()
@@ -120,9 +124,11 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(False)
 
     async def show_warnings(self):
-        from pages import LongTextPage
+        mem_info('show_warnings')
 
         warnings = self.render_warnings()
+
+        mem_info('after rendwer_warnings')
         # print('warnings = "{}"'.format(warnings))
 
         if warnings is not None:
@@ -139,9 +145,7 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
-        from tasks import double_check_psbt_change_task
-        from utils import spinner_task
-        from pages import ErrorPage, QuestionPage
+        mem_info('sign_transaction')
 
         result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
         if not result:
@@ -157,6 +161,8 @@ class SignPsbtCommonFlow(Flow):
             # TODO: Why do this here instead of in validate?
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     double_check_psbt_change_task, args=[self.psbt])
+
+            mem_info('double checked psbt change')
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -164,6 +170,7 @@ class SignPsbtCommonFlow(Flow):
 
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     sign_psbt_task, args=[self.psbt])
+            mem_info('signed transaction')
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -178,6 +185,7 @@ class SignPsbtCommonFlow(Flow):
         # - expects CTxOut object
         # - gives user-visible string
         #
+
         val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
 
@@ -247,7 +255,10 @@ class SignPsbtCommonFlow(Flow):
 
             if self.psbt.warnings and len(self.psbt.warnings) > 0:
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
+                i = 0
                 for label, m in self.psbt.warnings:
+                    mem_info('rendering warning {}'.format(i))
+                    i += 1
                     msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
 
             return msg.getvalue()

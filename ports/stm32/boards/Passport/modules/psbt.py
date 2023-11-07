@@ -10,7 +10,7 @@
 # psbt.py - understand PSBT file format: verify and generate them
 #
 from ustruct import unpack_from, unpack, pack
-from utils import xfp2str, B2A, keypath_to_str, swab32
+from utils import xfp2str, B2A, keypath_to_str, swab32, mem_info
 import trezorcrypto
 import gc
 import history
@@ -462,7 +462,11 @@ class psbtInputProxy(psbtProxy):
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig')
 
     def __init__(self, fd, idx):
+        mem_info('psbtInputProxy __init__ idx: {}'.format(idx))
+
         super().__init__()
+
+        mem_info('after __init__')
 
         # self.utxo = None
         # self.witness_utxo = None
@@ -492,6 +496,7 @@ class psbtInputProxy(psbtProxy):
         # self.added_sig = None
 
         self.parse(fd)
+        mem_info('after self.parse(fd)')
 
     def validate(self, idx, txin, my_xfp):
         # Validate this txn input: given deserialized CTxIn and maybe witness
@@ -1083,7 +1088,10 @@ class psbtObject(psbtProxy):
 
         # this parses the input TXN in-place
         for idx, txin in self.input_iter():
+            mem_info('psbt.input_iter(), idx: {}'.format(idx))
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+
+        mem_info('after validating inputs')
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
 
@@ -1092,6 +1100,8 @@ class psbtObject(psbtProxy):
         if self.xpubs:
             # print('calling self.handle_xpubs()')
             await self.handle_xpubs()
+
+        mem_info('after psbt.handle_xpubs')
 
         assert self.num_outputs >= 1, 'need outs'
 
@@ -1234,18 +1244,27 @@ class psbtObject(psbtProxy):
         missing = 0
         total_in = 0
 
+        mem_info('start consider_inputs')
+
         for i, txi in self.input_iter():
+            mem_info('consider_inputs input_iter() i: {}'.format(i))
             inp = self.inputs[i]
+            mem_info('after inp = self.inputs[i]')
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
+                mem_info('after fully signed')
 
             if not inp.has_utxo():
                 # maybe they didn't provide the UTXO
                 missing += 1
                 continue
 
+            mem_info('after inp.has_utxo()')
+
             # pull out just the CTXOut object (expensive)
             utxo = inp.get_utxo(txi.prevout.n)
+
+            mem_info('after get_utxo')
 
             assert utxo.nValue > 0
             total_in += utxo.nValue
@@ -1256,12 +1275,17 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            mem_info('after determine_my_signing_key')
+
             # iff to UTXO is segwit, then check it's value, and also
             # capture that value, since it's supposed to be immutable
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
+                mem_info('after verify_amount')
 
             del utxo
+
+            mem_info('after del utxo')
 
         # XXX scan witness data provided, and consider those ins signed if not multisig?
 
@@ -1289,6 +1313,9 @@ class psbtObject(psbtProxy):
         # - TODO: but what if not SIGHASH_ALL
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
+
+        mem_info('after no_keys check')
+
         if no_keys:
             # This is seen when you re-sign same signed file by accident (multisig)
             # - case of len(no_keys)==num_inputs is handled by consider_keys
@@ -1296,11 +1323,14 @@ class psbtObject(psbtProxy):
                 ('Already Signed',
                  'Passport has already signed this transaction. Other signatures are still required.'))
 
+            mem_info('after no_keys warning')
+
         if self.presigned_inputs:
             # this isn't really even an issue for some complex usage cases
             self.warnings.append(('Partially Signed Already',
                                   'Some input(s) provided were already signed by other parties: ' +
                                   seq_to_str(self.presigned_inputs)))
+            mem_info('after presigned_inputs warning')
 
     def calculate_fee(self):
         # what miner's reward is included in txn?
@@ -1338,18 +1368,28 @@ class psbtObject(psbtProxy):
         if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
+        mem_info('after hdr = fd.read(5)')
+
         rv = cls()
+
+        mem_info('after cls()')
 
         # read main body (globals)
         rv.parse(fd)
+
+        mem_info('after rv.parse(fd)')
 
         assert rv.txn, 'missing reqd section'
 
         # learn about the bitcoin transaction we are signing.
         rv.parse_txn()
 
+        mem_info('after rv.parse_txn()')
+
         rv.inputs = [psbtInputProxy(fd, idx) for idx in range(rv.num_inputs)]
+        mem_info('after rv.inputs')
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
+        mem_info('after rv.outputs')
 
         return rv
 

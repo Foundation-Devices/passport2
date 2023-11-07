@@ -4,6 +4,7 @@
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow
+from utils import mem_info
 
 
 class SignPsbtQRFlow(Flow):
@@ -28,6 +29,8 @@ class SignPsbtQRFlow(Flow):
         from pages import YesNoChooserPage
         import microns
         import passport
+
+        mem_info('scan_transaction')
 
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
@@ -79,6 +82,8 @@ How would you like to proceed?"
         from errors import Error
         from pages import ErrorPage
 
+        mem_info('copy_to_flash')
+
         gc.collect()  # Try to avoid excessive fragmentation
 
         # TODO: Pass on_progress function as the first argument if we want progress or remove it
@@ -101,8 +106,12 @@ How would you like to proceed?"
     async def common_flow(self):
         from flows import SignPsbtCommonFlow
 
+        mem_info('common_flow')
+
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
+
+        mem_info('after common flow')
 
         if result is None:
             self.set_result(False)
@@ -116,14 +125,18 @@ How would you like to proceed?"
         from pages import ErrorPage
         from passport import mem
 
+        mem_info('get_signed_bytes')
+
         # Copy signed txn into a bytearray and show the data as a UR
         try:
             with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
+                    mem_info('after psbt.serialize(fd)')
                     bfd.seek(0)
                     self.signed_bytes = bfd.getvalue()
+                    mem_info('after signed_bytes = bfd.getvalue()')
                     # print('len(signed_bytes)={}'.format(len(signed_bytes)))
                     # print('signed_bytes={}'.format(signed_bytes))
         except MemoryError as e:
@@ -132,6 +145,7 @@ How would you like to proceed?"
             return
 
         self.is_comp = self.psbt.is_complete()
+        mem_info('after is_complete()')
         self.psbt = None
         gc.collect()
         self.goto(self.show_signed_transaction)
@@ -142,6 +156,8 @@ How would you like to proceed?"
         from ubinascii import hexlify as b2a_hex
         import microns
         from foundation import ur
+
+        mem_info('show_signed_transaction')
 
         if self.ur_type is None:
             qr_type = QRType.QR
@@ -184,6 +200,8 @@ How would you like to proceed?"
         from public_constants import DIR_TRANSACTIONS
         from ubinascii import hexlify as b2a_hex
 
+        mem_info('save_to_microsd')
+
         # Check that the psbt has been written
         if self.written:
             self.goto(self.show_success)
@@ -222,6 +240,8 @@ How would you like to proceed?"
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage
+
+        mem_info('success')
 
         msg = "Updated PSBT is:\n\n%s" % self.filename
         result = await LongTextPage(text=msg,
