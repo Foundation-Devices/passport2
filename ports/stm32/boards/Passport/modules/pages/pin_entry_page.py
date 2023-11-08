@@ -263,6 +263,7 @@ class PINEntryPage(Page):
                 self.pin = self.t9.get_text()
                 self.input.set_pin(self.pin)
                 self.input.set_mode(self.t9.mode)
+                print("pin: {}".format(self.pin))
 
     async def on_security_words(self, security_words, error):
         from serializations import sha256

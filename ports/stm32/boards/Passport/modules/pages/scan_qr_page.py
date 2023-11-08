@@ -16,6 +16,7 @@ import passport
 
 def progress_text(p):
     label = 'Scanning...' if p == 0 else '{}%'.format(p)
+    print('label: {}'.format(label))
     return label
 
 
