@@ -18,6 +18,7 @@ from tasks import sign_psbt_task, validate_psbt_task, double_check_psbt_change_t
 from utils import spinner_task, recolor, mem_info
 import uio
 import chains
+import gc
 
 
 class SignPsbtCommonFlow(Flow):
@@ -63,7 +64,7 @@ class SignPsbtCommonFlow(Flow):
 
             first = True
             for idx, tx_out in self.psbt.output_iter():
-                mem_info('rendering outputs {}'.format(idx))
+                gc.collect()
                 outp = self.psbt.outputs[idx]
                 # Show change outputs if this is a self-send
                 if outp.is_change and not self.psbt.self_send:
@@ -257,7 +258,7 @@ class SignPsbtCommonFlow(Flow):
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
                 i = 0
                 for label, m in self.psbt.warnings:
-                    mem_info('rendering warning {}'.format(i))
+                    gc.collect()
                     i += 1
                     msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
 

@@ -17,11 +17,11 @@ from utils import mem_info
 
 
 async def validate_psbt_task(on_done, psbt_len):
-    mem_info('validate_psbt_task before import')
+    gc.collect()
 
     from psbt import psbtObject
 
-    mem_info('validate_psbt_task after import')
+    gc.collect()
 
     error_msg = None
     error_code = None
@@ -31,18 +31,18 @@ async def validate_psbt_task(on_done, psbt_len):
     try:
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
-            mem_info('with sffile')
+            gc.collect()
             psbt = psbtObject.read_psbt(fd)
 
-        mem_info('validate_psbt_task after read')
+        gc.collect()
         await psbt.validate()
-        mem_info('validate_psbt_task after validate')
+        gc.collect()
         psbt.consider_inputs()
-        mem_info('validate_psbt_task after consider_inputs')
+        gc.collect()
         psbt.consider_keys()
-        mem_info('validate_psbt_task after consider_keys')
+        gc.collect()
         psbt.consider_outputs()
-        mem_info('validate_psbt_task after consider_outputs')
+        gc.collect()
 
         # All went well!
     except FraudulentChangeOutput as e:

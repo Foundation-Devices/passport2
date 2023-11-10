@@ -15,6 +15,7 @@ from utils import keypath_to_str, swab32, mem_info
 from serializations import ser_sig_der
 import trezorcrypto
 import stash
+import gc
 
 
 async def sign_psbt_task(on_done, psbt):
@@ -29,7 +30,7 @@ async def sign_psbt_task(on_done, psbt):
             success = set()
             for in_idx, txi in psbt.input_iter():
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
-                mem_info('signing input {}'.format(in_idx))
+                gc.collect()
 
                 inp = psbt.inputs[in_idx]
 
@@ -125,7 +126,6 @@ async def sign_psbt_task(on_done, psbt):
                 del result, r, s
 
         # All went well, so just fall through and call on_done()
-        mem_info('signed all inputs')
 
     except FraudulentChangeOutput as e:
         # print('FraudulentChangeOutput: {}'.format(e))
@@ -149,7 +149,6 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     finally:
         # print('finally...')
-        import gc
         gc.collect()
 
     await on_done(error_msg, error_code)
