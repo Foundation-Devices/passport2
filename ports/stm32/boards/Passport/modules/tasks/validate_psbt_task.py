@@ -13,15 +13,10 @@ from exceptions import FraudulentChangeOutput, FatalPSBTIssue
 from public_constants import TXN_INPUT_OFFSET
 from sffile import SFFile
 import gc
-from utils import mem_info
 
 
 async def validate_psbt_task(on_done, psbt_len):
-    gc.collect()
-
     from psbt import psbtObject
-
-    gc.collect()
 
     error_msg = None
     error_code = None
@@ -31,7 +26,6 @@ async def validate_psbt_task(on_done, psbt_len):
     try:
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
-            gc.collect()
             psbt = psbtObject.read_psbt(fd)
 
         gc.collect()
@@ -42,7 +36,6 @@ async def validate_psbt_task(on_done, psbt_len):
         psbt.consider_keys()
         gc.collect()
         psbt.consider_outputs()
-        gc.collect()
 
         # All went well!
     except FraudulentChangeOutput as e:

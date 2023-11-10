@@ -29,8 +29,6 @@ class SignPsbtCommonFlow(Flow):
         self.chain = chains.current_chain()
 
     async def validate_psbt(self):
-        mem_info('validate_psbt')
-
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
         # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
@@ -41,8 +39,6 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.check_multisig_import)
 
     async def check_multisig_import(self):
-        mem_info('check_multisig_import')
-
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
         if self.psbt.multisig_import_needs_approval:
@@ -54,8 +50,6 @@ class SignPsbtCommonFlow(Flow):
         self.goto(self.show_transaction_details)
 
     async def show_transaction_details(self):
-        mem_info('show_transaction_details')
-
         try:
             outputs = uio.StringIO()
 
@@ -79,7 +73,7 @@ class SignPsbtCommonFlow(Flow):
 
                 del outp
 
-            mem_info('after rendering outputs')
+            gc.collect()
 
             # print('total_out={} total_in={}
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
@@ -107,8 +101,6 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
     async def show_change(self):
-        mem_info('show_change')
-
         try:
             msg = self.render_change_text()
             result = await LongTextPage(
@@ -116,6 +108,7 @@ class SignPsbtCommonFlow(Flow):
                 centered=True,
                 card_header={'title': 'Transaction Details'}
             ).show()
+            gc.collect()
             if not result:
                 self.back()
             else:
@@ -125,11 +118,9 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(False)
 
     async def show_warnings(self):
-        mem_info('show_warnings')
 
         warnings = self.render_warnings()
-
-        mem_info('after rendwer_warnings')
+        gc.collect()
         # print('warnings = "{}"'.format(warnings))
 
         if warnings is not None:
