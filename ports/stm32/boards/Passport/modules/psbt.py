@@ -462,11 +462,7 @@ class psbtInputProxy(psbtProxy):
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig')
 
     def __init__(self, fd, idx):
-        gc.collect()
-
         super().__init__()
-
-        gc.collect()
 
         # self.utxo = None
         # self.witness_utxo = None
@@ -1244,27 +1240,19 @@ class psbtObject(psbtProxy):
         missing = 0
         total_in = 0
 
-        gc.collect()
-
         for i, txi in self.input_iter():
             gc.collect()
             inp = self.inputs[i]
-            gc.collect()
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
-                gc.collect()
 
             if not inp.has_utxo():
                 # maybe they didn't provide the UTXO
                 missing += 1
                 continue
 
-            gc.collect()
-
             # pull out just the CTXOut object (expensive)
             utxo = inp.get_utxo(txi.prevout.n)
-
-            gc.collect()
 
             assert utxo.nValue > 0
             total_in += utxo.nValue
@@ -1285,7 +1273,7 @@ class psbtObject(psbtProxy):
 
             del utxo
 
-            gc.collect()
+        gc.collect()
 
         # XXX scan witness data provided, and consider those ins signed if not multisig?
 
