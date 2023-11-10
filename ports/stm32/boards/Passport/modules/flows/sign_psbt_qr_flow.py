@@ -32,9 +32,6 @@ class SignPsbtQRFlow(Flow):
         self.filename = None
 
     async def scan_transaction(self):
-
-        mem_info('scan_transaction')
-
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
@@ -78,9 +75,6 @@ How would you like to proceed?"
         self.goto(self.copy_to_flash)
 
     async def copy_to_flash(self):
-
-        mem_info('copy_to_flash')
-
         gc.collect()  # Try to avoid excessive fragmentation
 
         # TODO: Pass on_progress function as the first argument if we want progress or remove it
@@ -101,12 +95,10 @@ How would you like to proceed?"
         self.goto(self.common_flow)
 
     async def common_flow(self):
-        mem_info('common_flow')
-
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
 
-        mem_info('after common flow')
+        gc.collect()
 
         if result is None:
             self.set_result(False)
@@ -115,18 +107,14 @@ How would you like to proceed?"
             self.goto(self.get_signed_bytes)
 
     async def get_signed_bytes(self):
-        mem_info('get_signed_bytes')
-
         # Copy signed txn into a bytearray and show the data as a UR
         try:
             with FixedBytesIO(passport.mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
-                    mem_info('after psbt.serialize(fd)')
                     bfd.seek(0)
                     self.signed_bytes = bfd.getvalue()
-                    mem_info('after signed_bytes = bfd.getvalue()')
                     # print('len(signed_bytes)={}'.format(len(signed_bytes)))
                     # print('signed_bytes={}'.format(signed_bytes))
         except MemoryError as e:
@@ -135,7 +123,6 @@ How would you like to proceed?"
             return
 
         self.is_comp = self.psbt.is_complete()
-        mem_info('after is_complete()')
         self.psbt = None
         gc.collect()
         self.goto(self.show_signed_transaction)
@@ -217,8 +204,6 @@ How would you like to proceed?"
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage
-
-        mem_info('success')
 
         msg = "Updated PSBT is:\n\n%s" % self.filename
         result = await LongTextPage(text=msg,
