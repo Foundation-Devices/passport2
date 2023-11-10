@@ -11,7 +11,7 @@
 
 from exceptions import FraudulentChangeOutput, FatalPSBTIssue
 from errors import Error
-from utils import keypath_to_str, swab32, mem_info
+from utils import keypath_to_str, swab32
 from serializations import ser_sig_der
 import trezorcrypto
 import stash

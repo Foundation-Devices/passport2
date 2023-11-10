@@ -15,7 +15,7 @@ import microns
 from pages import ChooserPage, LongTextPage, ErrorPage, QuestionPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task, double_check_psbt_change_task
-from utils import spinner_task, recolor, mem_info
+from utils import spinner_task, recolor
 import uio
 import chains
 import gc
@@ -70,8 +70,6 @@ class SignPsbtCommonFlow(Flow):
                     outputs.write('\n')
 
                 outputs.write(self.render_output(tx_out))
-
-                del outp
 
             gc.collect()
 
@@ -137,7 +135,7 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
-        mem_info('sign_transaction')
+        gc.collect()
 
         result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
         if not result:
@@ -154,7 +152,7 @@ class SignPsbtCommonFlow(Flow):
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     double_check_psbt_change_task, args=[self.psbt])
 
-            mem_info('double checked psbt change')
+            gc.collect()
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -162,7 +160,7 @@ class SignPsbtCommonFlow(Flow):
 
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     sign_psbt_task, args=[self.psbt])
-            mem_info('signed transaction')
+            gc.collect()
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -247,10 +245,8 @@ class SignPsbtCommonFlow(Flow):
 
             if self.psbt.warnings and len(self.psbt.warnings) > 0:
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
-                i = 0
                 for label, m in self.psbt.warnings:
-                    gc.collect()
-                    i += 1
                     msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+                    gc.collect()
 
             return msg.getvalue()

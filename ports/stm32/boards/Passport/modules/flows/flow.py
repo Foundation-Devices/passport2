@@ -85,8 +85,6 @@ class Flow():
         common.page_transition_dir = TRANSITION_DIR_PUSH
         self.state = new_state
 
-        print('new_state: {}'.format(new_state))
-
         # Auto-save
         self.save()
         self.cleanup()

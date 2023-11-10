@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
-# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow, ScanQRFlow, SignPsbtMicroSDFlow, SignPsbtCommonFlow, SaveToMicroSDFlow
-from utils import mem_info, spinner_task, get_folder_path
+from utils import spinner_task, get_folder_path
 from tasks import copy_psbt_to_external_flash_task
 from foundation import ur, FixedBytesIO
 from data_codecs.qr_type import QRType
@@ -128,7 +127,7 @@ How would you like to proceed?"
         self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
-        mem_info('show_signed_transaction')
+        gc.collect()
 
         if self.ur_type is None:
             qr_type = QRType.QR
@@ -165,7 +164,7 @@ How would you like to proceed?"
         self.set_result(True)
 
     async def save_to_microsd(self):
-        mem_info('save_to_microsd')
+        gc.collect()
 
         # Check that the psbt has been written
         if self.written:
