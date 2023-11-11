@@ -32,6 +32,7 @@ class RestoreBackupFlow(Flow):
         self.backup_password_prefixes = []
         self.full_backup = full_backup
         self.autobackup = autobackup
+        self.statusbar = {'title': 'RESTORE BACKUP', 'icon': 'ICON_SEED'}
 
     async def check_if_erased(self):
         from common import pa
