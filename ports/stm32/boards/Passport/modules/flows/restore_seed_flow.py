@@ -22,7 +22,7 @@ class RestoreSeedFlow(Flow):
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
-        self.statusbar = {'title': 'RESOTRE SEED', 'icon': 'ICON_SEED'}
+        self.statusbar = {'title': 'RESTORE SEED', 'icon': 'ICON_SEED'}
 
     async def choose_restore_method(self):
         from pages import ChooserPage
