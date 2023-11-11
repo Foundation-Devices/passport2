@@ -353,7 +353,8 @@ def advanced_menu():
     return [
         {'icon': 'ICON_SETTINGS', 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
         {'icon': 'ICON_SEED', 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
-         'statusbar': {'title': 'SEED WORDS', 'icon': 'ICON_SEED'}},
+         'statusbar': {'title': 'SEED WORDS', 'icon': 'ICON_SEED'},
+         'args': {'qr_button': True}},
         {'icon': 'ICON_ONE_KEY', 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': 'ICON_MICROSD', 'label': 'microSD', 'submenu': microsd_menu},

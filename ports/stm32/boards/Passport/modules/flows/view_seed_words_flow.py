@@ -7,6 +7,7 @@ from flows import Flow
 
 
 class ViewSeedWordsFlow(Flow):
+<<<<<<< HEAD
     def __init__(self,
                  external_key=None,
                  qr_option=False,
@@ -14,7 +15,10 @@ class ViewSeedWordsFlow(Flow):
                  path=None,
                  filename=None,
                  initial=False,
-                 allow_skip=True):
+                 allow_skip=True,
+                 qr_button=False):
+        import microns
+
         self.external_key = external_key
         self.qr_option = qr_option
 
@@ -26,10 +30,12 @@ class ViewSeedWordsFlow(Flow):
         self.filename = filename
         self.qr_type = None
         self.words = None
-        self.seed_micron = None
+        self.seed_micron = None if not qr_button else microns.ScanQR
         self.mention_passphrase = True if not external_key else False
         self.initial = initial
         self.allow_skip = allow_skip
+        self.use_qr_button = qr_button
+        self.seen_warning = False
         super().__init__(initial_state=self.generate_words, name='ViewSeedWordsFlow')
 
     async def generate_words(self):
@@ -91,6 +97,7 @@ class ViewSeedWordsFlow(Flow):
             self.back()
             return
 
+        self.seen_warning = True
         result = await ShowQRPage(qr_type=self.qr_type, qr_data=self.words, right_micron=microns.Checkmark).show()
 
         if not result:
@@ -126,6 +133,7 @@ class ViewSeedWordsFlow(Flow):
             self.back()
             return
 
+        self.seen_warning = True
         text = " ".join(self.words)
         result = await SaveToMicroSDFlow(filename=self.filename,
                                          path=self.path,
@@ -141,7 +149,7 @@ class ViewSeedWordsFlow(Flow):
         from flows import SeedWarningFlow
         from pages import SeedWordsListPage
 
-        if not self.qr_type:  # We already gave the seed warning flow
+        if not self.seen_warning:  # We already gave the seed warning flow
             result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase,
                                            initial=self.initial,
                                            allow_skip=self.allow_skip).run()
@@ -150,15 +158,53 @@ class ViewSeedWordsFlow(Flow):
                 self.set_result(False)
                 return
 
+            self.seen_warning = True
+
         result = False
         while not result:
             result = await SeedWordsListPage(words=self.words,
                                              left_micron=self.seed_micron).show()
-            if not result and self.qr_type:
-                self.back()
-                return
+            if not result:
+
+                if self.qr_type:
+                    self.back()
+                    return
+
+                if self.use_qr_button:
+                    self.goto(self.qr_intro)
+                    return
 
         self.goto(self.show_passphrase)
+
+    async def qr_intro(self):
+        from pages import InfoPage
+        import microns
+
+        result = await InfoPage('The following QR code contains your seed words. '
+                                'Never scan it with an internet connected device like your phone.',
+                                left_micron=microns.Back).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.qr_button)
+
+    async def qr_button(self):
+        from pages import ShowQRPage
+        from data_codecs.qr_type import QRType
+        import microns
+
+        result = await ShowQRPage(QRType.COMPACT_SEED_QR,
+                                  qr_data=self.words,
+                                  left_micron=microns.Back,
+                                  right_micron=microns.Checkmark).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.set_result(True)
 
     async def show_passphrase(self):
         import stash
