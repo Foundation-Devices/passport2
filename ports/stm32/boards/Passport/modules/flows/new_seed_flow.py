@@ -89,7 +89,7 @@ class NewSeedFlow(Flow):
 
     async def show_seed_words(self):
         from flows import ViewSeedWordsFlow
-        await ViewSeedWordsFlow(initial=self.skip_seed_prompt,
+        await ViewSeedWordsFlow(initial=True,
                                 allow_skip=self.skip_seed_prompt).run()
         self.goto(self.show_success)
 

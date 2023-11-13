@@ -16,10 +16,11 @@ class SeedWarningFlow(Flow):
         self.action_text = action_text
         self.continue_text = continue_text or "control your funds"
         self.allow_skip = allow_skip
-        initial_state = self.show_initial if initial else self.show_intro
+        self.initial = initial
+        initial_state = self.show_skippable if allow_skip else self.show_intro
         super().__init__(initial_state=initial_state, name='SeedWarningFlow')
 
-    async def show_initial(self):
+    async def show_skippable(self):
         from pages import InfoPage
         import microns
         import lvgl as lv
@@ -58,10 +59,30 @@ Would you like to view them now?'''
             icon=lv.LARGE_ICON_SEED, text=text,
             left_micron=left_micron, right_micron=microns.Forward).show()
 
-        if result:
-            self.goto(self.confirm_show)
-        else:
+        if not result:
             self.set_result(False)
+            return
+
+        if self.initial:
+            self.goto(self.prompt_backup)
+            return
+
+        self.goto(self.confirm_show)
+
+    async def prompt_backup(self):
+        from pages import InfoPage
+        import microns
+
+        text = 'Write down these words on the backup card provided. ' \
+               'Store the card securely and never take a photo of it.'
+
+        result = await InfoPage(text, left_micron=microns.Back).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.confirm_show)
 
     async def confirm_show(self):
         from pages import QuestionPage
