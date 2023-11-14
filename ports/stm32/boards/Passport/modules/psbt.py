@@ -492,6 +492,7 @@ class psbtInputProxy(psbtProxy):
         # self.added_sig = None
 
         self.parse(fd)
+        gc.collect()
 
     def validate(self, idx, txin, my_xfp):
         # Validate this txn input: given deserialized CTxIn and maybe witness
@@ -1083,7 +1084,10 @@ class psbtObject(psbtProxy):
 
         # this parses the input TXN in-place
         for idx, txin in self.input_iter():
+            gc.collect()
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+
+        gc.collect()
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
 
@@ -1092,6 +1096,8 @@ class psbtObject(psbtProxy):
         if self.xpubs:
             # print('calling self.handle_xpubs()')
             await self.handle_xpubs()
+
+        gc.collect()
 
         assert self.num_outputs >= 1, 'need outs'
 
@@ -1235,6 +1241,7 @@ class psbtObject(psbtProxy):
         total_in = 0
 
         for i, txi in self.input_iter():
+            gc.collect()
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -1256,12 +1263,17 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            gc.collect()
+
             # iff to UTXO is segwit, then check it's value, and also
             # capture that value, since it's supposed to be immutable
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
+                gc.collect()
 
             del utxo
+
+        gc.collect()
 
         # XXX scan witness data provided, and consider those ins signed if not multisig?
 
@@ -1289,6 +1301,9 @@ class psbtObject(psbtProxy):
         # - TODO: but what if not SIGHASH_ALL
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
+
+        gc.collect()
+
         if no_keys:
             # This is seen when you re-sign same signed file by accident (multisig)
             # - case of len(no_keys)==num_inputs is handled by consider_keys
@@ -1296,11 +1311,14 @@ class psbtObject(psbtProxy):
                 ('Already Signed',
                  'Passport has already signed this transaction. Other signatures are still required.'))
 
+            gc.collect()
+
         if self.presigned_inputs:
             # this isn't really even an issue for some complex usage cases
             self.warnings.append(('Partially Signed Already',
                                   'Some input(s) provided were already signed by other parties: ' +
                                   seq_to_str(self.presigned_inputs)))
+            gc.collect()
 
     def calculate_fee(self):
         # what miner's reward is included in txn?
@@ -1338,18 +1356,28 @@ class psbtObject(psbtProxy):
         if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
+        gc.collect()
+
         rv = cls()
+
+        gc.collect()
 
         # read main body (globals)
         rv.parse(fd)
+
+        gc.collect()
 
         assert rv.txn, 'missing reqd section'
 
         # learn about the bitcoin transaction we are signing.
         rv.parse_txn()
 
+        gc.collect()
+
         rv.inputs = [psbtInputProxy(fd, idx) for idx in range(rv.num_inputs)]
+        gc.collect()
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
+        gc.collect()
 
         return rv
 

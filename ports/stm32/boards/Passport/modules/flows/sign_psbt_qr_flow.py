@@ -4,6 +4,7 @@
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
 from flows import Flow
+import gc
 
 
 class SignPsbtQRFlow(Flow):
@@ -72,7 +73,6 @@ How would you like to proceed?"
         self.goto(self.copy_to_flash)
 
     async def copy_to_flash(self):
-        import gc
         from utils import spinner_task
         from tasks import copy_psbt_to_external_flash_task
         from public_constants import TXN_INPUT_OFFSET
@@ -104,6 +104,8 @@ How would you like to proceed?"
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
 
+        gc.collect()
+
         if result is None:
             self.set_result(False)
         else:
@@ -111,7 +113,6 @@ How would you like to proceed?"
             self.goto(self.get_signed_bytes)
 
     async def get_signed_bytes(self):
-        import gc
         from foundation import FixedBytesIO
         from pages import ErrorPage
         from passport import mem
@@ -142,6 +143,8 @@ How would you like to proceed?"
         from ubinascii import hexlify as b2a_hex
         import microns
         from foundation import ur
+
+        gc.collect()
 
         if self.ur_type is None:
             qr_type = QRType.QR
@@ -183,6 +186,8 @@ How would you like to proceed?"
         from utils import get_folder_path
         from public_constants import DIR_TRANSACTIONS
         from ubinascii import hexlify as b2a_hex
+
+        gc.collect()
 
         # Check that the psbt has been written
         if self.written:

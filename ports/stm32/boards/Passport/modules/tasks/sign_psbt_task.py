@@ -17,6 +17,7 @@ async def sign_psbt_task(on_done, psbt):
     from serializations import ser_sig_der
     import trezorcrypto
     import stash
+    import gc
 
     try:
         with stash.SensitiveValues() as sv:
@@ -28,6 +29,7 @@ async def sign_psbt_task(on_done, psbt):
             success = set()
             for in_idx, txi in psbt.input_iter():
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
+                gc.collect()
 
                 inp = psbt.inputs[in_idx]
 
@@ -146,7 +148,6 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     finally:
         # print('finally...')
-        import gc
         gc.collect()
 
     await on_done(error_msg, error_code)
