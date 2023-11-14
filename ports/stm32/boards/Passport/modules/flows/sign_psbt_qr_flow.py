@@ -1,19 +1,10 @@
 # SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sign_psbt_qr_flow.py - Sign a PSBT from a microSD card
 
-from flows import Flow, ScanQRFlow, SignPsbtMicroSDFlow, SignPsbtCommonFlow, SaveToMicroSDFlow
-from utils import spinner_task, get_folder_path
-from tasks import copy_psbt_to_external_flash_task
-from foundation import ur, FixedBytesIO
-from data_codecs.qr_type import QRType
-from errors import Error
-from pages import YesNoChooserPage, ErrorPage, ShowQRPage
-import passport
-import microns
+from flows import Flow
 import gc
-from public_constants import TXN_INPUT_OFFSET, DIR_TRANSACTIONS
-from ubinascii import hexlify as b2a_hex
 
 
 class SignPsbtQRFlow(Flow):
@@ -31,6 +22,14 @@ class SignPsbtQRFlow(Flow):
         self.filename = None
 
     async def scan_transaction(self):
+        from foundation import ur
+        from data_codecs.qr_type import QRType
+        from flows import ScanQRFlow, SignPsbtMicroSDFlow
+        from errors import Error
+        from pages import YesNoChooserPage
+        import microns
+        import passport
+
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
                                   ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
@@ -74,6 +73,12 @@ How would you like to proceed?"
         self.goto(self.copy_to_flash)
 
     async def copy_to_flash(self):
+        from utils import spinner_task
+        from tasks import copy_psbt_to_external_flash_task
+        from public_constants import TXN_INPUT_OFFSET
+        from errors import Error
+        from pages import ErrorPage
+
         gc.collect()  # Try to avoid excessive fragmentation
 
         # TODO: Pass on_progress function as the first argument if we want progress or remove it
@@ -94,6 +99,8 @@ How would you like to proceed?"
         self.goto(self.common_flow)
 
     async def common_flow(self):
+        from flows import SignPsbtCommonFlow
+
         # This flow validates and signs if all goes well, and returns the signed psbt
         result = await SignPsbtCommonFlow(self.psbt_len).run()
 
@@ -106,9 +113,13 @@ How would you like to proceed?"
             self.goto(self.get_signed_bytes)
 
     async def get_signed_bytes(self):
+        from foundation import FixedBytesIO
+        from pages import ErrorPage
+        from passport import mem
+
         # Copy signed txn into a bytearray and show the data as a UR
         try:
-            with FixedBytesIO(passport.mem.psbt_output) as bfd:
+            with FixedBytesIO(mem.psbt_output) as bfd:
                 with self.output_encoder(bfd) as fd:
                     # Always serialize back to PSBT for QR codes
                     self.psbt.serialize(fd)
@@ -127,6 +138,12 @@ How would you like to proceed?"
         self.goto(self.show_signed_transaction)
 
     async def show_signed_transaction(self):
+        from pages import ShowQRPage, ErrorPage
+        from data_codecs.qr_type import QRType
+        from ubinascii import hexlify as b2a_hex
+        import microns
+        from foundation import ur
+
         gc.collect()
 
         if self.ur_type is None:
@@ -164,6 +181,12 @@ How would you like to proceed?"
         self.set_result(True)
 
     async def save_to_microsd(self):
+        from flows import SaveToMicroSDFlow
+        from pages import ErrorPage
+        from utils import get_folder_path
+        from public_constants import DIR_TRANSACTIONS
+        from ubinascii import hexlify as b2a_hex
+
         gc.collect()
 
         # Check that the psbt has been written
@@ -200,6 +223,7 @@ How would you like to proceed?"
         self.goto(self.show_success)
 
     async def show_success(self):
+        import microns
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage

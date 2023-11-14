@@ -8,15 +8,15 @@
 # and is covered by GPLv3 license found in COPYING.
 #
 # validate_psbt_task.py - Sign a PSBT that is in external SPI flash
-from errors import Error
-from exceptions import FraudulentChangeOutput, FatalPSBTIssue
-from public_constants import TXN_INPUT_OFFSET
-from sffile import SFFile
-import gc
 
 
 async def validate_psbt_task(on_done, psbt_len):
+    from errors import Error
+    from exceptions import FraudulentChangeOutput, FatalPSBTIssue
     from psbt import psbtObject
+    from public_constants import TXN_INPUT_OFFSET
+    from sffile import SFFile
+    import gc
 
     error_msg = None
     error_code = None

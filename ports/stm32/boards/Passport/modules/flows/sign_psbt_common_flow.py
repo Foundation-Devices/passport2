@@ -10,25 +10,26 @@
 # sign_psbt_common_flow.py - Sign a PSBT from a microSD card
 
 import lvgl as lv
-from flows import Flow, ImportMultisigWalletFlow
+from flows import Flow
 import microns
-from pages import ChooserPage, LongTextPage, ErrorPage, QuestionPage
+from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
-from tasks import sign_psbt_task, validate_psbt_task, double_check_psbt_change_task
+from tasks import sign_psbt_task, validate_psbt_task
 from utils import spinner_task, recolor
-import uio
-import chains
 import gc
 
 
 class SignPsbtCommonFlow(Flow):
     def __init__(self, psbt_len):
+        import chains
         super().__init__(initial_state=self.validate_psbt, name='SignPsbtCommonFlow')
         self.psbt = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
 
     async def validate_psbt(self):
+        from pages import ErrorPage
+
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
         # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
@@ -39,6 +40,9 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.check_multisig_import)
 
     async def check_multisig_import(self):
+        from flows import ImportMultisigWalletFlow
+        from pages import ErrorPage
+
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
         if self.psbt.multisig_import_needs_approval:
@@ -50,6 +54,9 @@ class SignPsbtCommonFlow(Flow):
         self.goto(self.show_transaction_details)
 
     async def show_transaction_details(self):
+        import uio
+        from pages import LongTextPage, ErrorPage
+
         try:
             outputs = uio.StringIO()
 
@@ -99,6 +106,8 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
     async def show_change(self):
+        from pages import LongTextPage, ErrorPage
+
         try:
             msg = self.render_change_text()
             result = await LongTextPage(
@@ -116,6 +125,7 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(False)
 
     async def show_warnings(self):
+        from pages import LongTextPage
 
         warnings = self.render_warnings()
         gc.collect()
@@ -135,6 +145,10 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
+        from tasks import double_check_psbt_change_task
+        from utils import spinner_task
+        from pages import ErrorPage, QuestionPage
+
         gc.collect()
 
         result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon

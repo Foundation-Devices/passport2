@@ -9,16 +9,15 @@
 #
 # sign_psbt_task.py - Sign a PSBT that is in external SPI flash
 
-from exceptions import FraudulentChangeOutput, FatalPSBTIssue
-from errors import Error
-from utils import keypath_to_str, swab32
-from serializations import ser_sig_der
-import trezorcrypto
-import stash
-import gc
-
 
 async def sign_psbt_task(on_done, psbt):
+    from exceptions import FraudulentChangeOutput, FatalPSBTIssue
+    from errors import Error
+    from utils import keypath_to_str, swab32
+    from serializations import ser_sig_der
+    import trezorcrypto
+    import stash
+    import gc
 
     try:
         with stash.SensitiveValues() as sv:
