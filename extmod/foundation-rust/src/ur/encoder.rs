@@ -112,20 +112,14 @@ pub unsafe extern "C" fn ur_encoder_start(
     let mut e = Encoder::new(Writer(message));
     value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
 
-    println!("UR_ENCODER_MAX_FRAGMENT_LEN: {UR_ENCODER_MAX_FRAGMENT_LEN}");
-
-    let max_fragment_len = max_fragment_len(
-        value.ur_type(),
-        UR_ENCODER_MAX_SEQUENCE_COUNT,
-        max_chars,
-    );
-
-    println!("max_fragment_len rust: {max_fragment_len}");
-
     encoder.inner.start(
         value.ur_type(),
         message,
-        max_fragment_len,
+        max_fragment_len(
+            value.ur_type(),
+            UR_ENCODER_MAX_SEQUENCE_COUNT,
+            max_chars,
+        ),
     );
 }
 

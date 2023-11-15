@@ -70,7 +70,6 @@ def create_generic_json_wallet(sw_wallet=None,
     msg = ujson.dumps(rv)
 
     if export_mode == 'qr' and qr_type == QRType.UR2:
-        print("len(msg): {}".format(len(msg)))
         return (ur.new_bytes(msg), accts)
 
     return (msg, accts)

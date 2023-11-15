@@ -135,12 +135,12 @@ dependencies = [
 [[package]]
 name = "foundation-arena"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=SFT-2878-crash-when-changing-ur-density#0dfbd06a4e44abb993d4959c56dcd39de2751b65"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=main#7fb778d9d3ff9b3925aba3abff16cdb3d387e2e3"
 
 [[package]]
 name = "foundation-ur"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=SFT-2878-crash-when-changing-ur-density#0dfbd06a4e44abb993d4959c56dcd39de2751b65"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=main#7fb778d9d3ff9b3925aba3abff16cdb3d387e2e3"
 dependencies = [
  "bitcoin_hashes",
  "crc",
@@ -155,7 +155,7 @@ dependencies = [
 [[package]]
 name = "foundation-urtypes"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=SFT-2878-crash-when-changing-ur-density#0dfbd06a4e44abb993d4959c56dcd39de2751b65"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=main#7fb778d9d3ff9b3925aba3abff16cdb3d387e2e3"
 dependencies = [
  "foundation-arena",
  "heapless",

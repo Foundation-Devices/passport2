@@ -26,12 +26,12 @@ default-features = false
 
 [dependencies.foundation-ur]
 git = "https://github.com/Foundation-Devices/foundation-rs"
-branch = "SFT-2878-crash-when-changing-ur-density"
-default-features = true
+branch = "main"
+default-features = false
 
 [dependencies.foundation-urtypes]
 git = "https://github.com/Foundation-Devices/foundation-rs"
-branch = "SFT-2878-crash-when-changing-ur-density"
+branch = "main"
 default-features = false
 
 [target.'cfg(target_arch = "arm")'.dependencies.cortex-m]
