@@ -133,7 +133,6 @@ Right: +1'''
 
     async def explore(self):
         from utils import stylize_address, get_single_address
-        import passport
         from pages import ShowQRPage, AddressExplorerPage
         import microns
 
