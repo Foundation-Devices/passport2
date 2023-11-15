@@ -76,7 +76,6 @@ Received single-part UR when multi-part reception was already in place""")
 class UR2Encoder(DataEncoder):
     def encode(self, value, max_fragment_len=200):
         """Initialize the encoder using the given UR data value"""
-        print("max_fragment_len: {}".format(max_fragment_len))
 
         ur.encoder_start(value, max_fragment_len)
 
