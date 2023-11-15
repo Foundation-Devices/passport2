@@ -98,7 +98,7 @@ class AddressExplorerFlow(Flow):
         from flows import SeriesOfPagesFlow
         import microns
 
-        text1 = '''\nUse the directional pad to navigate addresses.\n
+        text1 = '''\nUse the directional pad to navigate addresses\n
 Up: -10
 Down: +10
 Left: -1
@@ -110,10 +110,10 @@ Right: +1'''
             self.back()
             return
 
-        messages = [{'text': 'Passport cannot know if displayed addresses have been used.',
+        messages = [{'text': 'Passport cannot know if displayed addresses have been used',
                      'left_micron': microns.Back,
                      'right_micron': microns.Forward},
-                    {'text': 'Connect Passport with a wallet like Envoy to avoid reusing addresses.',
+                    {'text': 'Connect Passport with a wallet like Envoy to avoid reusing addresses',
                      'left_micron': microns.Back}]
 
         result2 = await SeriesOfPagesFlow(ErrorPage, messages).run()
