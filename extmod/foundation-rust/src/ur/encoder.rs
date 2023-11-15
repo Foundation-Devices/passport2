@@ -9,7 +9,7 @@ use foundation_ur::{max_fragment_len, HeaplessEncoder};
 use minicbor::{Encode, Encoder};
 
 use crate::ur::{
-    decoder::UR_DECODER_MAX_MESSAGE_LEN, registry::UR_Value, UR_MAX_TYPE,
+    decoder::UR_DECODER_MAX_MESSAGE_LEN, registry::UR_Value, UR_MAX_TYPE, UR_MIN_TYPE
 };
 
 /// Maximum size of an encoded Uniform Resource.
@@ -31,7 +31,7 @@ pub const UR_ENCODER_MIN_STRING: usize = 224;
 /// parts that the message is divided into.
 /// cbindgen:ignore
 pub const UR_ENCODER_MAX_FRAGMENT_LEN: usize =
-    max_fragment_len(UR_MAX_TYPE, usize::MAX, UR_ENCODER_MAX_STRING);
+    max_fragment_len(UR_MIN_TYPE, 1, UR_ENCODER_MAX_STRING);
 
 /// Minimum fragment length.
 pub const UR_ENCODER_MIN_FRAGMENT_LEN: usize =
@@ -112,14 +112,20 @@ pub unsafe extern "C" fn ur_encoder_start(
     let mut e = Encoder::new(Writer(message));
     value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
 
+    println!("UR_ENCODER_MAX_FRAGMENT_LEN: {UR_ENCODER_MAX_FRAGMENT_LEN}");
+
+    let max_fragment_len = max_fragment_len(
+        value.ur_type(),
+        UR_ENCODER_MAX_SEQUENCE_COUNT,
+        max_chars,
+    );
+
+    println!("max_fragment_len rust: {max_fragment_len}");
+
     encoder.inner.start(
         value.ur_type(),
         message,
-        max_fragment_len(
-            value.ur_type(),
-            UR_ENCODER_MAX_SEQUENCE_COUNT,
-            max_chars,
-        ),
+        max_fragment_len,
     );
 }
 
