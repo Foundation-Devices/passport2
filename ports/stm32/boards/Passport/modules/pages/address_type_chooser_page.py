@@ -10,9 +10,9 @@ from public_constants import AF_P2WPKH, AF_P2WPKH_P2SH, AF_CLASSIC
 
 class AddressTypeChooserPage(ChooserPage):
     OPTIONS = [
-        {'label': 'Native Segwit', 'value': AF_P2WPKH},
-        {'label': 'P2SH-Segwit', 'value': AF_P2WPKH_P2SH},
-        {'label': 'Legacy (P2PKH)', 'value': AF_CLASSIC},
+        {'label': 'Segwit', 'value': AF_P2WPKH},
+        {'label': 'Wrapped Segwit', 'value': AF_P2WPKH_P2SH},
+        {'label': 'Legacy', 'value': AF_CLASSIC},
     ]
 
     def __init__(self, card_header={'title': 'Address Type'}, initial_value=None):
