@@ -14,6 +14,10 @@ static mut UR_ERROR: heapless::String<256> = heapless::String::new();
 /// cbindgen:ignore
 const UR_MAX_TYPE: &str = "crypto-coin-info";
 
+/// The minimum length of a UR type
+/// cbindgen:ignore
+const UR_MIN_TYPE: &str = "bytes";
+
 const fn max_message_len(max_characters: usize) -> usize {
     const MAX_UR_PREFIX: usize = "ur:".len() + UR_MAX_TYPE.len();
 
