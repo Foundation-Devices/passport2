@@ -9,7 +9,8 @@ use foundation_ur::{max_fragment_len, HeaplessEncoder};
 use minicbor::{Encode, Encoder};
 
 use crate::ur::{
-    decoder::UR_DECODER_MAX_MESSAGE_LEN, registry::UR_Value, UR_MAX_TYPE, UR_MIN_TYPE
+    decoder::UR_DECODER_MAX_MESSAGE_LEN, registry::UR_Value, UR_MAX_TYPE,
+    UR_MIN_TYPE,
 };
 
 /// Maximum size of an encoded Uniform Resource.
