@@ -7,7 +7,6 @@ from flows import Flow
 
 
 class ViewSeedWordsFlow(Flow):
-<<<<<<< HEAD
     def __init__(self,
                  external_key=None,
                  qr_option=False,
