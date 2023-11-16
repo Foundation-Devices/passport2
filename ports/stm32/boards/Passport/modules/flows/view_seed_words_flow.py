@@ -180,8 +180,8 @@ class ViewSeedWordsFlow(Flow):
         from pages import InfoPage
         import microns
 
-        result = await InfoPage('The following QR code contains your seed words. '
-                                'Never scan it with an internet connected device like your phone.',
+        result = await InfoPage('The following QR code contains your seed words.\n\n'
+                                'NEVER scan it with an internet connected device like your phone.',
                                 left_micron=microns.Back).show()
 
         if not result:
