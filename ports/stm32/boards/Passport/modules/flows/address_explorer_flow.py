@@ -113,7 +113,7 @@ Right: +1'''
         messages = [{'text': 'Passport cannot know if displayed addresses have been used',
                      'left_micron': microns.Back,
                      'right_micron': microns.Forward},
-                    {'text': 'Connect Passport with a wallet like Envoy to avoid reusing addresses',
+                    {'text': 'Connect Passport with a wallet, like Envoy, to avoid reusing addresses',
                      'left_micron': microns.Back}]
 
         result2 = await SeriesOfPagesFlow(ErrorPage, messages).run()
