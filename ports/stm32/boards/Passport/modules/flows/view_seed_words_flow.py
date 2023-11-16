@@ -7,7 +7,14 @@ from flows import Flow
 
 
 class ViewSeedWordsFlow(Flow):
-    def __init__(self, external_key=None, qr_option=False, sd_option=False, path=None, filename=None):
+    def __init__(self,
+                 external_key=None,
+                 qr_option=False,
+                 sd_option=False,
+                 path=None,
+                 filename=None,
+                 initial=False,
+                 allow_skip=True):
         self.external_key = external_key
         self.qr_option = qr_option
 
@@ -21,6 +28,8 @@ class ViewSeedWordsFlow(Flow):
         self.words = None
         self.seed_micron = None
         self.mention_passphrase = True if not external_key else False
+        self.initial = initial
+        self.allow_skip = allow_skip
         super().__init__(initial_state=self.generate_words, name='ViewSeedWordsFlow')
 
     async def generate_words(self):
@@ -74,7 +83,9 @@ class ViewSeedWordsFlow(Flow):
         import microns
 
         result = await SeedWarningFlow(action_text="display your seed as a QR code",
-                                       mention_passphrase=self.mention_passphrase).run()
+                                       mention_passphrase=self.mention_passphrase,
+                                       initial=self.initial,
+                                       allow_skip=self.allow_skip).run()
 
         if not result:
             self.back()
@@ -107,7 +118,9 @@ class ViewSeedWordsFlow(Flow):
         from flows import SaveToMicroSDFlow
 
         result = await SeedWarningFlow(action_text="copy your seed to the microSD card",
-                                       mention_passphrase=self.mention_passphrase).run()
+                                       mention_passphrase=self.mention_passphrase,
+                                       initial=self.initial,
+                                       allow_skip=self.allow_skip).run()
 
         if not result:
             self.back()
@@ -129,7 +142,9 @@ class ViewSeedWordsFlow(Flow):
         from pages import SeedWordsListPage
 
         if not self.qr_type:  # We already gave the seed warning flow
-            result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase).run()
+            result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase,
+                                           initial=self.initial,
+                                           allow_skip=self.allow_skip).run()
 
             if not result:
                 self.set_result(False)

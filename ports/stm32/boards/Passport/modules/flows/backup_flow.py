@@ -30,7 +30,7 @@ class BackupFlow(Flow):
             msgs = ['Passport is about to create an updated microSD backup.',
                     'The Backup Code is the same as what you were previously shown.']
         else:
-            msgs = ['Passport is about to create your first encrypted microSD backup.',
+            msgs = ['Passport is about to create your first encrypted microSD backup containing your seed words.',
                     'The next screen will show you the Backup Code that is {} to decrypt the backup.'.format(
                         recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
                     'We recommend writing down the Backup Code on the included security card.',
@@ -110,4 +110,5 @@ class BackupFlow(Flow):
         from flows import BackupCommonFlow
 
         result = await BackupCommonFlow(self.backup_code).run()
-        self.set_result(result)
+        result_bool = result is not None
+        self.set_result(result_bool)
