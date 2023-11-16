@@ -4,10 +4,11 @@
 # new_seed_flow.py - Create a new random seed
 
 from flows import Flow
-from pages import ErrorPage, QuestionPage, SuccessPage
+from pages import ErrorPage, QuestionPage, SuccessPage, YesNoChooserPage
 from tasks import new_seed_task, save_seed_task
 from utils import has_secrets, spinner_task
 from translations import t, T
+import lvgl as lv
 
 
 class NewSeedFlow(Flow):
@@ -43,7 +44,11 @@ class NewSeedFlow(Flow):
             self.goto(self.confirm_generate)
 
     async def confirm_generate(self):
-        result = await QuestionPage(text='Generate a new seed phrase now?').show()
+        # result = await QuestionPage(text='Generate a new seed phrase now?').show()
+        result = await YesNoChooserPage(text='Passport will create and back up a new 12-word seed phrase',
+                                        yes_text='Continue',
+                                        no_text='Back',
+                                        icon=lv.LARGE_ICON_INFO).show()
         if result:
             self.goto(self.generate_seed)
         else:
