@@ -46,7 +46,8 @@ class NewSeedFlow(Flow):
 
     async def confirm_generate(self):
         # result = await QuestionPage(text='Generate a new seed phrase now?').show()
-        result = await YesNoChooserPage(text='Passport will create and back up a new 12-word seed phrase',
+        text = 'Passport will create and back up a new {}-word seed phrase.'.format(self.seed_length)
+        result = await YesNoChooserPage(text=text,
                                         yes_text='Continue',
                                         no_text='Back',
                                         icon=lv.LARGE_ICON_INFO,
