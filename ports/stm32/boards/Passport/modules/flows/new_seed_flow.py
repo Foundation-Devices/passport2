@@ -9,6 +9,7 @@ from tasks import new_seed_task, save_seed_task
 from utils import has_secrets, spinner_task
 from translations import t, T
 import lvgl as lv
+import microns
 
 
 class NewSeedFlow(Flow):
@@ -48,7 +49,8 @@ class NewSeedFlow(Flow):
         result = await YesNoChooserPage(text='Passport will create and back up a new 12-word seed phrase',
                                         yes_text='Continue',
                                         no_text='Back',
-                                        icon=lv.LARGE_ICON_INFO).show()
+                                        icon=lv.LARGE_ICON_INFO,
+                                        left_micron=microns.Back).show()
         if result:
             self.goto(self.generate_seed)
         else:
