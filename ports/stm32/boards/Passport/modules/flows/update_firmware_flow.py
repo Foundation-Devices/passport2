@@ -104,7 +104,11 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Preparing Update', left_micron=None, right_micron=None)
 
         self.update_task = start_task(copy_firmware_to_spi_flash_task(
-            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+            self.update_file_path,
+            self.size,
+            self.progress_page.set_progress,
+            self.progress_page.set_text,
+            self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()

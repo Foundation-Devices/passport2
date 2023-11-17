@@ -83,3 +83,5 @@ card_transition_dir = TRANSITION_DIR_REPLACE
 
 # Flag to prevent auto-shutdown related brightness from interfering with QR-related brightness
 showing_qr = False
+
+debug_str = ''
