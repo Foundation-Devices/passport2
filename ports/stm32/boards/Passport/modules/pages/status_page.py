@@ -89,7 +89,7 @@ class StatusPage(Page):
             self.center_content = Arc(start=0, end=0, color=DEFAULT_SPINNER)
             self.center_content.set_size(self.CENTER_SIZE, self.CENTER_SIZE)
 
-            self.progress_label = Label(text=common.debug_str, color=TEXT_GREY)
+            self.progress_label = Label(text=self.get_percent_text(), color=TEXT_GREY)
             self.center_container.add_child(self.progress_label)
             with Stylize(self.progress_label) as default:
                 default.align(lv.ALIGN.CENTER)
@@ -135,7 +135,6 @@ class StatusPage(Page):
         return '{}%'.format(int(self.percent))
 
     def set_text(self, text):
-        print("text: {}".format(text))
         self.text = text
         self.update()
 

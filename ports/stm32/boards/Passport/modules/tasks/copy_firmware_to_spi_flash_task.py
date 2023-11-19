@@ -16,10 +16,14 @@ import passport
 from uasyncio import sleep_ms
 from files import CardSlot, CardMissingError
 from errors import Error
-from common import debug_str
 
 
-async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, set_text, on_done):
+async def debug_log(message, set_txt):
+    set_txt(message)
+    await sleep_ms(1)
+
+
+async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, set_txt, on_done):
     from common import system, sf
 
     try:
@@ -67,54 +71,54 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, set_text
                 pos = 256
                 update_display = 0
                 percent = 0
-                set_text('Start copy')
+                await debug_log('Start copy', set_txt)
                 while pos <= size + 256:
-                    set_text('pos={}%'.format(pos))
+                    await debug_log('pos={}%'.format(pos), set_txt)
                     # Update progress bar every 50 flash pages
                     if update_display % 50 == 0:
                         percent = int(((pos - 256) / size) * 100)
-                        set_text('percent={}%'.format(percent))
+                        await debug_log('percent={}%'.format(percent), set_txt)
                         # print('pos = {} percent={}%'.format(pos, percent))
                         on_progress(percent)
                     update_display += 1
 
-                    set_text('Reading')
+                    await debug_log('Reading', set_txt)
                     here = fp.readinto(buf)
                     if not here:
-                        set_text('EOF')
+                        await debug_log('EOF', set_txt)
                         break
 
-                    set_text('Check erase')
+                    await debug_log('Check erase', set_txt)
                     if pos % 4096 == 0:
-                        set_text('Do erase')
+                        await debug_log('Do erase', set_txt)
                         # erase here
                         sf.sector_erase(pos)
-                        set_text('Erase wait')
+                        await debug_log('Erase wait', set_txt)
                         while sf.is_busy():
-                            set_text('Erase wait...')
+                            await debug_log('Erase wait...', set_txt)
                             await sleep_ms(10)
-                        set_text('Erase done')
+                        await debug_log('Erase done', set_txt)
 
-                    set_text('Writing...')
+                    await debug_log('Writing...', set_txt)
                     sf.write(pos, buf)
-                    set_text('Writing wait')
+                    await debug_log('Writing wait', set_txt)
 
                     # full page write: 0.6 to 3ms
                     while sf.is_busy():
-                        set_text('Write wait...')
+                        await debug_log('Write wait...', set_txt)
                         await sleep_ms(1)
 
                     pos += here
                     if passport.IS_SIMULATOR:
-                        set_text('WTF?')
+                        await debug_log('WTF?', set_txt)
                         await sleep_ms(1)
 
-                set_text('Final write 1')
+                await debug_log('Final write 1', set_txt)
                 # Do this at the end so that we know the rest worked - prevent bootloader from installing bad firmware
                 buf[0:32] = update_hash  # Copy into the buf we'll use to write to SPI flash
 
                 sf.write(0, buf)  # Need to write the entire page of 256 bytes
-                set_text('Final write 2')
+                await debug_log('Final write 2', set_txt)
 
                 # Success
                 await on_done(None)
