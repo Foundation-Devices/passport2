@@ -6,15 +6,16 @@
 
 from pages import ChooserPage
 from public_constants import AF_P2WPKH, AF_P2WPKH_P2SH, AF_CLASSIC, AF_P2TR
+from ucollections import OrderedDict
 
 
 class AddressTypeChooserPage(ChooserPage):
-    LABELS = {
-        AF_P2WPKH: 'Segwit',
-        AF_P2WPKH_P2SH: 'Wrapped Segwit',
-        AF_CLASSIC: 'Legacy',
-        AF_P2TR: 'Taproot',
-    }
+    LABELS = OrderedDict([
+        (AF_P2WPKH, 'Segwit'),
+        (AF_P2WPKH_P2SH, 'Wrapped Segwit'),
+        (AF_CLASSIC, 'Legacy'),
+        (AF_P2TR, 'Taproot'),
+    ])
 
     def __init__(self, card_header={'title': 'Address Type'}, initial_value=None, options=None, left_micron=None, right_micron=None):
 
