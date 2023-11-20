@@ -69,7 +69,8 @@ class AddressExplorerFlow(Flow):
         result = await AddressTypeChooserPage().show()
 
         if not result:
-            self.back()
+            if not self.back():
+                self.set_result(False)
             return
 
         self.addr_type = result
