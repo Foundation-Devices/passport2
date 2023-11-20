@@ -92,7 +92,7 @@ def generate_bitcoin_core_wallet(addr_type, example_addrs, acct_num):
             derive=derive.replace("'", "h"),
             fingerprint=txt_xfp,
             coin_type=chain.b44_cointype,
-            account=0,
+            account=acct_num,
             xpub=xpub,
             change=(1 if internal else 0))
 
