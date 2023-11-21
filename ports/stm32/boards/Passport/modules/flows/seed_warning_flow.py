@@ -10,11 +10,13 @@ class SeedWarningFlow(Flow):
     def __init__(self, mention_passphrase=False,
                  action_text="display your seed words",
                  continue_text=None,
+                 info_type_text=None,
                  initial=False,
                  allow_skip=True):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text
         self.continue_text = continue_text or "control your funds"
+        self.info_type_text = info_type_text or "these words"
         self.allow_skip = allow_skip
         self.initial = initial
         initial_state = self.show_skippable if (initial and allow_skip) else self.show_intro
@@ -88,7 +90,9 @@ Would you like to view them now?'''
         from pages import QuestionPage
         import microns
 
-        text = 'Anyone who knows this information can {}.'.format(self.continue_text)
+        text = 'Beware of any request to expose {} outside of Passport.' \
+               'Sharing them in any way could allow someone else to {}.' \
+               .format(self.info_type_text, self.continue_text)
         left_micron = microns.Cancel
 
         if not self.allow_skip:

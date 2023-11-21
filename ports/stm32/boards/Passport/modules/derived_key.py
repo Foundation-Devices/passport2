@@ -30,6 +30,7 @@ key_types = [
      'words': False,
      'task': nostr_key_task,
      'continue_text': 'post on your behalf',
+     'info_type_text': 'your keys',
      'menu': nostr_menu},
 ]
 
