@@ -17,7 +17,7 @@ class SeedWarningFlow(Flow):
         self.continue_text = continue_text or "control your funds"
         self.allow_skip = allow_skip
         self.initial = initial
-        initial_state = self.show_skippable if allow_skip else self.show_intro
+        initial_state = self.show_skippable if (initial and allow_skip) else self.show_intro
         super().__init__(initial_state=initial_state, name='SeedWarningFlow')
 
     async def show_skippable(self):
