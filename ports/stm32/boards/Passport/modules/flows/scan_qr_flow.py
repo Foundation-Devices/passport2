@@ -3,7 +3,7 @@
 
 from data_codecs.qr_type import QRType
 from flows import Flow
-from pages import ScanQRPage, LongErrorPage
+from pages import ScanQRPage, LongErrorPage, ErrorPage
 from foundation import ur
 
 
