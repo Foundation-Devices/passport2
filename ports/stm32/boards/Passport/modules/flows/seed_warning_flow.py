@@ -12,13 +12,15 @@ class SeedWarningFlow(Flow):
                  continue_text=None,
                  info_type_text=None,
                  initial=False,
-                 allow_skip=True):
+                 allow_skip=True,
+                 key_manager=False):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text
-        self.continue_text = continue_text or "control your funds"
+        self.continue_text = continue_text or "funds"
         self.info_type_text = info_type_text or "these words"
         self.allow_skip = allow_skip
         self.initial = initial
+        self.key_manager = key_manager
         initial_state = self.show_skippable if (initial and allow_skip) else self.show_intro
         super().__init__(initial_state=initial_state, name='SeedWarningFlow')
 
@@ -57,9 +59,11 @@ Would you like to view them now?'''
         # Empty microns have no action, so backing out isn't allowed
         left_micron = microns.Back if self.allow_skip else None
 
+        right_micron = microns.Checkmark if self.key_manager else microns.Forward
+
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED, text=text,
-            left_micron=left_micron, right_micron=microns.Forward).show()
+            left_micron=left_micron, right_micron=right_micron).show()
 
         if not result:
             self.set_result(False)
@@ -67,6 +71,10 @@ Would you like to view them now?'''
 
         if self.initial:
             self.goto(self.prompt_backup)
+            return
+
+        if self.key_manager:
+            self.set_result(True)
             return
 
         self.goto(self.confirm_show)
@@ -90,8 +98,8 @@ Would you like to view them now?'''
         from pages import QuestionPage
         import microns
 
-        text = 'Beware of any request to expose {} outside of Passport.' \
-               'Sharing them in any way could allow someone else to {}.' \
+        text = 'Anyone requesting you expose {} outside Passport ' \
+               'will gain full control over your {}. Take care.' \
                .format(self.info_type_text, self.continue_text)
         left_micron = microns.Cancel
 
