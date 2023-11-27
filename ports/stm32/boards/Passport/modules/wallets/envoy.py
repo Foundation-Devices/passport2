@@ -105,6 +105,4 @@ EnvoyWallet = {
     ],
     'skip_address_validation': False,
     'skip_multisig_import': True,
-    'select_addr_type': True,
-    'addr_options': [AF_P2WPKH, AF_P2TR],
 }
