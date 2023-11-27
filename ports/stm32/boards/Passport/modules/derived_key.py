@@ -29,8 +29,8 @@ key_types = [
      'indexed': True,
      'words': False,
      'task': nostr_key_task,
-     'continue_text': 'post on your behalf',
-     'info_type_text': 'your keys',
+     'continue_text': 'profile',
+     'info_type_text': 'your key',
      'menu': nostr_menu},
 ]
 

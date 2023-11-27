@@ -47,7 +47,8 @@ class ExportDerivedKeyFlow(Flow):
                                              qr_option=True,
                                              sd_option=True,
                                              path=self.path,
-                                             filename=self.filename).run()
+                                             filename=self.filename,
+                                             key_manager=True).run()
             self.set_result(result)
             return
 
@@ -79,8 +80,7 @@ class ExportDerivedKeyFlow(Flow):
 
         result = await SeedWarningFlow(action_text="display your {} as a QR code"
                                        .format(self.key_type['title']),
-                                       info_type_text=self.key_type.get('info_type_text'),
-                                       continue_text=self.key_type.get('continue_text', None)).run()
+                                       key_manager=True).run()
 
         if not result:
             self.back()
@@ -120,8 +120,7 @@ class ExportDerivedKeyFlow(Flow):
 
         result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
                                        .format(self.key_type['title']),
-                                       info_type_text=self.key_type.get('info_type_text'),
-                                       continue_text=self.key_type.get('continue_text', None)).run()
+                                       key_manager=True).run()
 
         if not result:
             self.back()
