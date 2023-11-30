@@ -19,6 +19,7 @@ class SignPsbtFlow(Flow):
         self.out2_fn = None
         self.written = False
         self.signed_bytes = None
+        self.final = None
         self.max_frames = 35
         self.file_path = None
         self.filename = None
@@ -187,6 +188,13 @@ How would you like to proceed?"
                     self.signed_bytes = bfd.getvalue()
                     # print('len(signed_bytes)={}'.format(len(signed_bytes)))
                     # print('signed_bytes={}'.format(signed_bytes))
+
+            with FixedBytesIO(mem.psbt_output) as bfd:
+                with HexWriter(bfd) as fd:
+                    self.txid = self.psbt.finalize(fd)
+                    bfd.seek(0)
+                    self.final = bfd.getvalue()
+
         except MemoryError as e:
             await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
             self.set_result(False)
@@ -255,12 +263,15 @@ How would you like to proceed?"
             return
 
         target_fname = None
+        target2_fname = None
+        path = None
         base = None
 
         if self.qr_mode:
             base = 'QR'
+            path = get_folder_path(DIR_TRANSACTIONS)
         else:
-            orig_path, basename = self.file_path.rsplit('/', 1)
+            path, basename = self.file_path.rsplit('/', 1)
             base = basename.rsplit('.', 1)[0]
 
         if not self.is_comp:
@@ -269,14 +280,16 @@ How would you like to proceed?"
         else:
             # Add -signed to end. We won't offer to sign again.
             target_fname = base + '-signed.psbt'
+            target2_fname = base + '-final.txn'
 
         try:
             self.filename = await SaveToMicroSDFlow(filename=target_fname,
                                                     data=b2a_hex(self.signed_bytes),
                                                     success_text="psbt",
-                                                    path=get_folder_path(DIR_TRANSACTIONS),
+                                                    path=path,
                                                     automatic=False,
                                                     auto_prompt=True).run()
+
         except MemoryError as e:
             await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
             self.set_result(False)
@@ -285,6 +298,20 @@ How would you like to proceed?"
         if self.filename is None:
             self.back()
             return
+
+        if self.is_comp:
+            try:
+                self.final_filename = await SaveToMicroSDFlow(filename=target2_fname,
+                                                              data=self.final,
+                                                              success_text='transaction',
+                                                              path=path,
+                                                              automatic=False,
+                                                              auto_prompt=True).run()
+            except MemoryError as e:
+                await ErrorPage('Final transaction is too complex: {}'.format(e)).show()
+
+            if self.final_filename is None:
+                await ErrorPage('Could not save finalized transaction').show()
 
         self.written = True
         self.goto(self.show_success)
@@ -296,6 +323,13 @@ How would you like to proceed?"
         from pages import LongTextPage
 
         msg = "Updated PSBT is:\n\n%s" % self.filename
+
+        if self.final_filename:
+            msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.final_filename
+
+            if self.txid:
+                msg += '\n\nFinal TXID:\n' + self.txid
+
         result = await LongTextPage(text=msg,
                                     centered=True,
                                     left_micron=microns.ScanQR,
