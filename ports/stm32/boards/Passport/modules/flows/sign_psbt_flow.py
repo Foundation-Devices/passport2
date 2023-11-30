@@ -177,6 +177,7 @@ How would you like to proceed?"
         from foundation import FixedBytesIO
         from pages import ErrorPage
         from passport import mem
+        from utils import HexWriter
 
         # Copy signed txn into a bytearray and show the data as a UR
         try:
