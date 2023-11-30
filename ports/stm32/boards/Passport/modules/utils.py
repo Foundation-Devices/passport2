@@ -7,6 +7,9 @@
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
+# SPDX-FileCopyRightText: 2019 cryptoadvance
+# SPDX-License-Identifier: MIT
+#
 # utils.py
 #
 
@@ -1281,7 +1284,7 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath):
+def validate_sign_text(text, subpath, space_limit=True):
     # Check for leading or trailing whitespace
     if text[0] == ' ':
         return (subpath, 'File contains leading whitespace.')
@@ -1297,12 +1300,13 @@ def validate_sign_text(text, subpath):
         if ord(ch) not in MSG_CHARSET:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
-        if ch == ' ':
-            run += 1
-            if run >= MSG_MAX_SPACES:
-                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
-        else:
-            run = 0
+        if space_limit:
+            if ch == ' ':
+                run += 1
+                if run >= MSG_MAX_SPACES:
+                    return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+            else:
+                run = 0
 
     # Check subpath, if given
     if subpath:
@@ -1544,6 +1548,21 @@ def insufficient_randomness(seed_words):
             return True
 
     return False
+
+
+# From SpecterDIY: https://github.com/cryptoadvance/specter-diy/blob/.../src/apps/signmessage/signmessage.py
+def sign_message(self, derivation, msg, compressed=True):
+    # Sign message with private key
+    msghash = sha256(
+        sha256(
+            b"\x18Bitcoin Signed Message:\n" + compact.to_bytes(len(msg)) + msg
+        ).digest()
+    ).digest()
+    sig, flag = self.keystore.sign_recoverable(derivation, msghash)
+    c = 4 if compressed else 0
+    flag = bytes([27 + flag + c])
+    ser = flag + secp256k1.ecdsa_signature_serialize_compact(sig._sig)
+    return b2a_base64(ser).strip().decode()
 
 
 # EOF

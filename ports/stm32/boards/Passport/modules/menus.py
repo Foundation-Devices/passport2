@@ -29,7 +29,11 @@ from utils import has_seed
 
 
 def manage_account_menu():
-    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow, AddressExplorerFlow
+    from flows import (RenameAccountFlow,
+                       DeleteAccountFlow,
+                       ConnectWalletFlow,
+                       AddressExplorerFlow,
+                       SignElectrumMessageFlow)
     from pages import AccountDetailsPage
 
     return [
@@ -40,6 +44,7 @@ def manage_account_menu():
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
         {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a message', 'flow': SignElectrumMessageFlow},
     ]
 
 
