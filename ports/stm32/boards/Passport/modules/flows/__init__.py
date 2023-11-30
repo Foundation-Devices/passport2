@@ -34,6 +34,7 @@ from .casa_health_check_qr_flow import *
 from .change_pin_flow import *
 from .delete_account_flow import *
 from .delete_multisig_flow import *
+from .display_transaction_flow import *
 from .erase_passport_flow import *
 from .export_derived_key_flow import *
 from .export_multisig_microsd_flow import *

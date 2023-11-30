@@ -89,6 +89,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/change_pin_flow.py',
         'flows/delete_account_flow.py',
         'flows/delete_multisig_flow.py',
+        'flows/display_transaction_flow.py',
         'flows/envoy_setup_flow.py',
 
         'flows/erase_passport_flow.py',

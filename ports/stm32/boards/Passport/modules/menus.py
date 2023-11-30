@@ -350,7 +350,11 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow, ShowSecurityWordsSettingFlow
+    from flows import (ViewSeedWordsFlow,
+                       ErasePassportFlow,
+                       ScvFlow,
+                       ShowSecurityWordsSettingFlow,
+                       DisplayTransactionFlow)
 
     return [
         {'icon': 'ICON_SETTINGS', 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
@@ -363,6 +367,7 @@ def advanced_menu():
         {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow},
         {'icon': 'ICON_SHIELD', 'label': 'Security Check', 'flow': ScvFlow,
          'args': {'envoy': False, 'ask_to_skip': False}},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Display Transaction', 'flow': DisplayTransactionFlow},
     ]
 
 
