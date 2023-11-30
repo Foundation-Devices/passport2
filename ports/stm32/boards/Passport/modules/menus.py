@@ -32,8 +32,7 @@ def manage_account_menu():
     from flows import (RenameAccountFlow,
                        DeleteAccountFlow,
                        ConnectWalletFlow,
-                       AddressExplorerFlow,
-                       SignElectrumMessageFlow)
+                       AddressExplorerFlow)
     from pages import AccountDetailsPage
 
     return [
@@ -44,12 +43,11 @@ def manage_account_menu():
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
         {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
-        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a message', 'flow': SignElectrumMessageFlow},
     ]
 
 
 def account_menu():
-    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow
+    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, SignElectrumMessageFlow
 
     return [
         {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
@@ -57,6 +55,7 @@ def account_menu():
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a message', 'flow': SignElectrumMessageFlow},
         {'icon': 'ICON_FOLDER', 'label': 'Manage Account', 'submenu': manage_account_menu},
     ]
 

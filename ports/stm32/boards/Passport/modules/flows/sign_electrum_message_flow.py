@@ -65,36 +65,65 @@ class SignElectrumMessageFlow(Flow):
             self.set_result(False)
             return
 
-        await ErrorPage('What now?').show()
-        self.set_result(True)
+        print("subpath: {}".format(self.subpath))
+
+        self.goto(self.show_message)
+
+    async def show_message(self):
+        from pages import LongTextPage, QuestionPage
+        import microns
+
+        result = await LongTextPage(centered=True,
+                                    text=self.message,
+                                    card_header={'title': 'Message'}).show()
+
+        if not result:
+            self.back()
+            return
+
+        result = await QuestionPage(text='Sign message with path {}?'.format(self.subpath),
+                                    right_micron=microns.Sign).show()
+
+        if not result:
+            return
+
+        self.goto(self.do_sign)
 
     async def do_sign(self):
-        (signature, address, error) = await spinner_task('Signing File', sign_text_file_task,
-                                                         args=[self.text, self.subpath, AF_CLASSIC])
+        from wallets.utils import get_addr_type_from_deriv
+        from public_constants import AF_CLASSIC, AF_P2WPKH
+
+        addr_format = get_addr_type_from_deriv(self.subpath)
+
+        if addr_format is None:
+            addr_format = AF_CLASSIC
+
+        print('addr_format: {}, AF_P2WPKH: {}, AF_CLASSIC: {}'.format(addr_format, AF_P2WPKH, AF_CLASSIC))
+
+        (signature, address, error) = await spinner_task('Signing Message', sign_text_file_task,
+                                                         args=[self.message, self.subpath, addr_format])
         if error is None:
             self.signature = signature
             self.address = address
-            self.goto(self.write_signed_file)
+            self.goto(self.show_signed)
         else:
             # TODO: Refactor this to a simpler, common error handler page?
-            await ErrorPage(text='Error while signing file: {}'.format(error)).show()
+            await ErrorPage(text='Error while signing message: {}'.format(error)).show()
             self.set_result(False)
             return
 
-    async def write_signed_file(self):
-        # complete. write out result
-        from ubinascii import b2a_base64
-        from flows import SaveToMicroSDFlow
-        from public_constants import RFC_SIGNATURE_TEMPLATE
+    async def show_signed(self):
+        from pages import ShowQRPage
+        import microns
+        from utils import bytes_to_hex_str
 
-        orig_path, basename = self.file_path.rsplit('/', 1)
-        base, ext = basename.rsplit('.', 1)
-        filename = base + '-signed' + '.' + ext
-        sig = b2a_base64(self.signature).decode('ascii').strip()
-        data = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
-        result = await SaveToMicroSDFlow(filename=filename,
-                                         data=data,
-                                         success_text="signed file",
-                                         path=orig_path,
-                                         mode='t').run()
+        caption = 'Signed by {}'.format(self.address)
+        qr_data = bytes_to_hex_str(self.signature)
+        print(qr_data)
+        print(type(qr_data))
+
+        result = await ShowQRPage(qr_data=qr_data,
+                                  right_micron=microns.Checkmark,
+                                  caption=caption).show()
+
         self.set_result(result)
