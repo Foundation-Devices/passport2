@@ -94,6 +94,12 @@ class ScanQRFlow(Flow):
             self.set_result(None)
             return
 
+        if self.data is None:
+            await ErrorPage(text='Scan failed.\n'
+                                 'No data found in this UR code. Expected '
+                                 '{}.'.format(self.data_description)).show()
+            self.set_result(None)
+
         self.set_result(self.data)
 
     async def handle_qr(self):
@@ -103,5 +109,11 @@ class ScanQRFlow(Flow):
                                  '{}.'.format(self.data_description)).show()
             self.set_result(None)
             return
+
+        if self.data is None:
+            await ErrorPage(text='Scan failed.\n'
+                                 'No data found in this QR code. Expected '
+                                 '{}.'.format(self.data_description)).show()
+            self.set_result(None)
 
         self.set_result(self.data)
