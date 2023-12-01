@@ -1284,13 +1284,14 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath, space_limit=True):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True):
     # Check for leading or trailing whitespace
-    if text[0] == ' ':
-        return (subpath, 'File contains leading whitespace.')
+    if check_whitespace:
+        if text[0] == ' ':
+            return (subpath, 'File contains leading whitespace.')
 
-    if text[-1] == ' ':
-        (subpath, 'File contains trailing whitespace.')
+        if text[-1] == ' ':
+            return (subpath, 'File contains trailing whitespace.')
 
     # Ensure characters are in range and not too many spaces
     run = 0
