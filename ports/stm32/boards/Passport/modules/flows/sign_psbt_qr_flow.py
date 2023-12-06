@@ -212,7 +212,7 @@ How would you like to proceed?"
                                                     automatic=False,
                                                     auto_prompt=True).run()
         except MemoryError as e:
-            result = await ErrorPage(text='Transaction is too complex: {}'.format(e),
+            result = await ErrorPage(text='Transaction is too large to save to microSD',
                                      left_micron=microns.ScanQR).show()
             if not result:
                 self.goto(self.show_signed_transaction)
