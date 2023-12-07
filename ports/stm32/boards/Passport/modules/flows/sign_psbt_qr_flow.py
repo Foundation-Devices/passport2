@@ -212,8 +212,8 @@ How would you like to proceed?"
                                                     automatic=False,
                                                     auto_prompt=True).run()
         except MemoryError as e:
-            result = await ErrorPage(text='Transaction is too large for conversion to microSD. '
-                                          'Finish signing via QR or import unsigned transaction direct from microSD.',
+            result = await ErrorPage(text='Transaction is too large to switch to microSD. '
+                                          'Finish signing via QR or start over with microSD.',
                                      left_micron=microns.ScanQR).show()
             if not result:
                 self.goto(self.show_signed_transaction)
