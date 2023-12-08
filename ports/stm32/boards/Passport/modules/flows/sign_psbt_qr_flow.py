@@ -186,6 +186,7 @@ How would you like to proceed?"
         from utils import get_folder_path
         from public_constants import DIR_TRANSACTIONS
         from ubinascii import hexlify as b2a_hex
+        import microns
 
         gc.collect()
 
@@ -211,7 +212,13 @@ How would you like to proceed?"
                                                     automatic=False,
                                                     auto_prompt=True).run()
         except MemoryError as e:
-            await ErrorPage(text='Transaction is too complex: {}'.format(e)).show()
+            result = await ErrorPage(text='Transaction is too large to switch to microSD. '
+                                          'Finish signing via QR or start over with microSD.',
+                                     left_micron=microns.ScanQR).show()
+            if not result:
+                self.goto(self.show_signed_transaction)
+                return
+
             self.set_result(False)
             return
 
