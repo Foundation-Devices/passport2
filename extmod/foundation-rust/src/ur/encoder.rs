@@ -115,11 +115,7 @@ pub unsafe extern "C" fn ur_encoder_start(
     encoder.inner.start(
         value.ur_type(),
         message,
-        max_fragment_len(
-            UR_MAX_TYPE,
-            usize::MAX,
-            max_chars,
-        ),
+        max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );
 }
 
