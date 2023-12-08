@@ -64,7 +64,8 @@ def calc_battery_percent(current, voltage):
 
 async def battery_adc_task():
     import passport
-    if not passport.HAS_FUEL_GAUGE:
+
+    if passport.IS_SIMULATOR:
         return
 
     while True:
