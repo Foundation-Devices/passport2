@@ -48,7 +48,7 @@ class ViewSeedWordsFlow(Flow):
         if self.qr_option:
             options.extend([{'label': 'Compact SeedQR',
                              'value': QRType.COMPACT_SEED_QR},
-                            {'label': 'SeedQr',
+                            {'label': 'SeedQR',
                              'value': QRType.SEED_QR}])
 
         if self.sd_option:
