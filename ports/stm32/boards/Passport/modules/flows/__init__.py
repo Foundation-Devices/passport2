@@ -67,6 +67,7 @@ from .set_initial_pin_flow import *
 from .show_security_words_setting_flow import *
 from .sign_text_file_flow import *
 from .sign_psbt_common_flow import *
+from .sign_psbt_flow import *
 from .sign_psbt_microsd_flow import *
 from .sign_psbt_qr_flow import *
 from .system_test_camera_flow import *

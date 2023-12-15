@@ -44,13 +44,15 @@ def manage_account_menu():
 
 
 def account_menu():
-    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow
+    from flows import VerifyAddressFlow, SignPsbtFlow
 
     return [
-        {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
-         'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
-         'statusbar': {'title': 'SIGN'}},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtFlow,
+         'statusbar': {'title': 'SIGN'},
+         'args': {'qr_mode': True}},
+        {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtFlow,
+         'statusbar': {'title': 'SIGN'},
+         'args': {'qr_mode': False}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
         {'icon': 'ICON_FOLDER', 'label': 'Manage Account', 'submenu': manage_account_menu},
     ]
