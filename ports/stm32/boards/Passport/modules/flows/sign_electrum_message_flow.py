@@ -49,6 +49,10 @@ class SignElectrumMessageFlow(Flow):
         self.message = parts[1]
         header_elements = parts[0].split(' ')
 
+        if len(header_elements) != 3:
+            await ErrorPage('Message format must be "signmessage {derivation_path} ascii:{message}"').show()
+            self.set_result(False)
+
         print("header:")
         print(header_elements)
         print("message:")
@@ -134,9 +138,9 @@ class SignElectrumMessageFlow(Flow):
     async def show_signed(self):
         from pages import ShowQRPage
         import microns
-        from utils import bytes_to_hex_str
+        from ubinascii import b2a_base64
 
-        qr_data = bytes_to_hex_str(self.signature)
+        qr_data = b2a_base64(self.signature)
         print(qr_data)
         print(type(qr_data))
 

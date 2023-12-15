@@ -1551,19 +1551,4 @@ def insufficient_randomness(seed_words):
     return False
 
 
-# From SpecterDIY: https://github.com/cryptoadvance/specter-diy/blob/.../src/apps/signmessage/signmessage.py
-def sign_message(self, derivation, msg, compressed=True):
-    # Sign message with private key
-    msghash = sha256(
-        sha256(
-            b"\x18Bitcoin Signed Message:\n" + compact.to_bytes(len(msg)) + msg
-        ).digest()
-    ).digest()
-    sig, flag = self.keystore.sign_recoverable(derivation, msghash)
-    c = 4 if compressed else 0
-    flag = bytes([27 + flag + c])
-    ser = flag + secp256k1.ecdsa_signature_serialize_compact(sig._sig)
-    return b2a_base64(ser).strip().decode()
-
-
 # EOF
