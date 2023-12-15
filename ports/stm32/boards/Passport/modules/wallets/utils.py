@@ -105,21 +105,21 @@ def get_bip_num_from_addr_type(addr_type, is_multisig):
 
 
 def get_addr_type_from_deriv(path):
-    type_str = get_addr_type_from_deriv_path(path)
+    addr_type = get_addr_type_from_deriv_path(path)
     subpath = get_part_from_deriv_path(path, 4)
 
-    if type_str == '44':
+    if addr_type == 44:
         return AF_CLASSIC
-    elif type_str == '49':
+    elif addr_type == 49:
         return AF_P2WPKH_P2SH
-    elif type_str == '84':
+    elif addr_type == 84:
         return AF_P2WPKH
-    elif type_str == '48':
-        if subpath == '1':
+    elif addr_type == 48:
+        if subpath == 1:
             return AF_P2WSH_P2SH
-        elif subpath == '2':
+        elif subpath == 2:
             return AF_P2WSH
-    elif type_str == '86':
+    elif addr_type == 86:
         return AF_P2TR
 
     return None
@@ -217,6 +217,14 @@ def get_addr_type_from_deriv_path(path):
 
 def get_part_from_deriv_path(path, index):
     parts = path.split('/')
+    print(parts)
+    print(len(parts))
+    print(index)
+    print(len(parts) <= index)
+
+    if len(parts) <= index:
+        return None
+
     if parts[index][-1] == "'":
         return int(parts[index][0:-1])
     else:

@@ -7,6 +7,9 @@
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
+# SPDX-FileCopyRightText: 2019 cryptoadvance
+# SPDX-License-Identifier: MIT
+#
 # utils.py
 #
 
@@ -1275,13 +1278,14 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True):
     # Check for leading or trailing whitespace
-    if text[0] == ' ':
-        return (subpath, 'File contains leading whitespace.')
+    if check_whitespace:
+        if text[0] == ' ':
+            return (subpath, 'File contains leading whitespace.')
 
-    if text[-1] == ' ':
-        (subpath, 'File contains trailing whitespace.')
+        if text[-1] == ' ':
+            return (subpath, 'File contains trailing whitespace.')
 
     # Ensure characters are in range and not too many spaces
     run = 0
@@ -1291,12 +1295,13 @@ def validate_sign_text(text, subpath):
         if ord(ch) not in MSG_CHARSET:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
-        if ch == ' ':
-            run += 1
-            if run >= MSG_MAX_SPACES:
-                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
-        else:
-            run = 0
+        if space_limit:
+            if ch == ' ':
+                run += 1
+                if run >= MSG_MAX_SPACES:
+                    return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+            else:
+                run = 0
 
     # Check subpath, if given
     if subpath:
