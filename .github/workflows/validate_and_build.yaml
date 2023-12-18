@@ -85,37 +85,37 @@ jobs:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
     - name: Upload firmware (unsigned)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}-unsigned${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/firmware-${{ env.SCREEN_MODE }}.bin
 
     - name: Upload firmware (signed)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}-beta${{ matrix.build.suffix }}.bin
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.suffix }}.bin
 
     - name: Upload MD5 Hash
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}${{ matrix.build.hash_suffix }}-md5
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-md5
 
     - name: Upload Build Hash
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}${{ matrix.build.hash_suffix }}-build-hash
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-build-hash
 
     - name: Upload SHA256 Hash
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}${{ matrix.build.hash_suffix }}-sha256
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-sha256
 
     - name: Upload Hashes Markdown
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
@@ -159,7 +159,7 @@ jobs:
       run: just build-bootloader ${{ matrix.screen }}
 
     - name: Upload bootloader
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bootloader-${{ env.SCREEN_MODE }}.bin
         path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
