@@ -226,11 +226,14 @@ class VerifyAddressFlow(Flow):
             self.set_result(False)
 
     async def found(self):
-        from pages import SuccessPage, LongSuccessPage
+        from pages import MultipleAlignmentPage
         from utils import save_next_addr, format_btc_address, stylize_address
         import passport
         from common import settings
         import chains
+        import lvgl as lv
+        import microns
+        from styles.colors import DEFAULT_LARGE_ICON_COLOR
 
         # Remember where to start from next time
         save_next_addr(self.acct_num,
@@ -241,13 +244,14 @@ class VerifyAddressFlow(Flow):
                        self.found_is_change)
         address = stylize_address(self.address)
 
-        msg = '''{}
+        msg = '{} Address {}'.format('Change' if self.found_is_change == 1 else 'Receive',
+                                     self.found_addr_idx)
 
-{} Address {}'''.format(
-            address,
-            'Change' if self.found_is_change == 1 else 'Receive',
-            self.found_addr_idx)
+        text_list = [{'text': address, 'centered': False},
+                     {'text': msg}]
 
-        page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
-        await page_class(msg).show()
+        await MultipleAlignmentPage(text_list=text_list,
+                                    icon=lv.LARGE_ICON_SUCCESS,
+                                    icon_color=DEFAULT_LARGE_ICON_COLOR,
+                                    right_micron=microns.Checkmark).show()
         self.set_result(True)
