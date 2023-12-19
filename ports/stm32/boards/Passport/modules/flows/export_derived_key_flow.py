@@ -95,6 +95,7 @@ class ExportDerivedKeyFlow(Flow):
     async def confirm_qr(self):
         from pages import InfoPage, LongTextPage
         import microns
+        from utils import stylize_address
 
         text = 'Confirm the exported {} on the following page'.format(self.key_type['title'])
         result = await InfoPage(text=text, left_micron=microns.Back).show()
@@ -103,7 +104,7 @@ class ExportDerivedKeyFlow(Flow):
             self.back()
             return
 
-        result = await LongTextPage(text="\n" + self.data,
+        result = await LongTextPage(text="\n" + stylize_address(self.data),
                                     centered=True,
                                     card_header={'title': 'Confirm Key'},
                                     left_micron=microns.Back).show()
