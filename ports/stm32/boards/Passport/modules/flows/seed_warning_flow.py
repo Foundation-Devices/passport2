@@ -15,7 +15,7 @@ class SeedWarningFlow(Flow):
                  allow_skip=True,
                  key_manager=False):
         self.mention_passphrase = mention_passphrase
-        self.action_text = action_text
+        self.action_text = action_text or "display your seed words"
         self.continue_text = continue_text or "funds"
         self.info_type_text = info_type_text or "these words"
         self.allow_skip = allow_skip

@@ -78,7 +78,7 @@ class ExportDerivedKeyFlow(Flow):
         from flows import SeedWarningFlow
         import microns
 
-        result = await SeedWarningFlow(action_text="display your {} as a QR code"
+        result = await SeedWarningFlow(action_text="display your child {} as a QR code"
                                        .format(self.key_type['title']),
                                        key_manager=True).run()
 
@@ -118,7 +118,7 @@ class ExportDerivedKeyFlow(Flow):
     async def save_to_sd(self):
         from flows import SaveToMicroSDFlow, SeedWarningFlow
 
-        result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
+        result = await SeedWarningFlow(action_text="copy your child {} to the microSD card"
                                        .format(self.key_type['title']),
                                        key_manager=True).run()
 
