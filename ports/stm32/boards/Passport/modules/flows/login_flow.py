@@ -18,18 +18,18 @@ _BRICK_WARNING_NUM_ATTEMPTS = const(5)
 class LoginFlow(Flow):
     def __init__(self):
         self.pin = ''
-        super().__init__(initial_state=self.enter_pin, name='LoginFlow')
-
-    async def enter_pin(self):
 
         device_name = common.settings.get('device_name', None)
         if device_name is not None:
             device_name = device_name.upper()
+        self.statusbar = {'title': (device_name or 'PASSPORT')}
+        super().__init__(initial_state=self.enter_pin, name='LoginFlow', statusbar=self.statusbar)
+
+    async def enter_pin(self):
 
         try:
             (self.pin, is_done) = await PINEntryPage(
                 card_header={'title': 'Enter PIN'},
-                statusbar={'title': device_name},
                 security_words_message='Recognize these Security Words?',
                 left_micron=microns.Shutdown,
                 right_micron=microns.Checkmark,
