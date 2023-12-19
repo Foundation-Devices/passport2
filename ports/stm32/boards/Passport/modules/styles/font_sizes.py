@@ -8,3 +8,4 @@ from micropython import const
 FONT_SMALL = const(0)
 FONT_NORMAL = const(1)
 FONT_TITLE = const(2)
+FONT_MONOSPACE = const(3)

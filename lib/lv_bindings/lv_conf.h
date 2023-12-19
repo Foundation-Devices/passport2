@@ -299,8 +299,10 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #define LV_FONT_MONTSERRAT_14    0
 #ifdef SCREEN_MODE_COLOR
 #define LV_FONT_MONTSERRAT_16    1
+#define LV_FONT_MONOSPACE_16     1
 #else
 #define LV_FONT_MONTSERRAT_16_MONO    1
+#define LV_FONT_MONOSPACE_16_MONO     1
 #endif
 #define LV_FONT_MONTSERRAT_18    0
 #define LV_FONT_MONTSERRAT_20    0

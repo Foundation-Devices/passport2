@@ -153,6 +153,14 @@ LV_FONT_DECLARE(lv_font_montserrat_16)
 LV_FONT_DECLARE(lv_font_montserrat_16_mono)
 #endif
 
+#if LV_FONT_MONOSPACE_16
+LV_FONT_DECLARE(lv_font_monospace_16)
+#endif
+
+#if LV_FONT_MONOSPACE_16_MONO
+LV_FONT_DECLARE(lv_font_monospace_16_mono)
+#endif
+
 #if LV_FONT_MONTSERRAT_18
 LV_FONT_DECLARE(lv_font_montserrat_18)
 #endif

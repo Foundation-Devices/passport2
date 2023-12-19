@@ -162,10 +162,16 @@ class FoundationBaseTheme():
         self.style.set_opa_scale(opa_scale)
 
     def font(self, font=FONT_NORMAL):
-        if passport.IS_COLOR:
-            self.style.set_text_font(lv.font_montserrat_16)
+        if font == FONT_MONOSPACE:
+            if passport.IS_COLOR:
+                self.style.set_text_font(lv.font_monospace_16)
+            else:
+                self.style.set_text_font(lv.font_monospace_16_mono)
         else:
-            self.style.set_text_font(lv.font_montserrat_16_mono)
+            if passport.IS_COLOR:
+                self.style.set_text_font(lv.font_montserrat_16)
+            else:
+                self.style.set_text_font(lv.font_montserrat_16_mono)
 
     def text_color(self, color):
         self.style.set_text_color(color)

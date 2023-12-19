@@ -10,6 +10,7 @@
 # address_explorer_flow.py - View addresses related to the current account
 
 from flows import Flow
+from styles import FONT_NORMAL, FONT_MONOSPACE
 
 
 class AddressExplorerFlow(Flow):
@@ -155,8 +156,8 @@ Right: +1'''
 
         message = '\n\n{} Address {}\n'.format('Change' if self.is_change else 'Receive',
                                                self.index)
-        text_list = [{'text': message, 'centered': True},
-                     {'text': nice_address, 'centered': False}]
+        text_list = [{'text': message, 'centered': True, 'font': FONT_NORMAL},
+                     {'text': nice_address, 'centered': False, 'font': FONT_MONOSPACE}]
 
         while True:
             result = await AddressExplorerPage(text_list=text_list,

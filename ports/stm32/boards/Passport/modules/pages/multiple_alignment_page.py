@@ -52,14 +52,14 @@ class MultipleAlignmentPage(Page):
         self.container.set_width(lv.pct(100))
         with Stylize(self.container) as default:
             default.flex_fill()
-            default.pad(left=8, right=8)
+            default.pad(left=11, right=11)
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
             if not passport.IS_COLOR:
                 scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         for text in self.text_list:
-            next_text = Label(text=text['text'])
+            next_text = Label(text=text['text'], font=text['font'])
 
             next_text.set_width(lv.pct(100))
             with Stylize(next_text) as default:
