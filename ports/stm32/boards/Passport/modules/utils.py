@@ -1460,7 +1460,7 @@ def stylize_address(address):
             if i % 16 == 0:
                 stylized += '\n'
             else:
-                stylized += ' '
+                stylized += '  '
         block += address[i]
     stylized += recolor(colors[color_index], block)
 
