@@ -8,6 +8,7 @@ from .chooser_page import *
 from .setting_page import *
 from .status_page import *
 from .long_text_page import *
+from .multiple_alignment_page import *
 
 from .accept_terms_chooser_page import *
 from .account_details_page import *
