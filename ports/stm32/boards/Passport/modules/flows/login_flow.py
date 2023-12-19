@@ -22,8 +22,8 @@ class LoginFlow(Flow):
         device_name = common.settings.get('device_name', None)
         if device_name is not None:
             device_name = device_name.upper()
-        self.statusbar = {'title': (device_name or 'PASSPORT')}
-        super().__init__(initial_state=self.enter_pin, name='LoginFlow', statusbar=self.statusbar)
+        statusbar = {'title': (device_name or 'PASSPORT')}
+        super().__init__(initial_state=self.enter_pin, name='LoginFlow', statusbar=statusbar)
 
     async def enter_pin(self):
 
