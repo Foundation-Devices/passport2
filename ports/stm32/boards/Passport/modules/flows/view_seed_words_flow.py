@@ -32,6 +32,7 @@ class ViewSeedWordsFlow(Flow):
         self.words = None
         self.seed_micron = None if not qr_button else microns.ScanQR
         self.mention_passphrase = True if not external_key else False
+        self.mention_child = 'child ' if external_key else ''
         self.initial = initial
         self.allow_skip = allow_skip
         self.use_qr_button = qr_button
@@ -90,7 +91,9 @@ class ViewSeedWordsFlow(Flow):
         from pages import ShowQRPage
         import microns
 
-        result = await SeedWarningFlow(action_text="display your seed as a QR code",
+        action_text = "display your {}seed as a QR code".format(self.mention_child)
+
+        result = await SeedWarningFlow(action_text=action_text,
                                        mention_passphrase=self.mention_passphrase,
                                        initial=self.initial,
                                        allow_skip=self.allow_skip,
@@ -127,7 +130,9 @@ class ViewSeedWordsFlow(Flow):
         from utils import B2A
         from flows import SaveToMicroSDFlow
 
-        result = await SeedWarningFlow(action_text="copy your seed to the microSD card",
+        action_text = "copy your {}seed to the microSD card".format(self.mention_child)
+
+        result = await SeedWarningFlow(action_text=action_text,
                                        mention_passphrase=self.mention_passphrase,
                                        initial=self.initial,
                                        allow_skip=self.allow_skip,
@@ -153,11 +158,14 @@ class ViewSeedWordsFlow(Flow):
         from flows import SeedWarningFlow
         from pages import SeedWordsListPage
 
+        action_text = "display your {}seed words".format(self.mention_child)
+
         if not self.seen_warning:  # We already gave the seed warning flow
             result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase,
                                            initial=self.initial,
                                            allow_skip=self.allow_skip,
-                                           key_manager=self.key_manager).run()
+                                           key_manager=self.key_manager,
+                                           action_text=action_text).run()
 
             if not result:
                 self.set_result(False)
