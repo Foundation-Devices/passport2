@@ -219,7 +219,7 @@ class SignPsbtCommonFlow(Flow):
                     continue
                 # print('idx: {} output:{}'.format(idx, self.chain.render_address(tx_out.scriptPubKey)))
                 total += tx_out.nValue
-                addrs.append(self.chain.render_address(tx_out.scriptPubKey))
+                addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
             if len(addrs) == 0:
                 msg.write('\nNo change')
