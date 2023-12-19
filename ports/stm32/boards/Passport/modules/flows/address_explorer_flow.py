@@ -153,14 +153,13 @@ Right: +1'''
 
         nice_address = stylize_address(self.address)
 
-        msg = '''{} Address {}
-
-{}'''.format('Change' if self.is_change else 'Receive',
-             self.index,
-             nice_address)
+        message = '\n\n{} Address {}\n'.format('Change' if self.is_change else 'Receive',
+                                               self.index)
+        text_list = [{'text': message, 'centered': True},
+                     {'text': nice_address, 'centered': False}]
 
         while True:
-            result = await AddressExplorerPage(msg,
+            result = await AddressExplorerPage(text_list=text_list,
                                                left_micron=microns.Cancel,
                                                right_micron=microns.ScanQR).show()
 

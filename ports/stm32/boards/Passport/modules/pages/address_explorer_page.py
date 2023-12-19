@@ -5,21 +5,21 @@
 
 
 import lvgl as lv
-from pages import StatusPage
+from pages import MultipleAlignmentPage
 import microns
 import common
 
 
-class AddressExplorerPage(StatusPage):
+class AddressExplorerPage(MultipleAlignmentPage):
 
     def __init__(self,
-                 text=None,
+                 text_list=None,
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=microns.Checkmark):
         super().__init__(
-            text=text,
+            text_list=text_list,
             card_header=card_header,
             statusbar=statusbar,
             right_micron=right_micron,
