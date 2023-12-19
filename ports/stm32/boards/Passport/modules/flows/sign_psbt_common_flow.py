@@ -56,15 +56,14 @@ class SignPsbtCommonFlow(Flow):
 
     async def show_transaction_details(self):
         import uio
-        from pages import LongTextPage, ErrorPage
+        from pages import MultipleAlignmentPage, ErrorPage
 
         try:
-            outputs = uio.StringIO()
+            sections = []
 
             if self.psbt.self_send:
-                outputs.write("\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send')))
+                sections.append({'text': "\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send'))})
 
-            first = True
             for idx, tx_out in self.psbt.output_iter():
                 gc.collect()
                 outp = self.psbt.outputs[idx]
@@ -72,12 +71,12 @@ class SignPsbtCommonFlow(Flow):
                 if outp.is_change and not self.psbt.self_send:
                     continue
 
-                if first:
-                    first = False
-                else:
-                    outputs.write('\n')
+                amount, val, destination, address = self.render_output(tx_out)
 
-                outputs.write(self.render_output(tx_out))
+                sections.append({'text': amount})
+                sections.append({'text': val})
+                sections.append({'text': destination})
+                sections.append({'text': address, 'centered': False})
 
             gc.collect()
 
@@ -85,9 +84,8 @@ class SignPsbtCommonFlow(Flow):
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
             # self.psbt.total_value_in - self.psbt.total_value_out))
 
-            result = await LongTextPage(
-                text=outputs.getvalue(),
-                centered=True,
+            result = await MultipleAlignmentPage(
+                text_list=sections,
                 card_header={'title': self.header}
             ).show()
             if result:
@@ -107,13 +105,12 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
     async def show_change(self):
-        from pages import LongTextPage, ErrorPage
+        from pages import MultipleAlignmentPage, ErrorPage
 
         try:
-            msg = self.render_change_text()
-            result = await LongTextPage(
-                text=msg,
-                centered=True,
+            text_list = self.render_change_text()
+            result = await MultipleAlignmentPage(
+                text_list=text_list,
                 card_header={'title': self.header}
             ).show()
             gc.collect()
@@ -191,16 +188,10 @@ class SignPsbtCommonFlow(Flow):
         # - gives user-visible string
         #
 
-        val = ' '.join(self.chain.render_value(o.nValue))
-        dest = self.chain.render_address(o.scriptPubKey)
+        val = ' '.join(self.chain.render_value(o.nValue)) + '\n'
+        dest = stylize_address(self.chain.render_address(o.scriptPubKey)) + '\n'
 
-        dest = stylize_address(dest)
-
-        return '\n{}\n{}\n\n{}\n{}'.format(
-            recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
-            val,
-            recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
-            dest)
+        return recolor(HIGHLIGHT_TEXT_HEX, 'Amount'), val, recolor(HIGHLIGHT_TEXT_HEX, 'Destination'), dest
 
     def render_change_text(self):
         import uio
@@ -208,8 +199,10 @@ class SignPsbtCommonFlow(Flow):
         # Produce text report of what the "change" outputs are (based on our opinion).
         # - we don't really expect all users to verify these outputs, but just in case.
         # - show the total amount, and list addresses
+        text_list = []
+
         with uio.StringIO() as msg:
-            msg.write('\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount')))
+            text_list.append({'text': '{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount'))})
             total = 0
             addrs = []
             # print('len(outputs)={}'.format(len(self.psbt.outputs)))
@@ -222,21 +215,27 @@ class SignPsbtCommonFlow(Flow):
                 addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
             if len(addrs) == 0:
-                msg.write('\nNo change')
-                return msg.getvalue()
+                text_list.append({'text': 'No change'})
+                return text_list
 
             total_val = ' '.join(self.chain.render_value(total))
 
-            msg.write('\n%s\n' % total_val)
+            text_list.append({'text': total_val + '\n'})
 
-            if len(addrs) == 1:
-                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'), addrs[0]))
-            else:
-                msg.write('\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Addresses')))
-                for a in addrs:
-                    msg.write('%s\n\n' % a)
+            plural = ''
+            if len(addrs) != 1:
+                plural = 'es'
 
-            return msg.getvalue()
+            change_header = recolor(HIGHLIGHT_TEXT_HEX, 'Change Address{}'.format(plural))
+            text_list.append({'text': change_header})
+
+        with uio.StringIO() as addresses:
+            for a in addrs:
+                addresses.write('%s\n\n' % a)
+            text_list.append({'text': addresses.getvalue(),
+                              'centered': False})
+
+        return text_list
 
     def render_warnings(self):
         import uio

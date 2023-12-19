@@ -67,7 +67,7 @@ class MultipleAlignmentPage(Page):
                 default.flex_align(main=lv.FLEX_ALIGN.CENTER)
                 default.text_color(TEXT_GREY)
                 # default.bg_color(GREEN, 128)
-                if text['centered']:
+                if text.get('centered', True):
                     default.text_align(lv.TEXT_ALIGN.CENTER)
 
             self.container.add_child(next_text)
