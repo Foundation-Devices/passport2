@@ -35,6 +35,7 @@ class ViewSeedWordsFlow(Flow):
         self.allow_skip = allow_skip
         self.use_qr_button = qr_button
         self.seen_warning = False
+        self.qr_mode = None
         super().__init__(initial_state=self.generate_words, name='ViewSeedWordsFlow')
 
     async def generate_words(self):
@@ -176,15 +177,24 @@ class ViewSeedWordsFlow(Flow):
         self.goto(self.show_passphrase)
 
     async def qr_intro(self):
-        from pages import InfoPage
+        from pages import InfoPage, ChooserPage
         import microns
+        from data_codecs.qr_type import QRType
+
+        options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                   {'label': 'SeedQR', 'value': QRType.SEED_QR}]
+
+        self.qr_mode = await ChooserPage(card_header={'title': 'Format'}, options=options).show()
+
+        if self.qr_mode is None:
+            self.back()
+            return
 
         result = await InfoPage('The following QR code contains your seed words.\n\n'
                                 'NEVER scan it from an Internet connected device.',
                                 left_micron=microns.Back).show()
 
         if not result:
-            self.back()
             return
 
         self.goto(self.qr_button)
@@ -194,7 +204,7 @@ class ViewSeedWordsFlow(Flow):
         from data_codecs.qr_type import QRType
         import microns
 
-        result = await ShowQRPage(QRType.COMPACT_SEED_QR,
+        result = await ShowQRPage(qr_type=self.qr_mode,
                                   qr_data=self.words,
                                   left_micron=microns.Back,
                                   right_micron=microns.Checkmark).show()
