@@ -64,6 +64,7 @@ class SignPsbtCommonFlow(Flow):
             if self.psbt.self_send:
                 sections.append({'text': "\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send'))})
 
+            first = True
             for idx, tx_out in self.psbt.output_iter():
                 gc.collect()
                 outp = self.psbt.outputs[idx]
@@ -71,11 +72,14 @@ class SignPsbtCommonFlow(Flow):
                 if outp.is_change and not self.psbt.self_send:
                     continue
 
-                amount, val, destination, address = self.render_output(tx_out)
+                msg, address = self.render_output(tx_out)
 
-                sections.append({'text': amount})
-                sections.append({'text': val})
-                sections.append({'text': destination})
+                if first:
+                    first = False
+                else:
+                    msg = '\n' + msg
+
+                sections.append({'text': msg})
                 sections.append({'text': address, 'centered': False})
 
             gc.collect()
@@ -188,10 +192,13 @@ class SignPsbtCommonFlow(Flow):
         # - gives user-visible string
         #
 
-        val = ' '.join(self.chain.render_value(o.nValue)) + '\n'
-        dest = stylize_address(self.chain.render_address(o.scriptPubKey)) + '\n'
+        val = ' '.join(self.chain.render_value(o.nValue))
+        dest = stylize_address(self.chain.render_address(o.scriptPubKey))
+        msg = '\n{}\n{}\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
+                                      val,
+                                      recolor(HIGHLIGHT_TEXT_HEX, 'Destination'))
 
-        return recolor(HIGHLIGHT_TEXT_HEX, 'Amount'), val, recolor(HIGHLIGHT_TEXT_HEX, 'Destination'), dest
+        return msg, dest
 
     def render_change_text(self):
         import uio
@@ -202,7 +209,7 @@ class SignPsbtCommonFlow(Flow):
         text_list = []
 
         with uio.StringIO() as msg:
-            text_list.append({'text': '{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount'))})
+            msg.write('\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount')))
             total = 0
             addrs = []
             # print('len(outputs)={}'.format(len(self.psbt.outputs)))
@@ -215,19 +222,22 @@ class SignPsbtCommonFlow(Flow):
                 addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
             if len(addrs) == 0:
-                text_list.append({'text': 'No change'})
+                msg.write('\nNo change')
+                text_list.append({'text': msg.getvalue()})
                 return text_list
 
             total_val = ' '.join(self.chain.render_value(total))
 
-            text_list.append({'text': total_val + '\n'})
+            msg.write('\n%s\n' % total_val)
 
             plural = ''
             if len(addrs) != 1:
                 plural = 'es'
 
-            change_header = recolor(HIGHLIGHT_TEXT_HEX, 'Change Address{}'.format(plural))
-            text_list.append({'text': change_header})
+            change_header = '\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address{}'.format(plural)))
+            msg.write(change_header)
+
+            text_list.append({'text': msg.getvalue()})
 
         with uio.StringIO() as addresses:
             for a in addrs:
