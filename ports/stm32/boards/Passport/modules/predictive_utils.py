@@ -58,3 +58,43 @@ def get_words_matching_prefix(prefix, max=5, word_list='bip39'):
     if len(words) == 1 and words[0] == '':
         words = []
     return words
+
+
+def get_last_word(seed_words, word_list='bip39'):
+    from utils import get_width_from_num_words
+    import common
+    from trezorcrypto import bip39
+    import uio
+
+    binary_str = uio.StringIO()
+
+    for word in word_list:
+        index = bip39.find_word(word)
+        index_bin = '{:011b}'.format(index)
+        binary_str.write(index_bin)
+
+    # Determine how much more entropy is needed
+    total_bits = get_width_from_num_words(len(word_list) + 1) * 8
+    entropy_needed = total_bits - len(binary_str.getvalue())
+
+    extra_entropy = bytearray(1)
+    common.noise.random_bytes(extra_entropy, common.noise.ALL)
+    entropy_bin = '{:08b}'.format(extra_entropy[0])[:entropy_needed]
+    print("len(word_list): {}, total_bits: {}, len(binary_str): {}".format(len(word_list),
+                                                                           total_bits,
+                                                                           len(binary_str.getvalue())))
+    print("entropy_needed: {}, extra_entropy: {}, entropy_bin: {}".format(entropy_needed,
+                                                                          extra_entropy[0],
+                                                                          entropy_bin))
+
+    binary_str.write(entropy_bin)
+
+    binary_str = binary_str.getvalue()
+
+    width = get_width_from_num_words(len(word_list) + 1)
+    as_bytes = bytearray(width)
+    for i in range(0, width):
+        as_bytes[i] = int('0b' + binary_str[i * 8:(i + 1) * 8], 2)
+
+    # TODO: get checksum bits
+    return 'abandon'

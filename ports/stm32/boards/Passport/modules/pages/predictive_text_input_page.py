@@ -12,7 +12,7 @@ from views import TextInput, Label, View, ListItem, TextInput
 from styles import Stylize
 from keys import KEY_0, KEY_9
 import microns
-from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers
+from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers, get_last_word
 import passport
 
 
@@ -94,6 +94,8 @@ class PredictiveTextInputPage(Page):
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
             self.predictions = get_words_matching_prefix(prefix, max=5, word_list=self.word_list)
+        elif self.word_idx == self.total_words - 1:
+            self.predictions = [get_last_word(self.selected_words)]
         else:
             self.predictions = []
 
