@@ -108,6 +108,8 @@ DIR_WALLET_CONFIGS = 'wallet_configs'
 DIR_TRANSACTIONS = 'transactions'
 DIR_HEALTH_CHECKS = 'health_checks'
 
+MARGIN_FOR_ADDRESSES = 0
+
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
 {msg}

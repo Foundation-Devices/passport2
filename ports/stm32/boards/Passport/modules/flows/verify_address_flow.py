@@ -231,6 +231,7 @@ class VerifyAddressFlow(Flow):
         import passport
         from common import settings
         import chains
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         # Remember where to start from next time
         save_next_addr(self.acct_num,
@@ -249,5 +250,5 @@ class VerifyAddressFlow(Flow):
             self.found_addr_idx)
 
         page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
-        await page_class(msg).show()
+        await page_class(text=msg, margins=MARGIN_FOR_ADDRESSES).show()
         self.set_result(True)
