@@ -1445,6 +1445,16 @@ def escape_text(text):
 def stylize_address(address):
     from styles.colors import TEXT_GREY_HEX, BLACK_HEX
 
+    num_wm = 0
+
+    for i in range(len(address)):
+        if address[i] == 'm' or address[i] == 'n':
+            num_wm += 1
+
+    spacer = '  '
+    if num_wm > 5:
+        spacer = ' '
+
     stylized = ''
     colors = [BLACK_HEX, TEXT_GREY_HEX]
     color_index = 0
@@ -1460,7 +1470,7 @@ def stylize_address(address):
             if i % 16 == 0:
                 stylized += '\n'
             else:
-                stylized += '  '
+                stylized += spacer
         block += address[i]
     stylized += recolor(colors[color_index], block)
 
