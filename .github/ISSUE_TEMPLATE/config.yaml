@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue disclosure
+    url: https://foundationdevices.com/security/
+    about: Report a security issue with Passport
+  - name: Support Request
+    url: https://foundationdevices.com/2021/12/support-where-and-when-you-need-it/
+    about: Questions and requests for support

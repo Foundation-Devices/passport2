@@ -1,0 +1,90 @@
+name: Bug Report
+description: Create a report to help us improve Passport
+labels: bug
+
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+body:
+  - type: input
+    id: firmware-version
+    attributes:
+      label: The current firmware version on your Passport.
+      placeholder: The current firmware version on your Passport can be seen when starting the device as well as under Settings > Firmware > Current Version.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Passport Model
+      options:
+        - label: "Passport "Founder's Edition""
+        - label: "Passport ”Batch 2”"
+      multiple: false
+
+  - type: textarea
+    id: software-wallet
+    attributes:
+      label: Software Wallet Details
+      placeholder: |
+        - Software wallet in use: [e.g., Envoy, Sparrow Wallet, etc.]
+        - Software wallet version: [e.g., 1.5.0]
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      placeholder: |
+        Current Behavior:
+        Describe the issue you are experiencing in detail. Include any error messages or unexpected behavior you encountered while using the Passport hardware wallet.
+
+        Expected Behavior:
+        Describe what you expected to happen when using the wallet firmware.
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Please provide the steps that you've used to reproduce the issue
+      placeholder: |
+        1. [First Step]
+        2. [Second Step]
+        3. [Third Step]
+        4. [Additional Steps, if necessary]
+
+  - type: textarea
+    id: resolution-steps
+    attributes:
+      label: Steps Taken to Resolve
+      placeholder: If you have attempted any troubleshooting steps to resolve the issue, please describe them here.
+
+  - type: textarea
+    id: files
+    attributes:
+      label: If applicable, add screenshots or screen recordings to help explain the issue.
+
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else?
+      placeholder: Add any other relevant information here, such as if Tor was in use, network conditions, etc.
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact of the issue
+      description: Please select only one.
+      options:
+        - label: "Low: Minor issue with minimal impact on usability."
+        - label: "Medium: Moderate issue affecting usability."
+        - label: "High: Major issue severely impacting usability or app stability."
+      multiple: false
+
+  - type: input
+    id: related-issues
+    attributes:
+      label: If you found any similar or related issues, provide links to them here.
+    validations:
+      required: true
