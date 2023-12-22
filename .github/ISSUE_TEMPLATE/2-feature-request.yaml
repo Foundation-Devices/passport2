@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest an idea for Passport
+labels: enhancement
+
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the new feature or improvement you would like to see in Passport's firmware.
+      placeholder: Provide as much detail as possible about the functionality, user interactions, and potential benefits.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Explain the specific use case or scenario where this feature would be valuable to users.
+  - type: textarea
+    id: implementation-ideas
+    attributes:
+      label: Ideas for implementation
+      placeholder: If you have any suggestions on how the feature could be implemented or any technical considerations, feel free to share them here.
+  - type: textarea
+    id: files
+    attributes:
+      label: Screenshots/Design
+      placeholder: If applicable, provide any mockups, screenshots, or design ideas related to the feature request.
+  - type: textarea
+    id: addition-context
+    attributes:
+      label: Additional Context
+      placeholder: Add any other relevant information that might help in understanding the feature request, such as user feedback, related discussions, or examples from other apps.
