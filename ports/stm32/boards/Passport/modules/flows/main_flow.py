@@ -38,12 +38,9 @@ class MainFlow(Flow):
 
         # Update account settings to include the default xfp
         accounts = get_accounts()
-        for i in range(len(accounts)):
-            account = accounts[i]
+        for account in accounts:
             if account.get('xfp', None) is None:
                 account['xfp'] = xfp
-                del accounts[i]
-                accounts.append(account)
         common.settings.set('accounts', accounts)
 
         # Update old extensions keys to include the xfp

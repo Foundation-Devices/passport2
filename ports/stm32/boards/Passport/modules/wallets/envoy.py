@@ -8,7 +8,7 @@ import stash
 import ujson
 import chains
 import common
-from utils import to_str, get_accounts
+from utils import to_str, get_accounts_by_xfp
 from data_codecs.qr_type import QRType
 from public_constants import AF_CLASSIC, AF_P2WPKH
 from foundation import ur
@@ -37,6 +37,7 @@ def create_envoy_export(sw_wallet=None,
     mode = get_bip_num_from_addr_type(addr_type, multisig)
 
     chain = chains.current_chain()
+    xfp = settings.get('xfp')
 
     with stash.SensitiveValues() as sv:
         acct_path = "m/{mode}'/{coin}'/{acct}'".format(
@@ -45,12 +46,11 @@ def create_envoy_export(sw_wallet=None,
             acct=acct_num)
 
         child_node = sv.derive_path(acct_path)
-        xfp = settings.get('xfp')
         xpub = sv.chain.serialize_public(child_node, AF_CLASSIC)
         # print('xfp to export: {}'.format(xfp))
         # print('xpub to export: {}'.format(xpub))
 
-    accounts = get_accounts()
+    accounts = get_accounts_by_xfp(xfp)
     acct_name = ''
     if accounts is not None and len(accounts) > 0:
         for acct in accounts:
