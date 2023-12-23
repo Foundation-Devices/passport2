@@ -19,8 +19,8 @@ body:
     attributes:
       label: Passport Model
       options:
-        - label: "Passport "Founder's Edition""
-        - label: "Passport ”Batch 2”"
+        - label: 'Passport "Founders Edition"'
+        - label: 'Passport ”Batch 2”'
       multiple: false
 
   - type: textarea
