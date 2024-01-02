@@ -23,7 +23,12 @@ The instructions below assume you are installing into your home folder at `~/pas
 to install to a different folder, and just update command paths appropriately.
 
     cd ~/
-    git clone git@github.com:Foundation-Devices/passport2.git
+    git clone https://github.com/Foundation-Devices/passport2.git
+
+Foundation requires commits to be linted and to have specific commit messages in order to be merged.
+
+    cp .githooks/* .git/hooks/
+    sudo apt install pycodestyle reuse
 
 ### Install Dependencies
 Several tools are required for building Passport.
@@ -32,10 +37,14 @@ Several tools are required for building Passport.
 
 First install the `rustup` tool from [rustup.rs](https://rustup.rs/).
 
+Then run the following commands:
+
     rustup default 1.67.1
-    rustup target add aarch64-unknown-none # For the simulator. Only if on macOS with an M1 CPU.
+
+    # For the simulator. Only if on macOS with an M1 CPU.
+    rustup target add aarch64-unknown-none 
+    
     rustup target add thumbv7em-none-eabihf
-    rustup target add x86_64-unknown-none
     cargo install cbindgen
 
 #### Cross-Compiler Toolchain
@@ -60,20 +69,22 @@ OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only
     ./configure --enable-stlink
     make
     sudo make install
+    sudo cp /usr/local/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
+    sudo udevadm control --reload
 
 
 ## Building Passport Firmware
-Passport comes with a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by following the instructions here:
-
-    https://github.com/casey/just#installation
+Passport comes with a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by either following the instructions at [github.com/casey/just#installation](https://github.com/casey/just#installation) or using 
+    
+    cargo install just 
     
 Note that Python `Pillow` must be updated to `8.4.0` for all commands to work properly using the following command:
 
     pip install Pillow==8.4.0
 
-To build firmware for Passport, you can run the `just` commands in `ports/stm32/Justfile`.  You'll typically want to be in the `ports/stm32` folder to run these commands.
+`ports/stm32/Justfile` contains all the `just` commands you can run to build firmware for Passport. You'll typically want to be in the `ports/stm32` folder to run these commands.
 
-To build and sign the firmware with a Developer Pubkey, use one of the following commands:
+To build and sign the firmware with a Developer Pubkey, use one of the following commands. Note: you cannot sign with Developer Pubkey until you've completed the [code-signing](https://github.com/Foundation-Devices/passport2/blob/main/DEVELOPMENT.md#code-signing) steps:
 
     just sign 2.0.4 color
     just sign 2.0.4 mono
@@ -116,13 +127,13 @@ First, you need to build the `cosign` tool and copy it somewhere in your `PATH`:
     make
     cp x86/release/cosign ~/.local/bin   # You can run `echo $PATH` to see the list of possible places you can put this file
 
-If you don't already have an openssl key, return to the repo root directory and generate a Pubkey using `tools/genkeys.sh`. This takes a key number as an argument.
+If you don't already have an openssl key, return to the repo root directory (e.g. `~/passport2`) and generate a Pubkey using `tools/genkeys.sh`. This takes a key number as an argument.
 
     ./tools/genkeys.sh 1
 
 Now, move the keys into `~/bin/keys/`, or look ahead a few steps for instructions on setting a custom `cosign_keypath`. Create the directory if it doesn't exist yet. If you already have keys here for another use, make sure not to overwrite them. Make sure not to commit these keys in the git repo.
 
-    mkdir ~/bin/keys
+    mkdir -p ~/bin/keys
     mv tools/1.pem ~/bin/keys/user.pem
     mv tools/1-pub.bin ~/bin/keys/user-pub.bin
     mv tools/1-pub.pem ~/bin/keys/user-pub.pem
@@ -156,5 +167,9 @@ To build the bootloader for a reproducibility check, go to the repo root folder:
 
 Then run one of the following commands to build the corresponding bootloader:
 
-    just build color
-    just build mono
+    just build-bootloader color
+    just build-bootloader mono
+
+Please note that building the mono bootloader is not yet supported in this repository.  If you need to build it, please follow the instructions at:
+
+https://github.com/Foundation-Devices/passport-firmware

@@ -39,7 +39,9 @@
 #include "extmod/vfs_lfs.h"
 #include "genhdr/mpversion.h"
 #include "rng.h"
+#if MICROPY_HW_ENABLE_USB
 #include "usb.h"
+#endif
 #include "uart.h"
 #include "portmodules.h"
 

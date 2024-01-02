@@ -492,6 +492,7 @@ class psbtInputProxy(psbtProxy):
         # self.added_sig = None
 
         self.parse(fd)
+        gc.collect()
 
     def validate(self, idx, txin, my_xfp):
         # Validate this txn input: given deserialized CTxIn and maybe witness
@@ -1083,7 +1084,10 @@ class psbtObject(psbtProxy):
 
         # this parses the input TXN in-place
         for idx, txin in self.input_iter():
+            gc.collect()
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+
+        gc.collect()
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
 
@@ -1092,6 +1096,8 @@ class psbtObject(psbtProxy):
         if self.xpubs:
             # print('calling self.handle_xpubs()')
             await self.handle_xpubs()
+
+        gc.collect()
 
         assert self.num_outputs >= 1, 'need outs'
 
@@ -1235,6 +1241,7 @@ class psbtObject(psbtProxy):
         total_in = 0
 
         for i, txi in self.input_iter():
+            gc.collect()
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -1256,12 +1263,17 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            gc.collect()
+
             # iff to UTXO is segwit, then check it's value, and also
             # capture that value, since it's supposed to be immutable
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
+                gc.collect()
 
             del utxo
+
+        gc.collect()
 
         # XXX scan witness data provided, and consider those ins signed if not multisig?
 
@@ -1289,6 +1301,9 @@ class psbtObject(psbtProxy):
         # - TODO: but what if not SIGHASH_ALL
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
+
+        gc.collect()
+
         if no_keys:
             # This is seen when you re-sign same signed file by accident (multisig)
             # - case of len(no_keys)==num_inputs is handled by consider_keys
@@ -1296,11 +1311,14 @@ class psbtObject(psbtProxy):
                 ('Already Signed',
                  'Passport has already signed this transaction. Other signatures are still required.'))
 
+            gc.collect()
+
         if self.presigned_inputs:
             # this isn't really even an issue for some complex usage cases
             self.warnings.append(('Partially Signed Already',
                                   'Some input(s) provided were already signed by other parties: ' +
                                   seq_to_str(self.presigned_inputs)))
+            gc.collect()
 
     def calculate_fee(self):
         # what miner's reward is included in txn?
@@ -1338,18 +1356,28 @@ class psbtObject(psbtProxy):
         if hdr != _MAGIC:
             raise ValueError("bad hdr")
 
+        gc.collect()
+
         rv = cls()
+
+        gc.collect()
 
         # read main body (globals)
         rv.parse(fd)
+
+        gc.collect()
 
         assert rv.txn, 'missing reqd section'
 
         # learn about the bitcoin transaction we are signing.
         rv.parse_txn()
 
+        gc.collect()
+
         rv.inputs = [psbtInputProxy(fd, idx) for idx in range(rv.num_inputs)]
+        gc.collect()
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
+        gc.collect()
 
         return rv
 
@@ -1396,142 +1424,6 @@ class psbtObject(psbtProxy):
         for idx, outp in enumerate(self.outputs):
             outp.serialize(out_fd, idx)
             out_fd.write(b'\0')
-
-    # def sign_it(self):
-    #     # txn is approved. sign all inputs we can sign. add signatures
-    #     # - hash the txn first
-    #     # - sign all inputs we have the key for
-    #     # - inputs might be p2sh, p2pkh and/or segwit style
-    #     # - save partial inputs somewhere (append?)
-    #     # - update our state with new partial sigs
-
-    #     with stash.SensitiveValues() as sv:
-    #         # Double check the change outputs are right. This is slow, but critical because
-    #         # it detects bad actors, not bugs or mistakes.
-    #         # - equivilent check already done for p2sh outputs when we re-built the redeem script
-    #         change_outs = [n for n, o in enumerate(self.outputs) if o.is_change]
-    #         if change_outs:
-
-    #             for count, out_idx in enumerate(change_outs):
-    #                 # only expecting single case, but be general
-
-    #                 oup = self.outputs[out_idx]
-
-    #                 good = 0
-    #                 for pubkey, subpath in oup.subpaths.items():
-    #                     if subpath[0] != self.my_xfp and subpath[0] != swab32(self.my_xfp):
-    #                         # for multisig, will be N paths, and exactly one will
-    #                         # be our key. For single-signer, should always be my XFP
-    #                         continue
-
-    #                     # derive actual pubkey from private
-    #                     skp = keypath_to_str(subpath)
-    #                     node = sv.derive_path(skp)
-
-    #                     # check the pubkey of this BIP32 node
-    #                     if pubkey == node.public_key():
-    #                         good += 1
-
-    #                 if not good:
-    #                     raise FraudulentChangeOutput(out_idx,
-    #                                                  "Deception regarding change output. "
-    #                                                  "BIP32 path doesn't match actual address.")
-
-    #         # Sign individual inputs
-    #         sigs = 0
-    #         success = set()
-    #         for in_idx, txi in self.input_iter():
-    #             inp = self.inputs[in_idx]
-
-    #             if not inp.has_utxo():
-    #                 # maybe they didn't provide the UTXO
-    #                 continue
-
-    #             if not inp.required_key:
-    #                 # we don't know the key for this input
-    #                 continue
-
-    #             if inp.fully_signed:
-    #                 # for multisig, it's possible I need to add another sig
-    #                 # but in other cases, no more signatures are possible
-    #                 continue
-
-    #             txi.scriptSig = inp.scriptSig
-    #             assert txi.scriptSig, "no scriptsig?"
-
-    #             if not inp.is_segwit:
-    #                 # Hash by serializing/blanking various subparts of the transaction
-    #                 digest = self.make_txn_sighash(in_idx, txi, inp.sighash)
-    #             else:
-    #                 # Hash the inputs and such in totally new ways, based on BIP-143
-    #                 digest = self.make_txn_segwit_sighash(in_idx, txi,
-    #                                                       inp.amount, inp.scriptCode, inp.sighash)
-
-    #             if inp.is_multisig:
-    #                 # need to consider a set of possible keys, since xfp may not be unique
-    #                 for which_key in inp.required_key:
-    #                     # get node required
-    #                     skp = keypath_to_str(inp.subpaths[which_key])
-    #                     node = sv.derive_path(skp, register=False)
-
-    #                     # expensive test, but works... and important
-    #                     pu = node.public_key()
-    #                     if pu == which_key:
-    #                         break
-    #                 else:
-    #                     raise AssertionError("Input #%d needs pubkey I dont have" % in_idx)
-
-    #             else:
-    #                 # single pubkey <=> single key
-    #                 which_key = inp.required_key
-
-    #                 assert not inp.added_sig, "already done??"
-    #                 assert which_key in inp.subpaths, 'unk key'
-
-    #                 if inp.subpaths[which_key][0] != self.my_xfp and
-    #                     inp.subpaths[which_key][0] != swab32(self.my_xfp):
-    #                     # we don't have the key for this subkey
-    #                     # (redundant, required_key wouldn't be set)
-    #                     continue
-
-    #                 # get node required
-    #                 skp = keypath_to_str(inp.subpaths[which_key])
-    #                 node = sv.derive_path(skp, register=False)
-
-    #                 # expensive test, but works... and important
-    #                 pu = node.public_key()
-    #                 assert pu == which_key, "Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx)
-
-    #             # The precious private key we need
-    #             pk = node.private_key()
-
-    #             # print("privkey %s" % b2a_hex(pk).decode('ascii'))
-    #             # print(" pubkey %s" % b2a_hex(which_key).decode('ascii'))
-    #             # print(" digest %s" % b2a_hex(digest).decode('ascii'))
-
-    #             # Do the ACTUAL signature ... finally!!!
-    #             result = trezorcrypto.secp256k1.sign(pk, digest)
-
-    #             # private key no longer required
-    #             stash.blank_object(pk)
-    #             stash.blank_object(node)
-    #             del pk, node, pu, skp
-
-    #             # print("result %s" % b2a_hex(result).decode('ascii'))
-
-    #             # convert signature to DER format
-    #             assert len(result) == 65
-    #             r = result[1:33]
-    #             s = result[33:65]
-
-    #             inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
-
-    #             success.add(in_idx)
-
-    #             # memory cleanup
-    #             del result, r, s
-
-    #             gc.collect()
 
     def make_txn_sighash(self, replace_idx, replacement, sighash_type):
         # calculate the hash value for one input of current transaction

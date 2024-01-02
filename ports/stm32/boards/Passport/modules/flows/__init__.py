@@ -11,8 +11,10 @@ from .menu_flow import *
 from .main_flow import *
 from .login_flow import *
 from .save_to_microsd_flow import *
+from .scan_qr_flow import *
 from .backup_common_flow import *
 from .seed_warning_flow import *
+from .series_of_pages_flow import *
 
 # QR Magic Scan flows
 from .magic_scan_import_multisig_flow import *
@@ -36,12 +38,10 @@ from .export_derived_key_flow import *
 from .export_multisig_microsd_flow import *
 from .export_multisig_qr_flow import *
 from .export_summary_flow import *
-# from .fcc_test_flow import *
 from .selected_file_flow import *
 from .file_picker_flow import *
 from .format_microsd_flow import *
 from .get_seed_words_flow import *
-from .hide_derived_key_flow import *
 from .import_multisig_wallet_flow import *
 from .import_multisig_wallet_from_microsd_flow import *
 from .import_multisig_wallet_from_qr_flow import *
@@ -51,6 +51,7 @@ from .new_account_flow import *
 from .new_derived_key_flow import *
 from .new_seed_flow import *
 from .connect_wallet_flow import *
+from .read_file_flow import *
 from .remove_dev_pubkey_flow import *
 from .rename_account_flow import *
 from .rename_derived_key_flow import *
@@ -58,7 +59,6 @@ from .rename_multisig_flow import *
 from .reset_pin_flow import *
 from .restore_backup_flow import *
 from .restore_seed_flow import *
-from .scan_private_key_qr_flow import *
 from .scv_flow import *
 from .set_chain_flow import *
 from .set_initial_pin_flow import *

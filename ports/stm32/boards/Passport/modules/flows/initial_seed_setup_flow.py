@@ -3,7 +3,6 @@
 #
 # initial_seed_setup_flow.py - Menu to let user choose seed setup method
 
-from flows.view_seed_words_flow import ViewSeedWordsFlow
 import lvgl as lv
 from flows import Flow
 
@@ -12,7 +11,7 @@ class InitialSeedSetupFlow(Flow):
     def __init__(self, is_envoy=True, allow_backtrack=True):
         super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
         self.is_envoy = is_envoy
-        self.statusbar = {'title': 'CREATE SEED', 'icon': lv.ICON_SEED}
+        self.statusbar = {'title': 'CREATE SEED', 'icon': 'ICON_SEED'}
         self.allow_backtrack = allow_backtrack
 
     async def show_intro(self):
@@ -46,8 +45,8 @@ class InitialSeedSetupFlow(Flow):
 
         options = [{'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(show_words=not self.is_envoy, full_backup=True)},
-                   {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow()},
-                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow()}]
+                   {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
+                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
 
         flow = await ChooserPage(
             text=None,

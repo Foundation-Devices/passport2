@@ -7,7 +7,7 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Arc, Label, View, Icon, Spinner
 from pages import Page
-from styles.colors import DEFAULT_SPINNER, TEXT_GREY
+from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR
 import microns
 import common
 import passport
@@ -53,6 +53,8 @@ class StatusPage(Page):
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
             scrollbar.pad(right=0)
+            if not passport.IS_COLOR:
+                scrollbar.bg_color(SCROLLBAR_BG_COLOR)
 
         self.update()
 
@@ -160,7 +162,7 @@ class StatusPage(Page):
         super().detach()
 
     def right_action(self, is_pressed):
-        if self.interactive:
+        if self.interactive and self.right_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx < len(self.text) - 1:
                     self.page_idx += 1
@@ -169,7 +171,7 @@ class StatusPage(Page):
                     self.set_result(True)
 
     def left_action(self, is_pressed):
-        if self.interactive:
+        if self.interactive and self.left_micron:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx > 0:
                     self.page_idx -= 1

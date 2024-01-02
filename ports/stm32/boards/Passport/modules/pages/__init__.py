@@ -23,6 +23,9 @@ from .export_mode_chooser_page import *
 from .file_picker_page import *
 from .info_page import *
 from .insert_microsd_page import *
+from .long_error_page import *
+from .long_question_page import *
+from .long_success_page import *
 from .menu_page import *
 from .multisig_policy_setting_page import *
 from .pin_entry_page import *

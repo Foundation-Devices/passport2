@@ -74,11 +74,6 @@
  */
 #define UR_NETWORK_TESTNET 1
 
-/**
- * Maximum number of components that a `crypto-keypath` can have.
- */
-#define UR_MAX_PATH_COMPONENTS 4
-
 typedef enum {
   BTC,
 } UR_CoinType;
@@ -366,6 +361,17 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
+ * Computes a Schnorr signature over the message `data`.
+ *
+ * - `data` is the message hash.
+ * - `secret_key` is the secret key used to sign the message.
+ * - `signature` is the output of the resulting signature.
+ */
+void foundation_secp256k1_schnorr_sign(const uint8_t (*data)[32],
+                                       const uint8_t (*secret_key)[32],
+                                       uint8_t (*signature)[64]);
+
+/**
  * Receive a Uniform Resource part.
  *
  * # Safety
@@ -375,7 +381,8 @@ extern UR_Encoder UR_ENCODER;
 bool ur_decoder_receive(UR_Decoder *decoder,
                         const uint8_t *ur,
                         size_t ur_len,
-                        UR_Error *error);
+                        UR_Error *error,
+                        uint32_t *num_frames);
 
 /**
  * Returns `true` if the decoder is complete and no more data is needed.
@@ -429,7 +436,7 @@ bool ur_decode_single_part(const uint8_t *ur,
  * # Parameters
  *
  * - `value` is the uniform resource to encode.
- * - `max_fragment_len` is the maximum fragment length in bytes.
+ * - `max_chars` is the maximum fragment length in bytes.
  *
  * # Safety
  *

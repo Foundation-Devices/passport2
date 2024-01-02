@@ -2,24 +2,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
-#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+#ifdef LV_LVGL_H_INCLUDE_SIMPLE
 #include "lvgl.h"
 #else
 #include "lvgl/lvgl.h"
 #endif
 
-
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
-
 #ifndef LV_ATTRIBUTE_IMG_ICON_HAMBURGER
 #define LV_ATTRIBUTE_IMG_ICON_HAMBURGER
 #endif
-
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_ICON_HAMBURGER uint8_t ICON_HAMBURGER_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_HAMBURGER uint8_t ICON_HAMBURGER_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
-  0xfe, 0xfe, 0xfe, 0xcf, 	/*Color of index 1*/
+  0xff, 0xff, 0xff, 0xff, 	/*Color of index 1*/
 
   0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 
@@ -49,6 +46,6 @@ const lv_img_dsc_t ICON_HAMBURGER = {
   .header.reserved = 0,
   .header.w = 20,
   .header.h = 20,
-  .data_size = 68,
+  .data_size = 69,
   .data = ICON_HAMBURGER_map,
 };

@@ -24,4 +24,8 @@ extern HAL_StatusTypeDef spi_read_id(uint32_t *id_out);
 extern HAL_StatusTypeDef spi_chip_erase(void);
 extern HAL_StatusTypeDef spi_is_busy(bool* busy);
 
+bool spi_get_scv_key(uint8_t* buf);
+bool spi_set_scv_key(uint8_t* buf);
+bool spi_clear_scv_key();
+
 #endif /* _SPIFLASH_H_ */

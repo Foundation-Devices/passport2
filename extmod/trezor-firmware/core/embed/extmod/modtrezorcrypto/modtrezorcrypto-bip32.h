@@ -30,8 +30,6 @@
 #include "nem.h"
 #endif
 
-#define FOUNDATION_ADDITIONS
-
 /// package: trezorcrypto.bip32
 
 /// class HDNode:

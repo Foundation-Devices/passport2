@@ -150,6 +150,8 @@ def go():
 
     if passport.HAS_FUEL_GAUGE:
         common.loop.create_task(tasks.fuelgauge_task())
+    else:
+        common.loop.create_task(tasks.battery_adc_task())
 
     # Setup the main task
     common.loop.create_task(tasks.main_task())

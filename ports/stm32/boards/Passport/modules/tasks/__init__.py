@@ -6,6 +6,8 @@ import passport
 
 if passport.HAS_FUEL_GAUGE:
     from .fuelgauge_task import fuelgauge_task
+else:
+    from .battery_adc_task import battery_adc_task
 
 from .apply_passphrase_task import apply_passphrase_task
 from .auto_shutdown_task import auto_shutdown_task
@@ -26,12 +28,10 @@ from .delete_multisig_task import delete_multisig_task
 from .double_check_psbt_change_task import double_check_psbt_change_task
 from .erase_passport_task import erase_passport_task
 from .format_microsd_task import format_microsd_task
-# from .fcc_copy_files_task import fcc_copy_files_task
 from .generate_addresses_task import generate_addresses_task
 from .get_security_words_task import get_security_words_task
 from .get_seed_words_task import get_seed_words_task
 from .get_backup_code_task import get_backup_code_task
-from .hide_derived_key_task import hide_derived_key_task
 from .login_task import login_task
 from .lvgl_task import lvgl_task
 from .main_task import main_task

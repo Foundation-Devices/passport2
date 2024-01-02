@@ -40,9 +40,7 @@ ENV PATH="/cargo/bin:${PATH}"
 # Finish installation of Rust toolchain.
 RUN rustup component add clippy && \
     rustup component add rustfmt && \
-    rustup target add aarch64-unknown-none && \
-    rustup target add thumbv7em-none-eabihf && \
-    rustup target add x86_64-unknown-none
+    rustup target add thumbv7em-none-eabihf
 
 # Install binaries using cargo.
 RUN cargo install cbindgen@^0.24 && \

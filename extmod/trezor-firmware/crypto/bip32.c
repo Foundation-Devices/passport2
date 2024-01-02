@@ -475,10 +475,8 @@ int hdnode_fill_public_key(HDNode *node) {
       ed25519_publickey(node->private_key, node->public_key + 1);
     } else if (node->curve == &ed25519_sha3_info) {
       ed25519_publickey_sha3(node->private_key, node->public_key + 1);
-#if USE_KECCAK
     } else if (node->curve == &ed25519_keccak_info) {
       ed25519_publickey_keccak(node->private_key, node->public_key + 1);
-#endif
     } else if (node->curve == &curve25519_info) {
       curve25519_scalarmult_basepoint(node->public_key + 1, node->private_key);
 #if USE_CARDANO
@@ -793,9 +791,11 @@ const curve_info *get_curve_by_name(const char *curve_name) {
   if (strcmp(curve_name, SECP256K1_GROESTL_NAME) == 0) {
     return &secp256k1_groestl_info;
   }
+#if USE_KECCAK
   if (strcmp(curve_name, SECP256K1_SMART_NAME) == 0) {
     return &secp256k1_smart_info;
   }
+#endif
   if (strcmp(curve_name, NIST256P1_NAME) == 0) {
     return &nist256p1_info;
   }

@@ -9,19 +9,28 @@ import microns
 from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task
 from tasks import save_seed_task
+from public_constants import SEED_LENGTHS
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False):
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
         super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
+        self.seed_format = None
+        self.seed_length = None
+        self.validate_text = None
         self.seed_words = []
+        self.full_backup = full_backup
+        self.autobackup = autobackup
 
     async def choose_restore_method(self):
         from pages import ChooserPage
+        from data_codecs.qr_type import QRType
 
         options = [{'label': '24 words', 'value': 24},
-                   {'label': '12 words', 'value': 12}]
+                   {'label': '12 words', 'value': 12},
+                   {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                   {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
 
@@ -29,17 +38,49 @@ class RestoreSeedFlow(Flow):
             self.set_result(False)
             return
 
-        if isinstance(choice, int):
+        self.seed_format = choice
+        if self.seed_format in SEED_LENGTHS:
             self.seed_length = choice
+            self.validate_text = 'Seed phrase'
             self.goto(self.explain_input_method)
         else:
-            self.goto(choice)
+            if self.seed_format == QRType.SEED_QR:
+                self.validate_text = 'SeedQR'
+            else:
+                self.validate_text = 'Compact SeedQR'
+            self.goto(self.scan_qr)
 
     async def scan_qr(self):
-        from flows import ScanPrivateKeyQRFlow
-        result = await ScanPrivateKeyQRFlow(
-            refresh_cards_when_done=self.refresh_cards_when_done).run()
-        self.set_result(result)
+        from flows import ScanQRFlow
+        from pages import InfoPage, SeedWordsListPage, ErrorPage
+        import microns
+        from data_codecs.qr_type import QRType
+
+        result = await ScanQRFlow(explicit_type=self.seed_format,
+                                  data_description=self.validate_text).run()
+
+        if result is None:
+            await ErrorPage("Invalid {} detected. Make sure you're using the right format."
+                            .format(self.validate_text)).show()
+            self.back()
+            return
+
+        self.seed_words = result
+
+        plural_label = 's' if len(result) == 24 else ''
+        result = await InfoPage('Confirm the seed words in the following page{}.'.format(plural_label)).show()
+
+        if not result:
+            self.back()
+            return
+
+        result = await SeedWordsListPage(words=self.seed_words, left_micron=microns.Cancel).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(self.validate_seed_words)
 
     async def explain_input_method(self):
         from pages import InfoPage
@@ -76,7 +117,8 @@ class RestoreSeedFlow(Flow):
             self.goto(self.valid_seed)
 
     async def invalid_seed(self):
-        result = await ErrorPage(text='Seed phrase is invalid. One or more of your seed words is incorrect.',
+        result = await ErrorPage(text='{} is invalid. One or more of your seed words is incorrect.'
+                                      .format(self.validate_text),
                                  left_micron=microns.Cancel, right_micron=microns.Retry).show()
         if result is None:
             cancel = await QuestionPage(
@@ -90,8 +132,9 @@ class RestoreSeedFlow(Flow):
 
     async def valid_seed(self):
         from foundation import bip39
+        from flows import AutoBackupFlow, BackupFlow
 
-        entropy = bytearray(33)  # Includes and extra byte for the checksum bits
+        entropy = bytearray(33)  # Includes an extra byte for the checksum bits
 
         len = bip39.mnemonic_to_bits(self.mnemonic, entropy)
 
@@ -106,7 +149,12 @@ class RestoreSeedFlow(Flow):
         (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
         if error is None:
             import common
+
             await SuccessPage(text='New seed restored and saved.').show()
+            if self.full_backup:
+                await BackupFlow().run()
+            elif self.autobackup:
+                await AutoBackupFlow(offer=True).run()
 
             if self.refresh_cards_when_done:
                 common.ui.full_cards_refresh()
@@ -115,5 +163,5 @@ class RestoreSeedFlow(Flow):
             else:
                 self.set_result(True)
         else:
-            # WIP: This is not complete - offer backup?
-            pass
+            await ErrorPage('Unable to save seed.').show()
+            self.set_result(False)

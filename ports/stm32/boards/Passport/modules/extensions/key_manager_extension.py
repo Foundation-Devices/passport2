@@ -13,22 +13,22 @@ import microns
 
 name = 'key_manager'
 label = 'Key Manager'
-icon = lv.ICON_ONE_KEY
+icon = 'ICON_ONE_KEY'
 
 KeyManagerExtension = {
     'name': name,
     'menu_item': {
         'icon': icon,
         'label': label,
-        'action': lambda item: toggle_extension_enabled(name),
+        'action': lambda item, context: toggle_extension_enabled(name),
         'is_toggle': True,
-        'value': lambda: is_extension_enabled(name),
+        'value': lambda context: is_extension_enabled(name),
     },
     'card': {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_EXTENSIONS, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': 'ICON_EXTENSIONS', 'fg_color': WHITE},
         'title': label,
         'page_micron': microns.PageDot,
         'bg_color': LIGHT_COPPER,

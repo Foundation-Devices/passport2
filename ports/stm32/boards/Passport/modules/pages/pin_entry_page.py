@@ -98,7 +98,7 @@ class PINEntryPage(Page):
                 message = 'This is your FINAL attempt before Passport is permanently disabled.'
             else:
                 message = '{} attempts left\nuntil Passport is permanently disabled.'.format(pa.attempts_left)
-            self.update_message(show_security_words=False, title='WARNING', icon=lv.ICON_WARNING,
+            self.update_message(show_security_words=False, title='WARNING', icon='ICON_WARNING',
                                 message=message, color=COPPER)
             self.brick_warning_shown = True
 

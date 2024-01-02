@@ -13,7 +13,7 @@ class SetChainFlow(Flow):
         super().__init__(initial_state=self.show_setting_page, name='SetChainFlow')
 
     async def show_setting_page(self):
-        network = await ChainSettingPage(card_header={'title': 'Network', 'icon': lv.ICON_NETWORK}).show()
+        network = await ChainSettingPage(card_header={'title': 'Network', 'icon': 'ICON_NETWORK'}).show()
 
         if network is 'TBTC':
             text = "Passport is in Testnet mode. Use a separate seed to avoid issues " \

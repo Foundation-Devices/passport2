@@ -26,7 +26,9 @@ class ScanQRPage(Page):
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
-                 right_micron=None):
+                 right_micron=None,
+                 qr_type=None,
+                 max_frames=None):
         super().__init__(flex_flow=None,
                          card_header=card_header,
                          statusbar=statusbar,
@@ -36,7 +38,9 @@ class ScanQRPage(Page):
 
         self.prev_card_header = None
         self.timer = None
-        self.camera = CameraQRScanner()
+        self.camera = CameraQRScanner(qr_type)
+        self.qr_type = qr_type
+        self.max_frames = max_frames
 
         # TODO:
         #   lv.pct(100) just makes the widget inside the camera view to return
@@ -105,6 +109,13 @@ class ScanQRPage(Page):
                 self.camera.update()
 
                 self.progress_label.set_text(progress_text(self.camera.estimated_percent_complete()))
+
+                num_frames = self.camera.num_frames()
+                if self.max_frames is not None and num_frames > self.max_frames:
+                    self.set_result(QRScanResult(num_frames=num_frames,
+                                                 max_frames=self.max_frames))
+                    return
+
                 if self.camera.is_complete():
                     data = self.camera.qr_decoder.decode()
                     qr_type = self.camera.qr_decoder.qr_type()
@@ -115,12 +126,12 @@ class ScanQRPage(Page):
 
     # Just return None.
     def left_action(self, is_pressed):
-        if not is_pressed:
+        if not is_pressed and self.left_micron:
             self.set_result(None)
 
     # Either the user goes back or the scan finishes
     def right_action(self, is_pressed):
-        if not is_pressed:
+        if not is_pressed and self.right_micron:
             self.set_result(None)
 
 
@@ -132,10 +143,15 @@ class QRScanResult:
     and between a cancelled result (`None` returned by ScanQRPage).
     """
 
-    def __init__(self, data=None, error=None, qr_type=None):
+    def __init__(self, data=None, error=None, qr_type=None, num_frames=None, max_frames=None):
         self.data = data
         self.error = error
         self.qr_type = qr_type
+        self.num_frames = num_frames
+        self.max_frames = max_frames
 
     def is_failure(self):
         return self.error is not None
+
+    def is_oversized(self):
+        return self.max_frames is not None and self.num_frames > self.max_frames

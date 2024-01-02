@@ -10,18 +10,20 @@ from styles import Stylize
 from styles.colors import FOCUSED_LIST_ITEM_TEXT, FOCUSED_LIST_ITEM_BG, NORMAL_TEXT
 from constants import MENU_ITEM_CORNER_RADIUS
 from views import View
+from utils import derive_icon
 
 
 class MenuItem(View):
-    def __init__(self, icon='', label='', is_toggle=False, value=False, desc=None):
+    def __init__(self, icon='', label='', is_toggle=False, value=False, desc=None, context=None):
         from views import Switch
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
-        self.icon = icon
+        self.icon = derive_icon(icon)
         self.label = label
         self.is_toggle = is_toggle
         self.value = value
         self.desc = desc
+        self.context = context
 
         # Default style
         with Stylize(self) as default:
@@ -59,7 +61,7 @@ class MenuItem(View):
             # Value can be a simple value or a callable, which allows its value to be updated
             value = self.value
             if callable(value):
-                value = value()
+                value = value(self.context)
             self.switch_view = Switch(value=value)
             self.switch_view.set_size(46, 24)
             self.add_child(self.switch_view)

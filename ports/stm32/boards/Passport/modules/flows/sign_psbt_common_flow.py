@@ -16,6 +16,7 @@ from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 from utils import spinner_task, recolor
+import gc
 
 
 class SignPsbtCommonFlow(Flow):
@@ -64,6 +65,7 @@ class SignPsbtCommonFlow(Flow):
 
             first = True
             for idx, tx_out in self.psbt.output_iter():
+                gc.collect()
                 outp = self.psbt.outputs[idx]
                 # Show change outputs if this is a self-send
                 if outp.is_change and not self.psbt.self_send:
@@ -75,6 +77,8 @@ class SignPsbtCommonFlow(Flow):
                     outputs.write('\n')
 
                 outputs.write(self.render_output(tx_out))
+
+            gc.collect()
 
             # print('total_out={} total_in={}
             # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
@@ -111,6 +115,7 @@ class SignPsbtCommonFlow(Flow):
                 centered=True,
                 card_header={'title': 'Transaction Details'}
             ).show()
+            gc.collect()
             if not result:
                 self.back()
             else:
@@ -123,6 +128,7 @@ class SignPsbtCommonFlow(Flow):
         from pages import LongTextPage
 
         warnings = self.render_warnings()
+        gc.collect()
         # print('warnings = "{}"'.format(warnings))
 
         if warnings is not None:
@@ -143,16 +149,14 @@ class SignPsbtCommonFlow(Flow):
         from utils import spinner_task
         from pages import ErrorPage, QuestionPage
 
+        gc.collect()
+
         result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
         if not result:
             options = [{'label': 'Cancel', 'value': True},
                        {'label': 'Review Details', 'value': False}]
 
-            should_cancel = await ChooserPage(
-                text='Cancel this transaction?',
-                options=options,
-                icon=lv.LARGE_ICON_QUESTION,
-                initial_value=options[0].get('value')).show()
+            should_cancel = await QuestionPage(text='Cancel this transaction?').show()
             if should_cancel:
                 self.set_result(None)
             else:
@@ -161,6 +165,8 @@ class SignPsbtCommonFlow(Flow):
             # TODO: Why do this here instead of in validate?
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     double_check_psbt_change_task, args=[self.psbt])
+
+            gc.collect()
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -168,6 +174,7 @@ class SignPsbtCommonFlow(Flow):
 
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     sign_psbt_task, args=[self.psbt])
+            gc.collect()
             if error is not None:
                 await ErrorPage(error_msg).show()
                 self.set_result(None)
@@ -182,6 +189,7 @@ class SignPsbtCommonFlow(Flow):
         # - expects CTxOut object
         # - gives user-visible string
         #
+
         val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
 
@@ -253,5 +261,6 @@ class SignPsbtCommonFlow(Flow):
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
                 for label, m in self.psbt.warnings:
                     msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+                    gc.collect()
 
             return msg.getvalue()

@@ -12,6 +12,7 @@
 
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
+from public_constants import DIR_BACKUPS
 from files import CardSlot
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
@@ -173,7 +174,7 @@ async def save_error_log_to_microsd_task(msg, filename):
             sd_card_change = False
             saved = save_error_log(msg, filename)
             if saved:
-                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Saved to microSD', icon='ICON_MICROSD')
 
         await sleep_ms(100)
 
@@ -213,7 +214,7 @@ def handle_fatal_error(exc):
 
             # Switch immediately to a new card to show the error
             fatal_error_card = {
-                'statusbar': {'title': 'FATAL ERROR', 'icon': lv.ICON_INFO},
+                'statusbar': {'title': 'FATAL ERROR', 'icon': 'ICON_INFO'},
                 'page_micron': microns.PageDot,
                 'bg_color': BLACK,
                 'flow': PageFlow,
@@ -223,9 +224,9 @@ def handle_fatal_error(exc):
 
             common.ui.set_cards([fatal_error_card])
             if saved:
-                common.ui.set_card_header(title='Saved to microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Saved to microSD', icon='ICON_MICROSD')
             else:
-                common.ui.set_card_header(title='Insert microSD', icon=lv.ICON_MICROSD)
+                common.ui.set_card_header(title='Insert microSD', icon='ICON_MICROSD')
 
             loop = get_event_loop()
             _fatal_card_task = loop.create_task(card_task(fatal_error_card))
@@ -1017,7 +1018,11 @@ def format_btc_address(address, addr_type):
 
 
 def get_backups_folder_path():
-    return '{}/backups'.format(CardSlot.get_sd_root())
+    return get_folder_path()
+
+
+def get_folder_path(folder=DIR_BACKUPS):
+    return '{}/{}'.format(CardSlot.get_sd_root(), folder)
 
 
 def split_to_lines(s, width):
@@ -1324,5 +1329,106 @@ def get_words_from_seed(seed):
         return (words, None)
     except Exception as e:
         return (None, '{}'.format(e))
+
+
+def nostr_pubkey_from_pk(pk):
+    from trezorcrypto import secp256k1
+    return secp256k1.publickey(pk, True)[1:]
+
+
+def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
+    import tcc
+    return tcc.codecs.bech32_plain_encode(key_type, key)
+
+
+def nostr_sign(key, message):
+    from foundation import secp256k1
+    return secp256k1.schnorr_sign(message, key)
+
+
+months = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'Aug',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December',
+}
+
+
+def timestamp_to_str(time):
+    import utime
+
+    time_tup = utime.gmtime(time)
+    return "{} {}, {}\n{}:{:02d}".format(months[time_tup[1]],  # Month
+                                         time_tup[2],          # Day
+                                         time_tup[0],          # Year
+                                         time_tup[3],          # Hour
+                                         time_tup[4],          # Minute
+                                         )
+
+
+# This is a flow function, so it needs to be async
+async def show_card_missing(flow):
+    from pages import InsertMicroSDPage
+
+    # This makes the return type consistent with the caller
+    if hasattr(flow, "return_bool") and flow.return_bool:
+        result = False
+    else:
+        result = None
+
+    if hasattr(flow, "automatic") and flow.automatic:
+        flow.set_result(result)
+        return
+
+    retry = await InsertMicroSDPage().show()
+    if retry:
+        flow.back()
+    else:
+        flow.set_result(result)
+
+
+# This assumes the function passed in is async
+def bind(instance, func, as_name=None):
+    if as_name is None:
+        as_name = func.__name__
+
+    async def method(*args, **kwargs):
+        return await func(instance, *args, **kwargs)
+
+    setattr(instance, as_name, method)
+    return method
+
+
+def derive_icon(icon):
+    if isinstance(icon, str):
+        return getattr(lv, icon)
+    return icon
+
+
+def toggle_key_hidden(item, key):
+    from common import settings
+    from utils import get_derived_keys
+
+    keys = get_derived_keys()
+    keys.remove(key)
+    key['hidden'] = not key['hidden']
+    keys.append(key)
+    settings.set('derived_keys', keys)
+
+
+def is_key_hidden(key):
+    from utils import get_derived_key_by_index
+
+    updated = get_derived_key_by_index(key['index'], key['tn'], key['xfp'])
+    return updated['hidden']
+
 
 # EOF

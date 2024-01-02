@@ -277,7 +277,7 @@ class ConnectWalletFlow(Flow):
 
         # Show the QR code
         result = await ShowQRPage(
-            statusbar={'title': 'CONNECT', 'icon': lv.ICON_CONNECT},
+            statusbar={'title': 'CONNECT', 'icon': 'ICON_CONNECT'},
             qr_type=qr_type,
             qr_data=data).show()
         if result is False:
@@ -313,8 +313,9 @@ class ConnectWalletFlow(Flow):
             self.goto_address_verification_method(save_curr=False)
 
     async def export_by_microsd(self):
-        from utils import xfp2str
+        from utils import xfp2str, get_folder_path
         from flows import SaveToMicroSDFlow
+        from public_constants import DIR_WALLET_CONFIGS
 
         # Run the software wallet's associated export function to get the data
         (data, self.acct_info, _error) = await spinner_task(
@@ -343,7 +344,9 @@ class ConnectWalletFlow(Flow):
                                            acct=self.acct_num,
                                            xfp=xfp2str(common.settings.get('xfp')).lower())
 
-        save_result = await SaveToMicroSDFlow(filename=filename, data=data).run()
+        save_result = await SaveToMicroSDFlow(filename=filename,
+                                              path=get_folder_path(DIR_WALLET_CONFIGS),
+                                              data=data).run()
 
         if not save_result:
             self.set_result(False)
@@ -382,7 +385,9 @@ class ConnectWalletFlow(Flow):
         msg = self.get_custom_text(
             'multisig_import_qr', 'Next, import the multisig configuration from {} via QR code.'.format(
                 self.sw_wallet['label']))
-        result = await InfoPage(card_header={'title': 'Import Multisig'}, text=msg).show()
+        result = await InfoPage(card_header={'title': 'Import Multisig'},
+                                text=msg,
+                                left_micron=microns.Back).show()
         if not result:
             if not self.back():
                 self.set_result(False)

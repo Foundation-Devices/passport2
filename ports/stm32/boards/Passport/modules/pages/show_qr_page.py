@@ -68,6 +68,7 @@ class ShowQRPage(Page):
 
         self.prev_card_descs = None
         self.prev_card_idx = common.ui.active_card_idx
+        self.prev_top_level = False
         self.qr_size_idx = common.settings.get('last_qr_size_idx', 0)
         self.qr_card_descs = [
             {'page_micron': microns.PageQRSmall},

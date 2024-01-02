@@ -7,13 +7,14 @@
 import lvgl as lv
 from micropython import const
 from views import View, Icon
-from styles.colors import BATTERY_FILL_COLOR, WHITE, TEXT_GREY
+from styles.colors import BATTERY_FILL_COLOR, BATTERY_FILL_BG_COLOR, WHITE
 from styles import Stylize, LocalStyle
+import passport
 
-_LEFT_MARGIN = const(2)
-_TOP_MARGIN = const(5)
-_FILL_HEIGHT = const(9)
-_FILL_MAX_WIDTH = const(16)
+_LEFT_MARGIN = const(2) if passport.IS_COLOR else const(4)
+_TOP_MARGIN = const(5) if passport.IS_COLOR else const(7)
+_FILL_HEIGHT = const(9) if passport.IS_COLOR else const(6)
+_FILL_MAX_WIDTH = const(16) if passport.IS_COLOR else const(10)
 
 
 class BatteryIndicator(View):
@@ -23,7 +24,7 @@ class BatteryIndicator(View):
         self.is_charging = False
         self.outline_color = outline_color
 
-        self.icon = Icon(lv.ICON_BATTERY, color=WHITE)
+        self.icon = Icon('ICON_BATTERY', color=WHITE)
         self.set_size(lv.SIZE.CONTENT, lv.SIZE.CONTENT)
         with Stylize(self.icon) as default:
             default.align(lv.ALIGN.CENTER)
@@ -32,7 +33,7 @@ class BatteryIndicator(View):
         self.bg_fill.set_size(_FILL_MAX_WIDTH, _FILL_HEIGHT)
         self.bg_fill.set_pos(_LEFT_MARGIN, _TOP_MARGIN)
         with Stylize(self.bg_fill) as default:
-            default.bg_color(TEXT_GREY)
+            default.bg_color(BATTERY_FILL_BG_COLOR)
 
         self.fill = View()
         self.fill.set_height(_FILL_HEIGHT)
@@ -58,9 +59,9 @@ class BatteryIndicator(View):
     def set_is_charging(self, is_charging):
         self.is_charging = is_charging
         if self.is_charging:
-            self.icon.set_icon(lv.ICON_BATTERY_CHARGING)
+            self.icon.set_icon('ICON_BATTERY_CHARGING')
         else:
-            self.icon.set_icon(lv.ICON_BATTERY)
+            self.icon.set_icon('ICON_BATTERY')
 
     def set_outline_color(self, outline_color):
         self.outline_color = outline_color

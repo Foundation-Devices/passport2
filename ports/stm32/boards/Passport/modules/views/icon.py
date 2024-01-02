@@ -6,12 +6,15 @@
 import lvgl as lv
 from styles import Stylize, LocalStyle
 from views import View
+from utils import derive_icon
 
 
 class Icon(View):
     def __init__(self, icon, color=None, opa=None):
+        from utils import derive_icon
+
         super().__init__()
-        self.icon = icon
+        self.icon = derive_icon(icon)
         self.color = color
         self.opa = opa
 
@@ -22,7 +25,9 @@ class Icon(View):
                 default.opa(self.opa)
 
     def set_icon(self, icon):
-        self.icon = icon
+        from utils import derive_icon
+
+        self.icon = derive_icon(icon)
         self.update()
 
     def set_color(self, color=None, opa=None):

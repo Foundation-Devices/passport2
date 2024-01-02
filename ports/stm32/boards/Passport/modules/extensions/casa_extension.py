@@ -14,22 +14,22 @@ import microns
 # Casa account - account number is zero, but they use a special derivation path
 name = 'casa'
 casa_account = {'name': 'Casa', 'acct_num': 0}
-icon = lv.ICON_CASA
+icon = 'ICON_CASA'
 
 CasaExtension = {
     'name': name,
     'menu_item': {
         'icon': icon,
         'label': 'Casa',
-        'action': lambda item: toggle_extension_enabled(name),
+        'action': lambda item, context: toggle_extension_enabled(name),
         'is_toggle': True,
-        'value': lambda: is_extension_enabled(name),
+        'value': lambda context: is_extension_enabled(name),
     },
     'card': {
         'right_icon': icon,
         'header_color': LIGHT_GREY,
         'header_fg_color': LIGHT_TEXT,
-        'statusbar': {'title': 'EXTENSION', 'icon': lv.ICON_EXTENSIONS, 'fg_color': WHITE},
+        'statusbar': {'title': 'EXTENSION', 'icon': 'ICON_EXTENSIONS', 'fg_color': WHITE},
         'title': casa_account.get('name'),
         'page_micron': microns.PageDot,
         'bg_color': CASA_PURPLE,

@@ -12,6 +12,7 @@ from animations import page_anim
 import passport
 from constants import (CARD_CONTENT_HEIGHT_WITHOUT_HEADER, CARD_HEADER_HEIGHT,
                        CARD_BORDER_WIDTH, OUTER_CORNER_RADIUS, CARD_OUTER_MONO_BORDER_WIDTH)
+from utils import derive_icon
 
 
 class Card(View):
@@ -30,8 +31,8 @@ class Card(View):
         super().__init__()
 
         self.title = title
-        self.icon = icon
-        self.right_icon = right_icon
+        self.icon = derive_icon(icon)
+        self.right_icon = derive_icon(right_icon)
         self.page_micron = page_micron if page_micron is not None else microns.PageDot()
         self.right_text = right_text
         self.page = initial_page
@@ -179,6 +180,8 @@ class Card(View):
         self.update()
 
     def update(self):
+        from utils import derive_icon
+
         # Always update the color and top padding
         top_pad = CARD_HEADER_HEIGHT if self.is_header_visible() else CARD_BORDER_WIDTH
         with LocalStyle(self.card_border) as style:
@@ -199,7 +202,8 @@ class Card(View):
                 # default.bg_color(GREEN, 128)
 
             if self.icon is not None:
-                self.icon_view = Image(self.icon, color=self.header_fg_color)
+                icon = derive_icon(self.icon)
+                self.icon_view = Image(icon, color=self.header_fg_color)
                 with Stylize(self.icon_view) as default:
                     default.align(lv.ALIGN.LEFT_MID)
                 self.header.add_child(self.icon_view)
@@ -212,7 +216,8 @@ class Card(View):
             self.header.add_child(header_title)
 
             if self.right_icon is not None:
-                self.right_icon_view = Image(self.right_icon, color=self.header_fg_color)
+                right_icon = derive_icon(self.right_icon)
+                self.right_icon_view = Image(right_icon, color=self.header_fg_color)
                 with Stylize(self.right_icon_view) as default:
                     default.align(lv.ALIGN.RIGHT_MID)
                 self.header.add_child(self.right_icon_view)

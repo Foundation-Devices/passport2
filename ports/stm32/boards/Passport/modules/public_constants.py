@@ -13,6 +13,9 @@ except ImportError:
 
 from constants import PSBT_MAX_SIZE
 
+# Seed phrase lengths accepted
+SEED_LENGTHS = [12, 24]
+
 # Max PSBT txn we support (896k as PSBT)
 # - the max on the wire for mainnet is 100k
 # - but a PSBT might contain a full txn for each input
@@ -93,6 +96,14 @@ MAX_SIGNERS = const(15)
 TRUST_VERIFY = const(0)
 TRUST_OFFER = const(1)
 TRUST_PSBT = const(2)
+
+# Default Directories
+DIR_BACKUPS = 'backups'
+DIR_KEY_MNGR = 'key_manager'
+DIR_MULTISIGS = 'multisig_configs'
+DIR_WALLET_CONFIGS = 'wallet_configs'
+DIR_TRANSACTIONS = 'transactions'
+DIR_HEALTH_CHECKS = 'health_checks'
 
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----

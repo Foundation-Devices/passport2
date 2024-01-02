@@ -168,19 +168,9 @@ class CardSlot:
         basename, ext = pattern.rsplit('.', 1)
         ext = '.' + ext
 
-        # try w/o any number first
-        fname = path + '/' + basename + ext
-        try:
-            os.stat(fname)
-        except OSError as e:
-            if e.args[0] == ENOENT:
-                # file doesn't exist, done
-                return fname, basename + ext
-            pass
-
         # look for existing numbered files, even if some are deleted, and pick next
         # highest filename
-        highest = 1
+        highest = 0
         pat = ure.compile(basename + r'-(\d+)' + ext)
 
         files = uos.ilistdir(path)
@@ -190,7 +180,7 @@ class CardSlot:
                 continue
             highest = max(highest, int(m.group(1)))
 
-        fname = path + '/' + basename + ('-%d' % (highest + 1)) + ext
+        fname = path + '/' + basename + ('-%03d' % (highest + 1)) + ext
 
         return fname, fname[len(path):]
 

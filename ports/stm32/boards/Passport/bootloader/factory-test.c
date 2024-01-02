@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "flash.h"
 #include "lvgl.h"
 #include "images.h"
 #include "backlight.h"
@@ -591,6 +592,29 @@ void factory_test_external_flash(uint32_t param1, uint32_t param2) {
         return;
     }
 #endif /* if 0 */
+
+    // Copy SCV secret from a temporary location in MCU FLASH memory into the SPI FLASH
+    uint8_t* supply_chain_key = (uint8_t*)USER_SETTINGS_FLASH_ADDR;
+    bool     is_erased        = true;
+    for (uint32_t i = 0; i < 32; i++) {
+        if (supply_chain_key[i] != 0xFF) {
+            is_erased = false;
+        }
+    }
+    if (is_erased) {
+        factory_test_set_result_error(105, "SCV is empty");
+        return;
+    }
+
+    if (!spi_clear_scv_key()) {
+        factory_test_set_result_error(100, "Couldn't remove SCV key from SPI FLASH");
+        return;
+    }
+    if (!spi_set_scv_key(supply_chain_key)) {
+        factory_test_set_result_error(105, "Failed to copy SCV to SPI FLASH");
+        return;
+    }
+
     if (spi_flash_deinit() != HAL_OK) {
         factory_test_set_result_error(100, "spi_deinit() failed");
         return;

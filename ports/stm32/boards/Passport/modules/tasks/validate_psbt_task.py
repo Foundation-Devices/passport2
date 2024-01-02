@@ -28,9 +28,13 @@ async def validate_psbt_task(on_done, psbt_len):
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
             psbt = psbtObject.read_psbt(fd)
 
+        gc.collect()
         await psbt.validate()
+        gc.collect()
         psbt.consider_inputs()
+        gc.collect()
         psbt.consider_keys()
+        gc.collect()
         psbt.consider_outputs()
 
         # All went well!
