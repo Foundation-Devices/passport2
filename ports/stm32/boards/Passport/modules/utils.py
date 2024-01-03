@@ -1492,4 +1492,15 @@ def get_single_address(xfp,
     return address
 
 
+def check_pin_prefix_hash(pin):
+    from serializations import sha256
+
+    if len(pin) < 4:
+        return False
+
+    new_pin_sha = sha256(pin[0:4])
+    true_pin_sha = common.settings.get('pin_prefix_hash')
+    return all(x == y for x, y in zip(new_pin_sha, true_pin_sha))
+
+
 # EOF
