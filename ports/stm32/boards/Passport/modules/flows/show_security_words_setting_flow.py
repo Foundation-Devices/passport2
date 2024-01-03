@@ -20,7 +20,7 @@ class ShowSecurityWordsSettingFlow(Flow):
         if selected_value:
             self.goto(self.enter_pin)
         else:
-            self.set_result(None)
+            self.set_result(True)
 
     async def enter_pin(self):
         (pin, is_done) = await PINEntryPage(
@@ -32,12 +32,8 @@ class ShowSecurityWordsSettingFlow(Flow):
 
         if not is_done:
             settings.set('security_words', False)
-            self.back()
-            return
 
         if not check_pin_prefix_hash(pin):
             settings.set('security_words', False)
-            self.back()
-            return
 
-        self.set_result(True)
+        self.back()
