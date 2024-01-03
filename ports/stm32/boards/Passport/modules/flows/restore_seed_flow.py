@@ -137,21 +137,10 @@ class RestoreSeedFlow(Flow):
         self.goto(self.enter_seed_words)
 
     async def valid_seed(self):
-        from foundation import bip39
         from flows import AutoBackupFlow, BackupFlow
+        from utils import get_seed_from_words
 
-        entropy = bytearray(33)  # Includes an extra byte for the checksum bits
-
-        len = bip39.mnemonic_to_bits(self.mnemonic, entropy)
-
-        if len == 264:  # 24 words x 11 bits each
-            trim_pos = 32
-        elif len == 198:  # 18 words x 11 bits each
-            trim_pos = 24
-        elif len == 132:  # 12 words x 11 bits each
-            trim_pos = 16
-        entropy = entropy[:trim_pos]  # Trim off the excess (including checksum bits)
-
+        entropy = get_seed_from_words(self.mnemonic)
         (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
         if error is None:
             import common

@@ -61,40 +61,31 @@ def get_words_matching_prefix(prefix, max=5, word_list='bip39'):
 
 
 def get_last_word(seed_words, word_list='bip39'):
-    from utils import get_width_from_num_words
+    import trezorcrypto
     import common
-    from trezorcrypto import bip39
-    import uio
+    from foundation import bip39
+    from utils import get_seed_from_words, get_words_from_seed
+    from public_constants import SEED_WORD_LIST_LENGTH
 
-    binary_str = uio.StringIO()
+    # The last word is partially entropy, partially checksum,
+    # in different proportions based on the mnemonic length,
 
-    for word in word_list:
-        index = bip39.find_word(word)
-        index_bin = '{:011b}'.format(index)
-        binary_str.write(index_bin)
+    # choose a random last word
+    index_bytes = bytearray(2)  # 16 bit int
+    common.noise.random_bytes(index_bytes, common.noise.ALL)
+    index = int.from_bytes(index_bytes, "little") % SEED_WORD_LIST_LENGTH
+    mock_last_word = trezorcrypto.bip39.get_word(index)
+    copy_words = ' '.join(seed_words)  # Later function requires joined string
+    copy_words += ' ' + mock_last_word
 
-    # Determine how much more entropy is needed
-    total_bits = get_width_from_num_words(len(word_list) + 1) * 8
-    entropy_needed = total_bits - len(binary_str.getvalue())
+    # compute the bits without the checksum
+    entropy = get_seed_from_words(copy_words)
 
-    extra_entropy = bytearray(1)
-    common.noise.random_bytes(extra_entropy, common.noise.ALL)
-    entropy_bin = '{:08b}'.format(extra_entropy[0])[:entropy_needed]
-    print("len(word_list): {}, total_bits: {}, len(binary_str): {}".format(len(word_list),
-                                                                           total_bits,
-                                                                           len(binary_str.getvalue())))
-    print("entropy_needed: {}, extra_entropy: {}, entropy_bin: {}".format(entropy_needed,
-                                                                          extra_entropy[0],
-                                                                          entropy_bin))
+    # get the correct words with the checkusm
+    (final_words, error) = get_words_from_seed(entropy)
 
-    binary_str.write(entropy_bin)
+    if not final_words:
+        return ""
 
-    binary_str = binary_str.getvalue()
-
-    width = get_width_from_num_words(len(word_list) + 1)
-    as_bytes = bytearray(width)
-    for i in range(0, width):
-        as_bytes[i] = int('0b' + binary_str[i * 8:(i + 1) * 8], 2)
-
-    # TODO: get checksum bits
-    return 'abandon'
+    # return the correct final word
+    return final_words[-1]
