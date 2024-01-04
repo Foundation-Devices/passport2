@@ -53,7 +53,7 @@ class RestoreSeedFlow(Flow):
 
     async def scan_qr(self):
         from flows import ScanQRFlow
-        from pages import InfoPage, SeedWordsListPage, ErrorPage
+        from pages import InfoPage, SeedWordsListPage
         import microns
         from data_codecs.qr_type import QRType
 
@@ -61,8 +61,6 @@ class RestoreSeedFlow(Flow):
                                   data_description=self.validate_text).run()
 
         if result is None:
-            await ErrorPage("Invalid {} detected. Make sure you're using the right format."
-                            .format(self.validate_text)).show()
             self.back()
             return
 
