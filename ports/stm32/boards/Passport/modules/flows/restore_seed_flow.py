@@ -87,7 +87,9 @@ class RestoreSeedFlow(Flow):
 
         result = await InfoPage([
             "Passport uses predictive text input to help you restore your seed words.",
-            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."],
+            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown.",
+            "Passport generates an optional valid last word for you, that is part entropy, part checksum.",
+            "This can help users create their own seed using dice rolls or drawing words from a hat."],
             left_micron=microns.Back,
         ).show()
 
