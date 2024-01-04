@@ -49,7 +49,7 @@ class BackupFlow(Flow):
             self.goto(self.get_backup_code)
             return
 
-        if self.initial_backup and not self.backup_quiz_passed:
+        if self.initial_backup:
             result2 = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
             if result2:
