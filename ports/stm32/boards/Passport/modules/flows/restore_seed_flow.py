@@ -158,7 +158,7 @@ class RestoreSeedFlow(Flow):
 
             await SuccessPage(text='New seed restored and saved.').show()
             if self.full_backup:
-                await BackupFlow().run()
+                await BackupFlow(initial_backup=True).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 

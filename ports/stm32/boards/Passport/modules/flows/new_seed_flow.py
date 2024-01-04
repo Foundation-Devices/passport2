@@ -82,7 +82,7 @@ class NewSeedFlow(Flow):
         backup_flow = None
 
         if self.full_backup:
-            backup_flow = BackupFlow()
+            backup_flow = BackupFlow(initial_backup=True)
         elif self.autobackup:
             backup_flow = AutoBackupFlow(offer=True)
 
