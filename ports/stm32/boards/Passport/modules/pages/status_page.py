@@ -38,6 +38,8 @@ class StatusPage(Page):
         self.centered = centered
         self.show_spinner = show_spinner
         self.interactive = interactive
+        self.true_left_micron = left_micron
+        self.true_right_micron = right_micron
 
         self.is_list_mode = isinstance(self.text, list)
 
@@ -65,12 +67,15 @@ class StatusPage(Page):
 
         # Update microns in a special way for array text
         if self.is_list_mode:
-            common.ui.set_left_micron(microns.Back)
-            common.ui.set_right_micron(microns.Forward)
+            self.left_micron = microns.Back
+            self.right_micron = microns.Forward
             if self.page_idx == 0:
-                common.ui.set_left_micron(self.left_micron)
-            elif self.page_idx == len(self.text):
-                common.ui.set_right_micron(self.right_micron)
+                self.left_micron = self.true_left_micron
+            elif self.page_idx == len(self.text) - 1:
+                self.right_micron = self.true_right_micron
+
+            common.ui.set_left_micron(self.left_micron)
+            common.ui.set_right_micron(self.right_micron)
 
         # center container so we can center the icon or progress in it
         self.center_container = View()
