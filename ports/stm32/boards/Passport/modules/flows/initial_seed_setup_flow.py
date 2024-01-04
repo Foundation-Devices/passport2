@@ -45,15 +45,13 @@ class InitialSeedSetupFlow(Flow):
         options = [{'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(full_backup=True)},
                    {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
-                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)},
-                   {'label': 'Advanced Seed', 'value': lambda: RestoreSeedFlow(full_backup=True, last_word=True)}]
+                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
 
         flow = await ChooserPage(
             text=None,
             icon=lv.LARGE_ICON_SEED,
             options=options,
-            left_micron=microns.Back,
-            top_icon_margin=0).show()
+            left_micron=microns.Back).show()
         if flow is None:
             self.back()
             return

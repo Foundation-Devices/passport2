@@ -42,7 +42,35 @@ class NewSeedFlow(Flow):
         if not self.seed_length:
             self.set_result(False)
         else:
-            self.goto(self.confirm_generate)
+            self.goto(self.prompt_advanced)
+
+    async def prompt_advanced(self):
+        from pages import ChooserPage
+
+        options = [{'label': 'Generate Seed', 'value': self.confirm_generate},
+                   {'label': 'Custom Entropy', 'value': self.advanced_seed}]
+
+        result = await ChooserPage(card_header={'title': 'Creation Method'},
+                                   options=options).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.goto(result)
+
+    async def advanced_seed(self):
+        from flows import RestoreSeedFlow
+
+        result = await RestoreSeedFlow(full_backup=True,
+                                       last_word=True,
+                                       seed_length=self.seed_length).run()
+
+        if not result:
+            self.back()
+            return
+
+        self.set_result(True)
 
     async def confirm_generate(self):
         # result = await QuestionPage(text='Generate a new seed phrase now?').show()

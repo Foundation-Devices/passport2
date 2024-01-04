@@ -18,17 +18,19 @@ class RestoreSeedFlow(Flow):
                  refresh_cards_when_done=False,
                  autobackup=True,
                  full_backup=False,
-                 last_word=False):
-        super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
+                 last_word=False,
+                 seed_length=None):
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
-        self.seed_length = None
-        self.validate_text = None
+        self.seed_length = seed_length
+        self.validate_text = 'Seed phrase' if seed_length else None
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.statusbar = {'title': 'RESTORE SEED', 'icon': 'ICON_SEED'}
         self.last_word = last_word
+        initial_state = self.explain_input_method if seed_length else self.choose_restore_method
+        super().__init__(initial_state=initial_state, name='RestoreSeedFlow')
 
     async def choose_restore_method(self):
         from pages import ChooserPage
@@ -105,7 +107,8 @@ class RestoreSeedFlow(Flow):
         result = await InfoPage(text=explainer_text, left_micron=microns.Back).show()
 
         if not result:
-            self.back()
+            if not self.back():
+                self.set_result(False)
             return
 
         self.goto(self.enter_seed_words)
