@@ -85,11 +85,18 @@ class RestoreSeedFlow(Flow):
 
     async def explain_input_method(self):
         from pages import InfoPage
+        import microns
 
         result = await InfoPage([
             "Passport uses predictive text input to help you restore your seed words.",
-            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."]
+            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."],
+            left_micron=microns.Back,
         ).show()
+
+        if not result:
+            self.back()
+            return
+
         self.goto(self.enter_seed_words)
 
     async def enter_seed_words(self):
