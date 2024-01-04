@@ -12,7 +12,7 @@ from views import TextInput, Label, View, ListItem, TextInput
 from styles import Stylize
 from keys import KEY_0, KEY_9
 import microns
-from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers, get_last_word
+from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers
 import passport
 
 
@@ -30,7 +30,8 @@ class PredictiveTextInputPage(Page):
                  initial_words=[],
                  initial_prefixes=[],
                  left_micron=microns.Back,
-                 right_micron=microns.Forward):
+                 right_micron=microns.Forward,
+                 last_word=False):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          right_micron=right_micron,
@@ -39,7 +40,7 @@ class PredictiveTextInputPage(Page):
 
         self.title = title
         self.word_list = word_list
-        self.total_words = total_words
+        self.total_words = total_words - (1 if last_word else 0)
         self.word_idx = 0
         self.prediction_idx = 0
         self.selected_words = initial_words
@@ -94,8 +95,6 @@ class PredictiveTextInputPage(Page):
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
             self.predictions = get_words_matching_prefix(prefix, max=5, word_list=self.word_list)
-        elif self.word_idx == self.total_words - 1:
-            self.predictions = [get_last_word(self.selected_words)]
         else:
             self.predictions = []
 
@@ -147,34 +146,40 @@ class PredictiveTextInputPage(Page):
         self.predictions_container.children[self.prediction_idx].lvgl_root.scroll_to_view(lv.ANIM.ON)
 
     def get_title(self):
-        return self.title.format(word_idx=self.word_idx + 1, total_words=self.total_words)
+        return self.title.format(word_idx=self.word_idx + 1,
+                                 total_words=self.total_words)
 
     def right_action(self, is_pressed):
-        if not is_pressed:
-            # TODO: Get the index of the selected word (see how menu_page does it)
-            #       Then add to the list of words
-            if len(self.predictions) > 0:
-                set_list(self.selected_words, self.word_idx, self.predictions[self.prediction_idx])
+        if is_pressed:
+            return
 
-                # Fill out the prefix to the full length of the selected word so the prediction
-                # list has a single item in it.
-                set_list(self.prefixes, self.word_idx, str(
-                    word_to_keypad_numbers(self.predictions[self.prediction_idx])))
-                # print('selected_words={}'.format(self.selected_words))
-                if len(self.selected_words) == self.total_words and self.word_idx == self.total_words - 1:
-                    # print('Returning selected_words and prefixes!')
-                    self.set_result((self.selected_words, self.prefixes))
-                    return
-                else:
-                    # Reset (or lookup the prediction prefix and go to the next word index
-                    self.word_idx += 1
-                    prefix_text = ''
-                    if self.word_idx < len(self.prefixes):
-                        prefix_text = self.prefixes[self.word_idx]
-                    self.input.set_text(prefix_text)
+        # Get the index of the selected word (see how menu_page does it)
+        # Then add to the list of words
+        if len(self.predictions) <= 0:
+            return
 
-                    self.update_title()
-                    self.update_predictions()
+        set_list(self.selected_words, self.word_idx, self.predictions[self.prediction_idx])
+
+        # Fill out the prefix to the full length of the selected word so the prediction
+        # list has a single item in it.
+        set_list(self.prefixes, self.word_idx, str(
+            word_to_keypad_numbers(self.predictions[self.prediction_idx])))
+        # print('selected_words={}'.format(self.selected_words))
+
+        if len(self.selected_words) == self.total_words and self.word_idx == self.total_words - 1:
+            # print('Returning selected_words and prefixes!')
+            self.set_result((self.selected_words, self.prefixes))
+            return
+
+        # Reset (or lookup the prediction prefix and go to the next word index
+        self.word_idx += 1
+        prefix_text = ''
+        if self.word_idx < len(self.prefixes):
+            prefix_text = self.prefixes[self.word_idx]
+        self.input.set_text(prefix_text)
+
+        self.update_title()
+        self.update_predictions()
 
     def left_action(self, is_pressed):
         if not is_pressed:

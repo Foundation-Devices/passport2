@@ -23,7 +23,7 @@ class ChooserPage(Page):
             self, card_header=None, statusbar=None, options=[],
             initial_value=None, on_change=None, scroll_fix=False,
             icon=None, icon_color=CHOOSER_ICON, text=None, center=False, item_icon='ICON_SMALL_CHECKMARK',
-            left_micron=None, right_micron=None):
+            left_micron=None, right_micron=None, top_icon_margin=20):
 
         from views import ListItem, View
         import passport
@@ -48,6 +48,7 @@ class ChooserPage(Page):
         self.text = text
         self.center = center
         self.item_icon = item_icon
+        self.top_icon_margin = max(top_icon_margin - (0 if passport.IS_COLOR else 8), 0)
 
         # If initial value is given, then select it, else select the first item
         if self.initial_value is not None:
@@ -72,7 +73,7 @@ class ChooserPage(Page):
             with Stylize(self.icon_view) as default:
                 if self.icon_color is not None:
                     default.img_recolor(self.icon_color)
-                    top = 20 if passport.IS_COLOR else 12
+                    top = self.top_icon_margin
                     default.pad(top=top, bottom=12)
             self.add_child(self.icon_view)
 

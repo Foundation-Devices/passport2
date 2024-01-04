@@ -10,10 +10,15 @@ from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
+from predictive_utils import get_last_word
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
+    def __init__(self,
+                 refresh_cards_when_done=False,
+                 autobackup=True,
+                 full_backup=False,
+                 last_word=False):
         super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
@@ -23,15 +28,18 @@ class RestoreSeedFlow(Flow):
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.statusbar = {'title': 'RESTORE SEED', 'icon': 'ICON_SEED'}
+        self.last_word = last_word
 
     async def choose_restore_method(self):
         from pages import ChooserPage
         from data_codecs.qr_type import QRType
 
         options = [{'label': '12 Words', 'value': 12},
-                   {'label': '24 Words', 'value': 24},
-                   {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
-                   {'label': 'SeedQR', 'value': QRType.SEED_QR}]
+                   {'label': '24 Words', 'value': 24}]
+
+        if not self.last_word:
+            options.extend([{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                            {'label': 'SeedQR', 'value': QRType.SEED_QR}])
 
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
 
@@ -85,13 +93,16 @@ class RestoreSeedFlow(Flow):
         from pages import InfoPage
         import microns
 
-        result = await InfoPage([
+        explainer_text = [
             "Passport uses predictive text input to help you restore your seed words.",
-            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown.",
-            "Passport generates an optional valid last word for you, that is part entropy, part checksum.",
-            "This can help users create their own seed using dice rolls or drawing words from a hat."],
-            left_micron=microns.Back,
-        ).show()
+            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."]
+
+        if self.last_word:
+            explainer_text.extend([
+                "Passport generates an optional valid last word for you, that is part entropy, part checksum.",
+                "This can help users create their own seed using dice rolls or drawing words from a hat."])
+
+        result = await InfoPage(text=explainer_text, left_micron=microns.Back).show()
 
         if not result:
             self.back()
@@ -103,16 +114,38 @@ class RestoreSeedFlow(Flow):
         result = await PredictiveTextInputPage(
             word_list='bip39',
             total_words=self.seed_length,
-            initial_words=self.seed_words).show()
+            initial_words=self.seed_words,
+            last_word=self.last_word).show()
         if result is None:
             cancel = await QuestionPage(
                 text='Cancel seed entry? All progress will be lost.').show()
             if cancel:
                 self.set_result(False)
-                return
-        else:
-            self.seed_words, self.prefixes = result
-            self.goto(self.validate_seed_words)
+            return
+
+        self.seed_words, self.prefixes = result
+
+        if self.last_word:
+            self.goto(self.get_final_word)
+            return
+
+        self.goto(self.validate_seed_words)
+
+    async def get_final_word(self):
+        from pages import InfoPage
+        import microns
+
+        final_word = get_last_word(self.seed_words)
+
+        result = await InfoPage(text='Your final word is "{}".'.format(final_word),
+                                left_micron=microns.Back).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.seed_words.append(final_word)
+        self.goto(self.validate_seed_words)
 
     async def validate_seed_words(self):
         from trezorcrypto import bip39
