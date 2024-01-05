@@ -7,6 +7,8 @@ import lvgl as lv
 from flows import Flow
 from pages import PINEntryPage, ShowSecurityWordsSettingPage
 import microns
+from common import settings
+from utils import check_pin_prefix_hash
 
 
 class ShowSecurityWordsSettingFlow(Flow):
@@ -18,7 +20,7 @@ class ShowSecurityWordsSettingFlow(Flow):
         if selected_value:
             self.goto(self.enter_pin)
         else:
-            self.set_result(None)
+            self.set_result(True)
 
     async def enter_pin(self):
         (pin, is_done) = await PINEntryPage(
@@ -27,8 +29,11 @@ class ShowSecurityWordsSettingFlow(Flow):
             check_pin_prefix=True,
             left_micron=microns.Back,
             right_micron=microns.Checkmark).show()
+
         if not is_done:
-            self.back()
-        else:
-            # TODO: it would be good to check the pin
-            self.set_result(True)
+            settings.set('security_words', False)
+
+        if not check_pin_prefix_hash(pin):
+            settings.set('security_words', False)
+
+        self.back()
