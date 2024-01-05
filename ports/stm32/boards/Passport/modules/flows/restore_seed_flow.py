@@ -19,7 +19,7 @@ class RestoreSeedFlow(Flow):
         self.seed_format = None
         self.seed_length = None
         self.validate_text = None
-        self.index = None
+        self.index = 0
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
@@ -108,9 +108,13 @@ class RestoreSeedFlow(Flow):
         if result is None:
             cancel = await QuestionPage(
                 text='Cancel seed entry? All progress will be lost.').show()
+
             if cancel:
                 self.set_result(False)
                 return
+
+            self.index = 0
+            return
 
         self.seed_words, self.prefixes, get_last_word = result
 
