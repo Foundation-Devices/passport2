@@ -4,7 +4,7 @@
 # restore_seed_flow.py -Restore a seed to Passport by entering the seed words.
 
 
-from flows import Flow
+from flows import Flow, RandomFinalWordFlow
 import microns
 from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task
@@ -19,10 +19,11 @@ class RestoreSeedFlow(Flow):
         self.seed_format = None
         self.seed_length = None
         self.validate_text = None
+        self.index = None
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
-        self.statusbar = {'title': 'RESTORE SEED', 'icon': 'ICON_SEED'}
+        self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
 
     async def choose_restore_method(self):
         from pages import ChooserPage
@@ -86,7 +87,7 @@ class RestoreSeedFlow(Flow):
         import microns
 
         result = await InfoPage([
-            "Passport uses predictive text input to help you restore your seed words.",
+            "Passport uses predictive text input to help you import your seed words.",
             "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."],
             left_micron=microns.Back,
         ).show()
@@ -101,16 +102,28 @@ class RestoreSeedFlow(Flow):
         result = await PredictiveTextInputPage(
             word_list='bip39',
             total_words=self.seed_length,
-            initial_words=self.seed_words).show()
+            initial_words=self.seed_words,
+            start_index=self.index).show()
+
         if result is None:
             cancel = await QuestionPage(
                 text='Cancel seed entry? All progress will be lost.').show()
             if cancel:
                 self.set_result(False)
                 return
-        else:
-            self.seed_words, self.prefixes = result
-            self.goto(self.validate_seed_words)
+
+        self.seed_words, self.prefixes, get_last_word = result
+
+        if get_last_word:
+            last_word = await RandomFinalWordFlow(self.seed_words).run()
+
+            if not last_word:
+                self.index = self.seed_length - 1
+                return  # Go back to input a last word
+
+            self.seed_words.append(last_word)
+
+        self.goto(self.validate_seed_words)
 
     async def validate_seed_words(self):
         from trezorcrypto import bip39
@@ -145,7 +158,7 @@ class RestoreSeedFlow(Flow):
         if error is None:
             import common
 
-            await SuccessPage(text='New seed restored and saved.').show()
+            await SuccessPage(text='New seed imported and saved.').show()
             if self.full_backup:
                 await BackupFlow(initial_backup=True).run()
             elif self.autobackup:
