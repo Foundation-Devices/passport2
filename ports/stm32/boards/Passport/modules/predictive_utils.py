@@ -71,7 +71,7 @@ def get_last_word(seed_words, word_list='bip39'):
     # in different proportions based on the mnemonic length,
 
     # choose a random last word
-    index_bytes = bytearray(2)  # 16 bit int
+    index_bytes = bytearray(4)  # noise.random_bytes requires a 4 byte buffer
     common.noise.random_bytes(index_bytes, common.noise.ALL)
     index = int.from_bytes(index_bytes, "little") % SEED_WORD_LIST_LENGTH
     mock_last_word = trezorcrypto.bip39.get_word(index)
