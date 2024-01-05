@@ -18,7 +18,8 @@ class StatusPage(Page):
 
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
-                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
+                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
+                 margins=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -40,6 +41,7 @@ class StatusPage(Page):
         self.interactive = interactive
         self.true_left_micron = left_micron
         self.true_right_micron = right_micron
+        self.margins = (margins if margins is not None else 8)
 
         self.is_list_mode = isinstance(self.text, list)
 
@@ -48,7 +50,7 @@ class StatusPage(Page):
         self.container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
         self.container.set_size(lv.pct(100), lv.pct(100))
         with Stylize(self.container) as default:
-            default.pad(left=8, right=8)
+            default.pad(left=self.margins, right=self.margins)
             default.pad_row(20)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
         self.set_children([self.container])

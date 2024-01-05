@@ -97,6 +97,7 @@ class ExportDerivedKeyFlow(Flow):
         from pages import InfoPage, LongTextPage
         import microns
         from utils import stylize_address
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         text = 'Confirm the exported {} on the following page'.format(self.key_type['title'])
         result = await InfoPage(text=text, left_micron=microns.Back).show()
@@ -108,7 +109,8 @@ class ExportDerivedKeyFlow(Flow):
         result = await LongTextPage(text="\n" + stylize_address(self.data),
                                     centered=True,
                                     card_header={'title': 'Confirm Key'},
-                                    left_micron=microns.Back).show()
+                                    left_micron=microns.Back,
+                                    margins=MARGIN_FOR_ADDRESSES).show()
 
         if not result:
             return

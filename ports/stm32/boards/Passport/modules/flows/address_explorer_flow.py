@@ -136,6 +136,7 @@ Right: +1'''
         from utils import stylize_address, get_single_address
         from pages import ShowQRPage, AddressExplorerPage
         import microns
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
             self.address = get_single_address(self.xfp,
@@ -162,7 +163,8 @@ Right: +1'''
         while True:
             result = await AddressExplorerPage(msg,
                                                left_micron=microns.Cancel,
-                                               right_micron=microns.ScanQR).show()
+                                               right_micron=microns.ScanQR,
+                                               margins=MARGIN_FOR_ADDRESSES).show()
 
             if not result:
                 self.set_result(True)

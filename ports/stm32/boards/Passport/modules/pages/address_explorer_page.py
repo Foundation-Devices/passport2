@@ -17,13 +17,15 @@ class AddressExplorerPage(StatusPage):
                  card_header=None,
                  statusbar=None,
                  left_micron=microns.Back,
-                 right_micron=microns.Checkmark):
+                 right_micron=microns.Checkmark,
+                 margins=None):
         super().__init__(
             text=text,
             card_header=card_header,
             statusbar=statusbar,
             right_micron=right_micron,
-            left_micron=left_micron)
+            left_micron=left_micron,
+            margins=margins)
 
     def attach(self, group):
         super().attach(group)

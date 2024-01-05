@@ -57,6 +57,7 @@ class SignPsbtCommonFlow(Flow):
     async def show_transaction_details(self):
         import uio
         from pages import LongTextPage, ErrorPage
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
             outputs = uio.StringIO()
@@ -88,7 +89,8 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=outputs.getvalue(),
                 centered=True,
-                card_header={'title': self.header}
+                card_header={'title': self.header},
+                margins=MARGIN_FOR_ADDRESSES,
             ).show()
             if result:
                 if self.psbt.self_send:
@@ -108,13 +110,15 @@ class SignPsbtCommonFlow(Flow):
 
     async def show_change(self):
         from pages import LongTextPage, ErrorPage
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
             msg = self.render_change_text()
             result = await LongTextPage(
                 text=msg,
                 centered=True,
-                card_header={'title': self.header}
+                card_header={'title': self.header},
+                margins=MARGIN_FOR_ADDRESSES
             ).show()
             gc.collect()
             if not result:
@@ -219,7 +223,7 @@ class SignPsbtCommonFlow(Flow):
                     continue
                 # print('idx: {} output:{}'.format(idx, self.chain.render_address(tx_out.scriptPubKey)))
                 total += tx_out.nValue
-                addrs.append(self.chain.render_address(tx_out.scriptPubKey))
+                addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
             if len(addrs) == 0:
                 msg.write('\nNo change')
