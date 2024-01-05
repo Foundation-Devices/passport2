@@ -164,6 +164,11 @@ class PredictiveTextInputPage(Page):
         # "Random Final Word" was selected
         if len(self.predictions) == 1 and self.predictions[0] == RANDOM_WORD_STRING:
             # Last value is "get random last word"
+
+            # If we've previously failed importing a seed, de-select the last word
+            if len(self.selected_words) == self.total_words:
+                self.selected_words = self.selected_words[:-1]
+
             self.set_result((self.selected_words, self.prefixes, True))
             return
 
