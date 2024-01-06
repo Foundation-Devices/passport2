@@ -198,6 +198,11 @@ class SignPsbtCommonFlow(Flow):
         val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
 
+        if dest.startswith("OP_RETURN"):
+            return '\n{}\n{}'.format(
+                recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
+                dest.split('\n', 1)[1])  # user-defined message starts after "OP_RETURN:\n"
+
         dest = stylize_address(dest)
 
         return '\n{}\n{}\n\n{}\n{}'.format(
