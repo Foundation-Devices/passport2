@@ -53,3 +53,22 @@ RUN cargo install cbindgen@^0.24 && \
 # Allow all users to use CARGO_HOME and RUSTUP_HOME.
 RUN chmod -R 777 /cargo && \
     chmod -R 777 /rustup
+
+# Due to library differences between the host and container mpy-cross
+# needs to be built for Docker using this image.
+#
+# This environment variable tells the MicroPython build system
+# to use this mpy-cross binary.
+ENV MPY_CROSS=/workspace/mpy-cross/mpy-cross-docker
+
+# Append cosign to the PATH environment variable.
+ENV PATH=${PATH}:/workspace/ports/stm32/boards/Passport/tools/cosign/x86/release
+
+# Prevent from nesting docker.
+ENV IN_DOCKER=true
+
+# User of the container must add /workspace volume pointing to the
+# repository root.
+WORKDIR /workspace
+
+ENTRYPOINT ["bash", "-c"]
