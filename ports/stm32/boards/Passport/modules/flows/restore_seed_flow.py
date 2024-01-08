@@ -7,7 +7,7 @@
 from flows import Flow, RandomFinalWordFlow
 import microns
 from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
-from utils import spinner_task
+from utils import spinner_task, insufficient_randomness
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
 
@@ -119,6 +119,7 @@ class RestoreSeedFlow(Flow):
         self.seed_words, self.prefixes, get_last_word = result
 
         if get_last_word:
+
             last_word = await RandomFinalWordFlow(self.seed_words).run()
 
             if not last_word:
@@ -126,6 +127,14 @@ class RestoreSeedFlow(Flow):
                 return  # Go back to input a last word
 
             self.seed_words.append(last_word)
+
+        if insufficient_randomness(self.seed_words):
+            result2 = await ErrorPage("Seeds with low randomness can be vulnerable to draining attacks.\n\nContinue?",
+                                      left_micron=microns.Cancel).show()
+
+            if not result2:
+                self.index = 0
+                return  # Restart seed input
 
         self.goto(self.validate_seed_words)
 

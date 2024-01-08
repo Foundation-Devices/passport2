@@ -1531,4 +1531,14 @@ def check_pin_prefix_hash(pin):
     return all(x == y for x, y in zip(new_pin_sha, true_pin_sha))
 
 
+def insufficient_randomness(seed_words):
+    word_frequency = {}
+    for word in seed_words:
+        word_frequency[word] = word_frequency.get(word, 0) + 1
+        if word_frequency[word] > 2:
+            return True
+
+    return False
+
+
 # EOF
