@@ -129,7 +129,8 @@ class RestoreSeedFlow(Flow):
             self.seed_words.append(last_word)
 
         if insufficient_randomness(self.seed_words):
-            result2 = await ErrorPage("Seeds with low randomness can be vulnerable to draining attacks.\n\nContinue?",
+            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\nSave seed and continue?"
+            result2 = await ErrorPage(text=text,
                                       left_micron=microns.Cancel).show()
 
             if not result2:
