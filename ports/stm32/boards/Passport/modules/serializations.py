@@ -53,10 +53,13 @@ def hash160(s):
     return ripemd160(sha256(s))
 
 
+SIGHASH_ALL_TAPROOT = 0
 SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
 SIGHASH_ANYONECANPAY = 0x80
+
+VALID_SIGHASHES = [SIGHASH_ALL_TAPROOT, SIGHASH_ALL]
 
 # Serialization/deserialization tools
 
@@ -81,6 +84,21 @@ def deser_compact_size(f):
     elif nit == 255:
         nit = struct.unpack("<Q", f.read(8))[0]
     return nit
+
+
+def deser_compact_size_bytes(b):
+    nit = b[0]
+    length = 1
+    if nit == 253:
+        nit = struct.unpack("<H", b[1:3])[0]
+        length = 3
+    elif nit == 254:
+        nit = struct.unpack("<I", b[1:5])[0]
+        length = 5
+    elif nit == 255:
+        nit = struct.unpack("<Q", b[1:9])[0]
+        length = 9
+    return (nit, length)
 
 
 def deser_string(f):
@@ -336,27 +354,26 @@ class CTxOut(object):
         if len(self.scriptPubKey) == 22 and \
                 self.scriptPubKey[0] == 0 and self.scriptPubKey[1] == 20:
             # aka. P2WPKH
-            return 'p2pkh', self.scriptPubKey[2:2 + 20], True
+            return 'p2pkh', self.scriptPubKey[2:2 + 20], True, False
 
         if len(self.scriptPubKey) == 34 and \
                 self.scriptPubKey[0] == 0 and self.scriptPubKey[1] == 32:
             # aka. P2WSH
-            return 'p2sh', self.scriptPubKey[2:2 + 32], True
+            return 'p2sh', self.scriptPubKey[2:2 + 32], True, False
 
         if len(self.scriptPubKey) == 34 and \
                 self.scriptPubKey[0] == 81 and self.scriptPubKey[1] == 32:
-            # aka P2TR
-            return 'p2tr', self.scriptPubKey[2:2 + 32], True
+            return 'p2tr', self.scriptPubKey[2:2 + 32], False, True
 
         if self.is_p2pkh():
-            return 'p2pkh', self.scriptPubKey[3:3 + 20], False
+            return 'p2pkh', self.scriptPubKey[3:3 + 20], False, False
 
         if self.is_p2sh():
-            return 'p2sh', self.scriptPubKey[2:2 + 20], False
+            return 'p2sh', self.scriptPubKey[2:2 + 20], False, False
 
         if self.is_p2pk():
             # rare, pay to full pubkey
-            return 'p2pk', self.scriptPubKey[2:2 + 33], False
+            return 'p2pk', self.scriptPubKey[2:2 + 33], False, False
 
         # If this is reached, we do not understand the output well
         # enough to allow the user to authorize the spend, so fail hard.
