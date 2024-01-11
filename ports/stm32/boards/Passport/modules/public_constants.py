@@ -89,10 +89,19 @@ PSBT_IN_WITNESS_SCRIPT = const(5)
 PSBT_IN_BIP32_DERIVATION = const(6)
 PSBT_IN_FINAL_SCRIPTSIG = const(7)
 PSBT_IN_FINAL_SCRIPTWITNESS = const(8)
+PSBT_IN_TAP_KEY_SIG = const(19)
+PSBT_IN_TAP_SCRIPT_SIG = const(20)
+PSBT_IN_TAP_LEAF_SCRIPT = const(21)
+PSBT_IN_TAP_BIP32_DERIVATION = const(22)
+PSBT_IN_TAP_INTERNAL_KEY = const(23)
+PSBT_IN_TAP_MERKLE_ROOT = const(24)
 
 PSBT_OUT_REDEEM_SCRIPT = const(0)
 PSBT_OUT_WITNESS_SCRIPT = const(1)
 PSBT_OUT_BIP32_DERIVATION = const(2)
+PSBT_OUT_TAP_INTERNAL_KEY = const(5)
+PSBT_OUT_TAP_TREE = const(6)
+PSBT_OUT_TAP_BIP32_DERIVATION = const(7)
 
 # Bitcoin limitation: max number of signatures in CHECK_MULTISIG
 # - 520 byte redeem script limit <= 15*34 bytes per pubkey == 510 bytes

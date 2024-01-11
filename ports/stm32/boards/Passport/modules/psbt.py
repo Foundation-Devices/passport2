@@ -20,8 +20,8 @@ from passport import mem
 from public_constants import MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
-from serializations import ser_compact_size, deser_compact_size, hash160
-from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL
+from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
+from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES
 from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 
@@ -30,7 +30,7 @@ from public_constants import (
     PSBT_IN_PARTIAL_SIG, PSBT_IN_SIGHASH_TYPE, PSBT_IN_REDEEM_SCRIPT,
     PSBT_IN_WITNESS_SCRIPT, PSBT_IN_BIP32_DERIVATION, PSBT_IN_FINAL_SCRIPTSIG,
     PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
-    PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH
+    PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH, PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION
 )
 
 # print some things
@@ -140,7 +140,7 @@ class psbtProxy:
     no_keys = ()
 
     # these fields will return None but are not stored unless a value is set
-    blank_flds = ('unknown', )
+    blank_flds = ('unknown', 'subpaths', 'tap_subpaths')
 
     def __init__(self):
         self.fd = None
@@ -225,7 +225,7 @@ class psbtProxy:
         # - creates dictionary: pubkey => [xfp, *path]
         # - will be single entry for non-p2sh ins and outs
 
-        if not self.subpaths:
+        if not self.subpaths and not self.tap_subpaths:
             return 0
 
         if self.num_our_keys is not None:
@@ -259,6 +259,35 @@ class psbtProxy:
                 # or an input we're not supposed to be able to sign... and that's okay.
                 pass
 
+        for pk in self.tap_subpaths:
+            assert len(pk) == 32, "taproot hdpath pubkey len"
+
+            vl = self.tap_subpaths[pk][1]
+
+            # parse leaf hashes and path
+            v = self.get(self.tap_subpaths[pk])
+            (num_tap_hashes, compact_length) = deser_compact_size_bytes(v)
+            tap_hashes = [uint256_from_bytes(v[i * 32:(i + 1) * 32]) for i in range(0, num_tap_hashes)]
+            v = v[(num_tap_hashes * 32 + compact_length):]
+            vl = len(v)
+
+            # force them to use a derived key, never the master
+            assert vl >= 8, 'too short key path'
+            assert (vl % 4) == 0, 'corrupt key path'
+            assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
+
+            here = list(unpack_from('<%dI' % (vl // 4), v))
+
+            # update in place
+            self.tap_subpaths[pk] = (here, tap_hashes)
+
+            if here[0] == my_xfp or here[0] == swab32(my_xfp):
+                num_ours += 1
+            else:
+                # Address that isn't based on my seed; might be another leg in a p2sh,
+                # or an input we're not supposed to be able to sign... and that's okay.
+                pass
+
         self.num_our_keys = num_ours
         return num_ours
 
@@ -268,7 +297,7 @@ class psbtProxy:
 class psbtOutputProxy(psbtProxy):
     no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT}
     blank_flds = ('unknown', 'subpaths', 'redeem_script', 'witness_script',
-                  'is_change', 'num_our_keys')
+                  'is_change', 'num_our_keys', 'tap_subpaths')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -292,6 +321,10 @@ class psbtOutputProxy(psbtProxy):
             self.redeem_script = val
         elif kt == PSBT_OUT_WITNESS_SCRIPT:
             self.witness_script = val
+        elif kt == PSBT_OUT_TAP_BIP32_DERIVATION:
+            if not self.tap_subpaths:
+                self.tap_subpaths = {}
+            self.tap_subpaths[key[1:]] = val
         else:
             self.unknown[key] = val
 
@@ -333,11 +366,12 @@ class psbtOutputProxy(psbtProxy):
             return
 
         # - must match expected address for this output, coming from unsigned txn
-        addr_type, addr_or_pubkey, is_segwit = txo.get_address()
+        addr_type, addr_or_pubkey, is_segwit, is_taproot = txo.get_address()
 
         if len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
+        # TODO: add case for p2tr
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
@@ -472,6 +506,7 @@ class psbtInputProxy(psbtProxy):
         self.part_sig = {}
         # self.sighash = None
         self.subpaths = {}          # will typically be non-empty for all inputs
+        self.tap_subpaths = {}
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -514,7 +549,7 @@ class psbtInputProxy(psbtProxy):
 
         # sighash, but we're probably going to ignore anyway.
         self.sighash = SIGHASH_ALL if self.sighash is None else self.sighash
-        if self.sighash != SIGHASH_ALL:
+        if self.sighash not in VALID_SIGHASHES:
             # - someday we will expand to other types, but not yet
             raise FatalPSBTIssue('Can only do SIGHASH_ALL')
 
@@ -524,7 +559,8 @@ class psbtInputProxy(psbtProxy):
             # - seems harmless if they fool us into thinking already signed; we do nothing
             # - could also look at pubkey needed vs. sig provided
             # - could consider structure of MofN in p2sh cases
-            self.fully_signed = (len(self.part_sig) >= len(self.subpaths))
+            num_subpaths = len(self.tap_subpaths) if len(self.tap_subpaths) > 0 else len(self.subpaths)
+            self.fully_signed = len(self.part_sig) >= num_subpaths
         else:
             # No signatures at all yet for this input (typical non multisig)
             self.fully_signed = False
@@ -608,7 +644,7 @@ class psbtInputProxy(psbtProxy):
 
         self.amount = utxo.nValue
 
-        if not self.subpaths or self.fully_signed:
+        if not (self.subpaths or self.tap_subpaths) or self.fully_signed:
             # without xfp+path we will not be able to sign this input
             # - okay if fully signed
             # - okay if payjoin or other multi-signer (not multisig) txn
@@ -617,12 +653,15 @@ class psbtInputProxy(psbtProxy):
 
         self.is_multisig = False
         self.is_p2sh = False
+        self.is_p2tr = False
         which_key = None
 
-        # TODO: add taproot to utxo.get_address()
-        addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
+        addr_type, addr_or_pubkey, addr_is_segwit, addr_is_taproot = utxo.get_address()
         if addr_is_segwit and not self.is_segwit:
             self.is_segwit = True
+
+        if addr_is_taproot:
+            self.is_p2tr = True
 
         if addr_type == 'p2sh':
             # multisig input
@@ -777,6 +816,8 @@ class psbtInputProxy(psbtProxy):
             self.witness_script = val
         elif kt == PSBT_IN_SIGHASH_TYPE:
             self.sighash = unpack('<I', val)[0]
+        elif kt == PSBT_IN_TAP_BIP32_DERIVATION:
+            self.tap_subpaths[key[1:]] = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
             self.unknown[key] = val
@@ -1473,8 +1514,9 @@ class psbtObject(psbtProxy):
         # locktime
         rv.update(pack('<I', self.lock_time))
 
-        assert sighash_type == SIGHASH_ALL      # "only SIGHASH_ALL supported"
+        assert sighash_type in VALID_SIGHASHES  # "only SIGHASH_ALL supported"
         # SIGHASH_ALL==1 value
+        # TODO: use correct sighash for taproot
         rv.update(b'\x01\x00\x00\x00')
 
         fd.seek(old_pos)
@@ -1491,7 +1533,7 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_ALL      # add support for others here
+        assert sighash_type in VALID_SIGHASHES  # add support for others here
 
         if self.hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
