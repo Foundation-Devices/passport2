@@ -210,9 +210,14 @@ class ChainsBase:
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script[2:], tcc.codecs.BECH32_ENCODING_BECH32M)
 
         # OP_RETURN, 3 bytes of metadata
-        if script[0:2] == b'\x6a\x4c' and script[2] == ll - 3:
-            message = script[3:].decode()
-            return 'OP_RETURN:\n{}'.format(message)
+        if ll > 3 and script[0:2] == b'\x6a\x4c' and script[2] == ll - 3:
+            message = script[3:]
+            try:
+                decoded_message = message.decode()
+                return 'OP_RETURN:\n{}'.format(decoded_message)
+            except UnicodeDecodeError:
+                hex_data = message.hex()
+                return 'OP_RETURN:\n{}'.format(hex_data)
 
         raise ValueError('Unknown payment script', repr(script))
 
