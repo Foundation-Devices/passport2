@@ -363,7 +363,7 @@ class CTxOut(object):
 
         if len(self.scriptPubKey) == 34 and \
                 self.scriptPubKey[0] == 81 and self.scriptPubKey[1] == 32:
-            return 'p2tr', self.scriptPubKey[2:2 + 32], False, True
+            return 'p2tr', self.scriptPubKey[2:2 + 32], True, True
 
         if self.is_p2pkh():
             return 'p2pkh', self.scriptPubKey[3:3 + 20], False, False

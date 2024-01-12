@@ -24,6 +24,7 @@ from serializations import ser_compact_size, deser_compact_size, hash160, deser_
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES
 from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
+from ubinascii import hexlify as b2a_hex
 
 from public_constants import (
     PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
@@ -643,11 +644,13 @@ class psbtInputProxy(psbtProxy):
         # - also validates redeem_script when present
 
         self.amount = utxo.nValue
+        print("amount: {}".format(self.amount))
 
-        if not (self.subpaths or self.tap_subpaths) or self.fully_signed:
+        if (not self.subpaths and not self.tap_subpaths) or self.fully_signed:
             # without xfp+path we will not be able to sign this input
             # - okay if fully signed
             # - okay if payjoin or other multi-signer (not multisig) txn
+            print("required_key = None")
             self.required_key = None
             return
 
@@ -660,7 +663,7 @@ class psbtInputProxy(psbtProxy):
         if addr_is_segwit and not self.is_segwit:
             self.is_segwit = True
 
-        if addr_is_taproot:
+        if addr_is_taproot and not self.is_p2tr:
             self.is_p2tr = True
 
         if addr_type == 'p2sh':
@@ -730,10 +733,17 @@ class psbtInputProxy(psbtProxy):
                 which_key = addr_or_pubkey
 
         elif addr_type == 'p2tr':
-            self.is_taproot = True
-            # TODO: implement taproot handling
-            # Should be similar to p2pkh, but also need to check for scripts
+            # input is an x-only public key or merkle tree root
+            # TODO: handle tapscript tree
+            self.scriptSig = utxo.scriptPubKey
 
+            print("addr_or_pubkey: {}".format(b2a_hex(addr_or_pubkey)))
+
+            for n, tap_subpath in enumerate(self.tap_subpaths):
+                print("tap_subpath[n]: {}".format(b2a_hex(tap_subpath)))
+
+            if addr_or_pubkey in self.tap_subpaths:
+                which_key = addr_or_pubkey
         else:
             # we don't know how to "solve" this type of input
             pass
@@ -784,9 +794,8 @@ class psbtInputProxy(psbtProxy):
                 #
                 assert not self.is_multisig
                 self.scriptCode = b'\x19\x76\xa9\x14' + addr + b'\x88\xac'
-            if addr_type == 'p2tr':
-                # TODO: add implementation
-                assert(True)
+            elif addr_type == 'p2tr':
+                pass
             elif not self.scriptCode:
                 # Segwit P2SH. We need the witness script to be provided.
                 if not self.witness_script:
@@ -1353,8 +1362,13 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
+        for n, inp in enumerate(self.inputs):
+            print("n: {}, inp.fully_signed: {}".format(n, inp.fully_signed))
+
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
+
+        print("no_keys: {}".format(no_keys))
 
         gc.collect()
 
