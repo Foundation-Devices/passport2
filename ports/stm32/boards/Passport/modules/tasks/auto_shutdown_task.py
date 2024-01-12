@@ -7,7 +7,7 @@ from uasyncio import sleep_ms
 import utime
 import common
 import passport
-from utils import get_screen_brightness
+from utils import get_screen_brightness, has_seed
 
 
 async def auto_shutdown_task():
@@ -20,7 +20,8 @@ async def auto_shutdown_task():
         await sleep_ms(1000)
 
         # Get timeout in seconds, and current time
-        timeout = common.settings.get('shutdown_timeout', 5 * 60)
+        minutes = 5 if has_seed() else 10
+        timeout = common.settings.get('shutdown_timeout', minutes * 60)
         now = utime.ticks_ms()
 
         # Dim screen for 30s before shutdown
