@@ -1445,6 +1445,9 @@ def escape_text(text):
 def stylize_address(address):
     from styles.colors import TEXT_GREY_HEX, BLACK_HEX
 
+    if address.startswith("OP_RETURN"):
+        return address
+
     num_wm = 0
 
     for i in range(len(address)):
