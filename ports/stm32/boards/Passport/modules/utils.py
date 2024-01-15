@@ -1338,6 +1338,24 @@ def get_words_from_seed(seed):
         return (None, '{}'.format(e))
 
 
+# Requires words to be a single string, space-separated
+def get_seed_from_words(words):
+    from foundation import bip39
+
+    entropy = bytearray(33)  # Includes an extra byte for the checksum bits
+    length = bip39.mnemonic_to_bits(words, entropy)
+
+    trim_pos = 0
+    if length == 264:  # 24 words x 11 bits each
+        trim_pos = 32
+    elif length == 198:  # 18 words x 11 bits each
+        trim_pos = 24
+    elif length == 132:  # 12 words x 11 bits each
+        trim_pos = 16
+    entropy = entropy[:trim_pos]  # Trim off the excess (including checksum bits)
+    return entropy
+
+
 def nostr_pubkey_from_pk(pk):
     from trezorcrypto import secp256k1
     return secp256k1.publickey(pk, True)[1:]
@@ -1514,6 +1532,16 @@ def check_pin_prefix_hash(pin):
     new_pin_sha = sha256(pin[0:4])
     true_pin_sha = common.settings.get('pin_prefix_hash')
     return all(x == y for x, y in zip(new_pin_sha, true_pin_sha))
+
+
+def insufficient_randomness(seed_words):
+    word_frequency = {}
+    for word in seed_words:
+        word_frequency[word] = word_frequency.get(word, 0) + 1
+        if word_frequency[word] > 2:
+            return True
+
+    return False
 
 
 # EOF

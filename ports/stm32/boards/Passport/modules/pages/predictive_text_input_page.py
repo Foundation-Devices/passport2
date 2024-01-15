@@ -15,6 +15,8 @@ import microns
 from predictive_utils import get_words_matching_prefix, word_to_keypad_numbers
 import passport
 
+RANDOM_WORD_STRING = "Generate Final Word"
+
 
 class PredictiveTextInputPage(Page):
     '''
@@ -30,7 +32,8 @@ class PredictiveTextInputPage(Page):
                  initial_words=[],
                  initial_prefixes=[],
                  left_micron=microns.Back,
-                 right_micron=microns.Forward):
+                 right_micron=microns.Forward,
+                 start_index=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          right_micron=right_micron,
@@ -40,7 +43,7 @@ class PredictiveTextInputPage(Page):
         self.title = title
         self.word_list = word_list
         self.total_words = total_words
-        self.word_idx = 0
+        self.word_idx = start_index if (start_index is not None and start_index < self.total_words) else 0
         self.prediction_idx = 0
         self.selected_words = initial_words
         self.prefixes = initial_prefixes
@@ -56,7 +59,7 @@ class PredictiveTextInputPage(Page):
                 default.text_align(lv.TEXT_ALIGN.CENTER)
             self.add_child(self.title_view)
 
-        self.initial_prefix = self.prefixes[self.word_idx] if len(self.prefixes) > 0 else ''
+        self.initial_prefix = self.prefixes[self.word_idx] if len(self.prefixes) > self.word_idx else ''
 
         self.input = TextInput(text=self.initial_prefix, input_mode=InputMode.NUMERIC)
         self.input.set_width(lv.pct(100))
@@ -94,6 +97,8 @@ class PredictiveTextInputPage(Page):
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
             self.predictions = get_words_matching_prefix(prefix, max=5, word_list=self.word_list)
+        elif self.word_idx == self.total_words - 1:
+            self.predictions = [RANDOM_WORD_STRING]
         else:
             self.predictions = []
 
@@ -148,31 +153,47 @@ class PredictiveTextInputPage(Page):
         return self.title.format(word_idx=self.word_idx + 1, total_words=self.total_words)
 
     def right_action(self, is_pressed):
-        if not is_pressed:
-            # TODO: Get the index of the selected word (see how menu_page does it)
-            #       Then add to the list of words
-            if len(self.predictions) > 0:
-                set_list(self.selected_words, self.word_idx, self.predictions[self.prediction_idx])
+        if is_pressed:
+            return
 
-                # Fill out the prefix to the full length of the selected word so the prediction
-                # list has a single item in it.
-                set_list(self.prefixes, self.word_idx, str(
-                    word_to_keypad_numbers(self.predictions[self.prediction_idx])))
-                # print('selected_words={}'.format(self.selected_words))
-                if len(self.selected_words) == self.total_words and self.word_idx == self.total_words - 1:
-                    # print('Returning selected_words and prefixes!')
-                    self.set_result((self.selected_words, self.prefixes))
-                    return
-                else:
-                    # Reset (or lookup the prediction prefix and go to the next word index
-                    self.word_idx += 1
-                    prefix_text = ''
-                    if self.word_idx < len(self.prefixes):
-                        prefix_text = self.prefixes[self.word_idx]
-                    self.input.set_text(prefix_text)
+        # TODO: Get the index of the selected word (see how menu_page does it)
+        #       Then add to the list of words
+        if len(self.predictions) <= 0:
+            return
 
-                    self.update_title()
-                    self.update_predictions()
+        # "Random Final Word" was selected
+        if len(self.predictions) == 1 and self.predictions[0] == RANDOM_WORD_STRING:
+            # Last value is "get random last word"
+
+            # If we've previously failed importing a seed, de-select the last word
+            if len(self.selected_words) == self.total_words:
+                self.selected_words = self.selected_words[:-1]
+
+            self.set_result((self.selected_words, self.prefixes, True))
+            return
+
+        set_list(self.selected_words, self.word_idx, self.predictions[self.prediction_idx])
+
+        # Fill out the prefix to the full length of the selected word so the prediction
+        # list has a single item in it.
+        set_list(self.prefixes, self.word_idx, str(
+            word_to_keypad_numbers(self.predictions[self.prediction_idx])))
+        # print('selected_words={}'.format(self.selected_words))
+        if len(self.selected_words) == self.total_words and self.word_idx == self.total_words - 1:
+            # print('Returning selected_words and prefixes!')
+            # Last value is "get random last word"
+            self.set_result((self.selected_words, self.prefixes, False))
+            return
+        else:
+            # Reset (or lookup the prediction prefix and go to the next word index
+            self.word_idx += 1
+            prefix_text = ''
+            if self.word_idx < len(self.prefixes):
+                prefix_text = self.prefixes[self.word_idx]
+            self.input.set_text(prefix_text)
+
+            self.update_title()
+            self.update_predictions()
 
     def left_action(self, is_pressed):
         if not is_pressed:

@@ -30,7 +30,7 @@ class InitialSeedSetupFlow(Flow):
 
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED,
-            text='Next, let\'s create or restore a wallet seed.',
+            text='Next, let\'s create or import a wallet seed.',
             left_micron=left_micron, right_micron=microns.Forward).show()
         if result:
             self.goto(self.show_seed_setup_menu)
@@ -44,7 +44,7 @@ class InitialSeedSetupFlow(Flow):
 
         options = [{'label': 'Create New Seed',
                     'value': lambda: NewSeedFlow(full_backup=True)},
-                   {'label': 'Restore Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
+                   {'label': 'Import Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
                    {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
 
         flow = await ChooserPage(
