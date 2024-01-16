@@ -25,13 +25,17 @@ from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHA
 from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 from ubinascii import hexlify as b2a_hex
+from taproot import output_script
 
 from public_constants import (
     PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
     PSBT_IN_PARTIAL_SIG, PSBT_IN_SIGHASH_TYPE, PSBT_IN_REDEEM_SCRIPT,
     PSBT_IN_WITNESS_SCRIPT, PSBT_IN_BIP32_DERIVATION, PSBT_IN_FINAL_SCRIPTSIG,
     PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
-    PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH, PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION
+    PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH, PSBT_IN_TAP_BIP32_DERIVATION,
+    PSBT_OUT_TAP_BIP32_DERIVATION, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_SCRIPT_SIG,
+    PSBT_IN_TAP_LEAF_SCRIPT, PSBT_IN_TAP_INTERNAL_KEY, PSBT_IN_TAP_MERKLE_ROOT,
+    PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE, PSBT_OUT_TAP_BIP32_DERIVATION
 )
 
 # print some things
@@ -272,8 +276,9 @@ class psbtProxy:
             v = v[(num_tap_hashes * 32 + compact_length):]
             vl = len(v)
 
-            # force them to use a derived key, never the master
-            assert vl >= 8, 'too short key path'
+            # Master key can be used if there is no tapscript tree
+            if tap_hashes:
+                assert vl >= 8, 'too short key path'
             assert (vl % 4) == 0, 'corrupt key path'
             assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
 
@@ -491,13 +496,15 @@ class psbtInputProxy(psbtProxy):
     # only part-sigs have a key to be stored.
     no_keys = {PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO, PSBT_IN_SIGHASH_TYPE,
                PSBT_IN_REDEEM_SCRIPT, PSBT_IN_WITNESS_SCRIPT, PSBT_IN_FINAL_SCRIPTSIG,
-               PSBT_IN_FINAL_SCRIPTWITNESS}
+               PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_INTERNAL_KEY,
+               PSBT_IN_TAP_MERKLE_ROOT}
 
     blank_flds = ('unknown',
                   'utxo', 'witness_utxo', 'sighash',
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
-                  'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig', 'is_taproot')
+                  'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -508,6 +515,8 @@ class psbtInputProxy(psbtProxy):
         # self.sighash = None
         self.subpaths = {}          # will typically be non-empty for all inputs
         self.tap_subpaths = {}
+        self.tap_script_sigs = {}
+        self.tap_leaf_scripts = {}
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -521,7 +530,6 @@ class psbtInputProxy(psbtProxy):
         # self.is_segwit = None
         # self.is_multisig = None
         # self.is_p2sh = False
-        # self.is_taproot = None
 
         # self.required_key = None    # which of our keys will be used to sign input
         # self.scriptSig = None
@@ -739,11 +747,13 @@ class psbtInputProxy(psbtProxy):
 
             print("addr_or_pubkey: {}".format(b2a_hex(addr_or_pubkey)))
 
-            for n, tap_subpath in enumerate(self.tap_subpaths):
-                print("tap_subpath[n]: {}".format(b2a_hex(tap_subpath)))
-
-            if addr_or_pubkey in self.tap_subpaths:
-                which_key = addr_or_pubkey
+            if len(self.tap_subpaths) == 1:  # No script path
+                subpath = list(self.tap_subpaths.items())[0]
+                pubkey, (path, tap_hashes) = subpath
+                tweaked_pubkey = output_script(pubkey, None)[2:]
+                print("tweaked_pubkey: {}".format(b2a_hex(tweaked_pubkey)))
+                if path[0] == my_xfp and tweaked_pubkey == addr_or_pubkey:
+                    which_key = pubkey
         else:
             # we don't know how to "solve" this type of input
             pass
@@ -825,8 +835,18 @@ class psbtInputProxy(psbtProxy):
             self.witness_script = val
         elif kt == PSBT_IN_SIGHASH_TYPE:
             self.sighash = unpack('<I', val)[0]
+        elif kt == PSBT_IN_TAP_KEY_SIG:
+            self.tap_key_sig = val
+        elif kt == PSBT_IN_TAP_SCRIPT_SIG:
+            self.tap_script_sigs[key[1:]] = val
+        elif kt == PSBT_IN_TAP_LEAF_SCRIPT:
+            self.tap_leaf_scripts[key[1:]] = val
         elif kt == PSBT_IN_TAP_BIP32_DERIVATION:
             self.tap_subpaths[key[1:]] = val
+        elif kt == PSBT_IN_TAP_INTERNAL_KEY:
+            self.tap_internal_key = val
+        elif kt == PSBT_IN_TAP_MERKLE_ROOT:
+            self.tap_merkle_root = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
             self.unknown[key] = val
@@ -1364,6 +1384,7 @@ class psbtObject(psbtProxy):
         # - TODO: but what if not SIGHASH_ALL
         for n, inp in enumerate(self.inputs):
             print("n: {}, inp.fully_signed: {}".format(n, inp.fully_signed))
+            print("inp.required_key: {}".format(b2a_hex(inp.required_key)))
 
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
