@@ -8,7 +8,8 @@ from pages import ChooserPage
 
 
 class SinglesigMultisigChooserPage(ChooserPage):
-    def __init__(self, multisigs, card_header={'title': 'Single/Multisig'}, initial_value=None):
+    def __init__(self, multisigs, card_header={'title': 'Single/Multisig'}, initial_value=None,
+                 left_micron=None, right_micron=None):
         options = [{'label': 'Single-sig', 'value': ('single-sig', None)}]
 
         for ms in multisigs:
@@ -18,4 +19,6 @@ class SinglesigMultisigChooserPage(ChooserPage):
         super().__init__(
             card_header=card_header,
             options=options,
-            initial_value=initial_value or options[0].get('value'))
+            initial_value=initial_value or options[0].get('value'),
+            left_micron=left_micron,
+            right_micron=right_micron)

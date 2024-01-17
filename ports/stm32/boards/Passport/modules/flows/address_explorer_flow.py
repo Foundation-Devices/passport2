@@ -48,7 +48,9 @@ class AddressExplorerFlow(Flow):
             return
 
         result = await SinglesigMultisigChooserPage(
-            initial_value=self.sig_type, multisigs=multisigs).show()
+            initial_value=self.sig_type,
+            multisigs=multisigs,
+            left_micron=microns.Back).show()
 
         if result is None:
             self.set_result(False)
@@ -65,8 +67,9 @@ class AddressExplorerFlow(Flow):
     async def choose_addr_type(self):
         from pages import AddressTypeChooserPage
         from wallets.utils import get_deriv_path_from_addr_type_and_acct
+        import microns
 
-        result = await AddressTypeChooserPage().show()
+        result = await AddressTypeChooserPage(left_micron=microns.Back).show()
 
         if not result:
             if not self.back():
@@ -79,10 +82,12 @@ class AddressExplorerFlow(Flow):
 
     async def choose_change(self):
         from pages import YesNoChooserPage
+        import microns
 
         result = await YesNoChooserPage(text="\nExplore receive or change addresses?",
                                         yes_text="Receive",
-                                        no_text="Change").show()
+                                        no_text="Change",
+                                        left_micron=microns.Back).show()
 
         if result is None:
             self.back()
@@ -162,7 +167,7 @@ Right: +1'''
 
         while True:
             result = await AddressExplorerPage(msg,
-                                               left_micron=microns.Cancel,
+                                               left_micron=microns.Back,
                                                right_micron=microns.ScanQR,
                                                margins=MARGIN_FOR_ADDRESSES).show()
 

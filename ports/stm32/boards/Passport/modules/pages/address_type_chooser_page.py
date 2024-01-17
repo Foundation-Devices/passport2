@@ -16,8 +16,11 @@ class AddressTypeChooserPage(ChooserPage):
         {'label': 'Taproot', 'value': AF_P2TR},
     ]
 
-    def __init__(self, card_header={'title': 'Address Type'}, initial_value=None):
+    def __init__(self, card_header={'title': 'Address Type'}, initial_value=None,
+                 left_micron=None, right_micron=None):
         super().__init__(
             card_header=card_header,
             options=self.OPTIONS,
-            initial_value=initial_value or self.OPTIONS[0].get('value'))
+            initial_value=initial_value or self.OPTIONS[0].get('value'),
+            left_micron=left_micron,
+            right_micron=right_micron)
