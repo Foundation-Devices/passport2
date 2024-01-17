@@ -167,7 +167,7 @@ Right: +1'''
                                                margins=MARGIN_FOR_ADDRESSES).show()
 
             if not result:
-                self.set_result(True)
+                self.back()
                 return
             elif result is True:
                 await ShowQRPage(qr_data=self.address,
