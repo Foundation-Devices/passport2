@@ -354,26 +354,26 @@ class CTxOut(object):
         if len(self.scriptPubKey) == 22 and \
                 self.scriptPubKey[0] == 0 and self.scriptPubKey[1] == 20:
             # aka. P2WPKH
-            return 'p2pkh', self.scriptPubKey[2:2 + 20], True, False
+            return 'p2pkh', self.scriptPubKey[2:2 + 20], True
 
         if len(self.scriptPubKey) == 34 and \
                 self.scriptPubKey[0] == 0 and self.scriptPubKey[1] == 32:
             # aka. P2WSH
-            return 'p2sh', self.scriptPubKey[2:2 + 32], True, False
+            return 'p2sh', self.scriptPubKey[2:2 + 32], True
 
         if len(self.scriptPubKey) == 34 and \
                 self.scriptPubKey[0] == 81 and self.scriptPubKey[1] == 32:
-            return 'p2tr', self.scriptPubKey[2:2 + 32], True, True
+            return 'p2tr', self.scriptPubKey[2:2 + 32], True
 
         if self.is_p2pkh():
-            return 'p2pkh', self.scriptPubKey[3:3 + 20], False, False
+            return 'p2pkh', self.scriptPubKey[3:3 + 20], False
 
         if self.is_p2sh():
-            return 'p2sh', self.scriptPubKey[2:2 + 20], False, False
+            return 'p2sh', self.scriptPubKey[2:2 + 20], False
 
         if self.is_p2pk():
             # rare, pay to full pubkey
-            return 'p2pk', self.scriptPubKey[2:2 + 33], False, False
+            return 'p2pk', self.scriptPubKey[2:2 + 33], False
 
         # If this is reached, we do not understand the output well
         # enough to allow the user to authorize the spend, so fail hard.

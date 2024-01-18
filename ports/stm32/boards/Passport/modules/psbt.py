@@ -372,7 +372,7 @@ class psbtOutputProxy(psbtProxy):
             return
 
         # - must match expected address for this output, coming from unsigned txn
-        addr_type, addr_or_pubkey, is_segwit, is_taproot = txo.get_address()
+        addr_type, addr_or_pubkey, is_segwit = txo.get_address()
 
         if len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
