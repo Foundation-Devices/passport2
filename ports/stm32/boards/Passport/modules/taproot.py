@@ -32,14 +32,14 @@ G = (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
 
 # Point = Tuple[int, int]
 
-# This implementation can be sped up by storing the midstate after hashing
-# tag_hash instead of rehashing it all the time.
-# def tagged_hash(tag, msg) -> bytes:
-#     tag_hash = uhashlib.sha256(tag.encode()).digest()
-#     return uhashlib.sha256(tag_hash + tag_hash + msg).digest()
+
+def tagged_hash(tag, msg):
+    from serializations import sha256
+
+    tag_hash = sha256(tag.encode())
+    return sha256(tag_hash + tag_hash + msg)
 
 
-# TODO: optimize for TapTweak
 def hash_tap_tweak(data):
     from serializations import sha256
     from public_constants import TAP_TWEAK_SHA256
@@ -118,34 +118,35 @@ def tweak_internal_key(internal_key, h):
     P = lift_x(int_from_bytes(internal_key))
     if P is None:
         raise ValueError
-    # TODO: use trezor point_add
     Q = point_add(P, scalar_multiply(t))
     return 0 if has_even_y(Q) else 1, bytes_from_int(x(Q))
 
 
-# def taproot_tweak_seckey(seckey0, h):
-#     seckey0 = int_from_bytes(seckey0)
-#     P = point_mul(G, seckey0)
-#     seckey = seckey0 if has_even_y(P) else SECP256K1_ORDER - seckey0
-#     t = int_from_bytes(tagged_hash("TapTweak", bytes_from_int(x(P)) + h))
-#     if t >= SECP256K1_ORDER:
-#         raise ValueError
-#     return bytes_from_int((seckey + t) % SECP256K1_ORDER)
-#
-#
-# def taproot_tree_helper(script_tree):
-#     if isinstance(script_tree, tuple):
-#         leaf_version, script = script_tree
-#         h = tagged_hash("TapLeaf", bytes([leaf_version]) + ser_script(script))
-#         return ([((leaf_version, script), bytes())], h)
-#     left, left_h = taproot_tree_helper(script_tree[0])
-#     right, right_h = taproot_tree_helper(script_tree[1])
-#     ret = [(l, c + right_h) for l, c in left] + [(l, c + left_h) for l, c in right]
-#     if right_h < left_h:
-#         left_h, right_h = right_h, left_h
-#     return (ret, tagged_hash("TapBranch", left_h + right_h))
-#
-#
+def taproot_tweak_seckey(seckey0, h):
+    seckey0 = int_from_bytes(seckey0)
+    P = scalar_multiply(seckey0)
+    seckey = seckey0 if has_even_y(P) else SECP256K1_ORDER - seckey0
+    t = int_from_bytes(hash_tap_tweak(bytes_from_int(x(P)) + h))
+    if t >= SECP256K1_ORDER:
+        raise ValueError
+    return bytes_from_int((seckey + t) % SECP256K1_ORDER)
+
+
+def taproot_tree_helper(script_tree):
+    from serializations import ser_string
+
+    if isinstance(script_tree, tuple):
+        leaf_version, script = script_tree
+        h = tagged_hash("TapLeaf", bytes([leaf_version]) + ser_string(script))
+        return ([((leaf_version, script), bytes())], h)
+    left, left_h = taproot_tree_helper(script_tree[0])
+    right, right_h = taproot_tree_helper(script_tree[1])
+    ret = [(leaf, c + right_h) for leaf, c in left] + [(leaf, c + left_h) for leaf, c in right]
+    if right_h < left_h:
+        left_h, right_h = right_h, left_h
+    return (ret, tagged_hash("TapBranch", left_h + right_h))
+
+
 def output_script(internal_pubkey, script_tree):
     """Given a internal public key and a tree of scripts, compute the output script.
     script_tree is either:
@@ -159,3 +160,25 @@ def output_script(internal_pubkey, script_tree):
         _, h = taproot_tree_helper(script_tree)
     _, output_pubkey = tweak_internal_key(internal_pubkey, h)
     return bytes([0x51, 0x20]) + output_pubkey
+
+
+def taproot_sign_key(script_tree, internal_seckey, hash_type, sighash):
+    from foundation import secp256k1
+
+    if script_tree is None:
+        h = bytes()
+    else:
+        _, h = taproot_tree_helper(script_tree)
+    output_seckey = taproot_tweak_seckey(internal_seckey, h)
+    sig = secp256k1.schnorr_sign(sighash, output_seckey)
+    if hash_type != 0:
+        sig += bytes([hash_type])
+    return [sig]
+
+
+def taproot_sign_script(internal_pubkey, script_tree, script_num, inputs):
+    info, h = taproot_tree_helper(script_tree)
+    (leaf_version, script), path = info[script_num]
+    output_pubkey_y_parity, _ = tweak_internal_key(internal_pubkey, h)
+    pubkey_data = bytes([output_pubkey_y_parity + leaf_version]) + internal_pubkey
+    return inputs + [script, pubkey_data + path]

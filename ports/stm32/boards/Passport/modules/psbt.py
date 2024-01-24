@@ -21,11 +21,11 @@ from public_constants import MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
-from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES
+from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
 from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 from ubinascii import hexlify as b2a_hex
-from taproot import output_script
+from taproot import output_script, tagged_hash
 
 from public_constants import (
     PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
@@ -504,7 +504,7 @@ class psbtInputProxy(psbtProxy):
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root', 'tap_sig')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -538,6 +538,7 @@ class psbtInputProxy(psbtProxy):
 
         # after signing, we'll have a signature to add to output PSBT
         # self.added_sig = None
+        # self.tap_sig = None
 
         self.parse(fd)
         gc.collect()
@@ -918,6 +919,10 @@ class psbtObject(psbtProxy):
         self.hashPrevouts = None
         self.hashSequence = None
         self.hashOutputs = None
+
+        # taproot additions to reused segwit hashes
+        self.hashAmounts = None
+        self.hashScriptPubkeys = None
 
         # this points to a MS wallet, during operation
         # - we are only supporting a single multisig wallet during signing
@@ -1547,7 +1552,6 @@ class psbtObject(psbtProxy):
 
         assert sighash_type in VALID_SIGHASHES  # "only SIGHASH_ALL supported"
         # SIGHASH_ALL==1 value
-        # TODO: use correct sighash for taproot
         rv.update(b'\x01\x00\x00\x00')
 
         fd.seek(old_pos)
@@ -1555,7 +1559,6 @@ class psbtObject(psbtProxy):
         # double SHA256
         return trezorcrypto.sha256(rv.digest()).digest()
 
-    # TODO: add taproot sighashes
     def make_txn_segwit_sighash(self, replace_idx, replacement, amount, scriptCode, sighash_type):
         # Implement BIP 143 hashing algo for signature of segwit programs.
         # see <https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki>
@@ -1564,7 +1567,7 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type in VALID_SIGHASHES  # add support for others here
+        assert sighash_type == SIGHASH_ALL  # add support for others here
 
         if self.hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1621,6 +1624,71 @@ class psbtObject(psbtProxy):
 
         # double SHA256
         return trezorcrypto.sha256(rv.digest()).digest()
+
+    def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None, ext_flag=0):
+        # Implement BIP 341 hashing algo for signature of segwit programs.
+        # see <https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules>
+
+        fd = self.fd
+        old_pos = fd.tell()
+
+        assert sighash_type == SIGHASH_DEFAULT
+
+        if self.hashPrevouts is None:
+            # First time thru, we'll need to hash up this stuff.
+
+            prevouts = trezorcrypto.sha256()
+            amounts = trezorcrypto.sha256()
+            script_pubkeys = trezorcrypto.sha256()
+            sequences = trezorcrypto.sha256()
+
+            # input side
+            for in_idx, txi in self.input_iter():
+                utxo = self.inputs[in_idx].get_utxo(txi.prevout.n)
+                prevouts.update(txi.prevout.serialize())
+                amounts.update(pack("<q", utxo.nValue))
+                script_pubkeys.update(ser_string(utxo.scriptPubKey))
+                sequences.update(pack("<I", txi.nSequence))
+
+            self.hashPrevouts = prevouts.digest()
+            self.hashAmounts = amounts.digest()
+            self.hashScriptPubkeys = script_pubkeys.digest()
+            self.hashSequence = sequences.digest()
+
+            del prevouts, amounts, script_pubkeys, sequences, txi
+
+            # output side
+            outputs = trezorcrypto.sha256()
+            for out_idx, txo in self.output_iter():
+                outputs.update(txo.serialize())
+
+            self.hashOutputs = outputs.digest()
+
+            del outputs, txo
+            gc.collect()
+
+        data = bytes([sighash_type])
+        data += pack('<i', self.txn_version)
+        data += pack('<I', self.lock_time)
+        data += self.hashPrevouts
+        data += self.hashAmounts
+        data += self.hashScriptPubkeys
+        data += self.hashSequence
+        data += self.hashOutputs
+
+        spend_type = (2 * ext_flag) + (1 if annex is not None else 0)
+        data += pack('B', spend_type)
+
+        data += pack('<I', input_idx)
+
+        if annex is not None:
+            data += trezorcrypto.sha256(ser_string(annex)).digest()
+
+        # TODO: support bip342 script extensions:
+        # see <https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension>
+
+        fd.seek(old_pos)
+        return tagged_hash('TapSighash', bytes([0]) + data)
 
     def is_complete(self):
         # Are all the inputs (now) signed?
