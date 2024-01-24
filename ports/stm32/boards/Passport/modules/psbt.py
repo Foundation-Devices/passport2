@@ -664,15 +664,11 @@ class psbtInputProxy(psbtProxy):
 
         self.is_multisig = False
         self.is_p2sh = False
-        self.is_p2tr = False
         which_key = None
 
-        addr_type, addr_or_pubkey, addr_is_segwit, addr_is_taproot = utxo.get_address()
+        addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
         if addr_is_segwit and not self.is_segwit:
             self.is_segwit = True
-
-        if addr_is_taproot and not self.is_p2tr:
-            self.is_p2tr = True
 
         if addr_type == 'p2sh':
             # multisig input
