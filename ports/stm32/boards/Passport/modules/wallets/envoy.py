@@ -37,17 +37,6 @@ def create_envoy_export(sw_wallet=None,
     chain = chains.current_chain()
     xfp = settings.get('xfp')
 
-    with stash.SensitiveValues() as sv:
-        acct_path = "m/{mode}'/{coin}'/{acct}'".format(
-            mode=mode,
-            coin=chain.b44_cointype,
-            acct=acct_num)
-
-        child_node = sv.derive_path(acct_path)
-        xpub = sv.chain.serialize_public(child_node, AF_CLASSIC)
-        # print('xfp to export: {}'.format(xfp))
-        # print('xpub to export: {}'.format(xpub))
-
     accounts = get_accounts_by_xfp(xfp)
     acct_name = ''
     if accounts is not None and len(accounts) > 0:
