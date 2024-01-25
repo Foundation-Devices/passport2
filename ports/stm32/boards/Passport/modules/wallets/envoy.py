@@ -98,12 +98,8 @@ def create_envoy_export(sw_wallet=None,
     accts = [{'fmt': addr_type, 'deriv': acct_path, 'acct': acct_num}]
 
     msg = ujson.dumps(rv)
-
-    if export_mode == 'qr':
-        return (ur.new_bytes(msg), accts)
     # print('msg={}'.format(to_str(msg)))
-
-    return (msg, accts)
+    return (ur.new_bytes(msg), accts)
 
 
 EnvoyWallet = {
@@ -112,8 +108,7 @@ EnvoyWallet = {
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_envoy_export},
     ],
     'export_modes': [
-        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
-        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-envoy.json'}
+        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2}
     ],
     'skip_address_validation': False,
     'skip_multisig_import': True,
