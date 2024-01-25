@@ -16,6 +16,10 @@ class RenameDeviceFlow(Flow):
         super().__init__(initial_state=self.rename_device, name='NameDeviceFLow')
 
     async def rename_device(self):
+        from utils import spinner_task
+        from tasks import delay_task
+        from pages import SuccessPage
+
         name = settings.get('device_name', None) or ''
         result = await TextInputPage(initial_text=name,
                                      max_length=MAX_ACCOUNT_NAME_LEN,
@@ -37,4 +41,8 @@ class RenameDeviceFlow(Flow):
             return
 
         settings.set('device_name', result)
+
+        await spinner_task('Renaming Device', delay_task, args=[1000, False])
+        await SuccessPage(text='Device Renamed Successfully').show()
+
         self.set_result(True)
