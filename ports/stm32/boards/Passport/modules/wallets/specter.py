@@ -22,6 +22,6 @@ SpecterWallet = {
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-specter.json',
          'filename_pattern_multisig': '{xfp}-specter-multisig.json', 'multisig_import_mode': 'qr'}
     ],
-    'select_addr_type': True,
-    'addr_options': [AF_P2WPKH, AF_P2TR],
+    # 'select_addr_type': True,
+    # 'addr_options': [AF_P2WPKH, AF_P2TR],
 }
