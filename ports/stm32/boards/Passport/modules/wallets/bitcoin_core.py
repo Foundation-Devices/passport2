@@ -115,6 +115,6 @@ BitcoinCoreWallet = {
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-bitcoin-core.txt', 'ext': '.txt',
          'filename_pattern_multisig': '{xfp}-bitcoin-core-multisig.json'}
     ],
-    'select_addr_type': True,
-    'addr_options': [AF_P2WPKH, AF_P2TR]
+    # 'select_addr_type': True,
+    # 'addr_options': [AF_P2WPKH, AF_P2TR]
 }
