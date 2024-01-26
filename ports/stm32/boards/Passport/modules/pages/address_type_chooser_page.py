@@ -17,7 +17,12 @@ class AddressTypeChooserPage(ChooserPage):
         (AF_P2TR, 'Taproot'),
     ])
 
-    def __init__(self, card_header={'title': 'Address Type'}, initial_value=None, options=None, left_micron=None, right_micron=None):
+    def __init__(self,
+                 card_header={'title': 'Address Type'},
+                 initial_value=None,
+                 options=None,
+                 left_micron=None,
+                 right_micron=None):
 
         if options is None:
             options = list(self.LABELS.keys())
