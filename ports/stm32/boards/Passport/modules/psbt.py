@@ -35,7 +35,7 @@ from public_constants import (
     PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH, PSBT_IN_TAP_BIP32_DERIVATION,
     PSBT_OUT_TAP_BIP32_DERIVATION, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_SCRIPT_SIG,
     PSBT_IN_TAP_LEAF_SCRIPT, PSBT_IN_TAP_INTERNAL_KEY, PSBT_IN_TAP_MERKLE_ROOT,
-    PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE, PSBT_OUT_TAP_BIP32_DERIVATION
+    PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE
 )
 
 # print some things
@@ -199,13 +199,23 @@ class psbtProxy:
         out_fd.write(key)
 
         if isinstance(val, tuple):
-            (pos, ll) = val
-            out_fd.write(ser_compact_size(ll))
-            self.fd.seek(pos)
-            while ll:
-                t = self.fd.read(min(64, ll))
-                out_fd.write(t)
-                ll -= len(t)
+            if ktype in (PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION):
+                path, tap_hashes = val
+                output = ser_compact_size(len(tap_hashes))
+                for h in tap_hashes:
+                    output += h
+                for element in path:
+                    output += pack('<I', element)
+                out_fd.write(ser_compact_size(len(output)))
+                out_fd.write(output)
+            else:
+                (pos, ll) = val
+                out_fd.write(ser_compact_size(ll))
+                self.fd.seek(pos)
+                while ll:
+                    t = self.fd.read(min(64, ll))
+                    out_fd.write(t)
+                    ll -= len(t)
 
         elif isinstance(val, list):
             # for subpaths lists (LE32 ints)
@@ -303,13 +313,15 @@ class psbtProxy:
 class psbtOutputProxy(psbtProxy):
     no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT}
     blank_flds = ('unknown', 'subpaths', 'redeem_script', 'witness_script',
-                  'is_change', 'num_our_keys', 'tap_subpaths')
+                  'is_change', 'num_our_keys', 'tap_internal_key', 'tap_tree',
+                  'tap_subpaths')
 
     def __init__(self, fd, idx):
         super().__init__()
 
         # things we track
         # self.subpaths = None        # a dictionary if non-empty
+        # self.tap_subpaths = None
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -327,6 +339,10 @@ class psbtOutputProxy(psbtProxy):
             self.redeem_script = val
         elif kt == PSBT_OUT_WITNESS_SCRIPT:
             self.witness_script = val
+        elif kt == PSBT_OUT_TAP_INTERNAL_KEY:
+            self.tap_internal_key = val
+        elif kt == PSBT_OUT_TAP_TREE:
+            self.tap_tree = val
         elif kt == PSBT_OUT_TAP_BIP32_DERIVATION:
             if not self.tap_subpaths:
                 self.tap_subpaths = {}
@@ -348,6 +364,16 @@ class psbtOutputProxy(psbtProxy):
 
         if self.witness_script:
             wr(PSBT_OUT_WITNESS_SCRIPT, self.witness_script)
+
+        if self.tap_internal_key:
+            wr(PSBT_OUT_TAP_INTERNAL_KEY, self.tap_internal_key)
+
+        if self.tap_tree:
+            wr(PSBT_OUT_TAP_TREE, self.tap_tree)
+
+        if self.tap_subpaths:
+            for k in self.tap_subpaths:
+                wr(PSBT_OUT_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])
@@ -374,10 +400,11 @@ class psbtOutputProxy(psbtProxy):
         # - must match expected address for this output, coming from unsigned txn
         addr_type, addr_or_pubkey, is_segwit = txo.get_address()
 
-        if len(self.subpaths) == 1:
+        if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
-        # TODO: add case for p2tr
+        elif self.tap_subpaths and len(self.tap_subpaths) == 1:
+            expect_pubkey, = self.tap_subpaths.keys()
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
@@ -473,8 +500,7 @@ class psbtOutputProxy(psbtProxy):
             assert len(addr_or_pubkey) == 20
             expect_pkh = hash160(expect_pubkey)
         elif addr_type == 'p2tr':
-            # TODO: implement handling
-            assert(True)
+            expect_pkh = output_script(expect_pubkey, None)[2:]
         else:
             # we don't know how to "solve" this type of input
             return
@@ -878,6 +904,15 @@ class psbtInputProxy(psbtProxy):
 
         if self.witness_script:
             wr(PSBT_IN_WITNESS_SCRIPT, self.witness_script)
+
+        if self.tap_key_sig:
+            wr(PSBT_IN_TAP_KEY_SIG, self.tap_key_sig)
+
+        for k in self.tap_subpaths:
+            wr(PSBT_IN_TAP_BIP32_DERIVATION, self.tap_subpaths, k)
+
+        if self.tap_internal_key:
+            wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
 
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])

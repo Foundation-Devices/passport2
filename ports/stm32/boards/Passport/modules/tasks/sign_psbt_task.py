@@ -82,7 +82,7 @@ async def sign_psbt_task(on_done, psbt):
                     which_key = inp.required_key
 
                     assert not inp.added_sig, "already done??"
-                    assert not inp.tap_sig, "already done taproot??"
+                    assert not inp.tap_key_sig, "already done taproot??"
 
                     if len(inp.subpaths) > 0 and \
                         (inp.subpaths[which_key][0] == psbt.my_xfp or
@@ -120,7 +120,7 @@ async def sign_psbt_task(on_done, psbt):
                 # Do the ACTUAL signature ... finally!!!
                 if len(inp.tap_subpaths) > 0:
                     # TODO: handle taproot scripts
-                    inp.tap_sig = taproot_sign_key(None, pk, inp.sighash, digest)
+                    inp.tap_key_sig = taproot_sign_key(None, pk, inp.sighash, digest)
                 else:
                     result = trezorcrypto.secp256k1.sign(pk, digest)
 
