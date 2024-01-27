@@ -1737,7 +1737,7 @@ class psbtObject(psbtProxy):
                 # but we can't combine/finalize multisig stuff, so will never't be 'final'
                 return False
 
-            if inp.added_sig:
+            if inp.added_sig or inp.tap_key_sig:
                 signed += 1
 
         return signed == self.num_inputs
