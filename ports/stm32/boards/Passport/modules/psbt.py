@@ -909,7 +909,7 @@ class psbtInputProxy(psbtProxy):
             wr(PSBT_IN_TAP_KEY_SIG, self.tap_key_sig)
 
         for k in self.tap_subpaths:
-            wr(PSBT_IN_TAP_BIP32_DERIVATION, self.tap_subpaths, k)
+            wr(PSBT_IN_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
         if self.tap_internal_key:
             wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
