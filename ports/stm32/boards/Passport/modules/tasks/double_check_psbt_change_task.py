@@ -28,19 +28,30 @@ async def double_check_psbt_change_task(on_done, psbt):
                 oup = psbt.outputs[out_idx]
 
                 good = 0
-                for pubkey, subpath in oup.subpaths.items():
-                    if subpath[0] != psbt.my_xfp and subpath[0] != swab32(psbt.my_xfp):
-                        # For multisig, will be N paths, and exactly one will be our key.
-                        # For single-signer, should always be my XFP.
-                        continue
+                if oup.subpaths:
+                    for pubkey, subpath in oup.subpaths.items():
+                        if subpath[0] != psbt.my_xfp and subpath[0] != swab32(psbt.my_xfp):
+                            # For multisig, will be N paths, and exactly one will be our key.
+                            # For single-signer, should always be my XFP.
+                            continue
 
-                    # Derive actual pubkey from private
-                    skp = keypath_to_str(subpath)
-                    node = sv.derive_path(skp)
+                        # Derive actual pubkey from private
+                        skp = keypath_to_str(subpath)
+                        node = sv.derive_path(skp)
 
-                    # check the pubkey of this BIP32 node
-                    if pubkey == node.public_key():
-                        good += 1
+                        # check the pubkey of this BIP32 node
+                        if pubkey == node.public_key():
+                            good += 1
+                elif oup.tap_subpaths:
+                    for pubkey, (tap_subpath, tap_hashes) in oup.tap_subpaths.items():
+                        if tap_subpath[0] != psbt.my_xfp and tap_subpath[0] != swab32(psbt.my_xfp):
+                            continue
+
+                        skp = keypath_to_str(tap_subpath)
+                        node = sv.derive_path(skp)
+
+                        if pubkey == node.public_key()[1:]:
+                            good += 1
 
                 if not good:
                     # print('double_check_psbt_change_task() Fraudulent Change Error')
