@@ -248,61 +248,63 @@ class psbtProxy:
             return self.num_our_keys
 
         num_ours = 0
-        for pk in self.subpaths:
-            assert len(pk) in {33, 65}, "hdpath pubkey len"
-            if len(pk) == 33:
-                assert pk[0] in {0x02, 0x03}, "uncompressed pubkey"
+        if self.subpaths:
+            for pk in self.subpaths:
+                assert len(pk) in {33, 65}, "hdpath pubkey len"
+                if len(pk) == 33:
+                    assert pk[0] in {0x02, 0x03}, "uncompressed pubkey"
 
-            vl = self.subpaths[pk][1]
+                vl = self.subpaths[pk][1]
 
-            # force them to use a derived key, never the master
-            assert vl >= 8, 'too short key path'
-            assert (vl % 4) == 0, 'corrupt key path'
-            assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
-
-            # promote to a list of ints
-            v = self.get(self.subpaths[pk])
-            here = list(unpack_from('<%dI' % (vl // 4), v))
-
-            # update in place
-            self.subpaths[pk] = here
-
-            if here[0] == my_xfp or here[0] == swab32(my_xfp):
-                num_ours += 1
-            else:
-                # Address that isn't based on my seed; might be another leg in a p2sh,
-                # or an input we're not supposed to be able to sign... and that's okay.
-                pass
-
-        for pk in self.tap_subpaths:
-            assert len(pk) == 32, "taproot hdpath pubkey len"
-
-            vl = self.tap_subpaths[pk][1]
-
-            # parse leaf hashes and path
-            v = self.get(self.tap_subpaths[pk])
-            (num_tap_hashes, compact_length) = deser_compact_size_bytes(v)
-            tap_hashes = [uint256_from_bytes(v[i * 32:(i + 1) * 32]) for i in range(0, num_tap_hashes)]
-            v = v[(num_tap_hashes * 32 + compact_length):]
-            vl = len(v)
-
-            # Master key can be used if there is no tapscript tree
-            if tap_hashes:
+                # force them to use a derived key, never the master
                 assert vl >= 8, 'too short key path'
-            assert (vl % 4) == 0, 'corrupt key path'
-            assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
+                assert (vl % 4) == 0, 'corrupt key path'
+                assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
 
-            here = list(unpack_from('<%dI' % (vl // 4), v))
+                # promote to a list of ints
+                v = self.get(self.subpaths[pk])
+                here = list(unpack_from('<%dI' % (vl // 4), v))
 
-            # update in place
-            self.tap_subpaths[pk] = (here, tap_hashes)
+                # update in place
+                self.subpaths[pk] = here
 
-            if here[0] == my_xfp or here[0] == swab32(my_xfp):
-                num_ours += 1
-            else:
-                # Address that isn't based on my seed; might be another leg in a p2sh,
-                # or an input we're not supposed to be able to sign... and that's okay.
-                pass
+                if here[0] == my_xfp or here[0] == swab32(my_xfp):
+                    num_ours += 1
+                else:
+                    # Address that isn't based on my seed; might be another leg in a p2sh,
+                    # or an input we're not supposed to be able to sign... and that's okay.
+                    pass
+
+        if self.tap_subpaths:
+            for pk in self.tap_subpaths:
+                assert len(pk) == 32, "taproot hdpath pubkey len"
+
+                vl = self.tap_subpaths[pk][1]
+
+                # parse leaf hashes and path
+                v = self.get(self.tap_subpaths[pk])
+                (num_tap_hashes, compact_length) = deser_compact_size_bytes(v)
+                tap_hashes = [uint256_from_bytes(v[i * 32:(i + 1) * 32]) for i in range(0, num_tap_hashes)]
+                v = v[(num_tap_hashes * 32 + compact_length):]
+                vl = len(v)
+
+                # Master key can be used if there is no tapscript tree
+                if tap_hashes:
+                    assert vl >= 8, 'too short key path'
+                assert (vl % 4) == 0, 'corrupt key path'
+                assert (vl // 4) <= MAX_PATH_DEPTH, 'too deep'
+
+                here = list(unpack_from('<%dI' % (vl // 4), v))
+
+                # update in place
+                self.tap_subpaths[pk] = (here, tap_hashes)
+
+                if here[0] == my_xfp or here[0] == swab32(my_xfp):
+                    num_ours += 1
+                else:
+                    # Address that isn't based on my seed; might be another leg in a p2sh,
+                    # or an input we're not supposed to be able to sign... and that's okay.
+                    pass
 
         self.num_our_keys = num_ours
         return num_ours
@@ -768,13 +770,10 @@ class psbtInputProxy(psbtProxy):
             # TODO: handle tapscript tree
             self.scriptSig = utxo.scriptPubKey
 
-            print("addr_or_pubkey: {}".format(b2a_hex(addr_or_pubkey)))
-
             if len(self.tap_subpaths) == 1:  # No script path
                 subpath = list(self.tap_subpaths.items())[0]
                 pubkey, (path, tap_hashes) = subpath
                 tweaked_pubkey = output_script(pubkey, None)[2:]
-                print("tweaked_pubkey: {}".format(b2a_hex(tweaked_pubkey)))
                 if path[0] == my_xfp and tweaked_pubkey == addr_or_pubkey:
                     which_key = pubkey
         else:
@@ -1418,14 +1417,8 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
-        for n, inp in enumerate(self.inputs):
-            print("n: {}, inp.fully_signed: {}".format(n, inp.fully_signed))
-            print("inp.required_key: {}".format(b2a_hex(inp.required_key)))
-
         no_keys = set(n for n, inp in enumerate(self.inputs)
                       if inp.required_key is None and not inp.fully_signed)
-
-        print("no_keys: {}".format(no_keys))
 
         gc.collect()
 
@@ -1812,14 +1805,17 @@ class psbtObject(psbtProxy):
             for in_idx, wit in self.input_witness_iter():
                 inp = self.inputs[in_idx]
 
-                if inp.is_segwit and inp.added_sig:
+                if inp.is_segwit and (inp.added_sig or inp.tap_key_sig):
                     # put in new sig: wit is a CTxInWitness
                     assert not wit.scriptWitness.stack, 'replacing non-empty?'
                     assert not inp.is_multisig, 'Multisig PSBT combine not supported'
 
-                    pubkey, der_sig = inp.added_sig
-                    assert pubkey[0] in {0x02, 0x03} and len(pubkey) == 33, "bad v0 pubkey"
-                    wit.scriptWitness.stack = [der_sig, pubkey]
+                    if inp.added_sig:
+                        pubkey, der_sig = inp.added_sig
+                        assert pubkey[0] in {0x02, 0x03} and len(pubkey) == 33, "bad v0 pubkey"
+                        wit.scriptWitness.stack = [der_sig, pubkey]
+                    else:
+                        wit.scriptWitness.stack = [inp.tap_key_sig]
 
                 fd.write(wit.serialize())
 
