@@ -23,42 +23,42 @@ async def validate_psbt_task(on_done, psbt_len):
 
     # Do the main validation
     psbt = None
-    # try:
-    # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
-    with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
-        psbt = psbtObject.read_psbt(fd)
+    try:
+        # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
+        with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
+            psbt = psbtObject.read_psbt(fd)
 
-    gc.collect()
-    await psbt.validate()
-    gc.collect()
-    psbt.consider_inputs()
-    gc.collect()
-    psbt.consider_keys()
-    gc.collect()
-    psbt.consider_outputs()
+        gc.collect()
+        await psbt.validate()
+        gc.collect()
+        psbt.consider_inputs()
+        gc.collect()
+        psbt.consider_keys()
+        gc.collect()
+        psbt.consider_outputs()
 
-    # All went well!
-    # except FraudulentChangeOutput as e:
-    #     # print('validate_psbt_task 1')
-    #     error_msg = e.args[0]
-    #     error_code = Error.PSBT_FRAUDULENT_CHANGE_ERROR
-    # except FatalPSBTIssue as e:
-    #     # print('validate_psbt_task 2')
-    #     error_msg = e.args[0]
-    #     error_code = Error.PSBT_FATAL_ERROR
-    # except MemoryError as e:
-    #     # print('validate_psbt_task 3')
-    #     error_msg = 'Transaction is too complex: {}'.format(e)
-    #     error_code = Error.OUT_OF_MEMORY_ERROR
-    # except BaseException as e:
-    #     # print('validate_psbt_task 4')
-    #     error_msg = 'Invalid PSBT: {}'.format(e)
-    #     error_code = Error.PSBT_FATAL_ERROR
-    # finally:
-    # print('validate_psbt_task 5 - finally')
-    if error_code is not None:
-        del psbt
-        psbt = None
-    gc.collect()
+        # All went well!
+    except FraudulentChangeOutput as e:
+        # print('validate_psbt_task 1')
+        error_msg = e.args[0]
+        error_code = Error.PSBT_FRAUDULENT_CHANGE_ERROR
+    except FatalPSBTIssue as e:
+        # print('validate_psbt_task 2')
+        error_msg = e.args[0]
+        error_code = Error.PSBT_FATAL_ERROR
+    except MemoryError as e:
+        # print('validate_psbt_task 3')
+        error_msg = 'Transaction is too complex: {}'.format(e)
+        error_code = Error.OUT_OF_MEMORY_ERROR
+    except BaseException as e:
+        # print('validate_psbt_task 4')
+        error_msg = 'Invalid PSBT: {}'.format(e)
+        error_code = Error.PSBT_FATAL_ERROR
+    finally:
+        # print('validate_psbt_task 5 - finally')
+        if error_code is not None:
+            del psbt
+            psbt = None
+        gc.collect()
 
-    await on_done(psbt, error_msg, error_code)
+        await on_done(psbt, error_msg, error_code)
