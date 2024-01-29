@@ -20,7 +20,7 @@ from .utils import get_bip_num_from_addr_type
 
 
 def create_bitcoin_core_export(sw_wallet=None,
-                               addr_type=None,
+                               addr_type=AF_P2WPKH,
                                acct_num=0,
                                multisig=False,
                                legacy=False,
@@ -109,7 +109,10 @@ def generate_bitcoin_core_wallet(addr_type, example_addrs, acct_num):
 BitcoinCoreWallet = {
     'label': 'Bitcoin Core',
     'sig_types': [
-        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_bitcoin_core_export},
+        {'id': 'single-sig',
+         'label': 'Single-sig',
+         'addr_type': AF_P2WPKH,
+         'create_wallet': create_bitcoin_core_export},
     ],
     'export_modes': [
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-bitcoin-core.txt', 'ext': '.txt',
