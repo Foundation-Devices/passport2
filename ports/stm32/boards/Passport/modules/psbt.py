@@ -532,7 +532,7 @@ class psbtInputProxy(psbtProxy):
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root', 'tap_sig')
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -566,7 +566,7 @@ class psbtInputProxy(psbtProxy):
 
         # after signing, we'll have a signature to add to output PSBT
         # self.added_sig = None
-        # self.tap_sig = None
+        # self.tap_key_sig = None
 
         self.parse(fd)
         gc.collect()
