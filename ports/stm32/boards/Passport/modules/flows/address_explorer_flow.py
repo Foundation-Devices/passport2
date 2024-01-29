@@ -38,6 +38,7 @@ class AddressExplorerFlow(Flow):
         from pages import SinglesigMultisigChooserPage
         from multisig_wallet import MultisigWallet
         from common import settings
+        import microns
 
         xfp = settings.get('xfp')
         multisigs = MultisigWallet.get_by_xfp(xfp)
