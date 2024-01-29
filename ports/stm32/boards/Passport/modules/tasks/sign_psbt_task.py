@@ -164,7 +164,7 @@ async def sign_psbt_task(on_done, psbt):
         error_msg = 'Transaction is too complex.'
         error_code = Error.OUT_OF_MEMORY_ERROR
     except BaseException as e:
-        print('BaseException: {}'.format(e))
+        # print('BaseException: {}'.format(e))
         error_msg = 'Invalid PSBT.'
         error_code = Error.PSBT_FATAL_ERROR
     finally:
