@@ -586,7 +586,13 @@ class psbtInputProxy(psbtProxy):
         self.parse_subpaths(my_xfp)
 
         # sighash, but we're probably going to ignore anyway.
-        self.sighash = SIGHASH_ALL if self.sighash is None else self.sighash
+        if self.sighash is None:
+            # Taproot PSBTs can be built with no explicit sighash
+            if len(self.tap_subpaths) > 0:
+                self.sighash = SIGHASH_DEFAULT
+            else:
+                self.sighash = SIGHASH_ALL
+
         if self.sighash not in VALID_SIGHASHES:
             # - someday we will expand to other types, but not yet
             raise FatalPSBTIssue('Can only do SIGHASH_ALL')
@@ -681,13 +687,11 @@ class psbtInputProxy(psbtProxy):
         # - also validates redeem_script when present
 
         self.amount = utxo.nValue
-        print("amount: {}".format(self.amount))
 
         if (not self.subpaths and not self.tap_subpaths) or self.fully_signed:
             # without xfp+path we will not be able to sign this input
             # - okay if fully signed
             # - okay if payjoin or other multi-signer (not multisig) txn
-            print("required_key = None")
             self.required_key = None
             return
 
