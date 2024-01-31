@@ -226,13 +226,13 @@ class VerifyAddressFlow(Flow):
             self.set_result(False)
 
     async def found(self):
-        from pages import SuccessPage, LongSuccessPage
+        from pages import SuccessPage
         from utils import save_next_addr, format_btc_address, stylize_address
-        import passport
         from common import settings
         import chains
         from public_constants import MARGIN_FOR_ADDRESSES
         import lvgl as lv
+        from views import VerifiedIcon
 
         # Remember where to start from next time
         save_next_addr(self.acct_num,
@@ -252,5 +252,5 @@ class VerifyAddressFlow(Flow):
 
         await SuccessPage(text=msg,
                           margins=MARGIN_FOR_ADDRESSES,
-                          custom_verified_icon=True).show()
+                          custom_view=VerifiedIcon).show()
         self.set_result(True)

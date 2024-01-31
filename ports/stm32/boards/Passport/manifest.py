@@ -334,6 +334,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'views/table.py',
         'views/text_area.py',
         'views/text_input.py',
+        'views/verified_icon.py',
         'views/view.py'))
 
 # Wallets

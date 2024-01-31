@@ -5,7 +5,7 @@
 
 import lvgl as lv
 from styles.style import Stylize
-from views import Arc, Label, View, Icon, Spinner
+from views import Arc, Label, View, Icon, Spinner, VerifiedIcon
 from pages import Page
 from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR, WHITE
 import microns
@@ -19,7 +19,7 @@ class StatusPage(Page):
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
-                 margins=None, custom_verified_icon=False):
+                 margins=None, custom_view=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -31,7 +31,7 @@ class StatusPage(Page):
         self.text = text
         self.page_idx = 0
         self.icon = icon
-        self.custom_verified_icon = custom_verified_icon
+        self.custom_view = custom_view
         self.icon_color = icon_color
 
         self.show_progress = show_progress
@@ -85,25 +85,8 @@ class StatusPage(Page):
         self.center_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
 
         self.center_content = None
-        if self.custom_verified_icon:
-            self.center_content = View(flex_flow=lv.FLEX_FLOW.ROW)
-            size = 50 if passport.IS_COLOR else 55
-            self.center_content.set_size(lv.pct(size), lv.SIZE.CONTENT)
-            with Stylize(self.center_content) as default:
-                default.flex_align(main=lv.FLEX_ALIGN.CENTER)
-                if self.icon_color is not None:
-                    default.bg_color(self.icon_color)
-                default.radius(20)
-            self.message_icon = Icon(lv.ICON_CHECKMARK, color=WHITE)
-            with Stylize(self.message_icon) as default:
-                default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
-                default.pad(left=7, right=-2, top=8, bottom=6)
-            self.center_content.add_child(self.message_icon)
-            self.message = Label(text='Verified', color=WHITE, center=True)
-            with Stylize(self.message) as default:
-                default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
-                default.pad(top=9, right=7, bottom=3)
-            self.center_content.add_child(self.message)
+        if self.custom_view:
+            self.center_content = self.custom_view()
         elif self.icon is not None:
             self.center_content = Icon(self.icon)
             self.center_content.set_size(self.icon.header.w, self.icon.header.h)

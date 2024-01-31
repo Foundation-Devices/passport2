@@ -37,3 +37,4 @@ from .color_picker import *
 from .pin_input import *
 from .symbol_picker import *
 from .qrcode import *
+from .verified_icon import *
