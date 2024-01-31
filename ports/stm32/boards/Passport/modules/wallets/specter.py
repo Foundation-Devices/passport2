@@ -8,7 +8,7 @@ from .electrum import create_electrum_export
 from .multisig_json import create_multisig_json_wallet
 from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
 from data_codecs.qr_type import QRType
-from public_constants import AF_P2WPKH
+from public_constants import AF_P2WPKH, AF_P2TR
 
 SpecterWallet = {
     'label': 'Specter',
@@ -21,5 +21,7 @@ SpecterWallet = {
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-specter.json',
          'filename_pattern_multisig': '{xfp}-specter-multisig.json', 'multisig_import_mode': 'qr'}
-    ]
+    ],
+    # 'select_addr_type': True,
+    # 'addr_options': [AF_P2WPKH, AF_P2TR],
 }

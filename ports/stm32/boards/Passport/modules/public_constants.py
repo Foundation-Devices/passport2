@@ -72,6 +72,9 @@ SUPPORTED_ADDR_FORMATS = frozenset([
     AF_P2TR,
 ])
 
+DESCRIPTOR_CODES = {AF_P2WPKH: 'wpkh',
+                    AF_P2TR: 'tr'}
+
 # BIP-174 aka PSBT defined values
 #
 PSBT_GLOBAL_UNSIGNED_TX = const(0)
