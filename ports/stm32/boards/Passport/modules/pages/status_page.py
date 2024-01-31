@@ -87,7 +87,8 @@ class StatusPage(Page):
         self.center_content = None
         if self.custom_verified_icon:
             self.center_content = View(flex_flow=lv.FLEX_FLOW.ROW)
-            self.center_content.set_size(lv.pct(50), lv.SIZE.CONTENT)
+            size = 50 if passport.IS_COLOR else 55
+            self.center_content.set_size(lv.pct(size), lv.SIZE.CONTENT)
             with Stylize(self.center_content) as default:
                 default.flex_align(main=lv.FLEX_ALIGN.CENTER)
                 if self.icon_color is not None:
