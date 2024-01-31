@@ -17,13 +17,16 @@ class SuccessPage(StatusPage):
             statusbar=None,
             left_micron=None,
             right_micron=microns.Checkmark,
-            margins=None):
+            icon=lv.LARGE_ICON_SUCCESS,
+            margins=None,
+            custom_view=None):
         super().__init__(
             text=text,
             card_header=card_header,
             statusbar=statusbar,
-            icon=lv.LARGE_ICON_SUCCESS,
+            icon=icon,
             icon_color=DEFAULT_LARGE_ICON_COLOR,
             left_micron=left_micron,
             right_micron=right_micron,
-            margins=margins)
+            margins=margins,
+            custom_view=custom_view)

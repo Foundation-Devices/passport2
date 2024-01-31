@@ -5,9 +5,9 @@
 
 import lvgl as lv
 from styles.style import Stylize
-from views import Arc, Label, View, Icon, Spinner
+from views import Arc, Label, View, Icon, Spinner, VerifiedIcon
 from pages import Page
-from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR
+from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR, WHITE
 import microns
 import common
 import passport
@@ -19,7 +19,7 @@ class StatusPage(Page):
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
-                 margins=None):
+                 margins=None, custom_view=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -31,6 +31,7 @@ class StatusPage(Page):
         self.text = text
         self.page_idx = 0
         self.icon = icon
+        self.custom_view = custom_view
         self.icon_color = icon_color
 
         self.show_progress = show_progress
@@ -84,7 +85,9 @@ class StatusPage(Page):
         self.center_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
 
         self.center_content = None
-        if self.icon is not None:
+        if self.custom_view:
+            self.center_content = self.custom_view()
+        elif self.icon is not None:
             self.center_content = Icon(self.icon)
             self.center_content.set_size(self.icon.header.w, self.icon.header.h)
             self.center_content.set_no_scroll()
