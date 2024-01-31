@@ -18,7 +18,8 @@ class SuccessPage(StatusPage):
             left_micron=None,
             right_micron=microns.Checkmark,
             icon=lv.LARGE_ICON_SUCCESS,
-            margins=None):
+            margins=None,
+            custom_verified_icon=False):
         super().__init__(
             text=text,
             card_header=card_header,
@@ -27,4 +28,5 @@ class SuccessPage(StatusPage):
             icon_color=DEFAULT_LARGE_ICON_COLOR,
             left_micron=left_micron,
             right_micron=right_micron,
-            margins=margins)
+            margins=margins,
+            custom_verified_icon=custom_verified_icon)

@@ -250,8 +250,7 @@ class VerifyAddressFlow(Flow):
             'Change' if self.found_is_change == 1 else 'Receive',
             self.found_addr_idx)
 
-        page_class = SuccessPage if passport.IS_COLOR else LongSuccessPage
-        await page_class(text=msg,
-                         margins=MARGIN_FOR_ADDRESSES,
-                         icon=lv.ICON_VERIFIED).show()
+        await SuccessPage(text=msg,
+                          margins=MARGIN_FOR_ADDRESSES,
+                          custom_verified_icon=True).show()
         self.set_result(True)
