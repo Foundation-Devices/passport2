@@ -206,7 +206,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'pages/brightness_setting_page.py',
         'pages/chain_setting_page.py',
         'pages/multisig_policy_setting_page.py',
-        'pages/show_security_words_setting_page.py',
         'pages/units_setting_page.py',
 
         # Chooser pages

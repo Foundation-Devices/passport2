@@ -114,6 +114,9 @@ DIR_HEALTH_CHECKS = 'health_checks'
 
 MARGIN_FOR_ADDRESSES = 0
 
+# Size of a pin prefix:
+NUM_DIGITS_FOR_SECURITY_WORDS = const(4)
+
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
 {msg}
