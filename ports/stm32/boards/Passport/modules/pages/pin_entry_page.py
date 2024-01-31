@@ -11,6 +11,7 @@ from tasks import get_security_words_task
 from utils import InputMode
 from views import Label, View, PINInput, Icon
 from constants import MENU_ITEM_CORNER_RADIUS
+from public_constants import NUM_DIGITS_FOR_SECURITY_WORDS
 from styles import Stylize
 from t9 import T9
 import microns
@@ -18,8 +19,6 @@ import common
 from common import pa
 
 NUM_ATTEMPTS_LEFT_BRICK_WARNING = 5
-
-NUM_DIGITS_FOR_SECURITY_WORDS = 4
 MIN_PIN_LENGTH = 6
 MAX_PIN_LENGTH = 12
 
