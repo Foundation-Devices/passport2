@@ -97,12 +97,12 @@ class StatusPage(Page):
             self.message_icon = Icon(lv.ICON_CHECKMARK, color=WHITE)
             with Stylize(self.message_icon) as default:
                 default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
-                default.pad(left=4, right=2, top=8, bottom=4)
+                default.pad(left=6, right=2, top=8, bottom=6)
             self.center_content.add_child(self.message_icon)
             self.message = Label(text='Verified', color=WHITE, center=True)
             with Stylize(self.message) as default:
                 default.flex_align(cross=lv.FLEX_ALIGN.CENTER)
-                default.pad(top=8, right=4, bottom=4)
+                default.pad(top=8, right=6, bottom=4)
             self.center_content.add_child(self.message)
         elif self.icon is not None:
             self.center_content = Icon(self.icon)
