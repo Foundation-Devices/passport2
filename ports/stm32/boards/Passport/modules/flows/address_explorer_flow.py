@@ -63,7 +63,7 @@ class AddressExplorerFlow(Flow):
             self.goto(self.choose_addr_type)
             return
 
-        self.goto(self.prepare)
+        self.goto(self.choose_change)
 
     async def choose_addr_type(self):
         from pages import AddressTypeChooserPage
