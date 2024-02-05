@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
+# health_check_flow.py - Scan and process a health check QR code in `crypto-request` format
 
 from flows import Flow
 from pages import ErrorPage, SuccessPage
@@ -13,10 +13,11 @@ from data_codecs.qr_type import QRType
 from foundation import ur
 
 
-class CasaHealthCheckQRFlow(Flow):
-    def __init__(self):
-        super().__init__(initial_state=self.scan_qr, name='CasaHealthCheckQRFlow')
+class HealthCheckQRFlow(Flow):
+    def __init__(self, context=None):
+        super().__init__(initial_state=self.scan_qr, name='HealthCheckQRFlow')
 
+        self.service_name = context
         self.text = None
         self.subpath = None
 
@@ -24,9 +25,10 @@ class CasaHealthCheckQRFlow(Flow):
         from pages import ErrorPage
         from flows import ScanQRFlow
 
+        data_description = 'a {} health check'.format(self.service_name)
         result = await ScanQRFlow(qr_types=[QRType.UR2],
                                   ur_types=[ur.Value.BYTES],
-                                  data_description='a Casa health check').run()
+                                  data_description=data_description).run()
         if result is None:
             self.set_result(False)
             return

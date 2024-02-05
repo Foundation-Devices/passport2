@@ -199,6 +199,9 @@ if passport.IS_SIMULATOR:
     # Special colors
     CASA_PURPLE_HEX = 0x865EFC
     CASA_PURPLE = lv.color_hex(CASA_PURPLE_HEX)
+
+    THEYA_YELLOW_HEX = 0xEEA33F
+    THEYA_YELLOW = lv.color_hex(THEYA_YELLOW_HEX)
 else:
     ACCOUNT_COLORS = [
         {'bg': lv.color_hex(0xB04C40), 'fg': WHITE},
@@ -212,3 +215,6 @@ else:
     # Special colors
     CASA_PURPLE_HEX = 0x966EFC
     CASA_PURPLE = lv.color_hex(CASA_PURPLE_HEX)
+
+    THEYA_YELLOW_HEX = 0xEEA33F
+    THEYA_YELLOW = lv.color_hex(THEYA_YELLOW_HEX)
