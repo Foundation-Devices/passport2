@@ -28,9 +28,6 @@ from .address_explorer_flow import *
 from .apply_passphrase_flow import *
 from .auto_backup_flow import *
 from .backup_flow import *
-from .casa_health_check_common_flow import *
-from .casa_health_check_microsd_flow import *
-from .casa_health_check_qr_flow import *
 from .change_pin_flow import *
 from .delete_account_flow import *
 from .delete_multisig_flow import *
@@ -43,6 +40,9 @@ from .selected_file_flow import *
 from .file_picker_flow import *
 from .format_microsd_flow import *
 from .get_seed_words_flow import *
+from .health_check_common_flow import *
+from .health_check_microsd_flow import *
+from .health_check_qr_flow import *
 from .import_multisig_wallet_flow import *
 from .import_multisig_wallet_from_microsd_flow import *
 from .import_multisig_wallet_from_qr_flow import *
