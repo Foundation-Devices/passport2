@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: [firmware]
 
-    # TODO: PASS1-665.
+    # TODO: SFT-1077.
     strategy:
       matrix:
         screen: ['color']
