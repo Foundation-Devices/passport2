@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Lint
+on: [push, pull_request]
+jobs:
+  is-reuse-compliant:
+    name: Is REUSE compliant?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: fsfe/reuse-action@v2
+
+  rust-code-compiles:
+    name: Rust code compiles?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: 1.67.1
+          targets: thumbv7em-none-eabihf
+      - run: |
+          cargo check --manifest-path extmod/foundation-rust/Cargo.toml
+      # Required by secp256k1-sys.
+      - run: sudo apt-get install -y gcc-arm-none-eabi
+      - run: |
+          cargo check --manifest-path extmod/foundation-rust/Cargo.toml \
+                      --target thumbv7em-none-eabihf
+
+  is-the-rust-code-formatted:
+    name: Is the Rust code formatted?
+    needs: [rust-code-compiles]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: 1.67.1
+          components: rustfmt
+      - run: |
+          cargo fmt --manifest-path extmod/foundation-rust/Cargo.toml \
+                    --all -- --check
+
+  is-the-python-code-formatted:
+    name: Is the Python code formatted?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y pycodestyle
+      - run: pycodestyle --statistics --exclude translations ports/stm32/boards/Passport
+
+  is-foundation-header-up-to-date:
+    name: Is foundation.h header file up to date?
+    needs: [rust-code-compiles]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: 1.67.1
+      - run: cargo install cbindgen@^0.24
+      - run: |
+          cbindgen --config extmod/foundation-rust/cbindgen.toml \
+                   --output extmod/foundation-rust/include/foundation.h \
+                   --verify \
+                   extmod/foundation-rust/
+
+  rust-tests-pass:
+    name: Rust tests pass?
+    needs: [rust-code-compiles]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: 1.67.1
+          targets: 
+      - run: |
+          cargo test --manifest-path extmod/foundation-rust/Cargo.toml \
+                     --features std
