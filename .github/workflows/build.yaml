@@ -38,7 +38,11 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha
         tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
+    - uses: ./.github/actions/rust-toolchain
+      with:
+       toolchain: 1.70.0
+       targets: thumbv7em-none-eabihf
+    - run: cargo install just@^1.23
     - run: |
         echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
         echo "SCREEN_MODE=$(echo "${{ matrix.build.screen }}" | tr a-z A-Z)" >> $GITHUB_ENV
@@ -119,7 +123,11 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha
         tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
+    - uses: ./.github/actions/rust-toolchain
+      with:
+       toolchain: 1.70.0
+       targets: thumbv7em-none-eabihf
+    - run: cargo install just@^1.23
     - run: |
         echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
         echo "SCREEN_MODE=$(echo ${{ matrix.screen }} | tr a-z A-Z)" >> $GITHUB_ENV
@@ -162,7 +170,11 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha
         tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
+    - uses: ./.github/actions/rust-toolchain
+      with:
+       toolchain: 1.70.0
+       targets: thumbv7em-none-eabihf
+    - run: cargo install just@^1.23
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
     - name: Build
@@ -192,7 +204,11 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha
         tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
+    - uses: ./.github/actions/rust-toolchain
+      with:
+       toolchain: 1.70.0
+       targets: thumbv7em-none-eabihf
+    - run: cargo install just@^1.23
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
 
     - name: Build
