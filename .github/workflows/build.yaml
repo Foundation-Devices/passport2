@@ -3,43 +3,12 @@
 #
 # validate_and_build.yaml - GitHub actions for Passport
 
-name: Validate and Build
+name: Build
 on: [push]
 jobs:
-  lint:
-    name: Lint
+  firmware:
+    name: Firmware
     runs-on: ubuntu-20.04
-
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: docker/setup-buildx-action@v3
-      with:
-        driver-opts: network=host
-    - uses: docker/build-push-action@v5
-      with:
-        push: true
-        context: .
-        cache-from: type=gha
-        cache-to: type=gha
-        tags: localhost:5000/foundation-devices/passport2:latest
-    - uses: extractions/setup-just@69d82fb0233557aec017ef13706851d0694e0f1d
-    - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
-
-    - name: Lint the codebase
-      run: just lint
-
-  build-firmware:
-    name: Build Firmware
-    runs-on: ubuntu-20.04
-    needs: [lint]
 
     strategy:
       matrix:
@@ -120,10 +89,10 @@ jobs:
         name: v${{env.version}}${{ matrix.build.hash_suffix }}-hashes.md
         path: ports/stm32/build-Passport/v${{env.version}}-beta${{ matrix.build.hash_suffix }}-hashes.md
 
-  build-bootloader:
-    name: Build Bootloader
+  bootloader:
+    name: Bootloader
     runs-on: ubuntu-20.04
-    needs: [lint, build-firmware]
+    needs: [firmware]
 
     # TODO: PASS1-665.
     strategy:
@@ -164,10 +133,10 @@ jobs:
         name: bootloader-${{ env.SCREEN_MODE }}.bin
         path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
 
-  build-simulator:
-    name: Build Simulator
+  simulator:
+    name: Simulator
     runs-on: ubuntu-20.04
-    needs: [lint, build-firmware]
+    needs: [firmware]
 
     strategy:
       matrix:
@@ -200,9 +169,8 @@ jobs:
       run: just build-simulator ${{ matrix.screen }}
 
   build-tools:
-    name: Build Tools
+    name: Tools
     runs-on: ubuntu-20.04
-    needs: [lint]
 
     services:
       registry:
