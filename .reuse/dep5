@@ -104,3 +104,7 @@ Files:
   version.txt
 Copyright: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 License: GPL-3.0-or-later
+
+Files: .github/actions/rust-toolchain/action.yml
+Copyright: 2021 David Tolnay <dtolnay@gmail.com>
+License: MIT
