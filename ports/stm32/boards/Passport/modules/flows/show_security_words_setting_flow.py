@@ -62,7 +62,7 @@ class ShowSecurityWordsSettingFlow(Flow):
                                                    get_security_words_task,
                                                    args=[prefix])
 
-        message = 'Remember These Security Words:\n\n'
+        message = 'Remember these security words:\n\n'
         message += recolor(HIGHLIGHT_TEXT_HEX, ' '.join(security_words))
 
         await InfoPage(message).show()
