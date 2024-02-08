@@ -15,10 +15,11 @@ import stash
 from .utils import get_deriv_fmt_from_addr_type
 from data_codecs.qr_type import QRType
 from foundation import ur
+from public_constants import AF_CLASSIC
 
 
 def create_xpub_wallet(sw_wallet=None,
-                       addr_type=None,
+                       addr_type=AF_CLASSIC,
                        acct_num=0,
                        multisig=False,
                        legacy=False,
