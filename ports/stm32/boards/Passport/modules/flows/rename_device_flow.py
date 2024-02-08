@@ -43,6 +43,6 @@ class RenameDeviceFlow(Flow):
         settings.set('device_name', result)
 
         await spinner_task('Renaming Device', delay_task, args=[1000, False])
-        await SuccessPage(text='Device Renamed Successfully').show()
+        await SuccessPage(text='Device renamed successfully').show()
 
         self.set_result(True)
