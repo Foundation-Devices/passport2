@@ -17,10 +17,11 @@ from pages import (
     SuccessPage,
     YesNoChooserPage
 )
-from utils import spinner_task, get_backup_code_as_password
+from utils import spinner_task, get_backup_code_as_password, bind, show_card_missing
 from tasks import restore_backup_task, get_backup_code_task
 from errors import Error
 import common
+from files import CardMissingError
 
 
 class RestoreBackupFlow(Flow):
@@ -33,6 +34,9 @@ class RestoreBackupFlow(Flow):
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.statusbar = {'title': 'RESTORE BACKUP', 'icon': 'ICON_SEED'}
+        self.return_bool = True
+
+        bind(self, show_card_missing)
 
     async def check_if_erased(self):
         from common import pa
@@ -56,11 +60,15 @@ class RestoreBackupFlow(Flow):
         from utils import get_file_list, get_backups_folder_path
 
         suffix = '.7z'
-        files = get_file_list(suffix=suffix)
-        if len(files) == 0:
-            initial_path = get_backups_folder_path()
-        else:
-            initial_path = None
+        try:
+            files = get_file_list(suffix=suffix)
+            if len(files) == 0:
+                initial_path = get_backups_folder_path()
+            else:
+                initial_path = None
+        except CardMissingError:
+            self.goto(self.show_card_missing)
+            return
 
         result = await FilePickerFlow(initial_path=initial_path,
                                       suffix=suffix,
