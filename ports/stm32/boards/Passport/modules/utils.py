@@ -1480,6 +1480,7 @@ def stylize_address(address):
     colors = [BLACK_HEX, TEXT_GREY_HEX]
     color_index = 0
     block = ''
+    blocks_per_line = 4 if passport.IS_COLOR else 3
 
     for i in range(len(address)):
         # Every 4 characters, append the recolored block of characters
@@ -1488,7 +1489,7 @@ def stylize_address(address):
             block = ''
             color_index ^= 1
             # Every 4 blocks, start a new line
-            if i % 16 == 0:
+            if i % (4 * blocks_per_line) == 0:
                 stylized += '\n'
             else:
                 stylized += spacer
