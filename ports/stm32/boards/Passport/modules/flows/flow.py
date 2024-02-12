@@ -7,7 +7,9 @@ from animations.constants import TRANSITION_DIR_REPLACE, TRANSITION_DIR_POP, TRA
 from utils import handle_fatal_error
 import common
 
-saved_flow_keys = []
+saved_flow_keys = ['manual_setup',
+                   'setup_flow',
+                   'envoy_setup']
 
 
 class Flow():
@@ -64,8 +66,6 @@ class Flow():
         if self.settings_key is not None:
             save_data = self.get_save_data()
             common.settings.set(self.settings_key, save_data)
-            if self.settings_key not in saved_flow_keys:
-                saved_flow_keys.append(self.settings_key)
 
     def restore_items(self, data):
         # print('restore_items = {}'.format(data))
