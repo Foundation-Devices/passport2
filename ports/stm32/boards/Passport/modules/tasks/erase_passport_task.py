@@ -16,6 +16,7 @@ from uasyncio import sleep_ms
 async def erase_passport_task(on_done, full_reset):
 
     from common import pa, settings
+    from flows import saved_flow_keys
 
     if full_reset:
         settings.clear()
@@ -28,11 +29,11 @@ async def erase_passport_task(on_done, full_reset):
         settings.remove('accounts')
         settings.remove('backup_quiz')
         settings.remove('enable_passphrase')
-        settings.remove('envoy_setup')
-        settings.remove('manual_setup')
         settings.remove_regex("^ext\\.*")
         settings.remove('next_addrs')
         settings.remove('derived_keys')
+        for key in saved_flow_keys:
+            settings.remove(key)
 
     await sleep_ms(1)
 
