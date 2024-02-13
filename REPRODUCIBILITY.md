@@ -91,7 +91,13 @@ just --help
 
 Now that we have all of the necessary dependencies, you can use `just` to run the correct commands to build the firmware necessary to verify Passport’s reproducibility.
 
-In order to build the firmware, we need to first build the Docker image that will include all the necessary dependencies and files for building the firmware in a reproducible way:
+First, let's be sure we are starting with a clean slate, as if you've built Passport's firmware in the past you may have some files and folders leftover that can cause issues.
+
+```bash
+just clean
+```
+
+Next, in order to build the firmware itself, we need to first build the Docker image that will include all the necessary dependencies and files for building the firmware in a reproducible way:
 
 ```bash
 just build-docker
