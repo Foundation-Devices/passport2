@@ -14,7 +14,7 @@ import microns
 # Casa account - account number is zero, but they use a special derivation path
 name = 'theya'
 theya_account = {'name': 'Theya', 'acct_num': 0}
-icon = 'ICON_CASA'
+icon = 'ICON_THEYA'
 
 TheyaExtension = {
     'name': name,
