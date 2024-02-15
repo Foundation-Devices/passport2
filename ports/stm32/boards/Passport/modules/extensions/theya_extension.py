@@ -11,7 +11,6 @@ from styles.colors import THEYA_YELLOW, LIGHT_GREY, LIGHT_TEXT, WHITE
 import microns
 
 
-# Casa account - account number is zero, but they use a special derivation path
 name = 'theya'
 theya_account = {'name': 'Theya', 'acct_num': 0}
 icon = 'ICON_THEYA'
