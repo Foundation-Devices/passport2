@@ -98,7 +98,8 @@ def postmix_menu():
 
 def plus_menu():
     from utils import is_passphrase_active
-    from flows import NewAccountFlow, ApplyPassphraseFlow
+    from flows import NewAccountFlow, ApplyPassphraseFlow, TemporarySeedFlow
+    from utils import has_seed, has_temporary_seed
 
     return [
         {'icon': 'ICON_ADD_ACCOUNT', 'label': 'New Account', 'flow': NewAccountFlow},
@@ -108,6 +109,15 @@ def plus_menu():
          'args': {'passphrase': ''}, 'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
         {'icon': 'ICON_PASSPHRASE', 'label': 'Change Passphrase', 'flow': ApplyPassphraseFlow,
          'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Temporary Seed', 'flow': TemporarySeedFlow,
+         'args': {'context': None, 'initial': True}, 'statusbar': {'title': 'TEMPORARY SEED'},
+         'is_visible': lambda: not has_temporary_seed()},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Clear Temporary Seed', 'flow': TemporarySeedFlow,
+         'args': {'context': None}, 'statusbar': {'title': 'TEMPORARY SEED'},
+         'is_visible': lambda: has_seed() and has_temporary_seed()},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Change Temporary Seed', 'flow': TemporarySeedFlow,
+         'args': {'context': None, 'initial': True}, 'statusbar': {'title': 'TEMPORARY SEED'},
+         'is_visible': has_temporary_seed},
     ]
 
 
@@ -145,11 +155,14 @@ def key_item_menu():
     from flows import (
         ViewDerivedKeyDetailsFlow,
         RenameDerivedKeyFlow,
-        ExportDerivedKeyFlow)
+        ExportDerivedKeyFlow,
+        TemporarySeedFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Set temporary seed', 'flow': TemporarySeedFlow,
+         'statusbar': {'title': 'TEMPORARY SEED'}},
         {'icon': 'ICON_ERASE',
          'label': 'Hide Key',
          'action': lambda item, context: toggle_key_hidden(item, context),

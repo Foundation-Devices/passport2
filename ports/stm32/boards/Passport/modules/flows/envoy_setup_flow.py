@@ -125,10 +125,10 @@ class EnvoySetupFlow(Flow):
 
     async def connect_with_envoy_intro(self):
         from pages import InfoPage
-        from utils import has_seed
+        from utils import has_seed, has_temporary_seed
 
         # Can't connect if we don't have a seed yet!
-        if not has_seed():
+        if not has_seed() and not has_temporary_seed:
             self.goto(self.show_success)
             return
 

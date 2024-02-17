@@ -17,13 +17,13 @@ class AboutFlow(Flow):
 
     async def about_page(self):
         from common import settings, system
-        from utils import has_seed
+        from utils import has_seed, has_temporary_seed
 
         serial = system.get_serial_number()
         my_xfp = settings.get('xfp', 0)
         xpub = settings.get('xpub', None)
 
-        if has_seed():
+        if has_seed() or has_temporary_seed():
             msg = '''
 {xfp_title}
 {xfp}

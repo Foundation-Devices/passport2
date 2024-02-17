@@ -25,6 +25,7 @@ from uio import BytesIO
 from sffile import SFFile
 from utils import to_str, call_later_ms
 from constants import SPI_FLASH_SECTOR_SIZE
+from public_constants import DEVICE_SETTINGS
 from passport import mem
 
 
@@ -239,6 +240,11 @@ class ExtSettings:
             call_later_ms(250, self.write_out())
 
     def set(self, kn, v):
+
+        if self.get('temporary_mode', False) and kn not in DEVICE_SETTINGS:
+            self.set_volatile(kn, v)
+            return
+
         # print('set({}, {}'.format(kn, v))
         self.current[kn] = v
         self.changed()

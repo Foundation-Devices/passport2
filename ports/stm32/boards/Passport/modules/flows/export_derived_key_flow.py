@@ -17,25 +17,13 @@ class ExportDerivedKeyFlow(Flow):
         super().__init__(initial_state=self.generate_key, name="NewDerivedKeyFlow")
 
     async def generate_key(self):
-        from utils import spinner_task, B2A, get_folder_path
-        from derived_key import get_key_type_from_tn
-        from pages import ErrorPage
+        from utils import B2A, get_folder_path, get_derived_key_from_data
         from flows import ViewSeedWordsFlow
         from public_constants import DIR_KEY_MNGR
 
-        self.key_type = get_key_type_from_tn(self.key['tn'])
+        result, self.key_type, self.pk = await get_derived_key_from_data(self.key)
 
-        if not self.key_type:
-            await ErrorPage("Invalid key type number: {}".format(self.key['tn'])).show()
-            self.set_result(False)
-            return
-
-        (vals, error) = await spinner_task(text='Generating key',
-                                           task=self.key_type['task'],
-                                           args=[self.key['index']])
-        self.pk = vals['priv']
-        if error is not None:
-            await ErrorPage(error).show()
+        if not result:
             self.set_result(False)
             return
 

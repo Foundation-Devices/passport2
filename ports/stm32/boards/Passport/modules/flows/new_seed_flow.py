@@ -10,6 +10,7 @@ from utils import has_secrets, spinner_task
 from translations import t, T
 import lvgl as lv
 import microns
+from common import settings
 
 
 class NewSeedFlow(Flow):
@@ -23,7 +24,7 @@ class NewSeedFlow(Flow):
 
     async def check_for_seed(self):
         # Ensure we don't overwrite an existing seed
-        if has_secrets():
+        if has_secrets() and not settings.get('temporary_mode', False):
             await ErrorPage(text='Passport already has a seed!').show()
             self.set_result(False)
             return

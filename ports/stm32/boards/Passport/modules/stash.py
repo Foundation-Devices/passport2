@@ -134,13 +134,22 @@ class SensitiveValues:
 
         if secret is None:
             # fetch the secret from bootloader/atecc508a
-            from common import pa
+            from common import pa, settings
 
-            if pa.is_secret_blank():
-                raise ValueError('no secrets yet')
+            if settings.get('temporary_mode', False):
+                print("entering temporary mode")
+                if settings.get('temporary_seed', None) is None:
+                    raise ValueError('no temporary secrets yet')
 
-            self.secret = pa.fetch()
-            self.spots = [self.secret]
+                self.secret = settings.get('temporary_seed', None)
+                self.spots = [self.secret]
+            else:
+                print("temporary mode failed")
+                if pa.is_secret_blank():
+                    raise ValueError('no secrets yet')
+
+                self.secret = pa.fetch()
+                self.spots = [self.secret]
         else:
             # sometimes we already know it
             # assert set(secret) != {0}

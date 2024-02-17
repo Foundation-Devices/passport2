@@ -1144,6 +1144,12 @@ def has_seed():
     return not pa.is_secret_blank()
 
 
+def has_temporary_seed():
+    if common.settings.get('temporary_seed', None) is not None:
+        return True
+    return False
+
+
 def is_logged_in():
     import common
     return common.pa.is_logged_in
@@ -1543,6 +1549,27 @@ def insufficient_randomness(seed_words):
             return True
 
     return False
+
+
+async def get_derived_key_from_data(key):
+    from derived_key import get_key_type_from_tn
+    from pages import ErrorPage
+
+    key_type = get_key_type_from_tn(key['tn'])
+
+    if not key_type:
+        await ErrorPage("Invalid key type number: {}".format(key['tn'])).show()
+        return False, None, None
+
+    (vals, error) = await spinner_task(text='Generating key',
+                                       task=key_type['task'],
+                                       args=[key['index']])
+    pk = vals['priv']
+    if error is not None:
+        await ErrorPage(error).show()
+        return False, None, None
+
+    return True, key_type, pk
 
 
 # EOF
