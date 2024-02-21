@@ -53,10 +53,13 @@ def hash160(s):
     return ripemd160(sha256(s))
 
 
+SIGHASH_DEFAULT = 0
 SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
 SIGHASH_ANYONECANPAY = 0x80
+
+VALID_SIGHASHES = [SIGHASH_DEFAULT, SIGHASH_ALL]
 
 # Serialization/deserialization tools
 
@@ -81,6 +84,21 @@ def deser_compact_size(f):
     elif nit == 255:
         nit = struct.unpack("<Q", f.read(8))[0]
     return nit
+
+
+def deser_compact_size_bytes(b):
+    nit = b[0]
+    length = 1
+    if nit == 253:
+        nit = struct.unpack("<H", b[1:3])[0]
+        length = 3
+    elif nit == 254:
+        nit = struct.unpack("<I", b[1:5])[0]
+        length = 5
+    elif nit == 255:
+        nit = struct.unpack("<Q", b[1:9])[0]
+        length = 9
+    return (nit, length)
 
 
 def deser_string(f):
@@ -342,6 +360,10 @@ class CTxOut(object):
                 self.scriptPubKey[0] == 0 and self.scriptPubKey[1] == 32:
             # aka. P2WSH
             return 'p2sh', self.scriptPubKey[2:2 + 32], True
+
+        if len(self.scriptPubKey) == 34 and \
+                self.scriptPubKey[0] == 81 and self.scriptPubKey[1] == 32:
+            return 'p2tr', self.scriptPubKey[2:2 + 32], True
 
         if self.is_p2pkh():
             return 'p2pkh', self.scriptPubKey[3:3 + 20], False

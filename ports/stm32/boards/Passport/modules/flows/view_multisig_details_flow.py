@@ -5,6 +5,7 @@
 
 from flows import Flow
 from pages import LongTextPage
+from utils import escape_text
 
 
 class ViewMultisigDetailsFlow(Flow):
@@ -19,7 +20,7 @@ class ViewMultisigDetailsFlow(Flow):
     async def show_overview(self):
         msg, _ = self.ms.format_overview(importing=False)
 
-        result = await LongTextPage(card_header={'title': self.ms.name}, text=msg, centered=True).show()
+        result = await LongTextPage(card_header={'title': escape_text(self.ms.name)}, text=msg, centered=True).show()
         if not result:
             self.set_result(False)
             return
@@ -30,7 +31,7 @@ class ViewMultisigDetailsFlow(Flow):
         import microns
         msg = self.ms.format_details()
 
-        result = await LongTextPage(card_header={'title': self.ms.name},
+        result = await LongTextPage(card_header={'title': escape_text(self.ms.name)},
                                     text=msg,
                                     right_micron=microns.Checkmark,
                                     centered=True).show()

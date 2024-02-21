@@ -4,10 +4,10 @@
 # restore_seed_flow.py -Restore a seed to Passport by entering the seed words.
 
 
-from flows import Flow
+from flows import Flow, RandomFinalWordFlow
 import microns
 from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
-from utils import spinner_task
+from utils import spinner_task, insufficient_randomness
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
 
@@ -19,16 +19,18 @@ class RestoreSeedFlow(Flow):
         self.seed_format = None
         self.seed_length = None
         self.validate_text = None
+        self.index = 0
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
+        self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
 
     async def choose_restore_method(self):
         from pages import ChooserPage
         from data_codecs.qr_type import QRType
 
-        options = [{'label': '24 words', 'value': 24},
-                   {'label': '12 words', 'value': 12},
+        options = [{'label': '12 Words', 'value': 12},
+                   {'label': '24 Words', 'value': 24},
                    {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
                    {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
@@ -52,7 +54,7 @@ class RestoreSeedFlow(Flow):
 
     async def scan_qr(self):
         from flows import ScanQRFlow
-        from pages import InfoPage, SeedWordsListPage, ErrorPage
+        from pages import InfoPage, SeedWordsListPage
         import microns
         from data_codecs.qr_type import QRType
 
@@ -60,8 +62,6 @@ class RestoreSeedFlow(Flow):
                                   data_description=self.validate_text).run()
 
         if result is None:
-            await ErrorPage("Invalid {} detected. Make sure you're using the right format."
-                            .format(self.validate_text)).show()
             self.back()
             return
 
@@ -84,27 +84,60 @@ class RestoreSeedFlow(Flow):
 
     async def explain_input_method(self):
         from pages import InfoPage
+        import microns
 
         result = await InfoPage([
-            "Passport uses predictive text input to help you restore your seed words.",
-            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."]
+            "Passport uses predictive text input to help you import your seed words.",
+            "Example: If you want to enter \"car\", type 2 2 7 and select \"car\" from the dropdown."],
+            left_micron=microns.Back,
         ).show()
+
+        if not result:
+            self.back()
+            return
+
         self.goto(self.enter_seed_words)
 
     async def enter_seed_words(self):
         result = await PredictiveTextInputPage(
             word_list='bip39',
             total_words=self.seed_length,
-            initial_words=self.seed_words).show()
+            initial_words=self.seed_words,
+            start_index=self.index).show()
+
         if result is None:
             cancel = await QuestionPage(
                 text='Cancel seed entry? All progress will be lost.').show()
+
             if cancel:
                 self.set_result(False)
                 return
-        else:
-            self.seed_words, self.prefixes = result
-            self.goto(self.validate_seed_words)
+
+            self.index = 0
+            return
+
+        self.seed_words, self.prefixes, get_last_word = result
+
+        if get_last_word:
+
+            last_word = await RandomFinalWordFlow(self.seed_words).run()
+
+            if not last_word:
+                self.index = self.seed_length - 1
+                return  # Go back to input a last word
+
+            self.seed_words.append(last_word)
+
+        if insufficient_randomness(self.seed_words):
+            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\nSave seed and continue?"
+            result2 = await ErrorPage(text=text,
+                                      left_micron=microns.Cancel).show()
+
+            if not result2:
+                self.index = 0
+                return  # Restart seed input
+
+        self.goto(self.validate_seed_words)
 
     async def validate_seed_words(self):
         from trezorcrypto import bip39
@@ -131,28 +164,17 @@ class RestoreSeedFlow(Flow):
         self.goto(self.enter_seed_words)
 
     async def valid_seed(self):
-        from foundation import bip39
         from flows import AutoBackupFlow, BackupFlow
+        from utils import get_seed_from_words
 
-        entropy = bytearray(33)  # Includes an extra byte for the checksum bits
-
-        len = bip39.mnemonic_to_bits(self.mnemonic, entropy)
-
-        if len == 264:  # 24 words x 11 bits each
-            trim_pos = 32
-        elif len == 198:  # 18 words x 11 bits each
-            trim_pos = 24
-        elif len == 132:  # 12 words x 11 bits each
-            trim_pos = 16
-        entropy = entropy[:trim_pos]  # Trim off the excess (including checksum bits)
-
+        entropy = get_seed_from_words(self.mnemonic)
         (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
         if error is None:
             import common
 
-            await SuccessPage(text='New seed restored and saved.').show()
+            await SuccessPage(text='New seed imported and saved.').show()
             if self.full_backup:
-                await BackupFlow().run()
+                await BackupFlow(initial_backup=True).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 

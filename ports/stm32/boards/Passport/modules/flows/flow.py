@@ -7,6 +7,10 @@ from animations.constants import TRANSITION_DIR_REPLACE, TRANSITION_DIR_POP, TRA
 from utils import handle_fatal_error
 import common
 
+saved_flow_keys = ['manual_setup',
+                   'setup_flow',
+                   'envoy_setup']
+
 
 class Flow():
     def __init__(self,
@@ -47,6 +51,12 @@ class Flow():
         stack = []
         for state_function_name in saved_stack:
             # print('lookup "{}"'.format(state_function_name))
+
+            # State name doesn't exist, so the firmware must have changed
+            # All saved data is unsafe, return None for caller error handling
+            if not hasattr(self, state_function_name):
+                return None
+
             stack.append(getattr(self, state_function_name))
 
         # print('deserialized stack={}'.format(stack))
@@ -60,8 +70,27 @@ class Flow():
     def restore_items(self, data):
         # print('restore_items = {}'.format(data))
         common.page_transition_dir = data.get('page_transition_dir', TRANSITION_DIR_PUSH)
-        self.prev_states = self.deserialize_prev_states(data.get('prev_states', []))
-        self.state = getattr(self, data.get('state'))
+
+        prev_states = self.deserialize_prev_states(data.get('prev_states', []))
+
+        # This is the error case, while the "empty" case is '[]'
+        if prev_states is None:
+            self.erase_settings()
+            return
+
+        self.prev_states = prev_states
+
+        current_state = data.get('state', None)
+
+        # In case the stack is present but the saved state wasn't
+        # If the saved state isn't available, the stack will be unsafe
+        if current_state is None or not hasattr(self, current_state):
+            self.erase_settings()
+            self.prev_states = []
+            return
+
+        # We have ensured that the state is valid
+        self.state = getattr(self, current_state)
 
     def erase_settings(self):
         if self.settings_key is not None:

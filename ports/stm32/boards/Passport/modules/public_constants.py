@@ -15,6 +15,7 @@ from constants import PSBT_MAX_SIZE
 
 # Seed phrase lengths accepted
 SEED_LENGTHS = [12, 24]
+SEED_WORD_LIST_LENGTH = const(2048)
 
 # Max PSBT txn we support (896k as PSBT)
 # - the max on the wire for mainnet is 100k
@@ -50,6 +51,7 @@ AFC_SEGWIT = const(0x02)       # requires a witness to spend
 AFC_BECH32 = const(0x04)       # just how we're encoding it?
 AFC_SCRIPT = const(0x08)       # paying into a script
 AFC_WRAPPED = const(0x10)       # for transition/compat types for segwit vs. old
+AFC_BECH32M = const(0x20)       # bech32m encoding
 
 # Numeric codes for specific address types
 AF_CLASSIC = AFC_PUBKEY          # 1addr
@@ -58,6 +60,7 @@ AF_P2WPKH = AFC_PUBKEY | AFC_SEGWIT | AFC_BECH32     # bc1qsdklfj
 AF_P2WSH = AFC_SCRIPT | AFC_SEGWIT | AFC_BECH32     # segwit multisig
 AF_P2WPKH_P2SH = AFC_WRAPPED | AFC_PUBKEY | AFC_SEGWIT     # looks classic P2SH, but p2wpkh inside
 AF_P2WSH_P2SH = AFC_WRAPPED | AFC_SCRIPT | AFC_SEGWIT     # looks classic P2SH, segwit multisig
+AF_P2TR = AFC_PUBKEY | AFC_SEGWIT | AFC_BECH32M  # taproot allows scripts and pubkeys
 
 SUPPORTED_ADDR_FORMATS = frozenset([
     AF_CLASSIC,
@@ -66,7 +69,11 @@ SUPPORTED_ADDR_FORMATS = frozenset([
     AF_P2WSH,
     AF_P2WPKH_P2SH,
     AF_P2WSH_P2SH,
+    AF_P2TR,
 ])
+
+DESCRIPTOR_CODES = {AF_P2WPKH: 'wpkh',
+                    AF_P2TR: 'tr'}
 
 # BIP-174 aka PSBT defined values
 #
@@ -82,10 +89,19 @@ PSBT_IN_WITNESS_SCRIPT = const(5)
 PSBT_IN_BIP32_DERIVATION = const(6)
 PSBT_IN_FINAL_SCRIPTSIG = const(7)
 PSBT_IN_FINAL_SCRIPTWITNESS = const(8)
+PSBT_IN_TAP_KEY_SIG = const(19)
+PSBT_IN_TAP_SCRIPT_SIG = const(20)
+PSBT_IN_TAP_LEAF_SCRIPT = const(21)
+PSBT_IN_TAP_BIP32_DERIVATION = const(22)
+PSBT_IN_TAP_INTERNAL_KEY = const(23)
+PSBT_IN_TAP_MERKLE_ROOT = const(24)
 
 PSBT_OUT_REDEEM_SCRIPT = const(0)
 PSBT_OUT_WITNESS_SCRIPT = const(1)
 PSBT_OUT_BIP32_DERIVATION = const(2)
+PSBT_OUT_TAP_INTERNAL_KEY = const(5)
+PSBT_OUT_TAP_TREE = const(6)
+PSBT_OUT_TAP_BIP32_DERIVATION = const(7)
 
 # Bitcoin limitation: max number of signatures in CHECK_MULTISIG
 # - 520 byte redeem script limit <= 15*34 bytes per pubkey == 510 bytes
@@ -104,6 +120,11 @@ DIR_MULTISIGS = 'multisig_configs'
 DIR_WALLET_CONFIGS = 'wallet_configs'
 DIR_TRANSACTIONS = 'transactions'
 DIR_HEALTH_CHECKS = 'health_checks'
+
+MARGIN_FOR_ADDRESSES = 0
+
+# Size of a pin prefix:
+NUM_DIGITS_FOR_SECURITY_WORDS = const(4)
 
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
@@ -126,5 +147,5 @@ Derivation: {}
 {}: {}
 '''
 
-
+TAP_TWEAK_SHA256 = "e80fe1639c9ca050e3af1b39c143c63e429cbceb15d940fbb5c5a1f4af57c5e9"
 # EOF

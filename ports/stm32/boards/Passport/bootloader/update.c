@@ -23,7 +23,7 @@
 #include "se.h"
 #include "sha256.h"
 #include "spiflash.h"
-#include "splash.h"
+#include "ui-splash.h"
 #include "utils.h"
 
 #include "firmware-keys.h"

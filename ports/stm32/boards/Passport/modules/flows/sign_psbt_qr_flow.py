@@ -26,7 +26,7 @@ class SignPsbtQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow, SignPsbtMicroSDFlow
         from errors import Error
-        from pages import YesNoChooserPage
+        from pages import YesNoChooserPage, ErrorPage
         import microns
         import passport
 
@@ -35,7 +35,8 @@ class SignPsbtQRFlow(Flow):
                                   data_description='a PSBT file',
                                   max_frames=self.max_frames,
                                   failure_message="Unable to Scan QR code, \
-try signing using the microSD card.\n\n{}").run()
+try signing using the microSD card.\n\n{}",
+                                  pass_error=True).run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
@@ -59,6 +60,13 @@ How would you like to proceed?"
                 result = await SignPsbtMicroSDFlow().run()
                 self.set_result(result)
             return  # Run it again with no max frames if the user wants
+
+        if result == Error.QR_TOO_LARGE:
+            await ErrorPage("This transaction is too large for QR signing. \
+\nSpend fewer coins or sign via microSD card.").show()
+
+            self.set_result(False)
+            return
 
         if isinstance(result, ur.Value):
             self.ur_type = result.ur_type()

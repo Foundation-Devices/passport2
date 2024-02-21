@@ -13,13 +13,14 @@ from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class BackupFlow(Flow):
-    def __init__(self):
+    def __init__(self, initial_backup=False):
         from common import settings
         super().__init__(initial_state=self.show_intro, name='BackupFlow')
         self.backup_quiz_passed = settings.get('backup_quiz', False)
         self.quiz_result = [None] * TOTAL_BACKUP_CODE_DIGITS
 
         self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
+        self.initial_backup = initial_backup
 
     async def show_intro(self):
         from pages import InfoPage
@@ -30,7 +31,7 @@ class BackupFlow(Flow):
             msgs = ['Passport is about to create an updated microSD backup.',
                     'The Backup Code is the same as what you were previously shown.']
         else:
-            msgs = ['Passport is about to create your first encrypted microSD backup.',
+            msgs = ['Passport is about to create your first encrypted microSD backup containing your seed words.',
                     'The next screen will show you the Backup Code that is {} to decrypt the backup.'.format(
                         recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
                     'We recommend writing down the Backup Code on the included security card.',
@@ -43,15 +44,19 @@ class BackupFlow(Flow):
             text=msgs,
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
+
         if result:
             self.goto(self.get_backup_code)
-        else:
-            result = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
+            return
+
+        if self.initial_backup:
+            result2 = await QuestionPage(text='Skip initial backup?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)')), left_micron=microns.Retry).show()
-            if result:
+            if result2:
                 self.set_result(False)
-            else:
-                return
+            return  # Repeat show_into if user retries
+
+        self.set_result(False)
 
     async def get_backup_code(self):
         from utils import spinner_task
@@ -110,4 +115,5 @@ class BackupFlow(Flow):
         from flows import BackupCommonFlow
 
         result = await BackupCommonFlow(self.backup_code).run()
-        self.set_result(result)
+        result_bool = result is not None
+        self.set_result(result_bool)

@@ -31,6 +31,18 @@ class SelectSetupModeFlow(Flow):
             left_micron=microns.Shutdown,
             right_micron=microns.Forward).show()
         if result:
+            self.goto(self.show_warning)
+        else:
+            await ShutdownPage().show()
+
+    async def show_warning(self):
+        from pages import InfoPage, ShutdownPage
+
+        result = await InfoPage(
+            text='Make sure you are in a quiet and secure place, with access to a pen, paper, and the internet.',
+            left_micron=microns.Shutdown,
+            right_micron=microns.Forward).show()
+        if result:
             self.goto(self.select_mode)
         else:
             await ShutdownPage().show()

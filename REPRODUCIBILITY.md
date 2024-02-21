@@ -26,7 +26,7 @@ In order to build and verify the reproducibility of Passport firmware, you will 
 
 - Get the source code
 - Install the dependencies
-    - [Docker](https://docs.docker.com/desktop/)
+    - [Docker](https://docs.docker.com/desktop/) or [Podman](https://podman.io/).
     - [Just](https://github.com/casey/just#installation)
 - Build the reproducible binaries
 - Verify the binaries match the:
@@ -54,12 +54,28 @@ Several tools are required for building and verifying Passport’s firmware.
 
 ### Install Docker
 
+:warning: Docker requires to add your user to the `docker` group which is root-equivalent and may pose a security risk for you. Consider using Podman if you don't want to add your user to the `docker` group. Building with `sudo` and Docker is not supported.
+
 The installation of Docker is most easily achieved by installing Docker Desktop on your given platform using the official docs linked below. Follow those directions, launch Docker Desktop, and accept the terms before proceeding:
 
 - [Windows](https://docs.docker.com/desktop/install/windows-install/)
 - [MacOS](https://docs.docker.com/desktop/install/mac-install/)
 - [Linux](https://docs.docker.com/desktop/install/linux-install/)
     - If you don’t want to require using `sudo` when running the `just` commands below, follow the [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user) to grant your user Docker permissions on Linux
+
+### Install Podman (optional)
+
+This step is optional if you already have Docker installed and your user is on the `docker` group.
+
+Podman does not require root or adding your user to another group, so this option is recommended for non-developer users that want to verify the reproducibility of the firmware only.
+
+- [Windows](https://podman.io/docs/installation#windows)
+- [MacOS](https://podman.io/docs/installation#macos)
+- [Linux](https://podman.io/docs/installation#installing-on-linux)
+
+Also, the following configuration files might need to be created after installation:
+
+- [Configuration files](https://podman.io/docs/installation#policyjson)
 
 ### Install Just
 
@@ -104,6 +120,14 @@ just build-docker
 ```
 
 This command will take some time to run as it creates the image, including downloading and installing every tool necessary for the build process. As we use a Docker image here, not only will this ensure the binaries are always the same for a given version, but it also allows you to easily clean up after verifying the firmware and leave your system uncluttered.
+
+If you want to opt to use Docker instead of Podman, then you can prepend set the `DOCKER_CMD` environment variable to `podman`, for example:
+
+```bash
+DOCKER_CMD=podman just build-docker
+```
+
+This applies to other commands shown here as well that would normally require Docker in order to run.
 
 If you’d like to validate exactly how the `build-docker` Justfile command functions, you can find the relevant source code here:
 

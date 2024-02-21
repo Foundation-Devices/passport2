@@ -6,17 +6,22 @@
 
 import chains
 import common
-from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH
-from utils import get_accounts, get_derived_keys
+from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2TR
+from utils import get_accounts_by_xfp, get_derived_keys
 
 
 # Dynamically find the next account number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder if we exceeded the gap limit.
-def get_next_account_num():
-    accts = get_accounts()
+def get_next_account_num(xfp):
+    accounts = get_accounts_by_xfp(xfp)
 
     acct_nums = []
-    for acct in accts:
+
+    # Mock out account 0, it always exists but may not be saved
+    if len(accounts) == 0 or accounts[0]['acct_num'] != 0:
+        acct_nums.append(0)
+
+    for acct in accounts:
         acct_nums.append(acct['acct_num'])
 
     acct_nums.sort()
@@ -72,7 +77,10 @@ def get_addr_type_from_address(address, is_multisig):
         return AF_P2WSH_P2SH if is_multisig else AF_P2WPKH_P2SH
     elif (address[0] == 'b' and address[1] == 'c' and address[2] == '1') or \
          (address[0] == 't' and address[1] == 'b' and address[2] == '1'):
-        return AF_P2WSH if is_multisig else AF_P2WPKH
+        if address[3] == 'p':
+            return AF_P2TR
+        else:
+            return AF_P2WSH if is_multisig else AF_P2WPKH
 
     return None
 
@@ -90,6 +98,8 @@ def get_bip_num_from_addr_type(addr_type, is_multisig):
             return 84
         elif addr_type == AF_P2WPKH_P2SH:
             return 49
+        elif addr_type == AF_P2TR:
+            return 86
         else:
             raise ValueError(addr_type)
 
@@ -109,6 +119,8 @@ def get_addr_type_from_deriv(path):
             return AF_P2WSH_P2SH
         elif subpath == '2':
             return AF_P2WSH
+    elif type_str == '86':
+        return AF_P2TR
 
     return None
 
@@ -132,7 +144,10 @@ def get_deriv_fmt_from_address(address, is_multisig):
             return "m/49'/{coin_type}'/{acct}'"
         elif ((address[0] == 'b' and address[1] == 'c' and address[2] == '1') or
               (address[0] == 't' and address[1] == 'b' and address[2] == '1')):
-            return "m/84'/{coin_type}'/{acct}'"
+            if address[3] == 'p':
+                return "m/86'/{coin_type}'/{acct}'"
+            else:
+                return "m/84'/{coin_type}'/{acct}'"
 
     return None
 
@@ -153,6 +168,8 @@ def get_deriv_fmt_from_addr_type(addr_type, is_multisig):
             return "m/49'/{coin_type}'/{acct}'"
         elif addr_type == AF_P2WPKH:
             return "m/84'/{coin_type}'/{acct}'"
+        elif addr_type == AF_P2TR:
+            return "m/86'/{coin_type}'/{acct}'"
 
     return None
 

@@ -23,6 +23,7 @@ class UpdateFirmwareFlow(Flow):
         self.error = None
         self.reset_after = reset_after
         self.statusbar = statusbar
+        self.filename = None
 
     async def on_done(self, error=None):
         self.error = error
@@ -31,12 +32,15 @@ class UpdateFirmwareFlow(Flow):
     async def choose_file(self):
         root_path = CardSlot.get_sd_root()
 
-        result = await FilePickerFlow(initial_path=root_path, suffix='-passport.bin', show_folders=True).run()
+        result = await FilePickerFlow(initial_path=root_path,
+                                      suffix='-passport.bin',
+                                      show_folders=True,
+                                      allow_delete=False).run()
         if result is None:
             self.set_result(False)
             return
 
-        _filename, full_path, is_folder = result
+        self.filename, full_path, is_folder = result
         if not is_folder:
             self.update_file_path = full_path
             self.goto(self.show_firmware_details)
@@ -109,6 +113,7 @@ class UpdateFirmwareFlow(Flow):
             # we are updating, then reboot
             (curr_version, _, _, _, _) = system.get_software_info()
             settings.set('update', '{}->{}'.format(curr_version, self.version))  # old_version->new_version
+            settings.set('firmware_title', self.filename)
             settings.save()
 
             if self.reset_after:

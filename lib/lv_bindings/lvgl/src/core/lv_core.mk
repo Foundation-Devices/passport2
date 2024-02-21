@@ -1,7 +1,9 @@
 CSRCS += lv_disp.c
 CSRCS += lv_group.c
 CSRCS += lv_indev.c
+ifeq ($(LV_TOUCHSCREEN),1)
 CSRCS += lv_indev_scroll.c
+endif
 CSRCS += lv_obj.c
 CSRCS += lv_obj_class.c
 CSRCS += lv_obj_draw.c

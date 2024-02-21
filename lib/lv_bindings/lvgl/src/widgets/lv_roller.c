@@ -13,7 +13,9 @@
 #include "../draw/lv_draw.h"
 #include "../core/lv_group.h"
 #include "../core/lv_indev.h"
+#if LV_TOUCHSCREEN
 #include "../core/lv_indev_scroll.h"
+#endif
 
 /*********************
  *      DEFINES

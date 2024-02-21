@@ -27,7 +27,8 @@ class FilePickerFlow(Flow):
             enable_parent_nav=False,
             suffix=None,
             filter_fn=None,
-            select_text="Select"):
+            select_text="Select",
+            allow_delete=True):
         from files import CardSlot
         from utils import bind, show_card_missing
 
@@ -47,6 +48,7 @@ class FilePickerFlow(Flow):
         self.status_page = None
         self.empty_result = None
         self.finished = False
+        self.allow_delete = allow_delete
 
         bind(self, show_card_missing)
 
@@ -73,6 +75,11 @@ class FilePickerFlow(Flow):
             self.goto(self.show_card_missing)
             return True
 
+    def finalize(self, result):
+        common.page_transition_dir = TRANSITION_DIR_POP
+        self.set_result(result)
+        self.finished = True
+
     async def on_file_result(self, res):
         # No file selected - go back to previous page
         if res is None:
@@ -90,11 +97,15 @@ class FilePickerFlow(Flow):
             common.page_transition_dir = TRANSITION_DIR_PUSH
             self.paths.append(full_path)
             return True
+
+        if not self.allow_delete:
+            self.finalize((_filename, full_path, is_folder))
+            return True
+
         result = await SelectedFileFlow(_filename, full_path, is_folder, self.select_text).run()
+
         if result is not None:
-            common.page_transition_dir = TRANSITION_DIR_POP
-            self.set_result(result)
-            self.finished = True
+            self.finalize(result)
 
         return True
 

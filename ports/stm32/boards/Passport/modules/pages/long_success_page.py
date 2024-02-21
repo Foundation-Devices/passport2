@@ -16,13 +16,16 @@ class LongSuccessPage(LongTextPage):
             card_header=None,
             statusbar=None,
             left_micron=None,
-            right_micron=microns.Checkmark):
+            right_micron=microns.Checkmark,
+            icon=lv.LARGE_ICON_SUCCESS,
+            margins=None):
         super().__init__(
             text=text,
             card_header=card_header,
             statusbar=statusbar,
-            icon=lv.LARGE_ICON_SUCCESS,
+            icon=icon,
             icon_color=DEFAULT_LARGE_ICON_COLOR,
             centered=True,
             left_micron=left_micron,
-            right_micron=right_micron)
+            right_micron=right_micron,
+            margins=margins)

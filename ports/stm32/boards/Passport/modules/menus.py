@@ -29,7 +29,7 @@ from utils import has_seed
 
 
 def manage_account_menu():
-    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow
+    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow, AddressExplorerFlow
     from pages import AccountDetailsPage
 
     return [
@@ -37,6 +37,8 @@ def manage_account_menu():
         {'icon': 'ICON_INFO', 'label': 'Rename Account', 'flow': RenameAccountFlow},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+         'statusbar': {'title': 'LIST ADDRESSES'}},
         {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
     ]
 
@@ -110,14 +112,16 @@ def plus_menu():
 
 
 def device_menu():
-    from flows import AboutFlow, ChangePINFlow
-    from pages import AutoShutdownSettingPage, BrightnessSettingPage
+    from flows import AboutFlow, ChangePINFlow, RenameDeviceFlow
+    from pages import AutoShutdownSettingPage, BrightnessSettingPage, BatteryPage
     from utils import is_logged_in
 
     return [
         {'icon': 'ICON_BRIGHTNESS', 'label': 'Screen Brightness', 'page': BrightnessSettingPage},
         {'icon': 'ICON_COUNTDOWN', 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
+        {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
+        {'icon': 'ICON_SIGN', 'label': 'Device Name', 'flow': RenameDeviceFlow},
         {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
     ]
 
@@ -193,7 +197,7 @@ def nostr_menu():
 
 
 def key_manager_menu():
-    from utils import get_derived_keys, are_hidden_keys_showing
+    from utils import get_derived_keys, are_hidden_keys_showing, escape_text
     from derived_key import get_key_type_from_tn
     from common import settings
 
@@ -210,7 +214,7 @@ def key_manager_menu():
             if not key_type:
                 continue
 
-            title = "{} ({})".format(key['name'], key['index'])
+            title = "{} ({})".format(escape_text(key['name']), key['index'])
 
             result.append({'icon': key_type['icon'],
                            'label': title,
@@ -297,14 +301,19 @@ def multisig_menu():
     from multisig_wallet import MultisigWallet
     from pages import MultisigPolicySettingPage, ErrorPage
     from flows import ImportMultisigWalletFromMicroSDFlow, ImportMultisigWalletFromQRFlow
+    from utils import escape_text
+    from common import settings
 
-    if not MultisigWallet.exists():
+    xfp = settings.get('xfp')
+    multisigs = MultisigWallet.get_by_xfp(xfp)
+
+    if len(multisigs) == 0:
         items = [{'icon': 'ICON_TWO_KEYS', 'label': '(None setup yet)', 'page': ErrorPage,
                   'args': {'text': "You haven't imported any multisig wallets yet."}}]
     else:
         items = []
-        for ms in MultisigWallet.get_all():
-            nice_name = '%d/%d: %s' % (ms.M, ms.N, ms.name)
+        for ms in multisigs:
+            nice_name = '%d/%d: %s' % (ms.M, ms.N, escape_text(ms.name))
             items.append({
                 'icon': 'ICON_TWO_KEYS',
                 'label': nice_name,
@@ -344,7 +353,8 @@ def advanced_menu():
     return [
         {'icon': 'ICON_SETTINGS', 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
         {'icon': 'ICON_SEED', 'label': 'View Seed Words', 'flow': ViewSeedWordsFlow, 'is_visible': has_seed,
-         'statusbar': {'title': 'SEED WORDS', 'icon': 'ICON_SEED'}},
+         'statusbar': {'title': 'SEED WORDS', 'icon': 'ICON_SEED'},
+         'args': {'qr_button': True}},
         {'icon': 'ICON_ONE_KEY', 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': 'ICON_MICROSD', 'label': 'microSD', 'submenu': microsd_menu},
@@ -365,7 +375,6 @@ def developer_menu():
             SetInitialPINFlow,
         )
         from developer import (
-            BatteryPage,
             DeleteDerivedKeysFlow,
             DeveloperFunctionsFlow,
             FCCTestFlow,
@@ -376,7 +385,6 @@ def developer_menu():
         from foundation import ur
 
         return [
-            {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
             {'icon': 'ICON_ERASE', 'label': 'Factory Reset',
                 'flow': DeveloperFunctionsFlow, 'args': {'fn_name': 'factory_reset'}},
             {'icon': 'ICON_RETRY', 'label': 'Spin!!!', 'flow': SpinDelayFlow, 'args': {'delay_ms': 10000}},

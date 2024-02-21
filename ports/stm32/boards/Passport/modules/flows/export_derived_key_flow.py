@@ -47,7 +47,8 @@ class ExportDerivedKeyFlow(Flow):
                                              qr_option=True,
                                              sd_option=True,
                                              path=self.path,
-                                             filename=self.filename).run()
+                                             filename=self.filename,
+                                             key_manager=True).run()
             self.set_result(result)
             return
 
@@ -77,9 +78,9 @@ class ExportDerivedKeyFlow(Flow):
         from flows import SeedWarningFlow
         import microns
 
-        result = await SeedWarningFlow(action_text="display your {} as a QR code"
+        result = await SeedWarningFlow(action_text="display your child {} as a QR code"
                                        .format(self.key_type['title']),
-                                       continue_text=self.key_type.get('continue_text', None)).run()
+                                       key_manager=True).run()
 
         if not result:
             self.back()
@@ -95,6 +96,8 @@ class ExportDerivedKeyFlow(Flow):
     async def confirm_qr(self):
         from pages import InfoPage, LongTextPage
         import microns
+        from utils import stylize_address
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         text = 'Confirm the exported {} on the following page'.format(self.key_type['title'])
         result = await InfoPage(text=text, left_micron=microns.Back).show()
@@ -103,10 +106,11 @@ class ExportDerivedKeyFlow(Flow):
             self.back()
             return
 
-        result = await LongTextPage(text="\n" + self.data,
+        result = await LongTextPage(text="\n" + stylize_address(self.data),
                                     centered=True,
                                     card_header={'title': 'Confirm Key'},
-                                    left_micron=microns.Back).show()
+                                    left_micron=microns.Back,
+                                    margins=MARGIN_FOR_ADDRESSES).show()
 
         if not result:
             return
@@ -116,9 +120,9 @@ class ExportDerivedKeyFlow(Flow):
     async def save_to_sd(self):
         from flows import SaveToMicroSDFlow, SeedWarningFlow
 
-        result = await SeedWarningFlow(action_text="copy your {} to the microSD card"
+        result = await SeedWarningFlow(action_text="copy your child {} to the microSD card"
                                        .format(self.key_type['title']),
-                                       continue_text=self.key_type.get('continue_text', None)).run()
+                                       key_manager=True).run()
 
         if not result:
             self.back()

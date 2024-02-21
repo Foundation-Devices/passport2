@@ -129,7 +129,7 @@ Passport will clear your passphrase upon shutdown.'''
                 self.goto(self.enter_passphrase)
                 return
 
-        common.ui.update_cards(stay_on_same_card=True)
+        common.ui.update_cards(stay_on_last_card=True)
 
         async def start_main_task():
             common.ui.start_card_task(card_idx=common.ui.active_card_idx)

@@ -17,10 +17,11 @@ from pages import (
     SuccessPage,
     YesNoChooserPage
 )
-from utils import get_backups_folder_path, spinner_task, get_backup_code_as_password
+from utils import spinner_task, get_backup_code_as_password, bind, show_card_missing
 from tasks import restore_backup_task, get_backup_code_task
 from errors import Error
 import common
+from files import CardMissingError
 
 
 class RestoreBackupFlow(Flow):
@@ -32,6 +33,10 @@ class RestoreBackupFlow(Flow):
         self.backup_password_prefixes = []
         self.full_backup = full_backup
         self.autobackup = autobackup
+        self.statusbar = {'title': 'RESTORE BACKUP', 'icon': 'ICON_SEED'}
+        self.return_bool = True
+
+        bind(self, show_card_missing)
 
     async def check_if_erased(self):
         from common import pa
@@ -52,8 +57,23 @@ class RestoreBackupFlow(Flow):
             self.goto(self.choose_file)
 
     async def choose_file(self):
-        backups_path = get_backups_folder_path()
-        result = await FilePickerFlow(initial_path=backups_path, suffix='.7z', show_folders=True).run()
+        from utils import get_file_list, get_backups_folder_path
+
+        suffix = '.7z'
+        try:
+            files = get_file_list(suffix=suffix)
+            if len(files) == 0:
+                initial_path = get_backups_folder_path()
+            else:
+                initial_path = None
+        except CardMissingError:
+            self.goto(self.show_card_missing)
+            return
+
+        result = await FilePickerFlow(initial_path=initial_path,
+                                      suffix=suffix,
+                                      show_folders=True,
+                                      allow_delete=False).run()
         if result is None:
             # No file chosen, so go back to menu
             self.set_result(False)
@@ -122,7 +142,7 @@ class RestoreBackupFlow(Flow):
             if self.full_backup:
                 if error_2 is not None or self.backup_code != new_backup_code:
                     await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
-                    await BackupFlow().run()
+                    await BackupFlow(initial_backup=True).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 

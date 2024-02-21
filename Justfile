@@ -4,10 +4,13 @@
 # Justfile - Root-level Justfile for Passport
 
 export DOCKER_IMAGE := env_var_or_default('DOCKER_IMAGE', 'foundation-devices/passport2:latest')
+export DOCKER_CMD := env_var_or_default('DOCKER_CMD', 'docker')
+
+DOCKER_RUN := if DOCKER_CMD == 'docker' { 'docker run -u $(id -u):$(id -g)' } else { 'podman run' }
 
 # Build the docker image
 build-docker:
-    docker build -t ${DOCKER_IMAGE} .
+    $DOCKER_CMD build -t ${DOCKER_IMAGE} .
 
 # Build the firmware inside docker.
 build-firmware screen="mono": mpy-cross (run-in-docker ("just ports/stm32/build " + screen))
@@ -44,6 +47,9 @@ build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
 # Sign the built firmware using a private key and the cosign tool
 sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
 
+# Produce hashes of the firmware
+hash keypath version file screen="mono": (sign keypath version screen) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/hash " + file + " " + screen))
+
 # Clean firmware build
 clean: (run-in-docker "just ports/stm32/clean")
 
@@ -76,8 +82,7 @@ mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-d
 
 [private]
 run-in-docker command:
-    docker run --rm -v "$PWD":/workspace \
-        -u $(id -u):$(id -g) \
+    {{DOCKER_RUN}} --rm \
         -v $(pwd):/workspace \
         -w /workspace \
         -e MPY_CROSS="/workspace/mpy-cross/mpy-cross-docker" \

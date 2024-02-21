@@ -5,9 +5,9 @@
 
 import lvgl as lv
 from styles.style import Stylize
-from views import Arc, Label, View, Icon, Spinner
+from views import Arc, Label, View, Icon, Spinner, VerifiedIcon
 from pages import Page
-from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR
+from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR, WHITE
 import microns
 import common
 import passport
@@ -18,7 +18,8 @@ class StatusPage(Page):
 
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
-                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward):
+                 statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
+                 margins=None, custom_view=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -30,6 +31,7 @@ class StatusPage(Page):
         self.text = text
         self.page_idx = 0
         self.icon = icon
+        self.custom_view = custom_view
         self.icon_color = icon_color
 
         self.show_progress = show_progress
@@ -38,6 +40,9 @@ class StatusPage(Page):
         self.centered = centered
         self.show_spinner = show_spinner
         self.interactive = interactive
+        self.true_left_micron = left_micron
+        self.true_right_micron = right_micron
+        self.margins = (margins if margins is not None else 8)
 
         self.is_list_mode = isinstance(self.text, list)
 
@@ -46,7 +51,7 @@ class StatusPage(Page):
         self.container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
         self.container.set_size(lv.pct(100), lv.pct(100))
         with Stylize(self.container) as default:
-            default.pad(left=8, right=8)
+            default.pad(left=self.margins, right=self.margins)
             default.pad_row(20)
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
         self.set_children([self.container])
@@ -65,19 +70,24 @@ class StatusPage(Page):
 
         # Update microns in a special way for array text
         if self.is_list_mode:
-            common.ui.set_left_micron(microns.Back)
-            common.ui.set_right_micron(microns.Forward)
+            self.left_micron = microns.Back
+            self.right_micron = microns.Forward
             if self.page_idx == 0:
-                common.ui.set_left_micron(self.left_micron)
-            elif self.page_idx == len(self.text):
-                common.ui.set_right_micron(self.right_micron)
+                self.left_micron = self.true_left_micron
+            elif self.page_idx == len(self.text) - 1:
+                self.right_micron = self.true_right_micron
+
+            common.ui.set_left_micron(self.left_micron)
+            common.ui.set_right_micron(self.right_micron)
 
         # center container so we can center the icon or progress in it
         self.center_container = View()
         self.center_container.set_size(lv.pct(100), lv.SIZE.CONTENT)
 
         self.center_content = None
-        if self.icon is not None:
+        if self.custom_view:
+            self.center_content = self.custom_view()
+        elif self.icon is not None:
             self.center_content = Icon(self.icon)
             self.center_content.set_size(self.icon.header.w, self.icon.header.h)
             self.center_content.set_no_scroll()

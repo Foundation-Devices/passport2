@@ -24,6 +24,7 @@ from .magic_scan_validate_address_flow import *
 from .magic_scan_flow import *
 
 from .about_flow import *
+from .address_explorer_flow import *
 from .apply_passphrase_flow import *
 from .auto_backup_flow import *
 from .backup_flow import *
@@ -51,10 +52,12 @@ from .new_account_flow import *
 from .new_derived_key_flow import *
 from .new_seed_flow import *
 from .connect_wallet_flow import *
+from .random_final_word_flow import *
 from .read_file_flow import *
 from .remove_dev_pubkey_flow import *
 from .rename_account_flow import *
 from .rename_derived_key_flow import *
+from .rename_device_flow import *
 from .rename_multisig_flow import *
 from .reset_pin_flow import *
 from .restore_backup_flow import *

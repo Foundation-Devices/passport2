@@ -9,7 +9,9 @@
 #include "lv_indev.h"
 #include "lv_disp.h"
 #include "lv_obj.h"
+#if LV_TOUCHSCREEN
 #include "lv_indev_scroll.h"
+#endif
 #include "lv_group.h"
 #include "lv_refr.h"
 
@@ -21,7 +23,7 @@
  *      DEFINES
  *********************/
 #if LV_INDEV_DEF_SCROLL_THROW <= 0
-    #warning "LV_INDEV_DRAG_THROW must be greater than 0"
+#warning "LV_INDEV_DRAG_THROW must be greater than 0"
 #endif
 
 /**********************
@@ -811,7 +813,9 @@ static void indev_proc_press(_lv_indev_proc_t * proc)
     if(new_obj_searched && proc->types.pointer.last_obj) {
         proc->types.pointer.scroll_throw_vect.x = 0;
         proc->types.pointer.scroll_throw_vect.y = 0;
+        #if LV_TOUCHSCREEN
         _lv_indev_scroll_throw_handler(proc);
+        #endif
         if(indev_reset_check(proc)) return;
     }
 
@@ -877,7 +881,9 @@ static void indev_proc_press(_lv_indev_proc_t * proc)
 
         if(indev_act->proc.wait_until_release) return;
 
+        #if LV_TOUCHSCREEN
         _lv_indev_scroll_handler(proc);
+        #endif
         if(indev_reset_check(proc)) return;
         indev_gesture(proc);
         if(indev_reset_check(proc)) return;
@@ -953,7 +959,9 @@ static void indev_proc_release(_lv_indev_proc_t * proc)
     /*The reset can be set in the Call the ancestor's event handler function.
      * In case of reset query ignore the remaining parts.*/
     if(scroll_obj) {
+        #if LV_TOUCHSCREEN
         _lv_indev_scroll_throw_handler(proc);
+        #endif
         if(indev_reset_check(proc)) return;
     }
 }

@@ -11,6 +11,7 @@ from tasks import get_security_words_task
 from utils import InputMode
 from views import Label, View, PINInput, Icon
 from constants import MENU_ITEM_CORNER_RADIUS
+from public_constants import NUM_DIGITS_FOR_SECURITY_WORDS
 from styles import Stylize
 from t9 import T9
 import microns
@@ -18,8 +19,6 @@ import common
 from common import pa
 
 NUM_ATTEMPTS_LEFT_BRICK_WARNING = 5
-
-NUM_DIGITS_FOR_SECURITY_WORDS = 4
 MIN_PIN_LENGTH = 6
 MAX_PIN_LENGTH = 12
 
@@ -265,15 +264,13 @@ class PINEntryPage(Page):
                 self.input.set_mode(self.t9.mode)
 
     async def on_security_words(self, security_words, error):
-        from serializations import sha256
+        from utils import check_pin_prefix_hash
         # NOTE: Be aware that this is called from the context of another task
         # TODO: error not handled
         if error is None:
             self.security_words = security_words
             self.displaying_security_words = True
-            new_pin_sha = sha256(self.pin)
-            true_pin_sha = common.settings.get('pin_prefix_hash')
-            if self.check_pin_prefix and not all(x == y for x, y in zip(new_pin_sha, true_pin_sha)):
+            if self.check_pin_prefix and not check_pin_prefix_hash(self.pin):
                 self.security_words_message = ("Your PIN is incorrect.\n"
                                                "Try again.")
                 self.update_message(show_security_words=False, title="Warning", message=self.security_words_message)

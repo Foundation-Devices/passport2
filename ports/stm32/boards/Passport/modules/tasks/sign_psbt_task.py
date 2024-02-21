@@ -18,6 +18,8 @@ async def sign_psbt_task(on_done, psbt):
     import trezorcrypto
     import stash
     import gc
+    from foundation import secp256k1
+    from taproot import taproot_sign_key
 
     try:
         with stash.SensitiveValues() as sv:
@@ -53,6 +55,9 @@ async def sign_psbt_task(on_done, psbt):
                 if not inp.is_segwit:
                     # Hash by serializing/blanking various subparts of the transaction
                     digest = psbt.make_txn_sighash(in_idx, txi, inp.sighash)
+                elif len(inp.tap_subpaths) > 0:
+                    # TODO: add annex and ext_flag
+                    digest = psbt.make_txn_taproot_sighash(in_idx, inp.sighash)
                 else:
                     # Hash the inputs and such in totally new ways, based on BIP-143
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
@@ -77,19 +82,31 @@ async def sign_psbt_task(on_done, psbt):
                     which_key = inp.required_key
 
                     assert not inp.added_sig, "already done??"
-                    assert which_key in inp.subpaths, 'unk key'
+                    assert not inp.tap_key_sig, "already done taproot??"
 
-                    if inp.subpaths[which_key][0] != psbt.my_xfp and inp.subpaths[which_key][0] != swab32(psbt.my_xfp):
-                        # we don't have the key for this subkey
-                        # (redundant, required_key wouldn't be set)
-                        continue
+                    if len(inp.subpaths) > 0 and \
+                        (inp.subpaths[which_key][0] == psbt.my_xfp or
+                         inp.subpaths[which_key][0] == swab32(psbt.my_xfp)):
 
-                    # get node required
-                    skp = keypath_to_str(inp.subpaths[which_key])
-                    node = sv.derive_path(skp, register=False)
+                        # get node required
+                        skp = keypath_to_str(inp.subpaths[which_key])
+                        node = sv.derive_path(skp, register=False)
 
-                    # expensive test, but works... and important
-                    pu = node.public_key()
+                        # expensive test, but works... and important
+                        pu = node.public_key()
+
+                    # tap_subpaths have type ([path_elements], [tap_hashes])
+                    elif len(inp.tap_subpaths) > 0 and \
+                        (inp.tap_subpaths[which_key][0][0] == psbt.my_xfp or
+                         inp.tap_subpaths[which_key][0][0] == swab32(psbt.my_xfp)):
+
+                        # get node required
+                        skp = keypath_to_str(inp.tap_subpaths[which_key][0])
+                        node = sv.derive_path(skp, register=False)
+
+                        # expensive test, but works... and important
+                        pu = node.public_key()[1:]
+
                     if pu != which_key:
                         raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
 
@@ -101,7 +118,23 @@ async def sign_psbt_task(on_done, psbt):
                 # print(" digest %s" % b2a_hex(digest).decode('ascii'))
 
                 # Do the ACTUAL signature ... finally!!!
-                result = trezorcrypto.secp256k1.sign(pk, digest)
+                if len(inp.tap_subpaths) > 0:
+                    # TODO: handle taproot scripts
+                    inp.tap_key_sig = taproot_sign_key(None, pk, inp.sighash, digest)
+                else:
+                    result = trezorcrypto.secp256k1.sign(pk, digest)
+
+                    # convert signature to DER format
+                    if len(result) != 65:
+                        raise AssertionError('Incorrect signature length.')
+
+                    r = result[1:33]
+                    s = result[33:65]
+
+                    inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
+
+                    # Memory cleanup
+                    del result, r, s
 
                 # private key no longer required
                 stash.blank_object(pk)
@@ -110,19 +143,7 @@ async def sign_psbt_task(on_done, psbt):
 
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
-                # convert signature to DER format
-                if len(result) != 65:
-                    raise AssertionError('Incorrect signature length.')
-
-                r = result[1:33]
-                s = result[33:65]
-
-                inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
-
                 success.add(in_idx)
-
-                # Memory cleanup
-                del result, r, s
 
         # All went well, so just fall through and call on_done()
 

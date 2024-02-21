@@ -869,14 +869,18 @@ def folder_exists(path):
 
 def get_accounts():
     from common import settings
-    from constants import DEFAULT_ACCOUNT_ENTRY
-    accounts = settings.get('accounts', [DEFAULT_ACCOUNT_ENTRY])
+    accounts = settings.get('accounts', [])
     accounts.sort(key=lambda a: a.get('acct_num', 0))
     return accounts
 
 
-def get_account_by_name(name):
+def get_accounts_by_xfp(xfp):
     accounts = get_accounts()
+    return [acct for acct in accounts if acct.get('xfp', None) == xfp]
+
+
+def get_account_by_name(name, xfp):
+    accounts = get_accounts_by_xfp(xfp)
     for account in accounts:
         if account.get('name') == name:
             return account
@@ -884,8 +888,8 @@ def get_account_by_name(name):
     return None
 
 
-def get_account_by_number(acct_num):
-    accounts = get_accounts()
+def get_account_by_number(acct_num, xfp):
+    accounts = get_accounts_by_xfp(xfp)
     for account in accounts:
         if account.get('acct_num') == acct_num:
             return account
@@ -949,23 +953,23 @@ def get_width_from_num_words(num_words):
 #     return False
 
 
-def make_next_addr_key(acct_num, addr_type, is_change):
-    return '{}/{}{}'.format(acct_num, addr_type, '/1' if is_change else '')
+def make_next_addr_key(acct_num, addr_type, xfp, chain_type, is_change):
+    return '{}.{}.{}/{}{}'.format(chain_type, xfp, acct_num, addr_type, '/1' if is_change else '')
 
 
-def get_next_addr(acct_num, addr_type, is_change):
+def get_next_addr(acct_num, addr_type, xfp, chain_type, is_change):
     from common import settings
     next_addrs = settings.get('next_addrs', {})
-    key = make_next_addr_key(acct_num, addr_type, is_change)
+    key = make_next_addr_key(acct_num, addr_type, xfp, chain_type, is_change)
     return next_addrs.get(key, 0)
 
 # Save the next address to use for the specific account and address type
 
 
-def save_next_addr(acct_num, addr_type, addr_idx, is_change, force_update=False):
+def save_next_addr(acct_num, addr_type, addr_idx, xfp, chain_type, is_change, force_update=False):
     from common import settings
     next_addrs = settings.get('next_addrs', {})
-    key = make_next_addr_key(acct_num, addr_type, is_change)
+    key = make_next_addr_key(acct_num, addr_type, xfp, chain_type, is_change)
 
     # Only save the found index if it's newer
     if next_addrs.get(key, -1) < addr_idx or force_update:
@@ -1187,6 +1191,7 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
     try:
         await page.display()
     except Exception as e:
+        print(e)
         page.unmount()
         restore_sd_cb()
         await on_result(None)
@@ -1231,11 +1236,13 @@ async def show_page_with_sd_card(page, on_sd_card_change, on_result, on_exceptio
 
 
 def make_extension_path(ext_name, ext_prop):
-    return 'ext.{}.{}'.format(ext_name, ext_prop)
+    from common import settings
+    xfp = xfp2str(settings.get('xfp'))
+    return 'ext.{}.{}.{}'.format(ext_name, ext_prop, xfp)
 
 
 def toggle_extension_enabled(ext_name):
-    from common import ui
+    from common import ui, settings
     ext_path = make_extension_path(ext_name, 'enabled')
     is_enabled = common.settings.get(ext_path, False)
     common.settings.set(ext_path, not is_enabled)
@@ -1329,6 +1336,24 @@ def get_words_from_seed(seed):
         return (words, None)
     except Exception as e:
         return (None, '{}'.format(e))
+
+
+# Requires words to be a single string, space-separated
+def get_seed_from_words(words):
+    from foundation import bip39
+
+    entropy = bytearray(33)  # Includes an extra byte for the checksum bits
+    length = bip39.mnemonic_to_bits(words, entropy)
+
+    trim_pos = 0
+    if length == 264:  # 24 words x 11 bits each
+        trim_pos = 32
+    elif length == 198:  # 18 words x 11 bits each
+        trim_pos = 24
+    elif length == 132:  # 12 words x 11 bits each
+        trim_pos = 16
+    entropy = entropy[:trim_pos]  # Trim off the excess (including checksum bits)
+    return entropy
 
 
 def nostr_pubkey_from_pk(pk):
@@ -1429,6 +1454,95 @@ def is_key_hidden(key):
 
     updated = get_derived_key_by_index(key['index'], key['tn'], key['xfp'])
     return updated['hidden']
+
+
+def escape_text(text):
+    return text.replace("#", "##")
+
+
+def stylize_address(address):
+    from styles.colors import TEXT_GREY_HEX, BLACK_HEX
+
+    if address.startswith("OP_RETURN"):
+        return address
+
+    num_wm = 0
+
+    for i in range(len(address)):
+        if address[i] == 'm' or address[i] == 'n':
+            num_wm += 1
+
+    spacer = '  '
+    if num_wm > 5:
+        spacer = ' '
+
+    stylized = ''
+    colors = [BLACK_HEX, TEXT_GREY_HEX]
+    color_index = 0
+    block = ''
+    blocks_per_line = 4 if passport.IS_COLOR else 3
+
+    for i in range(len(address)):
+        # Every 4 characters, append the recolored block of characters
+        if i % 4 == 0 and i != 0:
+            stylized += recolor(colors[color_index], block)
+            block = ''
+            color_index ^= 1
+            # Every 4 blocks, start a new line
+            if i % (4 * blocks_per_line) == 0:
+                stylized += '\n'
+            else:
+                stylized += spacer
+        block += address[i]
+    stylized += recolor(colors[color_index], block)
+
+    return stylized
+
+
+def get_single_address(xfp,
+                       chain,
+                       index,
+                       is_multisig,
+                       multisig_wallet,
+                       is_change,
+                       deriv_path,
+                       addr_type):
+    import stash
+
+    change_bit = 1 if is_change else 0
+    with stash.SensitiveValues() as sv:
+        if is_multisig:
+            (curr_idx, paths, address, script) = list(multisig_wallet.yield_addresses(
+                start_idx=index,
+                count=1,
+                change_idx=change_bit))[0]
+        else:
+            addr_path = '{}/{}/{}'.format(deriv_path, change_bit, index)
+            node = sv.derive_path(addr_path)
+            address = sv.chain.address(node, addr_type)
+
+    return address
+
+
+def check_pin_prefix_hash(pin):
+    from serializations import sha256
+
+    if len(pin) < 4:
+        return False
+
+    new_pin_sha = sha256(pin[0:4])
+    true_pin_sha = common.settings.get('pin_prefix_hash')
+    return all(x == y for x, y in zip(new_pin_sha, true_pin_sha))
+
+
+def insufficient_randomness(seed_words):
+    word_frequency = {}
+    for word in seed_words:
+        word_frequency[word] = word_frequency.get(word, 0) + 1
+        if word_frequency[word] > 2:
+            return True
+
+    return False
 
 
 # EOF

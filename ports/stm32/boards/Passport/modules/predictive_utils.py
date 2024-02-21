@@ -58,3 +58,34 @@ def get_words_matching_prefix(prefix, max=5, word_list='bip39'):
     if len(words) == 1 and words[0] == '':
         words = []
     return words
+
+
+def get_last_word(seed_words, word_list='bip39'):
+    import trezorcrypto
+    import common
+    from foundation import bip39
+    from utils import get_seed_from_words, get_words_from_seed
+    from public_constants import SEED_WORD_LIST_LENGTH
+
+    # The last word is partially entropy, partially checksum,
+    # in different proportions based on the mnemonic length,
+
+    # choose a random last word
+    index_bytes = bytearray(4)  # noise.random_bytes requires a 4 byte buffer
+    common.noise.random_bytes(index_bytes, common.noise.ALL)
+    index = int.from_bytes(index_bytes, "little") % SEED_WORD_LIST_LENGTH
+    mock_last_word = trezorcrypto.bip39.get_word(index)
+    copy_words = ' '.join(seed_words)  # Later function requires joined string
+    copy_words += ' ' + mock_last_word
+
+    # compute the bits without the checksum
+    entropy = get_seed_from_words(copy_words)
+
+    # get the correct words with the checkusm
+    (final_words, error) = get_words_from_seed(entropy)
+
+    if not final_words:
+        return ""
+
+    # return the correct final word
+    return final_words[-1]

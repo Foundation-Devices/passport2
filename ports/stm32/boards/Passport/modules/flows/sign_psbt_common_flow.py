@@ -15,8 +15,8 @@ import microns
 from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
-from utils import spinner_task, recolor
 import gc
+from utils import spinner_task, recolor, stylize_address
 
 
 class SignPsbtCommonFlow(Flow):
@@ -26,6 +26,7 @@ class SignPsbtCommonFlow(Flow):
         self.psbt = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
+        self.header = 'Transaction Info'
 
     async def validate_psbt(self):
         from pages import ErrorPage
@@ -56,6 +57,7 @@ class SignPsbtCommonFlow(Flow):
     async def show_transaction_details(self):
         import uio
         from pages import LongTextPage, ErrorPage
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
             outputs = uio.StringIO()
@@ -87,7 +89,8 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=outputs.getvalue(),
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header},
+                margins=MARGIN_FOR_ADDRESSES,
             ).show()
             if result:
                 if self.psbt.self_send:
@@ -107,13 +110,15 @@ class SignPsbtCommonFlow(Flow):
 
     async def show_change(self):
         from pages import LongTextPage, ErrorPage
+        from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
             msg = self.render_change_text()
             result = await LongTextPage(
                 text=msg,
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header},
+                margins=MARGIN_FOR_ADDRESSES
             ).show()
             gc.collect()
             if not result:
@@ -135,7 +140,7 @@ class SignPsbtCommonFlow(Flow):
             result = await LongTextPage(
                 text=warnings,
                 centered=True,
-                card_header={'title': 'Transaction Details'}
+                card_header={'title': self.header}
             ).show()
             if not result:
                 self.back()
@@ -193,6 +198,13 @@ class SignPsbtCommonFlow(Flow):
         val = ' '.join(self.chain.render_value(o.nValue))
         dest = self.chain.render_address(o.scriptPubKey)
 
+        if dest.startswith("OP_RETURN"):
+            return '\n{}\n{}'.format(
+                recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
+                dest.split('\n', 1)[1])  # user-defined message starts after "OP_RETURN:\n"
+
+        dest = stylize_address(dest)
+
         return '\n{}\n{}\n\n{}\n{}'.format(
             recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
             val,
@@ -216,7 +228,7 @@ class SignPsbtCommonFlow(Flow):
                     continue
                 # print('idx: {} output:{}'.format(idx, self.chain.render_address(tx_out.scriptPubKey)))
                 total += tx_out.nValue
-                addrs.append(self.chain.render_address(tx_out.scriptPubKey))
+                addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
             if len(addrs) == 0:
                 msg.write('\nNo change')

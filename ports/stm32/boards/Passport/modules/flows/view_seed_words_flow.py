@@ -7,7 +7,18 @@ from flows import Flow
 
 
 class ViewSeedWordsFlow(Flow):
-    def __init__(self, external_key=None, qr_option=False, sd_option=False, path=None, filename=None):
+    def __init__(self,
+                 external_key=None,
+                 qr_option=False,
+                 sd_option=False,
+                 path=None,
+                 filename=None,
+                 initial=False,
+                 allow_skip=True,
+                 qr_button=False,
+                 key_manager=False):
+        import microns
+
         self.external_key = external_key
         self.qr_option = qr_option
 
@@ -19,8 +30,15 @@ class ViewSeedWordsFlow(Flow):
         self.filename = filename
         self.qr_type = None
         self.words = None
-        self.seed_micron = None
+        self.seed_micron = None if not qr_button else microns.ScanQR
         self.mention_passphrase = True if not external_key else False
+        self.mention_child = 'child ' if external_key else ''
+        self.initial = initial
+        self.allow_skip = allow_skip
+        self.use_qr_button = qr_button
+        self.seen_warning = False
+        self.qr_mode = None
+        self.key_manager = key_manager
         super().__init__(initial_state=self.generate_words, name='ViewSeedWordsFlow')
 
     async def generate_words(self):
@@ -73,13 +91,19 @@ class ViewSeedWordsFlow(Flow):
         from pages import ShowQRPage
         import microns
 
-        result = await SeedWarningFlow(action_text="display your seed as a QR code",
-                                       mention_passphrase=self.mention_passphrase).run()
+        action_text = "display your {}seed as a QR code".format(self.mention_child)
+
+        result = await SeedWarningFlow(action_text=action_text,
+                                       mention_passphrase=self.mention_passphrase,
+                                       initial=self.initial,
+                                       allow_skip=self.allow_skip,
+                                       key_manager=self.key_manager).run()
 
         if not result:
             self.back()
             return
 
+        self.seen_warning = True
         result = await ShowQRPage(qr_type=self.qr_type, qr_data=self.words, right_micron=microns.Checkmark).show()
 
         if not result:
@@ -106,13 +130,19 @@ class ViewSeedWordsFlow(Flow):
         from utils import B2A
         from flows import SaveToMicroSDFlow
 
-        result = await SeedWarningFlow(action_text="copy your seed to the microSD card",
-                                       mention_passphrase=self.mention_passphrase).run()
+        action_text = "copy your {}seed to the microSD card".format(self.mention_child)
+
+        result = await SeedWarningFlow(action_text=action_text,
+                                       mention_passphrase=self.mention_passphrase,
+                                       initial=self.initial,
+                                       allow_skip=self.allow_skip,
+                                       key_manager=self.key_manager).run()
 
         if not result:
             self.back()
             return
 
+        self.seen_warning = True
         text = " ".join(self.words)
         result = await SaveToMicroSDFlow(filename=self.filename,
                                          path=self.path,
@@ -128,22 +158,75 @@ class ViewSeedWordsFlow(Flow):
         from flows import SeedWarningFlow
         from pages import SeedWordsListPage
 
-        if not self.qr_type:  # We already gave the seed warning flow
-            result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase).run()
+        action_text = "display your {}seed words".format(self.mention_child)
+
+        if not self.seen_warning:  # We already gave the seed warning flow
+            result = await SeedWarningFlow(mention_passphrase=self.mention_passphrase,
+                                           initial=self.initial,
+                                           allow_skip=self.allow_skip,
+                                           key_manager=self.key_manager,
+                                           action_text=action_text).run()
 
             if not result:
                 self.set_result(False)
                 return
 
+            self.seen_warning = True
+
         result = False
         while not result:
             result = await SeedWordsListPage(words=self.words,
                                              left_micron=self.seed_micron).show()
-            if not result and self.qr_type:
-                self.back()
-                return
+            if not result:
+
+                if self.qr_type:
+                    self.back()
+                    return
+
+                if self.use_qr_button:
+                    self.goto(self.qr_intro)
+                    return
 
         self.goto(self.show_passphrase)
+
+    async def qr_intro(self):
+        from pages import InfoPage, ChooserPage
+        import microns
+        from data_codecs.qr_type import QRType
+
+        options = [{'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
+                   {'label': 'SeedQR', 'value': QRType.SEED_QR}]
+
+        self.qr_mode = await ChooserPage(card_header={'title': 'Format'}, options=options).show()
+
+        if self.qr_mode is None:
+            self.back()
+            return
+
+        result = await InfoPage('The following QR code contains your seed words.\n\n'
+                                'NEVER scan it from an Internet connected device.',
+                                left_micron=microns.Back).show()
+
+        if not result:
+            return
+
+        self.goto(self.qr_button)
+
+    async def qr_button(self):
+        from pages import ShowQRPage
+        from data_codecs.qr_type import QRType
+        import microns
+
+        result = await ShowQRPage(qr_type=self.qr_mode,
+                                  qr_data=self.words,
+                                  left_micron=microns.Back,
+                                  right_micron=microns.Checkmark).show()
+
+        if not result:
+            self.back()
+            return
+
+        self.set_result(True)
 
     async def show_passphrase(self):
         import stash
