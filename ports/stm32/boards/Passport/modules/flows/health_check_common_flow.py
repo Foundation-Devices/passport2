@@ -1,22 +1,25 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
+# health_check_common_flow.py - Scan and process a health check QR code in `crypto-request` format
 
 from flows import Flow
+from wallets.utils import get_addr_type_from_string
+from public_constants import AF_CLASSIC
 
 
-class CasaHealthCheckCommonFlow(Flow):
+class HealthCheckCommonFlow(Flow):
     def __init__(self, lines):
-        super().__init__(initial_state=self.validate_lines, name='CasaHealthCheckQRFlow')
+        super().__init__(initial_state=self.validate_lines, name='HealthCheckCommonFlow')
         self.lines = lines
         self.text = None
         self.subpath = None
+        self.addr_type = AF_CLASSIC
 
     async def validate_lines(self):
         from pages import ErrorPage
         from utils import validate_sign_text
-        if len(self.lines) != 2:
+        if len(self.lines) not in [2, 3]:
             await ErrorPage('Health check format is invalid.').show()
             self.set_result(None)
             return
@@ -24,6 +27,9 @@ class CasaHealthCheckCommonFlow(Flow):
         # Common function to validate the message
         self.text = self.lines[0]
         self.subpath = self.lines[1]
+
+        if len(self.lines) == 3:
+            self.addr_type = get_addr_type_from_string(self.lines[2])
         # print('text={}'.format(self.text))
         # print('subpath={}'.format(self.subpath))
 
@@ -41,9 +47,8 @@ class CasaHealthCheckCommonFlow(Flow):
         from pages import ErrorPage
         from tasks import sign_text_file_task
         from utils import spinner_task
-        from public_constants import AF_CLASSIC
         (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
-                                                         args=[self.text, self.subpath, AF_CLASSIC])
+                                                         args=[self.text, self.subpath, self.addr_type])
         if error is None:
             self.signature = signature
             self.address = address

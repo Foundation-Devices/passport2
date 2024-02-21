@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# casa_health_check_flow.py - Scan and process a Casa health check QR code in `crypto-request` format
+# health_check_flow.py - Scan and process a health check QR code in `crypto-request` format
 
 from flows import Flow
 
@@ -17,12 +17,13 @@ def is_health_check(filename, path=None):
     return False
 
 
-class CasaHealthCheckMicrosdFlow(Flow):
-    def __init__(self):
-        super().__init__(initial_state=self.choose_file, name='CasaHealthCheckMicrosdFlow')
+class HealthCheckMicrosdFlow(Flow):
+    def __init__(self, context=None):
+        super().__init__(initial_state=self.choose_file, name='HealthCheckMicrosdFlow')
         self.file_path = None
         self.lines = None
         self.signed_message = None
+        self.service_name = context
 
     async def choose_file(self):
         from flows import FilePickerFlow
@@ -50,9 +51,9 @@ class CasaHealthCheckMicrosdFlow(Flow):
         self.goto(self.common_flow)
 
     async def common_flow(self):
-        from flows import CasaHealthCheckCommonFlow
+        from flows import HealthCheckCommonFlow
 
-        self.signed_message = await CasaHealthCheckCommonFlow(self.lines).run()
+        self.signed_message = await HealthCheckCommonFlow(self.lines).run()
         if self.signed_message is None:
             self.set_result(False)
             return

@@ -46,7 +46,7 @@ class MenuItem(View):
 
         # Icon
         self.icon_view = Icon(icon=self.icon)
-        self.icon_view.set_size(20, lv.SIZE.CONTENT)
+        self.icon_view.set_size(21, lv.SIZE.CONTENT)
         self.add_child(self.icon_view)
 
         # Label

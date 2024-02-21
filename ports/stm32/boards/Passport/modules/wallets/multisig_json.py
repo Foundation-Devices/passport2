@@ -18,6 +18,7 @@ from common import settings
 from public_constants import AF_P2SH, AF_P2WSH, AF_P2WSH_P2SH
 from data_codecs.qr_type import QRType
 from foundation import ur
+from common import system
 
 
 def create_multisig_json_wallet(sw_wallet=None,
@@ -50,8 +51,13 @@ def create_multisig_json_wallet(sw_wallet=None,
             # e.g., AF_P2WSH_P2SH: {'deriv':m/48'/0'/4'/1', 'acct': 4}
             accts.append({'fmt': fmt, 'deriv': dd, 'acct': acct_num})
 
+    if sw_wallet.get('show_fw_version', False):
+        version = system.get_software_info()[0]
+        fp.write('  "fw_version": "%s",\n' % version)
+
     xfp = xfp2str(settings.get('xfp', 0))
     fp.write('  "xfp": "%s"\n}\n' % xfp)
+
     result = fp.getvalue()
 
     if export_mode == 'qr' and qr_type == QRType.UR2:
