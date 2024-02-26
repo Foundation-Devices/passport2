@@ -72,8 +72,7 @@ class RestoreBackupFlow(Flow):
 
         result = await FilePickerFlow(initial_path=initial_path,
                                       suffix=suffix,
-                                      show_folders=True,
-                                      allow_delete=False).run()
+                                      show_folders=True).run()
         if result is None:
             # No file chosen, so go back to menu
             self.set_result(False)

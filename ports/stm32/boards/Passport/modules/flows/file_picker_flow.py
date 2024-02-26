@@ -28,7 +28,7 @@ class FilePickerFlow(Flow):
             suffix=None,
             filter_fn=None,
             select_text="Select",
-            allow_delete=True):
+            allow_delete=False):
         from files import CardSlot
         from utils import bind, show_card_missing
 
