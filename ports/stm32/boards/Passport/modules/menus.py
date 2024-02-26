@@ -83,7 +83,12 @@ def casa_menu():
 
 
 def postmix_menu():
-    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
+    from flows import (
+        VerifyAddressFlow,
+        SignPsbtQRFlow,
+        SignPsbtMicroSDFlow,
+        ConnectWalletFlow,
+        AddressExplorerFlow)
 
     return [
         {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
@@ -91,6 +96,8 @@ def postmix_menu():
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+         'statusbar': {'title': 'LIST ADDRESSES'}},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
     ]
