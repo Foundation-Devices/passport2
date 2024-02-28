@@ -889,10 +889,15 @@ def get_account_by_name(name, xfp):
 
 
 def get_account_by_number(acct_num, xfp):
+    from constants import DEFAULT_ACCOUNT_ENTRY
+
     accounts = get_accounts_by_xfp(xfp)
     for account in accounts:
         if account.get('acct_num') == acct_num:
             return account
+
+    if acct_num == 0:
+        return DEFAULT_ACCOUNT_ENTRY
 
     return None
 
