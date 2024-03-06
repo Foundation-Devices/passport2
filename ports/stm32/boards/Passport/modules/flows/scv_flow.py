@@ -41,7 +41,7 @@ class ScvFlow(Flow):
         else:
             messages = [{'text': 'Let\'s confirm Passport was not tampered with during shipping.'},
                         {'text': 'Next, scan the Security Check '
-                         'QR code from validate.foundationdevices.com.'}]
+                         'QR code from https://validate.foundationdevices.com.'}]
 
         result = await SeriesOfPagesFlow(ShieldPage, messages).run()
 
