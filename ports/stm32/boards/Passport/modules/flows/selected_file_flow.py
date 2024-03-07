@@ -35,6 +35,9 @@ class SelectedFileFlow(Flow):
         from pages import QuestionPage
 
         confirmation_text = 'Are you sure you want to delete {}?'.format(self.file_name)
+        await QuestionPage(text=confirmation_text,
+                           left_micron=None,
+                           right_micron=None).show(auto_close_timeout=500)
         confirmation = await QuestionPage(text=confirmation_text).show()
 
         if not confirmation:
