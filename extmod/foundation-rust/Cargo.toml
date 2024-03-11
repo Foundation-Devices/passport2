@@ -12,12 +12,11 @@ name = "sizes"
 required-features = ["std"]
 
 [dependencies.minicbor]
-version = "0.19"
+version = "0.20"
 default-features = false
 
 [dependencies.heapless]
 version = "0.8"
-git = "https://github.com/japaric/heapless"
 default-features = false
 
 [dependencies.uuid]
@@ -25,13 +24,11 @@ version = "1"
 default-features = false
 
 [dependencies.foundation-ur]
-git = "https://github.com/Foundation-Devices/foundation-rs"
-branch = "main"
+version = "0.1"
 default-features = false
 
 [dependencies.foundation-urtypes]
-git = "https://github.com/Foundation-Devices/foundation-rs"
-branch = "main"
+version = "0.2"
 default-features = false
 
 [target.'cfg(target_arch = "arm")'.dependencies.cortex-m]
