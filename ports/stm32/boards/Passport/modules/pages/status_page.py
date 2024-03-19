@@ -11,6 +11,7 @@ from styles.colors import DEFAULT_SPINNER, TEXT_GREY, SCROLLBAR_BG_COLOR, WHITE
 import microns
 import common
 import passport
+import utime
 
 
 class StatusPage(Page):
@@ -19,7 +20,7 @@ class StatusPage(Page):
     def __init__(self, text=None, icon=None, icon_color=None, show_progress=False, percent=0,
                  centered=True, show_spinner=False, interactive=True, card_header=None,
                  statusbar=None, left_micron=microns.Back, right_micron=microns.Forward,
-                 margins=None, custom_view=None):
+                 margins=None, custom_view=None, disable_buttons_time_ms=0):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -43,6 +44,8 @@ class StatusPage(Page):
         self.true_left_micron = left_micron
         self.true_right_micron = right_micron
         self.margins = (margins if margins is not None else 8)
+        self.disable_buttons_time_ms = disable_buttons_time_ms
+        self.created_time_ms = utime.ticks_ms()
 
         self.is_list_mode = isinstance(self.text, list)
 
@@ -172,7 +175,8 @@ class StatusPage(Page):
         super().detach()
 
     def right_action(self, is_pressed):
-        if self.interactive and self.right_micron:
+        if self.interactive and self.right_micron and \
+                utime.ticks_ms() > self.created_time_ms + self.disable_buttons_time_ms:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx < len(self.text) - 1:
                     self.page_idx += 1
@@ -181,7 +185,8 @@ class StatusPage(Page):
                     self.set_result(True)
 
     def left_action(self, is_pressed):
-        if self.interactive and self.left_micron:
+        if self.interactive and self.left_micron and \
+                utime.ticks_ms() > self.created_time_ms + self.disable_buttons_time_ms:
             if not is_pressed:
                 if self.is_list_mode and self.page_idx > 0:
                     self.page_idx -= 1

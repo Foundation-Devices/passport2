@@ -18,7 +18,8 @@ class QuestionPage(StatusPage):
         card_header=None,
         statusbar=None,
         left_micron=microns.Cancel,
-        right_micron=microns.Checkmark
+        right_micron=microns.Checkmark,
+        disable_buttons_time_ms=0
     ):
         super().__init__(
             text=text,
@@ -27,4 +28,5 @@ class QuestionPage(StatusPage):
             card_header=card_header,
             statusbar=statusbar,
             left_micron=left_micron,
-            right_micron=right_micron)
+            right_micron=right_micron,
+            disable_buttons_time_ms=disable_buttons_time_ms)
