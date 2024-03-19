@@ -33,10 +33,11 @@ class SelectedFileFlow(Flow):
     async def delete_selected_file(self):
         from utils import delete_file
         from pages import QuestionPage
+        from common import keypad
 
+        keypad.clear_pending_keys()
         confirmation_text = 'Are you sure you want to delete {}?'.format(self.file_name)
-        confirmation = await QuestionPage(text=confirmation_text,
-                                          disable_buttons_time_ms=500).show()
+        confirmation = await QuestionPage(text=confirmation_text).show()
 
         if not confirmation:
             self.set_result(None)
