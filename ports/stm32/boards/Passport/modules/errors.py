@@ -26,5 +26,5 @@ Error = enum(
     'PSBT_TOO_LARGE',
     'PSBT_OVERSIZED',
     'QR_TOO_LARGE',
-    'UNKNOWN',
+    'FIRMWARE_UPDATE_FAILED',
 )
