@@ -18,6 +18,16 @@ from files import CardSlot, CardMissingError
 from errors import Error
 
 
+TIMEOUT_MS = 1000
+
+
+async def sleep_and_timeout(sleep_time_ms, timeout_ms, sf):
+    while sf.is_busy():
+        await sleep_ms(sleep_time_ms)
+        timeout_ms -= sleep_time_ms
+        assert timeout_ms > 0, 'Firmware update timed out'
+
+
 async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done):
     from common import system, sf
 
@@ -56,8 +66,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
 
                 # Erase first page
                 sf.sector_erase(0)
-                while sf.is_busy():
-                    await sleep_ms(10)
+                await sleep_and_timeout(10, TIMEOUT_MS, sf)
 
                 buf = bytearray(256)        # must be flash page size
 
@@ -80,14 +89,12 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     if pos % 4096 == 0:
                         # erase here
                         sf.sector_erase(pos)
-                        while sf.is_busy():
-                            await sleep_ms(10)
+                        await sleep_and_timeout(10, TIMEOUT_MS, sf)
 
                     sf.write(pos, buf)
 
                     # full page write: 0.6 to 3ms
-                    while sf.is_busy():
-                        await sleep_ms(1)
+                    await sleep_and_timeout(1, TIMEOUT_MS, sf)
 
                     pos += here
                     if passport.IS_SIMULATOR:
@@ -99,8 +106,11 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 sf.write(0, buf)  # Need to write the entire page of 256 bytes
 
                 # Success
-                await on_done(None)
+                await on_done(None, None)
+
     except CardMissingError:
-        await on_done(Error.MICROSD_CARD_MISSING)
+        await on_done(Error.MICROSD_CARD_MISSING, None)
+    except Exception as e:
+        await on_done(Error.UNKNOWN, "Error: {}, args: {}".format(type(e), e.args))
 
     # print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> copy_firmware_to_spi_flash_task() is DONE!')
