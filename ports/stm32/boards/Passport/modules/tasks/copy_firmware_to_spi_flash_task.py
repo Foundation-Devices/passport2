@@ -111,6 +111,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
     except CardMissingError:
         await on_done(Error.MICROSD_CARD_MISSING, None)
     except Exception as e:
-        await on_done(Error.UNKNOWN, "Error: {}, args: {}".format(type(e), e.args))
+        error_message = "Error: {}, Info: {}".format(e.__class__.__name__,
+                                                     e.args[0] if len(e.args) == 1 else e.args)
+        await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
 
     # print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> copy_firmware_to_spi_flash_task() is DONE!')
