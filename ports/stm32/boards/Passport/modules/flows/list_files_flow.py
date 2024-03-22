@@ -23,7 +23,9 @@ class ListFilesFlow(Flow):
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
-        result = await FilePickerFlow(show_folders=True, select_text='Info').run()
+        result = await FilePickerFlow(show_folders=True,
+                                      select_text='Info',
+                                      allow_delete=True).run()
         if result is None:
             self.set_result(False)
             return

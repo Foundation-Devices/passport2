@@ -34,8 +34,7 @@ class UpdateFirmwareFlow(Flow):
 
         result = await FilePickerFlow(initial_path=root_path,
                                       suffix='-passport.bin',
-                                      show_folders=True,
-                                      allow_delete=False).run()
+                                      show_folders=True).run()
         if result is None:
             self.set_result(False)
             return
