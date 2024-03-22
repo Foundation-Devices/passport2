@@ -33,7 +33,7 @@ class ManualSetupFlow(Flow):
         from pages import ShowQRPage
 
         result = await ShowQRPage(
-            qr_data='https://foundationdevices.com/setup',
+            qr_data='https://foundation.xyz/setup',
             caption='To open the online setup guide, scan this QR code with your phone.').show()
         if not result:
             self.back()
