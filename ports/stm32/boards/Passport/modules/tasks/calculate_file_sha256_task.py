@@ -52,14 +52,14 @@ async def calculate_file_sha256_task(file_path, on_progress, on_done):
                         on_progress(percent)
                         await sleep_ms(1)
 
+        # Calculate the digests and convert it to a string
+        digest = B2A(chk.digest())
+
     except CardMissingError:
         await on_done(None, Error.MICROSD_CARD_MISSING)
         return
     except Exception as e:
         await on_done(None, Error.FILE_READ_ERROR)
         return
-
-    # Calculate the digests and convert it to a string
-    digest = B2A(chk.digest())
 
     await on_done(digest, None)
