@@ -69,10 +69,16 @@ static HAL_StatusTypeDef adc2_init(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /** Common config
-    */
-    // The ClockPrescaler can only be modified if ALL ADC instances are disabled!!!
-    hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;  // ADC_CLOCK_ASYNC_DIV1
+    /** Common config.
+     *
+     * NOTE: This can only be done if all ADCs are disabled.
+     *
+     * See frequency.c for the clock frequency.
+     *
+     * We use per_ck as the peripheral kernel clock, which is hse_ck,
+     * so 8 MHz.
+     */
+    hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
 
     hadc2.Init.Resolution               = ADC_RESOLUTION_16B;
     hadc2.Init.ScanConvMode             = ADC_SCAN_DISABLE;     // Needs to be ENABLE it processing more than 1 channel

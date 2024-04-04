@@ -94,7 +94,8 @@ void frequency_turbo_toggle(bool enable) {
 
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART2 | RCC_PERIPHCLK_RNG |
                                                RCC_PERIPHCLK_SPI123 | RCC_PERIPHCLK_SPI4 | RCC_PERIPHCLK_SDMMC |
-                                               RCC_PERIPHCLK_I2C123 | RCC_PERIPHCLK_ADC | RCC_PERIPHCLK_I2C4;
+                                               RCC_PERIPHCLK_I2C123 | RCC_PERIPHCLK_ADC | RCC_PERIPHCLK_I2C4 |
+                                               RCC_PERIPHCLK_CKPER;
     PeriphClkInitStruct.PLL2.PLL2M      = 1;
     PeriphClkInitStruct.PLL2.PLL2N      = 18;
     PeriphClkInitStruct.PLL2.PLL2P      = 1;
@@ -117,13 +118,14 @@ void frequency_turbo_toggle(bool enable) {
 #ifdef SCREEN_MODE_MONO
     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;                // pll1_q_ck
 #endif                                                                                 // SCREEN_MODE_MONO
+    PeriphClkInitStruct.CkperClockSelection       = RCC_CLKPSOURCE_HSE;                // per_ck = hse_ck = 8 MHz.
     PeriphClkInitStruct.SdmmcClockSelection       = RCC_SDMMCCLKSOURCE_PLL;            // pll1_q_ck
     PeriphClkInitStruct.Spi45ClockSelection       = RCC_SPI45CLKSOURCE_D2PCLK1;        // rcc_pclk
     PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;  // rcc_pclk
     PeriphClkInitStruct.RngClockSelection         = RCC_RNGCLKSOURCE_HSI48;            // hsi48_ck
     PeriphClkInitStruct.I2c123ClockSelection      = RCC_I2C123CLKSOURCE_D2PCLK1;       // rcc_pclk
     PeriphClkInitStruct.I2c4ClockSelection        = RCC_I2C4CLKSOURCE_D3PCLK1;         // rcc_pclk
-    PeriphClkInitStruct.AdcClockSelection         = RCC_ADCCLKSOURCE_PLL2;             // pll2_p_ck
+    PeriphClkInitStruct.AdcClockSelection         = RCC_CLKPSOURCE_HSE;                // adc_ker_ck = per_ck = 8 MHz.
     PeriphClkInitStruct.RTCClockSelection         = RCC_RTCCLKSOURCE_LSI;              // lsi_ck
 
     if (enable) {
