@@ -218,7 +218,7 @@ void HAL_MMC_MspDeInit(MMC_HandleTypeDef *hsd) {
 #endif
 
 bool sdcard_is_present(void) {
-    #if MICROPY_HW_ENABLE_MMCARD
+    /* #if MICROPY_HW_ENABLE_MMCARD
     if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
         return false;
     }
@@ -227,7 +227,8 @@ bool sdcard_is_present(void) {
     return HAL_GPIO_ReadPin(MICROPY_HW_SDCARD_DETECT_PIN->gpio, MICROPY_HW_SDCARD_DETECT_PIN->pin_mask) == MICROPY_HW_SDCARD_DETECT_PRESENT;
     #else
     return true;
-    #endif
+    #endif */
+    return true;
 }
 
 #if MICROPY_HW_ENABLE_SDCARD
