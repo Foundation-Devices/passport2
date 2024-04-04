@@ -99,3 +99,6 @@ simulator/snapshots/
 *.gif
 *.pem
 .vscode
+
+# Compilation Database for clangd
+compile_commands.json
