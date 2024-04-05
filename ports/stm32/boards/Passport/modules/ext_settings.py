@@ -21,12 +21,12 @@ import ujson
 import trezorcrypto
 import ustruct
 import gc
-import ucopy
 from uio import BytesIO
 from sffile import SFFile
 from utils import to_str, call_later_ms
 from constants import SPI_FLASH_SECTOR_SIZE
 from passport import mem
+from public_constants import DEVICE_SETTINGS
 
 
 class ExtSettings:
@@ -244,14 +244,14 @@ class ExtSettings:
 
     def set(self, kn, v):
         # print('set({}, {}'.format(kn, v))
-        if self.temporary_mode:
+        if self.temporary_mode and kn not in DEVICE_SETTINGS:
             self.temporary_settings[kn] = v
             return
 
         self.current[kn] = v
         self.changed()
 
-    def get_from_current(kn, default):
+    def get_from_current(self, kn, default):
         if self.temporary_mode:
             return self.temporary_settings.get(kn, default)
         return self.current.get(kn, default)
@@ -488,8 +488,8 @@ class ExtSettings:
         self.temporary_mode = True
 
         # Merge the overrides and persistent settings into a new dict
-        self.temporary_settings = copy.deepcopy(self.current)
-        self.temporary_overrides = copy.deepcopy(self.overrides)
+        self.temporary_settings.update(self.current)
+        self.temporary_overrides.update(self.overrides)
 
     def exit_temporary_mode(self):
         self.temporary_mode = False
