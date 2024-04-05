@@ -86,7 +86,12 @@ def render_backup_contents():
 
     # user preferences - sort so that accounts is processed before multisig
     multisig_ids = []
-    for k, v in sorted(settings.current.items()):
+    settings_dict = None
+    if settings.temporary_mode:
+        settings_dict = settings.temporary_settings
+    else:
+        settings_dict = settings.current
+    for k, v in sorted(settings_dict.items()):
         # print('render handling key "{}"'.format(k))
         if k[0] == '_':
             continue        # debug stuff in simulator

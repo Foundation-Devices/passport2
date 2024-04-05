@@ -21,6 +21,7 @@ import ujson
 import trezorcrypto
 import ustruct
 import gc
+import ucopy
 from uio import BytesIO
 from sffile import SFFile
 from utils import to_str, call_later_ms
@@ -45,6 +46,9 @@ class ExtSettings:
         self.current = self.default_values()
         self.overrides = {}     # volatile overide values
         self.last_save_slots = [-1, -1]
+        self.temporary_mode = False
+        self.temporary_settings = {}
+        self.temporary_overrides = {}
 
         # NOTE: We don't load the settings initially since we don't have the AES key until
         #       the user logs in successfully.
@@ -206,13 +210,13 @@ class ExtSettings:
                     sf.write(pos + i, h)
 
     def get(self, kn, default=None):
-        if kn in self.overrides:
-            return self.overrides.get(kn)
+        if self.in_overrides(kn):
+            return self.get_from_overrides(kn)
         else:
             # Special case for xfp and xpub -- make sure they exist and create if not
-            if kn not in self.current:
-                if kn == 'root_xfp' and 'xfp' in self.current:
-                    return self.current.get('xfp', default)
+            if not self.in_current(kn):
+                if kn == 'root_xfp' and self.in_current('xfp'):
+                    return self.get_from_current('xfp', default)
                 if kn == 'xfp' or kn == 'xpub' or kn == 'root_xfp':
                     try:
                         # Update xpub/xfp in settings after creating new wallet
@@ -229,9 +233,9 @@ class ExtSettings:
                     finally:
                         # system.hide_busy_bar()
                         # These are overrides, so return them from there
-                        return self.overrides.get(kn)
+                        return self.get_from_overrides(kn)
 
-            return self.current.get(kn, default)
+            return self.get_from_current(kn, default)
 
     def changed(self):
         self.is_dirty += 1
@@ -240,26 +244,64 @@ class ExtSettings:
 
     def set(self, kn, v):
         # print('set({}, {}'.format(kn, v))
+        if self.temporary_mode:
+            self.temporary_settings[kn] = v
+            return
+
         self.current[kn] = v
         self.changed()
 
+    def get_from_current(kn, default):
+        if self.temporary_mode:
+            return self.temporary_settings.get(kn, default)
+        return self.current.get(kn, default)
+
+    def get_from_overrides(kn, default):
+        if self.temporary_mode:
+            return self.temporary_overrides.get(kn, default)
+        return self.overrides.get(kn, default)
+
     def set_volatile(self, kn, v):
+        if self.temporary_mode:
+            self.temporary_overrides[kn] = v
+            return
         self.overrides[kn] = v
 
+    def in_current(self, kn):
+        if self.temporary_mode:
+            return kn in self.temporary_settings
+        return kn in self.current
+
+    def in_overrides(self, kn):
+        if self.temporary_mode:
+            return kn in self.temporary_overrides
+        return kn in self.overrides
+
     def clear_volatile(self, kn):
+        if self.temporary_mode:
+            if kn in self.temporary_overrides:
+                del self.temporary_overrides[kn]
+            return
         if kn in self.overrides:
             del self.overrides[kn]
 
     def remove(self, kn):
         # print('remove(\'{}\') called!'.format(kn))
-        if kn in self.current:
+        if self.in_current(kn):
+            if self.temporary_mode:
+                self.temporary_settings.pop(kn, None)
+                return
             self.current.pop(kn, None)
             self.changed()
 
     def remove_regex(self, pattern):
         import re
         pattern = re.compile(pattern)
-        matches = [k for k in self.current if pattern.search(k)]
+        matches = []
+        if self.temporary_mode:
+            matches = [k for k in self.temporary_settings if pattern.search(k)]
+        else:
+            matches = [k for k in self.current if pattern.search(k)]
         for k in matches:
             self.remove(k)
 
@@ -268,9 +310,14 @@ class ExtSettings:
         # could be just:
         #       self.current = {}
         # but accomodating the simulator here
-        rk = [k for k in self.current if k[0] != '_']
-        for k in rk:
-            del self.current[k]
+        if self.temporary_mode:
+            rk = [k for k in self.temporary_settings if k[0] != '_']
+            for k in rk:
+                del self.temporary_settings[k]
+        else:
+            rk = [k for k in self.current if k[0] != '_']
+            for k in rk:
+                del self.current[k]
 
         self.changed()
 
@@ -338,11 +385,17 @@ class ExtSettings:
             sf.wait_done()
 
     def erase_all(self):
+        if self.temporary_mode:
+            return
+
         for pos in self.slots:
             self.erase_cache_entry(pos)
         self.blank()
 
     def save(self):
+        if self.temporary_mode:
+            return
+
         # Make two saves in case one is corrupted
         self.do_save(erase_old_pos=True)
         self.do_save(erase_old_pos=False)
@@ -425,6 +478,23 @@ class ExtSettings:
         # act blank too, just in case.
         self.current.clear()
         self.is_dirty = 0
+
+    def enter_temporary_mode(self):
+
+        # Avoid resetting temporary settings if already in temporary mode
+        if self.temporary_mode:
+            return
+
+        self.temporary_mode = True
+
+        # Merge the overrides and persistent settings into a new dict
+        self.temporary_settings = copy.deepcopy(self.current)
+        self.temporary_overrides = copy.deepcopy(self.overrides)
+
+    def exit_temporary_mode(self):
+        self.temporary_mode = False
+        self.temporary_settings = {}
+        self.temporary_overrides = {}
 
     @staticmethod
     def default_values():
