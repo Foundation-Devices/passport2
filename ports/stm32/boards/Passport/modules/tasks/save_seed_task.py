@@ -13,20 +13,23 @@ from stash import SecretStash
 
 
 async def save_seed_task(on_done, seed_bits):
-    from common import pa
+    from common import pa, settings
     import stash
 
     try:
         secret = SecretStash.encode(seed_bits=seed_bits)
 
-        pa.change(new_secret=secret)
+        if settings.temporary_mode:
+            settings.set_volatile('temporary_seed', secret)
+        else:
+            pa.change(new_secret=secret)
 
-        # Recapture XFP, etc. for new secret
-        await pa.new_main_secret(secret)
+            # Recapture XFP, etc. for new secret
+            await pa.new_main_secret(secret)
 
-        # Check and reload secret
-        pa.reset()
-        pa.login()
+            # Check and reload secret
+            pa.reset()
+            pa.login()
 
         with stash.SensitiveValues() as sv:
             sv.capture_xpub(save=True)
