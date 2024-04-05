@@ -1155,7 +1155,10 @@ def set_list(lst, index, value):
 
 
 def has_seed():
-    from common import pa
+    from common import pa, settings
+
+    if settings.temporary_mode:
+        return settings.get('temporary_seed', None) is not None
 
     # pa.is_secret_blank() function returns True before we are logged in, which is not right.
     if not is_logged_in():
