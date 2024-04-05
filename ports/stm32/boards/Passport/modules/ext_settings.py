@@ -489,10 +489,7 @@ class ExtSettings:
             return
 
         self.temporary_mode = True
-
-        # Merge the overrides and persistent settings into a new dict
-        self.temporary_settings.update(self.current)
-        self.temporary_overrides.update(self.overrides)
+        self.temporary_settings = self.default_values()
 
     def exit_temporary_mode(self):
         self.temporary_mode = False
