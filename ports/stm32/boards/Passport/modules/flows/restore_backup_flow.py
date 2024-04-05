@@ -125,6 +125,7 @@ class RestoreBackupFlow(Flow):
         from utils import start_task
         from flows import AutoBackupFlow, BackupFlow
         from pages import InfoPage
+        from common import settings
 
         # TODO: Change from spinner to ProgressPage and pass on_progress instead of None below.
         (error,) = await spinner_task(
@@ -142,6 +143,8 @@ class RestoreBackupFlow(Flow):
                 if error_2 is not None or self.backup_code != new_backup_code:
                     await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
                     await BackupFlow(initial_backup=True).run()
+                else:  # No error and self.backup_code == new_backup_code
+                    settings.set('backup_quiz', True)
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
