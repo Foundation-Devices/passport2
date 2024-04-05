@@ -19,4 +19,4 @@ async def get_seed_words_task(on_done):
     except Exception as e:
         # print('get_seed_words_task(): Exception: {}'.format(e))
         # Unable to read seed!
-        await on_done(None, None, '{}'.format(e))
+        await on_done(None, '{}'.format(e))

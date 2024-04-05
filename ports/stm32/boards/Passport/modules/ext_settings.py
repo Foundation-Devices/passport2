@@ -211,7 +211,7 @@ class ExtSettings:
 
     def get(self, kn, default=None):
         if self.in_overrides(kn):
-            return self.get_from_overrides(kn)
+            return self.get_from_overrides(kn, default)
         else:
             # Special case for xfp and xpub -- make sure they exist and create if not
             if not self.in_current(kn):
@@ -233,7 +233,7 @@ class ExtSettings:
                     finally:
                         # system.hide_busy_bar()
                         # These are overrides, so return them from there
-                        return self.get_from_overrides(kn)
+                        return self.get_from_overrides(kn, default)
 
             return self.get_from_current(kn, default)
 
@@ -244,9 +244,10 @@ class ExtSettings:
 
     def set(self, kn, v):
         # print('set({}, {}'.format(kn, v))
-        if self.temporary_mode and kn not in DEVICE_SETTINGS:
+        if self.temporary_mode:
             self.temporary_settings[kn] = v
-            return
+            if kn not in DEVICE_SETTINGS:
+                return
 
         self.current[kn] = v
         self.changed()
@@ -256,7 +257,7 @@ class ExtSettings:
             return self.temporary_settings.get(kn, default)
         return self.current.get(kn, default)
 
-    def get_from_overrides(kn, default):
+    def get_from_overrides(self, kn, default):
         if self.temporary_mode:
             return self.temporary_overrides.get(kn, default)
         return self.overrides.get(kn, default)
@@ -342,7 +343,7 @@ class ExtSettings:
         # Was sometimes running low on memory in this area: recover
         try:
             gc.collect()
-            self.save()
+            self.internal_save()
         except MemoryError:
             call_later_ms(250, self.write_out())
 
@@ -392,13 +393,15 @@ class ExtSettings:
             self.erase_cache_entry(pos)
         self.blank()
 
-    def save(self):
-        if self.temporary_mode:
-            return
-
+    def internal_save(self):
         # Make two saves in case one is corrupted
         self.do_save(erase_old_pos=True)
         self.do_save(erase_old_pos=False)
+
+    def save(self):
+        if self.temporary_mode:
+            return
+        self.internal_save()
 
     def do_save(self, erase_old_pos=True):
         # print('do_save({})'.format(erase_old_pos))

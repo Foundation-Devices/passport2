@@ -5,13 +5,17 @@
 
 import lvgl as lv
 from flows import Flow
+from common import settings
 
 
 class InitialSeedSetupFlow(Flow):
-    def __init__(self, allow_backtrack=True):
+    def __init__(self, allow_backtrack=True, temporary=False):
         super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
         self.statusbar = {'title': 'CREATE SEED', 'icon': 'ICON_SEED'}
         self.allow_backtrack = allow_backtrack
+        self.temporary = temporary
+        if temporary:
+            settings.enter_temporary_mode()
 
     async def show_intro(self):
         from pages import InfoPage
@@ -19,7 +23,7 @@ class InitialSeedSetupFlow(Flow):
         import microns
 
         # Pass silently if seed already exists
-        if has_seed():
+        if has_seed() and not self.temporary:
             self.set_result(True)
             return
 
@@ -35,6 +39,8 @@ class InitialSeedSetupFlow(Flow):
         if result:
             self.goto(self.show_seed_setup_menu)
         else:
+            if self.temporary:
+                settings.exit_temporary_mode()
             self.set_result(None)
 
     async def show_seed_setup_menu(self):
@@ -42,10 +48,19 @@ class InitialSeedSetupFlow(Flow):
         from flows import NewSeedFlow, RestoreSeedFlow, RestoreBackupFlow
         import microns
 
-        options = [{'label': 'Create New Seed',
-                    'value': lambda: NewSeedFlow(full_backup=True)},
-                   {'label': 'Import Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
-                   {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}]
+        options = []
+
+        if not self.temporary:
+            options.append({'label': 'Create New Seed',
+                            'value': lambda: NewSeedFlow(full_backup=True)})
+
+        options.extend([{'label': 'Import Seed', 'value': lambda: RestoreSeedFlow(full_backup=True)},
+                        {'label': 'Restore Backup', 'value': lambda: RestoreBackupFlow(full_backup=True)}])
+
+        if not self.temporary:
+            options.append({'label': 'Temporary Seed',
+                            'value': lambda: InitialSeedSetupFlow(allow_backtrack=self.allow_backtrack,
+                                                                  temporary=True)})
 
         flow = await ChooserPage(
             text=None,
