@@ -123,6 +123,13 @@ DIR_HEALTH_CHECKS = 'health_checks'
 
 MARGIN_FOR_ADDRESSES = 0
 
+# Device Settings, not saved to backups in temporary mode
+DEVICE_SETTINGS = [
+    'screen_brightness',
+    'shutdown_timeout',
+    'device_name'
+]
+
 # Size of a pin prefix:
 NUM_DIGITS_FOR_SECURITY_WORDS = const(4)
 
