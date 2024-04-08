@@ -244,65 +244,63 @@ class ExtSettings:
 
     def set(self, kn, v):
         # print('set({}, {}'.format(kn, v))
-        if self.temporary_mode:
-            self.temporary_settings[kn] = v
-            if kn not in DEVICE_SETTINGS:
-                return
-
-        self.current[kn] = v
-        self.changed()
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self.current[kn] = v
+            self.changed()
+            return
+        self.temporary_settings[kn] = v
 
     def get_from_current(self, kn, default):
-        if self.temporary_mode:
-            return self.temporary_settings.get(kn, default)
-        return self.current.get(kn, default)
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return self.current.get(kn, default)
+        return self.temporary_settings.get(kn, default)
 
     def get_from_overrides(self, kn, default):
-        if self.temporary_mode:
-            return self.temporary_overrides.get(kn, default)
-        return self.overrides.get(kn, default)
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return self.overrides.get(kn, default)
+        return self.temporary_overrides.get(kn, default)
 
     def set_volatile(self, kn, v):
-        if self.temporary_mode:
-            self.temporary_overrides[kn] = v
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self.overrides[kn] = v
             return
-        self.overrides[kn] = v
+        self.temporary_overrides[kn] = v
 
     def in_current(self, kn):
-        if self.temporary_mode:
-            return kn in self.temporary_settings
-        return kn in self.current
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return kn in self.current
+        return kn in self.temporary_settings
 
     def in_overrides(self, kn):
-        if self.temporary_mode:
-            return kn in self.temporary_overrides
-        return kn in self.overrides
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return kn in self.overrides
+        return kn in self.temporary_overrides
 
     def clear_volatile(self, kn):
-        if self.temporary_mode:
-            if kn in self.temporary_overrides:
-                del self.temporary_overrides[kn]
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            if kn in self.overrides:
+                del self.overrides[kn]
             return
-        if kn in self.overrides:
-            del self.overrides[kn]
+        if kn in self.temporary_overrides:
+            del self.temporary_overrides[kn]
 
     def remove(self, kn):
         # print('remove(\'{}\') called!'.format(kn))
         if self.in_current(kn):
-            if self.temporary_mode:
-                self.temporary_settings.pop(kn, None)
+            if not self.temporary_mode or kn in DEVICE_SETTINGS:
+                self.current.pop(kn, None)
+                self.changed()
                 return
-            self.current.pop(kn, None)
-            self.changed()
+            self.temporary_settings.pop(kn, None)
 
     def remove_regex(self, pattern):
         import re
         pattern = re.compile(pattern)
         matches = []
-        if self.temporary_mode:
-            matches = [k for k in self.temporary_settings if pattern.search(k)]
-        else:
+        if self.temporary_mode or kn in DEVICE_SETTINGS:
             matches = [k for k in self.current if pattern.search(k)]
+        else:
+            matches = [k for k in self.temporary_settings if pattern.search(k)]
         for k in matches:
             self.remove(k)
 
