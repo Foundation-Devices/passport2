@@ -88,6 +88,7 @@ from .view_seed_words_flow import *
 # Top-level flows need to be declared after other flows that they use
 
 from .initial_seed_setup_flow import *
+from .temporary_seed_flow import *
 from .envoy_setup_flow import *
 from .manual_setup_flow import *
 from .select_setup_mode_flow import *
