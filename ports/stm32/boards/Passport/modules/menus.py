@@ -181,16 +181,19 @@ def backup_menu():
 
 
 def key_item_menu():
-    from utils import toggle_key_hidden, is_key_hidden
+    from utils import toggle_key_hidden, is_key_hidden, has_temporary_seed
 
     from flows import (
         ViewDerivedKeyDetailsFlow,
         RenameDerivedKeyFlow,
-        ExportDerivedKeyFlow)
+        ExportDerivedKeyFlow,
+        TemporarySeedFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
         {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
+        {'icon': 'ICON_SEED', 'label': 'Use as Temporary Seed', 'flow': TemporarySeedFlow,
+         'is_visible': lambda: not has_temporary_seed()},
         {'icon': 'ICON_ERASE',
          'label': 'Hide Key',
          'action': lambda item, context: toggle_key_hidden(item, context),

@@ -23,6 +23,7 @@ class ExportDerivedKeyFlow(Flow):
         from flows import ViewSeedWordsFlow
         from public_constants import DIR_KEY_MNGR
 
+        # TODO: make this process a util function
         self.key_type = get_key_type_from_tn(self.key['tn'])
 
         if not self.key_type:

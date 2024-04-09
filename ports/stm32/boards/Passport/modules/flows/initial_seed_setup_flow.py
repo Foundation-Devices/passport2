@@ -9,13 +9,18 @@ from common import settings
 
 
 class InitialSeedSetupFlow(Flow):
-    def __init__(self, allow_backtrack=True, temporary=False):
-        super().__init__(initial_state=self.show_intro, name='InitialSeedSetupFlow')
+    def __init__(self, allow_backtrack=True, temporary=False, external_key=None):
         self.statusbar = {'title': 'CREATE SEED', 'icon': 'ICON_SEED'}
         self.allow_backtrack = allow_backtrack
         self.temporary = temporary
+        self.external_key = external_key
+        initial_state = self.show_intro
         if temporary:
             settings.enter_temporary_mode()
+            # TODO: go to "explain_temporary" first
+            if self.external_key:
+                initial_state = self.apply_external_key
+        super().__init__(initial_state=initial_state, name='InitialSeedSetupFlow')
 
     async def show_intro(self):
         from pages import InfoPage
@@ -76,3 +81,29 @@ class InitialSeedSetupFlow(Flow):
             return
         else:
             self.set_result(True)
+
+    async def apply_external_key(self):
+        from utils import spinner_task
+        from tasks import save_seed_task
+        from common import ui
+        from pages import SuccessPage
+
+        # Only allowed in temporary mode
+        if not self.temporary:
+            # TODO: add error messaging
+            print("setting external key in permanent mode")
+            self.set_result(False)
+            return
+
+        (error,) = await spinner_task('Saving seed', save_seed_task, args=[self.external_key])
+
+        if error is not None:
+            options.exit_temporary_mode()
+            self.set_result(None)
+            return
+
+        await SuccessPage(text='Temporary seed applied.').show()
+
+        ui.full_cards_refresh()
+        await self.wait_to_die()
+        self.set_result(True)
