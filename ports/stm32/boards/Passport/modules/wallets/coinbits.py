@@ -14,7 +14,8 @@ CoinbitsWallet = {
         {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_envoy_export},
     ],
     'export_modes': [
-        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2}
+        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
+        {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-coinbits.json'}
     ],
     'skip_address_validation': False,
     'skip_multisig_import': True,

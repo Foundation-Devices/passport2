@@ -87,8 +87,11 @@ def create_envoy_export(sw_wallet=None,
     accts = [{'fmt': addr_type, 'deriv': acct_path, 'acct': acct_num}]
 
     msg = ujson.dumps(rv)
-    # print('msg={}'.format(to_str(msg)))
-    return (ur.new_bytes(msg), accts)
+
+    if export_mode == 'qr':
+        return (ur.new_bytes(msg), accts)
+
+    return (msg, accts)
 
 
 EnvoyWallet = {
