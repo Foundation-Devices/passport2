@@ -133,8 +133,8 @@ def postmix_menu():
 
 
 def plus_menu():
-    from utils import is_passphrase_active
-    from flows import NewAccountFlow, ApplyPassphraseFlow
+    from utils import is_passphrase_active, has_temporary_seed, has_permanent_seed
+    from flows import NewAccountFlow, ApplyPassphraseFlow, TemporarySeedFlow
 
     return [
         {'icon': 'ICON_ADD_ACCOUNT', 'label': 'New Account', 'flow': NewAccountFlow},
@@ -144,6 +144,11 @@ def plus_menu():
          'args': {'passphrase': ''}, 'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
         {'icon': 'ICON_PASSPHRASE', 'label': 'Change Passphrase', 'flow': ApplyPassphraseFlow,
          'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Enter Temporary Seed', 'flow': TemporarySeedFlow,
+         'statusbar': {'title': 'TEMPORARY SEED'}, 'is_visible': lambda: not has_temporary_seed()},
+        {'icon': 'ICON_PASSPHRASE', 'label': 'Clear Temporary Seed', 'flow': TemporarySeedFlow,
+         'args': {'clear': True}, 'statusbar': {'title': 'TEMPORARY SEED'},
+         'is_visible': lambda: has_temporary_seed() and has_permanent_seed()},
     ]
 
 
