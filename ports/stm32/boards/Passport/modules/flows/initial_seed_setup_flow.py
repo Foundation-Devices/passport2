@@ -17,9 +17,7 @@ class InitialSeedSetupFlow(Flow):
         initial_state = self.show_intro
         if temporary:
             settings.enter_temporary_mode()
-            # TODO: go to "explain_temporary" first
-            if self.external_key:
-                initial_state = self.apply_external_key
+            initial_state = self.explain_temporary
         super().__init__(initial_state=initial_state, name='InitialSeedSetupFlow')
 
     async def show_intro(self):
@@ -28,7 +26,7 @@ class InitialSeedSetupFlow(Flow):
         import microns
 
         # Pass silently if seed already exists
-        if has_seed() and not self.temporary:
+        if has_seed():
             self.set_result(True)
             return
 
@@ -44,9 +42,33 @@ class InitialSeedSetupFlow(Flow):
         if result:
             self.goto(self.show_seed_setup_menu)
         else:
-            if self.temporary:
-                settings.exit_temporary_mode()
             self.set_result(None)
+
+    async def explain_temporary(self):
+        from pages import InfoPage
+        import microns
+
+        if self.allow_backtrack:
+            left_micron = microns.Back
+        else:
+            left_micron = None
+
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_SEED,
+            text='This temporary seed will not be saved, so be sure you have a backup, or create one during setup',
+            left_micron=left_micron,
+            right_micron=microns.Forward).show()
+
+        if not result:
+            settings.exit_temporary_mode()
+            self.set_result(None)
+            return
+
+        if self.external_key:
+            self.goto(self.apply_external_key)
+            return
+
+        self.goto(self.show_seed_setup_menu)
 
     async def show_seed_setup_menu(self):
         from pages import ChooserPage
@@ -86,16 +108,15 @@ class InitialSeedSetupFlow(Flow):
         from utils import spinner_task
         from tasks import save_seed_task
         from common import ui
-        from pages import SuccessPage
+        from pages import SuccessPage, ErrorPage
 
         # Only allowed in temporary mode
         if not self.temporary:
-            # TODO: add error messaging
-            print("setting external key in permanent mode")
+            await ErrorPage('Unable to use an external key in temporary mode').show()
             self.set_result(False)
             return
 
-        (error,) = await spinner_task('Saving seed', save_seed_task, args=[self.external_key])
+        (error,) = await spinner_task('Applying seed', save_seed_task, args=[self.external_key])
 
         if error is not None:
             options.exit_temporary_mode()
