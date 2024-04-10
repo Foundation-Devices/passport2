@@ -242,9 +242,9 @@ class ExtSettings:
         if self.is_dirty < 2 and self.loop:
             call_later_ms(250, self.write_out())
 
-    def set(self, kn, v):
+    def set(self, kn, v, permanent=False):
         # print('set({}, {}'.format(kn, v))
-        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+        if (not self.temporary_mode or kn in DEVICE_SETTINGS) or permanent:
             self.current[kn] = v
             self.changed()
             return
@@ -396,8 +396,8 @@ class ExtSettings:
         self.do_save(erase_old_pos=True)
         self.do_save(erase_old_pos=False)
 
-    def save(self):
-        if self.temporary_mode:
+    def save(self, permanent=False):
+        if self.temporary_mode and not permanent:
             return
         self.internal_save()
 

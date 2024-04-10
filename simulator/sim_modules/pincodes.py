@@ -139,8 +139,8 @@ class PinAttempt:
         return rv[0:4]  # Only keep 4 words for supply chain validation
 
     def is_blank(self):
-        self.pin = common.settings.get('__pin__', '')
-        pin = common.settings.get('__pin__', '')
+        self.pin = common.settings.current.get('__pin__', '')
+        pin = common.settings.current.get('__pin__', '')
         return pin == ''
 
     def is_successful(self):
@@ -162,14 +162,14 @@ class PinAttempt:
         from common import settings
         # print('Setting up pin for login attempt')
         self.pin = pin
-        self.attempts_left = settings.get(
+        self.attempts_left = settings.current.get(
             '__attempts_left__', MAX_PIN_ATTEMPTS)
 
         return 0
 
     def login(self):
         from common import settings
-        curr_pin = settings.get('__pin__', '')
+        curr_pin = settings.current.get('__pin__', '')
         self.is_logged_in = False
 
         # print('login(): self.pin={}, curr_pin={}'.format(self.pin, curr_pin))
@@ -181,14 +181,14 @@ class PinAttempt:
                 self.num_fails += 1
                 if self.attempts_left > MAX_PIN_ATTEMPTS:
                     self.attempts_left = MAX_PIN_ATTEMPTS
-                settings.set('__attempts_left__', self.attempts_left)
+                settings.set('__attempts_left__', self.attempts_left, True)
                 raise RuntimeError()
         else:
             # Reset to 21 when successfully logged in
             self.attempts_left = MAX_PIN_ATTEMPTS
             self.is_logged_in = True
             self.num_fails = 0
-            settings.set('__attempts_left__', MAX_PIN_ATTEMPTS)
+            settings.set('__attempts_left__', MAX_PIN_ATTEMPTS, True)
 
         return self.is_logged_in
 
@@ -198,7 +198,7 @@ class PinAttempt:
 
         new_secret = kwargs.get('new_secret', None)
         if new_secret == None:
-            curr_pin = settings.get('__pin__', '').encode()
+            curr_pin = settings.current.get('__pin__', '').encode()
             old_pin = kwargs.get('old_pin', '').encode()
             new_pin = kwargs.get('new_pin', '').encode()
 
@@ -209,12 +209,12 @@ class PinAttempt:
             # print('new_pin={}, len={}'.format(new_pin, len(new_pin)))
             if isinstance(new_pin, (bytes, bytearray)) and is_all_zero(new_pin):
                 # print('RECEIVED BLANK PIN!')
-                settings.set('__pin__', '')
+                settings.set('__pin__', '', True)
             else:
-                settings.set('__pin__', new_pin.decode())
+                settings.set('__pin__', new_pin.decode(), True)
 
             # We have to save because the caller tries to reset before the normal save timeout expires
-            settings.save()
+            settings.save(True)
 
         else:
             # print('change(): {}'.format(new_secret))
@@ -224,13 +224,13 @@ class PinAttempt:
         from common import settings
         str = b2a_hex(buf).decode('utf-8')
         # print('save_secret: {}'.format(str))
-        settings.set('__secret__', str)
-        settings.save()
+        settings.set('__secret__', str, True)
+        settings.save(True)
         self.load_secret()
 
     def load_secret(self):
         from common import settings
-        str = settings.get('__secret__', ZERO_SECRET_STR)
+        str = settings.current.get('__secret__', ZERO_SECRET_STR)
         self.secret = a2b_hex(str.encode('utf-8'))
 
     def fetch(self):
@@ -250,7 +250,7 @@ class PinAttempt:
 
         # TODO: Is this comment still accurate?
         # We shouldn't need to save this anymore since we are dynamically managing xfp and xpub
-        # settings.save()
+        # settings.save(True)
 
         # Set the key for the flash cache (cache was inaccessible prior to user logging in)
         flash_cache.set_key(new_secret=raw_secret)

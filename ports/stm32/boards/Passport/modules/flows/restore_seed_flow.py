@@ -166,13 +166,16 @@ class RestoreSeedFlow(Flow):
     async def valid_seed(self):
         from flows import AutoBackupFlow, BackupFlow
         from utils import get_seed_from_words
+        from common import settings
 
         entropy = get_seed_from_words(self.mnemonic)
-        (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
+        text = '{} seed'.format('Applying' if settings.temporary_mode else 'Saving')
+        (error,) = await spinner_task(text, save_seed_task, args=[entropy])
         if error is None:
             import common
 
-            await SuccessPage(text='New seed imported and saved.').show()
+            text = 'New seed imported and {}'.format('applied' if settings.temporary_mode else 'saved')
+            await SuccessPage(text=text).show()
             if self.full_backup:
                 await BackupFlow(initial_backup=True).run()
             elif self.autobackup:
@@ -185,5 +188,6 @@ class RestoreSeedFlow(Flow):
             else:
                 self.set_result(True)
         else:
-            await ErrorPage('Unable to save seed.').show()
+            text = 'Unable to {} seed'.format('apply' if settings.temporary_mode else 'save')
+            await ErrorPage(text).show()
             self.set_result(False)
