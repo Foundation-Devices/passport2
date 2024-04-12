@@ -4,45 +4,68 @@
 # temporary_seed_flow.py - Start using a temporary seed
 
 from flows import Flow
+from common import settings, ui
 
 
 class TemporarySeedFlow(Flow):
     def __init__(self, context=None, clear=False):
         self.key = context
-        print("context: {}".format(context))
-        self.pk = None
         initial_state = self.enter_seed
-        if self.key is not None:
-            initial_state = self.use_child_seed
-        elif clear:
+        if clear:
             initial_state = self.clear_seed
+        elif self.key is not None:
+            initial_state = self.use_child_seed
         super().__init__(initial_state=initial_state, name='TemporarySeedFlow')
 
+    # Override set_result to safely exit temporary mode
+    def set_result(self, result, forget_state=True):
+        if not result:
+            settings.exit_temporary_mode()
+        super().set_result(result, forget_state)
+
     async def enter_seed(self):
-        from flows import InitialSeedSetupFlow
-        result = await InitialSeedSetupFlow(temporary=True).run()
+        from flows import RestoreSeedFlow
+
+        settings.enter_temporary_mode()
+        result = await RestoreSeedFlow(refresh_cards_when_done=True,
+                                       autobackup=False,
+                                       full_backup=True,
+                                       temporary=True).run()
+        print("temporary_settings: {}".format(settings.temporary_settings))
+        print("current: {}".format(settings.current))
+        print("temporary_mode: {}".format(settings.temporary_mode))
         self.set_result(result)
+        print("temporary_mode: {}".format(settings.temporary_mode))
 
     async def clear_seed(self):
         from utils import spinner_task, start_task
         from tasks import delay_task
-        from common import settings, ui
         from pages import SuccessPage
 
         await spinner_task('Clearing Temporary Seed', delay_task, args=[1000, False])
-        settings.exit_temporary_mode()
         await SuccessPage(text='Temporary seed cleared').show()
+        settings.exit_temporary_mode()
 
         # TODO: ui is still buggy when clearing a seed
+        self.set_result(True)
         ui.full_cards_refresh()
         await self.wait_to_die()
-        self.set_result(False)
 
     async def use_child_seed(self):
         from derived_key import get_key_type_from_tn
         from utils import spinner_task
-        from pages import ErrorPage
-        from flows import InitialSeedSetupFlow
+        from tasks import save_seed_task
+        from pages import ErrorPage, SuccessPage, InfoPage
+        import microns
+
+        # TODO: add page explaining child seed as temporary seed, give user change to back out
+
+        result = await InfoPage('{} will be used as a temporary seed'.format(self.key['name']),
+                                left_micron=microns.Back).show()
+
+        if not result:
+            self.set_result(False)
+            return
 
         self.key_type = get_key_type_from_tn(self.key['tn'])
 
@@ -54,11 +77,22 @@ class TemporarySeedFlow(Flow):
         (vals, error) = await spinner_task(text='Generating key',
                                            task=self.key_type['task'],
                                            args=[self.key['index']])
-        self.pk = vals['priv']
+        pk = vals['priv']
         if error is not None:
             await ErrorPage(error).show()
             self.set_result(False)
             return
 
-        result = await InitialSeedSetupFlow(temporary=True, external_key=self.pk).run()
-        self.set_result(result)
+        print('pk: {}'.format(pk))
+        settings.enter_temporary_mode()
+        (error,) = await spinner_task('Applying seed', save_seed_task, args=[pk])
+
+        if error is not None:
+            self.set_result(None)
+            return
+
+        await SuccessPage(text='Temporary seed applied.').show()
+
+        self.set_result(True)
+        ui.full_cards_refresh()
+        await self.wait_to_die()
