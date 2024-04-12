@@ -10,11 +10,12 @@ from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task, insufficient_randomness
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
+import lvgl as lv
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
-        super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False,
+                 temporary=False):
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
         self.seed_length = None
@@ -24,6 +25,49 @@ class RestoreSeedFlow(Flow):
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
+        self.temporary = temporary
+
+        initial_state = self.choose_temporary
+        if self.temporary:
+            initial_state = self.explain_temporary
+
+        super().__init__(initial_state=initial_state, name='RestoreSeedFlow')
+
+    async def choose_temporary(self):
+        from pages import ChooserPage
+
+        text = 'Would you like to make a permanent seed, or a temporary seed?'
+        options = [{'label': 'Permanent', 'value': True},
+                   {'label': 'Temporary', 'value': False}]
+
+        permanent = await ChooserPage(text=text,
+                                      card_header={'title': 'Seed Type'},
+                                      options=options).show()
+        if permanent is None:
+            self.set_result(False)
+            return
+
+        if permanent:
+            self.goto(self.choose_restore_method)
+        else:
+            self.goto(self.explain_temporary)
+
+    async def explain_temporary(self):
+        from pages import InfoPage
+        import microns
+
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_SEED,
+            text='This temporary seed will not be saved, so be sure you have a backup, or create one during setup',
+            left_micron=microns.Back,
+            right_micron=microns.Forward).show()
+
+        if not result:
+            if not self.back():
+                self.set_result(None)
+            return
+
+        self.goto(self.choose_restore_method)
 
     async def choose_restore_method(self):
         from pages import ChooserPage
@@ -37,7 +81,8 @@ class RestoreSeedFlow(Flow):
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
 
         if choice is None:
-            self.set_result(False)
+            if not self.back():
+                self.set_result(False)
             return
 
         self.seed_format = choice
@@ -166,15 +211,14 @@ class RestoreSeedFlow(Flow):
     async def valid_seed(self):
         from flows import AutoBackupFlow, BackupFlow
         from utils import get_seed_from_words
-        from common import settings
 
         entropy = get_seed_from_words(self.mnemonic)
-        text = '{} seed'.format('Applying' if settings.temporary_mode else 'Saving')
+        text = '{} seed'.format('Applying' if self.temporary else 'Saving')
         (error,) = await spinner_task(text, save_seed_task, args=[entropy])
         if error is None:
             import common
 
-            text = 'New seed imported and {}'.format('applied' if settings.temporary_mode else 'saved')
+            text = 'New seed imported and {}'.format('applied' if self.temporary else 'saved')
             await SuccessPage(text=text).show()
             if self.full_backup:
                 await BackupFlow(initial_backup=True).run()
@@ -188,6 +232,6 @@ class RestoreSeedFlow(Flow):
             else:
                 self.set_result(True)
         else:
-            text = 'Unable to {} seed'.format('apply' if settings.temporary_mode else 'save')
+            text = 'Unable to {} seed'.format('apply' if self.temporary else 'save')
             await ErrorPage(text).show()
             self.set_result(False)
