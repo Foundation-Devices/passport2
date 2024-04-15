@@ -93,24 +93,25 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 return
 
             while pos <= size + 256:
+                # Update progress bar every 50 flash pages
+                if update_display % 50 == 0:
+                    percent = int(((pos - 256) / size) * 100)
+                    # print('pos = {} percent={}%'.format(pos, percent))
+                    on_progress(percent)
                 try:
-                    # Update progress bar every 50 flash pages
-                    if update_display % 50 == 0:
-                        percent = int(((pos - 256) / size) * 100)
-                        # print('pos = {} percent={}%'.format(pos, percent))
-                        on_progress(percent)
-                    update_display += 1
-
                     here = fp.readinto(buf)
                     if not here:
                         break
                 except CardMissingError:
                     await on_done(Error.MICROSD_CARD_MISSING, None)
                 except Exception as e:
-                    error_message = "Error block 3: {}, Info: {}".format(e.__class__.__name__,
-                                                                         e.args[0] if len(e.args) == 1 else e.args)
-                    await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
-                    return
+                    # error_message = "Error block 3: {}, Info: {}".format(e.__class__.__name__,
+                    #                                                      e.args[0] if len(e.args) == 1 else e.args)
+                    # await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                    # return
+                    continue
+
+                update_display += 1
 
                 try:
                     if pos % 4096 == 0:
