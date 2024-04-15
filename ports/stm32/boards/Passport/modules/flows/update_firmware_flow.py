@@ -52,8 +52,13 @@ class UpdateFirmwareFlow(Flow):
             with open(self.update_file_path, 'rb') as fp:
                 import os
 
-                s = os.stat(self.update_file_path)
-                self.size = s[6]
+                try:
+                    s = os.stat(self.update_file_path)
+                    self.size = s[6]
+                except Exception as e:
+                    await ErrorPage(text='Could not read firmware file').show()
+                    self.set_result(False)
+                    return
 
                 if self.size < FW_HEADER_SIZE:
                     await ErrorPage(text='Firmware file is too small.').show()
