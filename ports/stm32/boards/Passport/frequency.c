@@ -77,7 +77,7 @@ void frequency_turbo_toggle(bool enable) {
     RCC_OscInitStruct.HSI48State     = RCC_HSI48_ON;
     RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
     RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_1;
+    RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_3;
     RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
     RCC_OscInitStruct.PLL.PLLFRACN   = 0;
 
