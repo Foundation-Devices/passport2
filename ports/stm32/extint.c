@@ -310,6 +310,7 @@ void extint_register_pin(const pin_obj_t *pin, uint32_t mode, bool hard_irq, mp_
         extint_trigger_mode(line, mode);
 
         // Configure the NVIC
+#pragma GCC diagnostic warning "-Warray-bounds"
         NVIC_SetPriority(IRQn_NONNEG(nvic_irq_channel[line]), IRQ_PRI_EXTINT);
         HAL_NVIC_EnableIRQ(nvic_irq_channel[line]);
 

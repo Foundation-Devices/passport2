@@ -40,7 +40,7 @@ int se_unlock_ip(uint8_t keynum, const uint8_t secret[32]);
 
 // Perform HMAC on the chip, using a particular key.
 //int se_hmac(uint8_t keynum, const uint8_t *msg, uint16_t msg_len, uint8_t digest[32]);
-int se_hmac32(uint8_t keynum, uint8_t* msg, uint8_t digest[32]);
+int se_hmac32(uint8_t keynum, uint8_t msg[32], uint8_t digest[32]);
 
 // Load TempKey with indicated value, exactly.
 int se_load_nonce(uint8_t nonce[32]);

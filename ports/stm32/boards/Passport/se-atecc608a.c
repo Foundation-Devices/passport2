@@ -76,7 +76,7 @@ uint16_t se_get_info(void) {
 // Load Tempkey with a specific value. Resulting Tempkey cannot be
 // used with many commands/keys, but is needed for signing.
 //
-int se_load_nonce(uint8_t* nonce) {
+int se_load_nonce(uint8_t nonce[32]) {
     uint8_t rc;
 
     // p1=3
@@ -175,7 +175,7 @@ int se_destroy_key(int keynum) {
 // - cost of each iteration, approximately: 8ms
 // - but our time to do each iteration is limited by software SHA256 in se_pair_unlock
 //
-int se_stretch_iter(const uint8_t* start, uint8_t* end, int iterations) {
+int se_stretch_iter(const uint8_t start[32], uint8_t end[32], int iterations) {
     if (start == end) {
         return -1;
     }
@@ -198,7 +198,7 @@ int se_stretch_iter(const uint8_t* start, uint8_t* end, int iterations) {
 // Apply HMAC using secret in chip as a HMAC key, then encrypt
 // the result a little because read in clear over bus.
 //
-int se_mixin_key(uint8_t keynum, uint8_t* start, uint8_t* end) {
+int se_mixin_key(uint8_t keynum, uint8_t start[32], uint8_t end[32]) {
     int rc;
 
     if (start == end) {
