@@ -92,6 +92,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                     return
 
+                read_attempts = 0
+
                 while pos <= size + 256:
                     try:
                         # Update progress bar every 50 flash pages
@@ -99,11 +101,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                             percent = int(((pos - 256) / size) * 100)
                             # print('pos = {} percent={}%'.format(pos, percent))
                             on_progress(percent)
-
-                        here = fp.readinto(buf)
-                        if not here:
-                            break
-                        update_display += 1
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:
@@ -113,6 +110,26 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                         return
 
                     try:
+                        here = fp.readinto(buf)
+                        if not here:
+                            break
+                    except CardMissingError:
+                        await on_done(Error.MICROSD_CARD_MISSING, None)
+                    except Exception as e:
+                        if read_attempts < 10:
+                            read_attempts += 1
+                            await sleep_ms(1)
+                            continue
+                        else:
+                            error_message = "Error block 4: {}, Info: {}".format(
+                                e.__class__.__name__,
+                                e.args[0] if len(e.args) == 1 else e.args)
+                            await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                            return
+                    read_attempts = 0
+
+                    try:
+                        update_display += 1
                         if pos % 4096 == 0:
                             # erase here
                             sf.sector_erase(pos)
@@ -129,7 +146,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:
-                        error_message = "Error block 4: {}, Info: {}".format(e.__class__.__name__,
+                        error_message = "Error block 5: {}, Info: {}".format(e.__class__.__name__,
                                                                              e.args[0] if len(e.args) == 1 else e.args)
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                         return
@@ -144,7 +161,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 except CardMissingError:
                     await on_done(Error.MICROSD_CARD_MISSING, None)
                 except Exception as e:
-                    error_message = "Error block 5: {}, Info: {}".format(e.__class__.__name__,
+                    error_message = "Error block 6: {}, Info: {}".format(e.__class__.__name__,
                                                                          e.args[0] if len(e.args) == 1 else e.args)
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                     return
