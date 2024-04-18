@@ -31,10 +31,12 @@ class RandomFinalWordFlow(Flow):
         import microns
         from utils import recolor
         from styles.colors import HIGHLIGHT_TEXT_HEX
+        from common import settings
 
         last_word = get_last_word(self.selected_words)
         styled_last_word = recolor(HIGHLIGHT_TEXT_HEX, last_word)
-        text = 'Your final word is\n{}.\n\nImport and save this seed?'.format(styled_last_word)
+        save_wording = ' and save' if not settings.temporary_mode else ''
+        text = 'Your final word is\n{}.\n\nImport{} this seed?'.format(styled_last_word, save_wording)
         result = await InfoPage(text=text,
                                 left_micron=microns.Retry).show()
 
