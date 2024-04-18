@@ -11,6 +11,7 @@ from utils import spinner_task, insufficient_randomness
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
 import lvgl as lv
+from common import settings
 
 
 class RestoreSeedFlow(Flow):
@@ -36,13 +37,14 @@ class RestoreSeedFlow(Flow):
     async def choose_temporary(self):
         from pages import ChooserPage
 
-        text = 'Would you like to make a permanent seed, or a temporary seed?'
+        text = 'Import and save a seed, or import one temporarily?'
         options = [{'label': 'Permanent', 'value': True},
                    {'label': 'Temporary', 'value': False}]
 
         permanent = await ChooserPage(text=text,
-                                      card_header={'title': 'Seed Type'},
-                                      options=options).show()
+                                      icon=lv.LARGE_ICON_QUESTION,
+                                      options=options,
+                                      icon_pad=-6).show()
         if permanent is None:
             self.set_result(False)
             return
@@ -58,7 +60,7 @@ class RestoreSeedFlow(Flow):
 
         result = await InfoPage(
             icon=lv.LARGE_ICON_SEED,
-            text='This temporary seed will not be saved, so be sure you have a backup, or create one during setup',
+            text='Temporary seeds are not saved to Passport. Ensure you have a robust backup in place.',
             left_micron=microns.Back,
             right_micron=microns.Forward).show()
 
@@ -174,7 +176,9 @@ class RestoreSeedFlow(Flow):
             self.seed_words.append(last_word)
 
         if insufficient_randomness(self.seed_words):
-            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\nSave seed and continue?"
+            save_wording = 'Save' if not settings.temporary_mode else 'Import'
+            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\n{} seed and continue?" \
+                .format(save_wording)
             result2 = await ErrorPage(text=text,
                                       left_micron=microns.Cancel).show()
 
