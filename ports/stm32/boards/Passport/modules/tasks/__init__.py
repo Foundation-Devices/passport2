@@ -54,4 +54,5 @@ from .sign_psbt_task import sign_psbt_task
 from .sign_text_file_task import sign_text_file_task
 from .validate_electrum_message_task import validate_electrum_message_task
 from .validate_psbt_task import validate_psbt_task
+from .verify_firmware_signature_task import verify_firmware_signature_task
 from .verify_backup_task import verify_backup_task

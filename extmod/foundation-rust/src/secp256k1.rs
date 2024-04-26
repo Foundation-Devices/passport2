@@ -12,7 +12,7 @@ use secp256k1::{
 static mut PRE_ALLOCATED_CTX_BUF: [AlignedType; 20] = [AlignedType::ZERO; 20];
 
 /// cbindgen:ignore
-static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
+pub static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
     Lazy::new(|| {
         // SAFETY:
         //
