@@ -8,10 +8,11 @@ from files import CardSlot
 from constants import FW_HEADER_SIZE, FW_MAX_SIZE
 import machine
 from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage, InfoPage
-from tasks import copy_firmware_to_spi_flash_task
+from tasks import copy_firmware_to_spi_flash_task, verify_firmware_signature_task
 from flows import Flow, FilePickerFlow
 from utils import read_user_firmware_pubkey, is_all_zero, start_task
 from errors import Error
+import passport
 
 
 class UpdateFirmwareFlow(Flow):
@@ -77,13 +78,11 @@ class UpdateFirmwareFlow(Flow):
                     self.set_result(False)
                     return
 
-                # Validate the header
-                is_valid, version, error_msg, is_user_signed = common.system.validate_firmware_header(header)
-                # print('is_valid={}, version={}, error_msg={}, is_user_signed={}'.format(
-                #     is_valid, version, error_msg, is_user_signed))
-                self.version = version
-                if not is_valid:
-                    await ErrorPage(text='Firmware header is invalid.\n\n{}'.format(error_msg)).show()
+                try:
+                    version, is_user_signed = passport.verify_update_header(header)
+                    self.version = version
+                except passport.InvalidFirmwareUpdate as e:
+                    await ErrorPage(text='Firmware update is invalid.\n\n{}'.format(str(e))).show()
                     self.set_result(False)
                     return
 
@@ -100,9 +99,33 @@ class UpdateFirmwareFlow(Flow):
 
                 result = await QuestionPage(text='Install this firmware update?\n\nVersion:\n{}'.format(version)).show()
                 if result:
-                    self.goto(self.copy_to_flash)
+                    self.goto(self.verify_firmware_signature)
                 else:
                     self.set_result(False)
+
+    async def verify_firmware_signature(self):
+        from common import ui
+
+        self.progress_page = ProgressPage(text='Veryfing Signatures', left_micron=None, right_micron=None)
+
+        self.verify_task = start_task(verify_firmware_signature_task(
+            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+
+        prev_top_level = ui.set_is_top_level(False)
+        result = await self.progress_page.show()
+        if result:
+            ui.set_is_top_level(prev_top_level)
+            self.goto(self.copy_to_flash)
+        elif self.error is Error.MICROSD_CARD_MISSING:
+            ui.set_is_top_level(prev_top_level)
+            result = await InsertMicroSDPage().show()
+            if not result:
+                self.back()
+        else:
+            ui.set_is_top_level(prev_top_level)
+            await ErrorPage("Failed to copy new firmware:\n\n{}".format(self.error_message)).show()
+            await InfoPage("Passport will continue using the current firmware").show()
+            self.set_result(False)
 
     async def copy_to_flash(self):
         from common import settings, system, ui

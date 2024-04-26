@@ -33,6 +33,7 @@ SPI_FLASH_TOTAL_SIZE = 8192 * 1024
 FW_MAX_SIZE = (1792 * 1024) - 256
 FW_START = 0
 FW_HEADER_SIZE = 2048
+FW_HEADER_INFORMATION_SIZE = 34  # sizeof(fw_info_t)
 FW_ACTUAL_HEADER_SIZE = 170  # passport_firmware_header_t uses this many bytes
 
 # PSBT signing (uses same memory as firmware updates)

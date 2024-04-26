@@ -23,6 +23,8 @@
 #include "adc.h"
 #include "utils.h"
 
+#include "foundation.h"
+
 #define SYSTEM_DEBUG 0
 #define SECRETS_FLASH_START (0x81C0000)
 #define SECRETS_FLASH_SIZE (0x20000)
@@ -366,117 +368,6 @@ STATIC mp_obj_t mod_passport_System_busy_wait(mp_obj_t self, mp_obj_t _delay_ms)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_System_busy_wait_obj, mod_passport_System_busy_wait);
 
-// Simple header verification
-STATIC bool verify_header(passport_firmware_header_t* hdr) {
-#ifdef SCREEN_MODE_MONO
-    if (hdr->info.magic != FW_HEADER_MAGIC) return false;
-#elif SCREEN_MODE_COLOR
-    if (hdr->info.magic != FW_HEADER_MAGIC_COLOR) return false;
-#endif
-    if (hdr->info.timestamp == 0) return false;
-    if (hdr->info.fwversion[0] == 0x0) return false;
-    if (hdr->info.fwlength < FW_HEADER_SIZE) return false;
-    if (hdr->info.fwlength > FW_MAX_SIZE) return false;
-
-    // Make sure pubkey indices are in range and are not the same pubkey
-    if ((hdr->signature.pubkey1 != FW_USER_KEY) && (hdr->signature.pubkey1 >= FW_MAX_PUB_KEYS)) return false;
-    if (hdr->signature.pubkey2 >= FW_MAX_PUB_KEYS) return false;
-    if (hdr->signature.pubkey1 == hdr->signature.pubkey2) return false;
-
-    return true;
-}
-
-/// def validate_firmware_header(self, header: bytearray) -> None:
-///     '''
-///     Validate the given firmware header bytes as a potential candidate to be
-///     installed.
-///     '''
-STATIC mp_obj_t mod_passport_System_validate_firmware_header(mp_obj_t self, mp_obj_t header) {
-    mp_buffer_info_t header_info;
-    mp_get_buffer_raise(header, &header_info, MP_BUFFER_READ);
-
-    // Existing header
-    passport_firmware_header_t* fwhdr = (passport_firmware_header_t*)FW_HDR;
-
-    // New header
-    passport_firmware_header_t* new_fwhdr = (passport_firmware_header_t*)header_info.buf;
-
-    mp_obj_t tuple[4];
-
-    bool is_valid = verify_header(header_info.buf);
-
-    if (is_valid) {
-        // Build the current board hash so we can get the minimum firmware timestamp
-        uint8_t current_board_hash[HASH_LEN] = {0};
-        get_current_board_hash(current_board_hash);
-
-        uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
-
-        // Ensure they are not trying to install an older version of firmware, but allow
-        // a reinstall of the same version. Also allow installation of user firmware regardless of
-        // timestamp and then allow installing a Foundation-signed build.
-        if ((new_fwhdr->signature.pubkey1 != FW_USER_KEY) && (new_fwhdr->info.timestamp < firmware_timestamp)) {
-            tuple[0] = mp_const_false;
-            tuple[1] = mp_obj_new_str_copy(&mp_type_str, (const uint8_t*)new_fwhdr->info.fwversion,
-                                           strlen((const char*)new_fwhdr->info.fwversion));
-
-            // Include an error string
-            vstr_t vstr;
-            vstr_init(&vstr, 120);
-
-            char* msg = "The selected firmware is older than the currently installed firmware.";
-            vstr_add_strn(&vstr, (const char*)msg, strlen(msg));
-
-            vstr_add_strn(&vstr, (const char*)fwhdr->info.fwdate, strlen((const char*)new_fwhdr->info.fwdate));
-
-            msg = "\n\nSelected Version:\n  ";
-            vstr_add_strn(&vstr, (const char*)msg, strlen(msg));
-
-            vstr_add_strn(&vstr, (const char*)new_fwhdr->info.fwdate, strlen((const char*)new_fwhdr->info.fwdate));
-            tuple[2] = mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
-
-            // Is this user-signed firmware?
-            tuple[3] = mp_const_false;
-
-            return mp_obj_new_tuple(4, tuple);
-        }
-    } else {
-        // Invalid header
-        tuple[0] = mp_const_false;
-        tuple[1] = mp_obj_new_str_copy(&mp_type_str, (const uint8_t*)new_fwhdr->info.fwversion,
-                                       strlen((const char*)new_fwhdr->info.fwversion));
-
-        // Include an error string
-        vstr_t vstr;
-        vstr_init(&vstr, 80);
-        char* msg = "The selected firmware header is invalid and cannot be installed.";
-        vstr_add_strn(&vstr, (const char*)msg, strlen(msg));
-        tuple[2] = mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
-
-        // No header = no user signed firmware
-        tuple[3] = mp_const_false;
-
-        return mp_obj_new_tuple(4, tuple);
-    }
-
-    // is_valid
-    tuple[0] = mp_const_true;
-
-    // Firmware version
-    tuple[1] = mp_obj_new_str_copy(&mp_type_str, (const uint8_t*)new_fwhdr->info.fwversion,
-                                   strlen((const char*)new_fwhdr->info.fwversion));
-
-    // No error message
-    tuple[2] = mp_const_none;
-
-    // Is this user-signed firmware?
-    tuple[3] = (new_fwhdr->signature.pubkey1 == FW_USER_KEY) ? mp_const_true : mp_const_false;
-
-    return mp_obj_new_tuple(4, tuple);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_System_validate_firmware_header_obj,
-                                 mod_passport_System_validate_firmware_header);
-
 /// def mod_passport_System_enable_lv_refresh(self, Int) -> None
 ///     """
 ///   Enable or disable the lv refresh.
@@ -506,7 +397,6 @@ STATIC const mp_rom_map_elem_t mod_passport_System_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_get_screen_brightness), MP_ROM_PTR(&mod_passport_System_get_screen_brightness_obj)},
     {MP_ROM_QSTR(MP_QSTR_set_screen_brightness), MP_ROM_PTR(&mod_passport_System_set_screen_brightness_obj)},
     {MP_ROM_QSTR(MP_QSTR_busy_wait), MP_ROM_PTR(&mod_passport_System_busy_wait_obj)},
-    {MP_ROM_QSTR(MP_QSTR_validate_firmware_header), MP_ROM_PTR(&mod_passport_System_validate_firmware_header_obj)},
     {MP_ROM_QSTR(MP_QSTR_enable_lv_refresh), MP_ROM_PTR(&mod_passport_System_enable_lv_refresh_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_passport_System_locals_dict, mod_passport_System_locals_dict_table);
