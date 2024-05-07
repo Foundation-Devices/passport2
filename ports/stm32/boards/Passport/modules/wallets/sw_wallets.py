@@ -9,6 +9,7 @@ from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
 from .casa import CasaWallet
+from .coinbits import CoinbitsWallet
 # from .caravan import CaravanWallet
 # from .dux_reserve import DuxReserveWallet
 from .electrum import ElectrumWallet
@@ -32,6 +33,7 @@ supported_software_wallets = [
     BtcPayWallet,
     # CaravanWallet,
     CasaWallet,
+    CoinbitsWallet,
     # DuxReserveWallet,
     ElectrumWallet,
     # FullyNodedWallet,
