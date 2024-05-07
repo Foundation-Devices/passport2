@@ -162,7 +162,7 @@ class ScvFlow(Flow):
             result = await ErrorPage(text='''This Passport may have been tampered with.
 
 Please contact support@
-foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retry).show()
+foundation.xyz.''', left_micron=microns.Cancel, right_micron=microns.Retry).show()
             if result:
                 self.goto(self.scan_qr_challenge)
             else:
