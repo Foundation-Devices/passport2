@@ -13,9 +13,7 @@ from public_constants import AF_P2WPKH
 ZeusWallet = {
     'label': 'Zeus',
     'sig_types': [
-        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_electrum_export},
-        {'id': 'multisig', 'label': 'Multisig', 'addr_type': None, 'create_wallet': create_multisig_json_wallet,
-         'import_qr': read_multisig_config_from_qr}
+        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_electrum_export}
     ],
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
