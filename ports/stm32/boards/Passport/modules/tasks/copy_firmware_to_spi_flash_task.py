@@ -59,8 +59,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 except CardMissingError:
                     await on_done(Error.MICROSD_CARD_MISSING, None)
                 except Exception as e:
-                    error_message = "Error block 1: {}, Info: {}".format(e.__class__.__name__,
-                                                                         e.args[0] if len(e.args) == 1 else e.args)
+                    error_message = "Seek error: {}, Info: {}".format(e.__class__.__name__,
+                                                                      e.args[0] if len(e.args) == 1 else e.args)
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                     return
 
@@ -87,8 +87,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 except CardMissingError:
                     await on_done(Error.MICROSD_CARD_MISSING, None)
                 except Exception as e:
-                    error_message = "Error block 2: {}, Info: {}".format(e.__class__.__name__,
-                                                                         e.args[0] if len(e.args) == 1 else e.args)
+                    error_message = "Erase error: {}, Info: {}".format(e.__class__.__name__,
+                                                                       e.args[0] if len(e.args) == 1 else e.args)
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                     return
 
@@ -107,8 +107,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:
-                        error_message = "Error block 3: {}, Info: {}".format(e.__class__.__name__,
-                                                                             e.args[0] if len(e.args) == 1 else e.args)
+                        error_message = "Read error: {}, Info: {}".format(e.__class__.__name__,
+                                                                          e.args[0] if len(e.args) == 1 else e.args)
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                         return
 
@@ -129,8 +129,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:
-                        error_message = "Error block 4: {}, Info: {}".format(e.__class__.__name__,
-                                                                             e.args[0] if len(e.args) == 1 else e.args)
+                        error_message = "Write error: {}, Info: {}".format(e.__class__.__name__,
+                                                                           e.args[0] if len(e.args) == 1 else e.args)
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                         return
 
@@ -144,16 +144,16 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                 except CardMissingError:
                     await on_done(Error.MICROSD_CARD_MISSING, None)
                 except Exception as e:
-                    error_message = "Error block 5: {}, Info: {}".format(e.__class__.__name__,
-                                                                         e.args[0] if len(e.args) == 1 else e.args)
+                    error_message = "Hash error: {}, Info: {}".format(e.__class__.__name__,
+                                                                      e.args[0] if len(e.args) == 1 else e.args)
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                     return
 
     except CardMissingError:
         await on_done(Error.MICROSD_CARD_MISSING, None)
     except Exception as e:
-        error_message = "Error outer block: {}, Info: {}".format(e.__class__.__name__,
-                                                                 e.args[0] if len(e.args) == 1 else e.args)
+        error_message = "Firmware update error: {}, Info: {}".format(e.__class__.__name__,
+                                                                     e.args[0] if len(e.args) == 1 else e.args)
         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
 
     await on_done(None, None)
