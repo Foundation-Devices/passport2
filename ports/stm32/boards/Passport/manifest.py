@@ -83,9 +83,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/auto_backup_flow.py',
         'flows/backup_common_flow.py',
         'flows/backup_flow.py',
-        'flows/casa_health_check_common_flow.py',
-        'flows/casa_health_check_microsd_flow.py',
-        'flows/casa_health_check_qr_flow.py',
         'flows/change_pin_flow.py',
         'flows/delete_account_flow.py',
         'flows/delete_multisig_flow.py',
@@ -100,6 +97,9 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/flow.py',
         'flows/format_microsd_flow.py',
         'flows/get_seed_words_flow.py',
+        'flows/health_check_common_flow.py',
+        'flows/health_check_microsd_flow.py',
+        'flows/health_check_qr_flow.py',
         'flows/import_multisig_wallet_flow.py',
         'flows/import_multisig_wallet_from_microsd_flow.py',
         'flows/import_multisig_wallet_from_qr_flow.py',
@@ -361,7 +361,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/sw_wallets.py',
         'wallets/utils.py',
         'wallets/vault.py',
-        'wallets/keeper.py'))
+        'wallets/keeper.py',
+        'wallets/theya.py'))
 
 # Extensions
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
@@ -369,6 +370,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'extensions/extensions.py',
         'extensions/casa_extension.py',
         'extensions/postmix_extension.py',
-        'extensions/key_manager_extension.py'))
+        'extensions/key_manager_extension.py',
+        'extensions/theya_extension.py'))
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

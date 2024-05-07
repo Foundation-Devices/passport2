@@ -9,6 +9,14 @@ import common
 from public_constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2TR
 from utils import get_accounts_by_xfp, get_derived_keys
 
+TYPE_DICT = {'AF_CLASSIC': AF_CLASSIC,
+             'AF_P2SH': AF_P2SH,
+             'AF_P2WPKH': AF_P2WPKH,
+             'AF_P2WSH': AF_P2WSH,
+             'AF_P2WPKH': AF_P2WPKH,
+             'AF_P2WSH_P2SH': AF_P2WSH_P2SH,
+             'AF_P2TR': AF_P2TR}
+
 
 # Dynamically find the next account number rather than storing it - we never want to skip an account number
 # since that would create gaps and potentially make recovering funds harder if we exceeded the gap limit.
@@ -123,6 +131,18 @@ def get_addr_type_from_deriv(path):
         return AF_P2TR
 
     return None
+
+
+def get_addr_type_from_string(string):
+    string = string.upper().replace(' ', '_')
+
+    if len(string) < 4:
+        return AF_CLASSIC
+
+    if string[:3] != "AF_":
+        string = "AF_" + string
+
+    return TYPE_DICT.get(string, AF_CLASSIC)
 
 
 def get_deriv_fmt_from_address(address, is_multisig):
