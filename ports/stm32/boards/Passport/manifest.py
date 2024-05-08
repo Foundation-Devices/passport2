@@ -363,7 +363,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/utils.py',
         'wallets/vault.py',
         'wallets/keeper.py',
-        'wallets/theya.py'))
+        'wallets/theya.py',
+        'wallets/zeus.py'))
 
 # Extensions
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
