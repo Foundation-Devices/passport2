@@ -7,7 +7,7 @@ import lvgl as lv
 from files import CardSlot
 from constants import FW_HEADER_SIZE, FW_MAX_SIZE
 import machine
-from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage
+from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage, InfoPage
 from tasks import copy_firmware_to_spi_flash_task
 from flows import Flow, FilePickerFlow
 from utils import read_user_firmware_pubkey, is_all_zero, start_task
@@ -24,9 +24,11 @@ class UpdateFirmwareFlow(Flow):
         self.reset_after = reset_after
         self.statusbar = statusbar
         self.filename = None
+        self.error_message = None
 
-    async def on_done(self, error=None):
+    async def on_done(self, error=None, message=None):
         self.error = error
+        self.error_message = message
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
@@ -50,8 +52,13 @@ class UpdateFirmwareFlow(Flow):
             with open(self.update_file_path, 'rb') as fp:
                 import os
 
-                s = os.stat(self.update_file_path)
-                self.size = s[6]
+                try:
+                    s = os.stat(self.update_file_path)
+                    self.size = s[6]
+                except Exception as e:
+                    await ErrorPage(text='Could not read firmware file').show()
+                    self.set_result(False)
+                    return
 
                 if self.size < FW_HEADER_SIZE:
                     await ErrorPage(text='Firmware file is too small.').show()
@@ -133,4 +140,9 @@ class UpdateFirmwareFlow(Flow):
             result = await InsertMicroSDPage().show()
             if not result:
                 self.back()
+        else:
+            ui.set_is_top_level(prev_top_level)
+            await ErrorPage("Failed to copy new firmware:\n{}".format(self.error_message)).show()
+            await InfoPage("Passport will continue using the current firmware").show()
+            self.set_result(False)
             # else we loop around to top of copy_to_flash() again and retry
