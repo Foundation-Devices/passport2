@@ -361,6 +361,17 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
+ * Computes a ECDSA signature over the message `data`.
+ *
+ * - `data` is the message hash.
+ * - `secret_key` is the secret key used to sign the message.
+ * - `signature` is the output of the resulting signature.
+ */
+void foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
+                                     const uint8_t (*secret_key)[32],
+                                     uint8_t (*signature)[64]);
+
+/**
  * Computes a Schnorr signature over the message `data`.
  *
  * - `data` is the message hash.

@@ -5,6 +5,7 @@ use core::ptr;
 use once_cell::sync::Lazy;
 use secp256k1::{
     ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1,
+    SecretKey,
 };
 
 /// cbindgen:ignore
@@ -23,6 +24,25 @@ static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
         Secp256k1::preallocated_new(buf)
             .expect("the pre-allocated context buf should have enough space")
     });
+
+/// Computes a ECDSA signature over the message `data`.
+///
+/// - `data` is the message hash.
+/// - `secret_key` is the secret key used to sign the message.
+/// - `signature` is the output of the resulting signature.
+#[export_name = "foundation_secp256k1_sign_ecdsa"]
+pub extern "C" fn secp256k1_sign_ecdsa(
+    data: &[u8; 32],
+    secret_key: &[u8; 32],
+    signature: &mut [u8; 64],
+) {
+    let secret_key =
+        SecretKey::from_slice(secret_key).expect("invalid secret key");
+
+    let msg = Message::from_slice(data).unwrap();
+    let sig = PRE_ALLOCATED_CTX.sign_ecdsa(&msg, &secret_key);
+    signature.copy_from_slice(&sig.serialize_compact());
+}
 
 /// Computes a Schnorr signature over the message `data`.
 ///
