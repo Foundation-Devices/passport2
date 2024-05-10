@@ -367,7 +367,7 @@ extern UR_Encoder UR_ENCODER;
  * - `secret_key` is the secret key used to sign the message.
  * - `signature` is the output of the resulting signature.
  */
-void foundation_secp256k1_schnorr_sign(const uint8_t (*data)[32],
+void foundation_secp256k1_sign_schnorr(const uint8_t (*data)[32],
                                        const uint8_t (*secret_key)[32],
                                        uint8_t (*signature)[64]);
 

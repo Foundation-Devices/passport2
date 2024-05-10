@@ -1373,7 +1373,7 @@ def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
 
 def nostr_sign(key, message):
     from foundation import secp256k1
-    return secp256k1.schnorr_sign(message, key)
+    return secp256k1.sign_schnorr(message, key)
 
 
 months = {
