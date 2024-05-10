@@ -170,7 +170,7 @@ def taproot_sign_key(script_tree, internal_seckey, hash_type, sighash):
     else:
         _, h = taproot_tree_helper(script_tree)
     output_seckey = taproot_tweak_seckey(internal_seckey, h)
-    sig = secp256k1.schnorr_sign(sighash, output_seckey)
+    sig = secp256k1.sign_schnorr(sighash, output_seckey)
     if hash_type != 0:
         sig += bytes([hash_type])
     return sig

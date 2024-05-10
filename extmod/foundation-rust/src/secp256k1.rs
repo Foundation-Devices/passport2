@@ -29,7 +29,7 @@ static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
 /// - `data` is the message hash.
 /// - `secret_key` is the secret key used to sign the message.
 /// - `signature` is the output of the resulting signature.
-#[export_name = "foundation_secp256k1_schnorr_sign"]
+#[export_name = "foundation_secp256k1_sign_schnorr"]
 pub extern "C" fn secp256k1_sign_schnorr(
     data: &[u8; 32],
     secret_key: &[u8; 32],

@@ -24,7 +24,7 @@ STATIC mp_obj_t mod_foundation_secp256k1_sign_schnorr(mp_obj_t data_obj,
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("secret key should be 32 bytes"));
     }
 
-    foundation_secp256k1_schnorr_sign(data.buf,
+    foundation_secp256k1_sign_schnorr(data.buf,
                                       secret_key.buf,
                                       &signature);
 
