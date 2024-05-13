@@ -3,7 +3,7 @@
 
 //! Decoder.
 
-use core::{fmt, slice, str};
+use core::{fmt, ptr, slice, str};
 
 use foundation_ur::{
     bytewords, bytewords::Style, decoder::Error, max_fragment_len,
@@ -246,7 +246,8 @@ pub unsafe extern "C" fn ur_decode_single_part(
         }
     };
 
-    let message = unsafe { &mut UR_DECODER_SINGLE_PART_MESSAGE };
+    let message =
+        unsafe { &mut *ptr::addr_of_mut!(UR_DECODER_SINGLE_PART_MESSAGE) };
     message.clear();
     message
         .resize(UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN, 0)
