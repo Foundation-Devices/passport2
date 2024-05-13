@@ -3,7 +3,7 @@
 
 use once_cell::sync::Lazy;
 use secp256k1::{
-    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1,
+    ffi::types::AlignedType, AllPreallocated, Keypair, Message, Secp256k1,
 };
 
 /// cbindgen:ignore
@@ -28,10 +28,10 @@ pub extern "C" fn secp256k1_sign_schnorr(
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
 ) {
-    let keypair = KeyPair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
         .expect("invalid secret key");
 
-    let msg = Message::from_slice(data).unwrap();
+    let msg = Message::from_digest_slice(data).unwrap();
     let sig =
         PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
     signature.copy_from_slice(sig.as_ref());
