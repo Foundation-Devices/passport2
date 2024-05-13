@@ -15,7 +15,6 @@ async def sign_psbt_task(on_done, psbt):
     from errors import Error
     from utils import keypath_to_str, swab32
     from serializations import ser_sig_der
-    import trezorcrypto
     import stash
     import gc
     from foundation import secp256k1
@@ -122,14 +121,14 @@ async def sign_psbt_task(on_done, psbt):
                     # TODO: handle taproot scripts
                     inp.tap_key_sig = taproot_sign_key(None, pk, inp.sighash, digest)
                 else:
-                    result = trezorcrypto.secp256k1.sign(pk, digest)
+                    result = secp256k1.sign_ecdsa(digest, pk)
 
                     # convert signature to DER format
-                    if len(result) != 65:
+                    if len(result) != 64:
                         raise AssertionError('Incorrect signature length.')
 
-                    r = result[1:33]
-                    s = result[33:65]
+                    r = result[0:32]
+                    s = result[32:64]
 
                     inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
 
