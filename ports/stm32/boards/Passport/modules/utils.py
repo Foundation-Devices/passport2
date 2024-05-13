@@ -1361,11 +1361,6 @@ def get_seed_from_words(words):
     return entropy
 
 
-def nostr_pubkey_from_pk(pk):
-    from trezorcrypto import secp256k1
-    return secp256k1.publickey(pk, True)[1:]
-
-
 def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
     import tcc
     return tcc.codecs.bech32_plain_encode(key_type, key)
