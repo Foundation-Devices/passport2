@@ -25,6 +25,22 @@ static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
             .expect("the pre-allocated context buf should have enough space")
     });
 
+/// Calculate a "Schnorr" public key from the secret key.
+///
+/// See also:
+///
+/// - https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#user-content-Public_Key_Conversion
+#[export_name = "foundation_secp256k1_public_key_schnorr"]
+pub extern "C" fn secp256k1_public_key_schnorr(
+    secret_key: &[u8; 32],
+    public_key: &mut [u8; 32],
+) {
+    let keypair = KeyPair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+        .expect("invalid secret key");
+    let compressed_key = keypair.public_key().serialize();
+    public_key.copy_from_slice(&compressed_key[1..]);
+}
+
 /// Computes a ECDSA signature over the message `data`.
 ///
 /// - `data` is the message hash.

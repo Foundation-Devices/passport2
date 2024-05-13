@@ -361,6 +361,16 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
+ * Calculate a "Schnorr" public key from the secret key.
+ *
+ * See also:
+ *
+ * - https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#user-content-Public_Key_Conversion
+ */
+void foundation_secp256k1_public_key_schnorr(const uint8_t (*secret_key)[32],
+                                             uint8_t (*public_key)[32]);
+
+/**
  * Computes a ECDSA signature over the message `data`.
  *
  * - `data` is the message hash.
