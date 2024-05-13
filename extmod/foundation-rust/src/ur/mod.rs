@@ -3,7 +3,7 @@
 
 //! Uniform Resources.
 
-use core::{ffi::c_char, fmt, fmt::Write};
+use core::{ffi::c_char, fmt, fmt::Write, ptr};
 
 /// cbindgen:ignore
 #[used]
@@ -43,7 +43,7 @@ impl UR_Error {
     /// an invalid message. So the data pointed by `message` should be copied
     /// and `UR_Error` must be dropped.
     pub unsafe fn new(message: &dyn fmt::Display, kind: UR_ErrorKind) -> Self {
-        let error = &mut UR_ERROR;
+        let error = &mut *ptr::addr_of_mut!(UR_ERROR);
         error.clear();
 
         if write!(error, "{}", message).is_err() {
