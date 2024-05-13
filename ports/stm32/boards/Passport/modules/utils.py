@@ -1039,13 +1039,14 @@ def split_to_lines(s, width):
 
 
 def sign_message_digest(digest, subpath):
+    from foundation import secp256k1
     # do the signature itself!
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(subpath)
         pk = node.private_key()
         sv.register(pk)
 
-        rv = trezorcrypto.secp256k1.sign(pk, digest)
+        rv = secp256k1.sign_ecdsa(digest, pk)
 
     return rv
 
