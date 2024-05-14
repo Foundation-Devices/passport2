@@ -87,7 +87,8 @@ CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
 	-DUSE_BIP39_GENERATE=0 \
 	-DUSE_BIP32_CACHE=0 \
 	-DBIP32_CACHE_SIZE=0 \
-	-DBIP32_CACHE_MAXDEPTH=0
+	-DBIP32_CACHE_MAXDEPTH=0 \
+	-DFOUNDATION_ADDITIONS=1
 
 INC += -I$(TOP)/extmod/trezor-firmware/crypto \
 	-I$(TOP)/extmod/trezor-firmware/crypto/aes \

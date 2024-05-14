@@ -34,8 +34,6 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
   }
 }
 
-#define FOUNDATION_ADDITIONS
-
 #include "modtrezorcrypto-aes.h"
 #include "modtrezorcrypto-bip32.h"
 #include "modtrezorcrypto-bip340.h"
