@@ -796,9 +796,11 @@ const curve_info *get_curve_by_name(const char *curve_name) {
     return &secp256k1_smart_info;
   }
 #endif
+#ifndef FOUNDATION_ADDITIONS
   if (strcmp(curve_name, NIST256P1_NAME) == 0) {
     return &nist256p1_info;
   }
+#endif
   if (strcmp(curve_name, ED25519_NAME) == 0) {
     return &ed25519_info;
   }
