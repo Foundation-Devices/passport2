@@ -105,6 +105,7 @@ dependencies = [
 name = "foundation"
 version = "0.1.0"
 dependencies = [
+ "bitcoin_hashes",
  "cortex-m",
  "critical-section",
  "foundation-ur",
