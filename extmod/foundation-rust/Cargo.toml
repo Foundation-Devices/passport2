@@ -11,6 +11,11 @@ license = "GPL-3.0-or-later"
 name = "sizes"
 required-features = ["std"]
 
+[dependencies.bitcoin_hashes]
+version = "0.13"
+features = ["small-hash"]
+default-features = false
+
 [dependencies.minicbor]
 version = "0.20"
 default-features = false
