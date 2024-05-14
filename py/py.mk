@@ -342,14 +342,10 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/sha2.o \
     extmod/trezor-firmware/crypto/sha3.o \
     extmod/trezor-firmware/crypto/hasher.o \
-	extmod/trezor-firmware/crypto/blake256.o \
-    extmod/trezor-firmware/crypto/blake2b.o \
-    extmod/trezor-firmware/crypto/blake2s.o \
     extmod/trezor-firmware/crypto/aes/aescrypt.o \
     extmod/trezor-firmware/crypto/aes/aeskey.o \
     extmod/trezor-firmware/crypto/aes/aestab.o \
     extmod/trezor-firmware/crypto/aes/aes_modes.o \
-    extmod/trezor-firmware/crypto/groestl.o \
     extmod/trezor-firmware/crypto/slip39.o \
     extmod/trezor-firmware/crypto/rand.o \
     extmod/trezor-firmware/crypto/rfc6979.o \
