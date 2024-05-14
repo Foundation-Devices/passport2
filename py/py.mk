@@ -328,7 +328,6 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/ecdsa.o \
     extmod/trezor-firmware/crypto/curves.o \
     extmod/trezor-firmware/crypto/secp256k1.o \
-    extmod/trezor-firmware/crypto/nist256p1.o \
     extmod/trezor-firmware/crypto/memzero.o \
 	extmod/trezor-firmware/crypto/hmac.o \
     extmod/trezor-firmware/crypto/pbkdf2.o \
