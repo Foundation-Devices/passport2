@@ -66,6 +66,7 @@ const curve_info secp256k1_info = {
     .hasher_script = HASHER_SHA2,
 };
 
+#ifndef FOUNDATION_ADDITIONS
 const curve_info secp256k1_decred_info = {
     .bip32_name = "Bitcoin seed",
     .params = &secp256k1,
@@ -83,6 +84,7 @@ const curve_info secp256k1_groestl_info = {
     .hasher_pubkey = HASHER_SHA2_RIPEMD,
     .hasher_script = HASHER_SHA2,
 };
+#endif
 
 #if USE_KECCAK
 const curve_info secp256k1_smart_info = {
