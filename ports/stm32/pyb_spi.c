@@ -24,6 +24,8 @@
  * THE SOFTWARE.
  */
 
+#include <stdio.h>
+
 #include "py/runtime.h"
 #include "extmod/machine_spi.h"
 #include "bufhelper.h"

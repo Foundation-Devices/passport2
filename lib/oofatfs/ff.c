@@ -24,6 +24,7 @@
 
 
 #include <string.h>
+#include <stdio.h>
 
 #include "ff.h"         /* Declarations of FatFs API */
 #include "diskio.h"     /* Declarations of device I/O functions */
@@ -3620,6 +3621,7 @@ FRESULT f_read (
     UINT rcnt, cc, csect;
     BYTE *rbuff = (BYTE*)buff;
 
+    printf("4");
 
     *br = 0;    /* Clear read byte counter */
     res = validate(&fp->obj, &fs);              /* Check validity of the file object */
