@@ -3652,7 +3652,7 @@ FRESULT f_read (
                 fp->clust = clst;               /* Update current cluster */
             }
             sect = clst2sect(fs, fp->clust);    /* Get current sector */
-            if (sect == 0) ABORT(fs, FR_INT_ERR);
+            if (sect == 0) ABORT(fs, FR_INT_ERR);  // SD error happens here
             sect += csect;
             cc = btr / SS(fs);                  /* When remaining bytes >= sector size, */
             if (cc > 0) {                       /* Read maximum contiguous sectors directly */

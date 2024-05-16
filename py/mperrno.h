@@ -83,9 +83,6 @@
 #define MP_EINPROGRESS      (115) // Operation now in progress
 #define MP_ECANCELED        (125) // Operation canceled
 
-#define MP_EIO1             (126)
-#define MP_EIO2             (127)
-
 #else
 
 // MP_Exxx errno's are defined in terms of system supplied ones
