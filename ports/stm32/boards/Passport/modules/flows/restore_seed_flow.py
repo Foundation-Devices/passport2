@@ -37,9 +37,9 @@ class RestoreSeedFlow(Flow):
     async def choose_temporary(self):
         from pages import ChooserPage
 
-        text = 'Import and save a seed, or import one temporarily?'
-        options = [{'label': 'Permanent', 'value': True},
-                   {'label': 'Temporary', 'value': False}]
+        text = 'Save this seed, or import temporarily?'
+        options = [{'label': 'Save Seed', 'value': True},
+                   {'label': 'Temporary Seed', 'value': False}]
 
         permanent = await ChooserPage(text=text,
                                       icon=lv.LARGE_ICON_QUESTION,
