@@ -13,14 +13,14 @@ from .theya_extension import TheyaExtension
 # Used to build extension menus and UI cards.
 supported_extensions = [
     CasaExtension,
+    TheyaExtension,
     PostmixExtension,
     KeyManagerExtension,
-    TheyaExtension,
 ]
 
 supported_extensions_menu = [
     CasaExtension['menu_item'],
+    TheyaExtension['menu_item'],
     PostmixExtension['menu_item'],
     KeyManagerExtension['menu_item'],
-    TheyaExtension['menu_item'],
 ]
