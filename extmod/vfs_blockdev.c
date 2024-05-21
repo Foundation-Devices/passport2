@@ -30,6 +30,8 @@
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
 
+#include "extmod/foundation/modlogging.h"
+
 #if MICROPY_VFS
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
@@ -47,6 +49,7 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
 }
 
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
+    write_to_log("block_num: %d\nnum_blocks: %d\nblock_size: %d\nnative?: %d\n", block_num, num_blocks, self->block_size, self->flags & MP_BLOCKDEV_FLAG_NATIVE);
     if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
