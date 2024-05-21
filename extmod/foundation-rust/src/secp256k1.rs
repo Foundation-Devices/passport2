@@ -4,7 +4,7 @@
 use core::ptr;
 use once_cell::sync::Lazy;
 use secp256k1::{
-    ffi::types::AlignedType, AllPreallocated, KeyPair, Message, Secp256k1,
+    ffi::types::AlignedType, AllPreallocated, Keypair, Message, Secp256k1,
     SecretKey,
 };
 
@@ -35,7 +35,7 @@ pub extern "C" fn secp256k1_public_key_schnorr(
     secret_key: &[u8; 32],
     public_key: &mut [u8; 32],
 ) {
-    let keypair = KeyPair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
         .expect("invalid secret key");
     let compressed_key = keypair.public_key().serialize();
     public_key.copy_from_slice(&compressed_key[1..]);
@@ -55,7 +55,7 @@ pub extern "C" fn secp256k1_sign_ecdsa(
     let secret_key =
         SecretKey::from_slice(secret_key).expect("invalid secret key");
 
-    let msg = Message::from_slice(data).unwrap();
+    let msg = Message::from_digest_slice(data).unwrap();
     let sig = PRE_ALLOCATED_CTX.sign_ecdsa(&msg, &secret_key);
     signature.copy_from_slice(&sig.serialize_compact());
 }
