@@ -72,7 +72,6 @@ STATIC void file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_k
 STATIC mp_uint_t file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     pyb_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
     UINT sz_out;
-    printf("3");
     FRESULT res = f_read(&self->fp, buf, size, &sz_out);
     if (res != FR_OK) {
         *errcode = fresult_to_errno_table[res];

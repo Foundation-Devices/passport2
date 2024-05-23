@@ -35,7 +35,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
     try:
         with CardSlot() as card:
             with open(file_path, 'rb') as fp:
-                print((type(fp)))
                 try:
                     offset = 0
 
@@ -102,9 +101,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                             # print('pos = {} percent={}%'.format(pos, percent))
                             on_progress(percent)
 
-                        print("0", end='')
                         here = fp.readinto(buf)
-                        print('')
                         if not here:
                             break
                         update_display += 1

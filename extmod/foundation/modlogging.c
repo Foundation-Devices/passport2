@@ -14,26 +14,28 @@
 char log_buffer[LOG_BUFFER_SIZE] = {0};  // Initialize buffer to all zeros
 size_t log_position = 0;  // Current position in the buffer
 
+void clear_log(void) {
+    memset(log_buffer, 0, LOG_BUFFER_SIZE);  // Clear the buffer contents
+    log_position = 0;  // Reset the buffer position
+}
+
 void write_to_log(const char *format, ...) {
     va_list args;
     va_start(args, format);
 
     // Check remaining space in the buffer
-    size_t available_space = LOG_BUFFER_SIZE - log_position;
-    if (available_space > 0) {
-        // Use vsnprintf to append to the buffer
-        int written = vsnprintf(log_buffer + log_position, available_space, format, args);
-        if (written > 0) {
-            log_position += written;
-        }
+    int available_space = LOG_BUFFER_SIZE - log_position;
+    if (available_space <= 0) {
+        clear_log();
+    }
+
+    // Use vsnprintf to append to the buffer
+    int written = vsnprintf(log_buffer + log_position, available_space, format, args);
+    if (written > 0) {
+        log_position += written;
     }
 
     va_end(args);
-}
-
-void clear_log(void) {
-    memset(log_buffer, 0, LOG_BUFFER_SIZE);  // Clear the buffer contents
-    log_position = 0;  // Reset the buffer position
 }
 
 STATIC mp_obj_t modlogging_get_log(void) {

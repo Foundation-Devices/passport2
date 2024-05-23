@@ -27,7 +27,6 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "py/objstr.h"
 #include "py/stream.h"
@@ -59,7 +58,6 @@ mp_uint_t mp_stream_rw(mp_obj_t stream, void *buf_, mp_uint_t size, int *errcode
 
     *errcode = 0;
     mp_uint_t done = 0;
-    printf("2");
     while (size > 0) {
         mp_uint_t out_sz = io_func(stream, buf, size, errcode);
         // For read, out_sz == 0 means EOF. For write, it's unspecified
@@ -290,7 +288,6 @@ STATIC mp_obj_t stream_readinto(size_t n_args, const mp_obj_t *args) {
     }
 
     int error;
-    printf("1");
     mp_uint_t out_sz = mp_stream_read_exactly(args[0], bufinfo.buf, len, &error);
     if (error != 0) {
         if (mp_is_nonblocking_error(error)) {

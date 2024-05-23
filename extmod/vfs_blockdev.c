@@ -24,15 +24,19 @@
  * THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
 
-#include "extmod/foundation/modlogging.h"
+// #include "extmod/foundation/modlogging.h"
 
 #if MICROPY_VFS
+
+#define NUM_BUFS_TO_COMPARE 3
+#define MAX_READ_ATTEMPTS   9
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     mp_load_method(bdev, MP_QSTR_readblocks, self->readblocks);
@@ -48,8 +52,7 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     }
 }
 
-int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
-    write_to_log("block_num: %d\nnum_blocks: %d\nblock_size: %d\nnative?: %d\n", block_num, num_blocks, self->block_size, self->flags & MP_BLOCKDEV_FLAG_NATIVE);
+int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
     if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
@@ -61,6 +64,73 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         // TODO handle error return
         return 0;
     }
+}
+
+int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
+    // write_to_log("block_num: %d\nnum_blocks: %d\nblock_size: %d\nnative?: %d\n", block_num, num_blocks, self->block_size, self->flags & MP_BLOCKDEV_FLAG_NATIVE);
+
+    /* if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
+        mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
+        return f(buf, block_num, num_blocks);
+    } else {
+        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
+        self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
+        self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
+        mp_call_method_n_kw(2, 0, self->readblocks);
+        // TODO handle error return
+        return 0;
+    } */
+
+    size_t buf_size = num_blocks * self->block_size;
+    uint8_t * compare_buffers[NUM_BUFS_TO_COMPARE];
+
+    for (int i = 0; i < NUM_BUFS_TO_COMPARE; i++) {
+        compare_buffers[i] = m_new(uint8_t, buf_size);
+        if (compare_buffers[i] == NULL) {
+            // Handle memory allocation failure
+            for (int j = 0; j < i; j++) {
+                m_del(uint8_t, compare_buffers[j], buf_size);
+            }
+            return 1;  // Return with error
+        }
+    }
+
+    uint8_t num_reads = 0;
+    uint8_t curr_idx = 0;
+    int res = 1;  // If there's never a successful read, return an error
+
+    while (true) {
+        bool retry = false;
+        int new_res = internal_read(self, block_num, num_blocks, compare_buffers[curr_idx]);
+        if (new_res == 0) {
+            res = 0;
+        }
+
+        curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
+        num_reads++;
+
+        if (num_reads >= NUM_BUFS_TO_COMPARE) {
+            for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
+                if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
+                    retry = true;
+                    break;
+                }
+            }
+        }
+
+        if (num_reads < NUM_BUFS_TO_COMPARE || (retry && num_reads < MAX_READ_ATTEMPTS)) {
+            continue;
+        } else {
+            memcpy(buf, compare_buffers[0], buf_size);
+            break;
+        }
+    }
+
+    for (int i = 0; i < NUM_BUFS_TO_COMPARE; i++) {
+        m_del(uint8_t, compare_buffers[i], buf_size);
+    }
+
+    return res;
 }
 
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf) {

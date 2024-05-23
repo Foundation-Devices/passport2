@@ -3618,10 +3618,10 @@ FRESULT f_read (
     FATFS *fs;
     DWORD clst, sect;
     FSIZE_t remain;
-    UINT rcnt, cc, csect;
+    UINT rcnt = 0, cc = 0, csect = 0; // rcnt isnt set before using?
     BYTE *rbuff = (BYTE*)buff;
 
-    printf("4");
+    printf("rcnt: %d, cc: %d, csect: %d\n", rcnt, cc, csect);
 
     *br = 0;    /* Clear read byte counter */
     res = validate(&fp->obj, &fs);              /* Check validity of the file object */
