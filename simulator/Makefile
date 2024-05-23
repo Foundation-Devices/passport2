@@ -12,7 +12,6 @@
 #
 MPY_TOP = ../
 PORT_TOP = $(MPY_TOP)/ports/unix
-CC_UNIX_TOP = $(PWD)
 V=0
 LV_CFLAGS_COLOR="-DLV_COLOR_DEPTH=16 -DHAS_FUEL_GAUGE -DSCREEN_MODE_COLOR"
 LV_CFLAGS_MONO="-DLV_COLOR_DEPTH=16 -DSCREEN_MODE_MONO"
@@ -25,7 +24,7 @@ ifeq ($(UNAME_S),Darwin)
   export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
 endif
 
-MAKE_ARGS = -j 4 VARIANT=$(VARIANT) VARIANT_DIR=$(VARIANT_DIR) CC_UNIX_TOP=$(CC_UNIX_TOP) PROG=passport-mpy V=$(V) DEBUG=1
+MAKE_ARGS = -j 4 VARIANT=$(VARIANT) VARIANT_DIR=$(VARIANT_DIR) PROG=passport-mpy V=$(V) DEBUG=1
 
 all:
 	@echo "Run 'make mono' or 'make color'"
@@ -38,26 +37,3 @@ color:
 
 clean:
 	cd $(PORT_TOP) && $(MAKE) $(MAKE_ARGS) clean
-
-up:
-	cd $(PORT_TOP) && $(MAKE) $(MAKE_ARGS) deploy-stlink
-
-dfu:
-	cd $(PORT_TOP) && $(MAKE) $(MAKE_ARGS) deploy
-
-tags:
-	cd $(PORT_TOP) && $(MAKE) $(MAKE_ARGS) tags
-
-# Make a vanilla copy of micropython (unix) for use with upip and comparsions purposes
-tools:
-	cd $(PORT_TOP) && $(MAKE) clean deplibs all
-	cp $(PORT_TOP)/micropython ./micropython
-	cd $(PORT_TOP) && $(MAKE) clean
-
-setup:
-	-ln -s $(PORT_TOP) l-port
-	-ln -s $(MPY_TOP) l-mpy
-	-ln -s $(PORT_TOP)/passport-mpy passport-mpy
-	# cd $(PORT_TOP) ; git submodule update --init
-	$(MAKE) tools
-	@echo Setup DONE
