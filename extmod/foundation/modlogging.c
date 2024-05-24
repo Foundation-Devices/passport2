@@ -9,7 +9,7 @@
 #include "py/objstr.h"
 
 
-#define LOG_BUFFER_SIZE 2048
+#define LOG_BUFFER_SIZE 512
 
 char log_buffer[LOG_BUFFER_SIZE] = {0};  // Initialize buffer to all zeros
 size_t log_position = 0;  // Current position in the buffer
@@ -26,7 +26,8 @@ void write_to_log(const char *format, ...) {
     // Check remaining space in the buffer
     int available_space = LOG_BUFFER_SIZE - log_position;
     if (available_space <= 0) {
-        clear_log();
+        // clear_log();
+        return;
     }
 
     // Use vsnprintf to append to the buffer

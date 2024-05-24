@@ -31,7 +31,7 @@
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
 
-// #include "extmod/foundation/modlogging.h"
+#include "extmod/foundation/modlogging.h"
 
 #if MICROPY_VFS
 
@@ -112,6 +112,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (num_reads >= NUM_BUFS_TO_COMPARE) {
             for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
                 if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
+                    write_to_log("f%d ", num_reads);
                     retry = true;
                     break;
                 }
