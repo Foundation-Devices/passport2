@@ -18,89 +18,144 @@ from files import CardSlot, CardMissingError
 from errors import Error
 
 
+TIMEOUT_MS = 1000
+
+
+async def sleep_and_timeout(sleep_time_ms, timeout_ms, sf):
+    while sf.is_busy():
+        await sleep_ms(sleep_time_ms)
+        timeout_ms -= sleep_time_ms
+        assert timeout_ms > 0, 'Firmware update timed out'
+
+
 async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done):
     from common import system, sf
 
     try:
         with CardSlot() as card:
             with open(file_path, 'rb') as fp:
-                offset = 0
+                try:
+                    offset = 0
 
-                header = fp.read(FW_HEADER_SIZE)
+                    header = fp.read(FW_HEADER_SIZE)
 
-                # copy binary into serial flash
-                fp.seek(offset)
+                    # copy binary into serial flash
+                    fp.seek(offset)
 
-                # Calculate the update request hash so that the booloader knows this was requested by the user, not
-                # injected into SPI flash by some external attacker.
-                # Hash the firmware header
-                header_hash = bytearray(32)
+                    # Calculate the update request hash so that the booloader knows this was requested by the user, not
+                    # injected into SPI flash by some external attacker.
+                    # Hash the firmware header
+                    header_hash = bytearray(32)
 
-                # Only hash the bytes that contain the passport_firmware_header_t to match what's hashed in
-                # the bootloader
-                firmware_header = header[0:FW_ACTUAL_HEADER_SIZE]
-                foundation.sha256(firmware_header, header_hash)
-                foundation.sha256(header_hash, header_hash)  # Double sha
+                    # Only hash the bytes that contain the passport_firmware_header_t to match what's hashed in
+                    # the bootloader
+                    firmware_header = header[0:FW_ACTUAL_HEADER_SIZE]
+                    foundation.sha256(firmware_header, header_hash)
+                    foundation.sha256(header_hash, header_hash)  # Double sha
 
-                # Get the device hash
-                device_hash = bytearray(32)
-                system.get_device_hash(device_hash)
+                    # Get the device hash
+                    device_hash = bytearray(32)
+                    system.get_device_hash(device_hash)
+                except CardMissingError:
+                    await on_done(Error.MICROSD_CARD_MISSING, None)
+                except Exception as e:
+                    error_message = "Seek error: {}, Info: {}".format(e.__class__.__name__,
+                                                                      e.args[0] if len(e.args) == 1 else e.args)
+                    await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                    return
 
-                # Combine them
-                s = trezorcrypto.sha256()
-                s.update(header_hash)
-                s.update(device_hash)
+                try:
+                    # Combine them
+                    s = trezorcrypto.sha256()
+                    s.update(header_hash)
+                    s.update(device_hash)
 
-                # Result
-                update_hash = s.digest()
+                    # Result
+                    update_hash = s.digest()
 
-                # Erase first page
-                sf.sector_erase(0)
-                while sf.is_busy():
-                    await sleep_ms(10)
+                    # Erase first page
+                    sf.sector_erase(0)
+                    await sleep_and_timeout(10, TIMEOUT_MS, sf)
 
-                buf = bytearray(256)        # must be flash page size
+                    buf = bytearray(256)        # must be flash page size
 
-                # Start one page in so that we can use the first page for storing a hash.
-                # The hash combines the firmware hash with the device hash.
-                pos = 256
-                update_display = 0
+                    # Start one page in so that we can use the first page for storing a hash.
+                    # The hash combines the firmware hash with the device hash.
+                    pos = 256
+                    update_display = 0
+
+                except CardMissingError:
+                    await on_done(Error.MICROSD_CARD_MISSING, None)
+                except Exception as e:
+                    error_message = "Erase error: {}, Info: {}".format(e.__class__.__name__,
+                                                                       e.args[0] if len(e.args) == 1 else e.args)
+                    await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                    return
+
                 while pos <= size + 256:
-                    # Update progress bar every 50 flash pages
-                    if update_display % 50 == 0:
-                        percent = int(((pos - 256) / size) * 100)
-                        # print('pos = {} percent={}%'.format(pos, percent))
-                        on_progress(percent)
-                    update_display += 1
+                    try:
+                        # Update progress bar every 50 flash pages
+                        if update_display % 50 == 0:
+                            percent = int(((pos - 256) / size) * 100)
+                            # print('pos = {} percent={}%'.format(pos, percent))
+                            on_progress(percent)
 
-                    here = fp.readinto(buf)
-                    if not here:
-                        break
+                        here = fp.readinto(buf)
+                        if not here:
+                            break
+                        update_display += 1
+                    except CardMissingError:
+                        await on_done(Error.MICROSD_CARD_MISSING, None)
+                    except Exception as e:
+                        error_message = "Read error: {}, Info: {}".format(e.__class__.__name__,
+                                                                          e.args[0] if len(e.args) == 1 else e.args)
+                        await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                        return
 
-                    if pos % 4096 == 0:
-                        # erase here
-                        sf.sector_erase(pos)
-                        while sf.is_busy():
-                            await sleep_ms(10)
+                    try:
+                        if pos % 4096 == 0:
+                            # erase here
+                            sf.sector_erase(pos)
+                            await sleep_and_timeout(10, TIMEOUT_MS, sf)
 
-                    sf.write(pos, buf)
+                        sf.write(pos, buf)
 
-                    # full page write: 0.6 to 3ms
-                    while sf.is_busy():
-                        await sleep_ms(1)
+                        # full page write: 0.6 to 3ms
+                        await sleep_and_timeout(1, TIMEOUT_MS, sf)
 
-                    pos += here
-                    if passport.IS_SIMULATOR:
-                        await sleep_ms(1)
+                        pos += here
+                        if passport.IS_SIMULATOR:
+                            await sleep_ms(1)
+                    except CardMissingError:
+                        await on_done(Error.MICROSD_CARD_MISSING, None)
+                    except Exception as e:
+                        error_message = "Write error: {}, Info: {}".format(e.__class__.__name__,
+                                                                           e.args[0] if len(e.args) == 1 else e.args)
+                        await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                        return
 
-                # Do this at the end so that we know the rest worked - prevent bootloader from installing bad firmware
-                buf[0:32] = update_hash  # Copy into the buf we'll use to write to SPI flash
+                try:
+                    # Do this at the end so we know the rest worked - prevent bootloader from installing bad firmware
+                    buf[0:32] = update_hash  # Copy into the buf we'll use to write to SPI flash
 
-                sf.write(0, buf)  # Need to write the entire page of 256 bytes
+                    sf.write(0, buf)  # Need to write the entire page of 256 bytes
 
-                # Success
-                await on_done(None)
+                    # Success
+                except CardMissingError:
+                    await on_done(Error.MICROSD_CARD_MISSING, None)
+                except Exception as e:
+                    error_message = "Hash error: {}, Info: {}".format(e.__class__.__name__,
+                                                                      e.args[0] if len(e.args) == 1 else e.args)
+                    await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+                    return
+
     except CardMissingError:
-        await on_done(Error.MICROSD_CARD_MISSING)
+        await on_done(Error.MICROSD_CARD_MISSING, None)
+    except Exception as e:
+        error_message = "Firmware update error: {}, Info: {}".format(e.__class__.__name__,
+                                                                     e.args[0] if len(e.args) == 1 else e.args)
+        await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
+
+    await on_done(None, None)
 
     # print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> copy_firmware_to_spi_flash_task() is DONE!')

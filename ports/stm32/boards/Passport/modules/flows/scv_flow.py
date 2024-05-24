@@ -41,7 +41,7 @@ class ScvFlow(Flow):
         else:
             messages = [{'text': 'Let\'s confirm Passport was not tampered with during shipping.'},
                         {'text': 'Next, scan the Security Check '
-                         'QR code from validate.foundationdevices.com.'}]
+                         'QR code from https://validate.foundation.xyz.'}]
 
         result = await SeriesOfPagesFlow(ShieldPage, messages).run()
 
@@ -161,8 +161,8 @@ class ScvFlow(Flow):
         else:
             result = await ErrorPage(text='''This Passport may have been tampered with.
 
-Please contact support@
-foundationdevices.com.''', left_micron=microns.Cancel, right_micron=microns.Retry).show()
+Please contact hello@
+foundation.xyz.''', left_micron=microns.Cancel, right_micron=microns.Retry).show()
             if result:
                 self.goto(self.scan_qr_challenge)
             else:

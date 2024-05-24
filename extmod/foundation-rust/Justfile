@@ -6,7 +6,7 @@ alias b := build
 alias l := lint
 
 # Generate C bindings header.
-generate: build
+generate:
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h

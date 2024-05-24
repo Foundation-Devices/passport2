@@ -47,7 +47,7 @@ class EnvoySetupFlow(Flow):
         from pages import ShowQRPage
 
         result = await ShowQRPage(
-            qr_data='https://foundationdevices.com/download',
+            qr_data='https://foundation.xyz/download',
             caption='Scan from your phone to download Envoy.\n').show()
         if not result:
             self.back()

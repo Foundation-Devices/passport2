@@ -57,12 +57,12 @@ def account_menu():
 
 
 def health_check_submenu():
-    from flows import CasaHealthCheckQRFlow, CasaHealthCheckMicrosdFlow
+    from flows import HealthCheckQRFlow, HealthCheckMicrosdFlow
 
     return [
-        {'icon': 'ICON_SCAN_QR', 'label': 'Check with QR Code', 'flow': CasaHealthCheckQRFlow,
+        {'icon': 'ICON_SCAN_QR', 'label': 'Check with QR Code', 'flow': HealthCheckQRFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_MICROSD', 'label': 'Check with microSD', 'flow': CasaHealthCheckMicrosdFlow,
+        {'icon': 'ICON_MICROSD', 'label': 'Check with microSD', 'flow': HealthCheckMicrosdFlow,
          'statusbar': {'title': 'SIGN'}},
     ]
 
@@ -76,13 +76,14 @@ def casa_menu():
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_HEALTH_CHECK', 'label': 'Health Check', 'submenu': health_check_submenu},
+        {'icon': 'ICON_HEALTH_CHECK', 'label': 'Health Check', 'submenu': health_check_submenu,
+         'args': {'context': 'Casa'}},
         {'icon': 'ICON_CONNECT', 'label': 'Connect to Casa', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Casa'}},
     ]
 
 
-def postmix_menu():
+def theya_menu():
     from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow, ConnectWalletFlow
 
     return [
@@ -91,6 +92,29 @@ def postmix_menu():
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_HEALTH_CHECK', 'label': 'Health Check', 'submenu': health_check_submenu,
+         'args': {'context': 'Theya'}},
+        {'icon': 'ICON_CONNECT', 'label': 'Connect to Theya', 'flow': ConnectWalletFlow,
+         'statusbar': {'title': 'CONNECT'}, 'args': {'sw_wallet': 'Theya'}},
+    ]
+
+
+def postmix_menu():
+    from flows import (
+        VerifyAddressFlow,
+        SignPsbtQRFlow,
+        SignPsbtMicroSDFlow,
+        ConnectWalletFlow,
+        AddressExplorerFlow)
+
+    return [
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
+         'statusbar': {'title': 'SIGN'}},
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+         'statusbar': {'title': 'LIST ADDRESSES'}},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
     ]

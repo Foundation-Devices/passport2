@@ -9,6 +9,7 @@ from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
 from .casa import CasaWallet
+from .coinbits import CoinbitsWallet
 # from .caravan import CaravanWallet
 # from .dux_reserve import DuxReserveWallet
 from .electrum import ElectrumWallet
@@ -20,6 +21,8 @@ from .nunchuk import NunchukWallet
 from .simple_bitcoin_wallet import SimpleBitcoinWallet
 from .sparrow import SparrowWallet
 from .specter import SpecterWallet
+from .theya import TheyaWallet
+from .zeus import ZeusWallet
 
 # Array of all supported software wallets and their attributes.
 # Used to build wallet menus and drive their behavior.
@@ -31,6 +34,7 @@ supported_software_wallets = [
     BtcPayWallet,
     # CaravanWallet,
     CasaWallet,
+    CoinbitsWallet,
     # DuxReserveWallet,
     ElectrumWallet,
     # FullyNodedWallet,
@@ -40,4 +44,6 @@ supported_software_wallets = [
     SimpleBitcoinWallet,
     SparrowWallet,
     SpecterWallet,
+    TheyaWallet,
+    ZeusWallet,
 ]
