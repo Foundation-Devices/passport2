@@ -9,7 +9,8 @@
 #include "py/objstr.h"
 
 
-#define LOG_BUFFER_SIZE 12288
+#define LOG_BUFFER_SIZE     12288
+#define HALF_BUFFER_SIZE    (LOG_BUFFER_SIZE / 2)
 
 char log_buffer[LOG_BUFFER_SIZE] = {0};  // Initialize buffer to all zeros
 size_t log_position = 0;  // Current position in the buffer
@@ -19,21 +20,31 @@ void clear_log(void) {
     log_position = 0;  // Reset the buffer position
 }
 
+void shift_half_log(void) {
+    if (log_position < HALF_BUFFER_SIZE) {
+        return;
+    }
+
+    log_position -= HALF_BUFFER_SIZE;
+    memcpy(log_buffer, log_buffer + HALF_BUFFER_SIZE, log_position);
+    memset(log_buffer + log_position, 0, LOG_BUFFER_SIZE - log_position);
+}
+
 void write_to_log(const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    // Check remaining space in the buffer
+    // Check remaining space in the buffer, avoid truncating logs
     int available_space = LOG_BUFFER_SIZE - log_position;
-    if (available_space <= 0) {
-        // clear_log();
-        return;
+    if (available_space <= 20) {
+        shift_half_log();
+        available_space = LOG_BUFFER_SIZE - log_position;
     }
 
     // Use vsnprintf to append to the buffer
     int written = vsnprintf(log_buffer + log_position, available_space, format, args);
     if (written > 0) {
-        log_position += written;
+        log_position = MIN(log_position + written, LOG_BUFFER_SIZE - 1);
     }
 
     va_end(args);

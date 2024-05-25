@@ -93,6 +93,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
             }
             return 1;  // Return with error
         }
+        memset(compare_buffers[i], 0, sizeof(uint8_t) * buf_size);
     }
 
     uint8_t num_reads = 0;
@@ -114,7 +115,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (num_reads >= NUM_BUFS_TO_COMPARE) {
             for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
                 if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
-                    write_to_log("f%d\n", num_reads);
+                    write_to_log("f%di%d\n", num_reads, i);
                     for (int j = 0; j < buf_size; j++) {
                         write_to_log("%02X/", compare_buffers[i][j]);
                         write_to_log("%02X ", compare_buffers[i + 1][j]);
@@ -124,7 +125,6 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
                     break;
                 }
             }
-            write_to_log("s%d", num_reads);
         }
 
         if (num_reads < NUM_BUFS_TO_COMPARE || (retry && num_reads < MAX_READ_ATTEMPTS)) {
