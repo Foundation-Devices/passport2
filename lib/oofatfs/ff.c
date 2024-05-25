@@ -29,6 +29,8 @@
 #include "ff.h"         /* Declarations of FatFs API */
 #include "diskio.h"     /* Declarations of device I/O functions */
 
+#include "extmod/foundation/modlogging.h"
+
 // DIR has been renamed FF_DIR in the public API so it doesn't clash with POSIX
 #define DIR FF_DIR
 
@@ -1106,6 +1108,7 @@ static DWORD clst2sect (    /* !=0:Sector number, 0:Failed (invalid cluster#) */
 )
 {
     clst -= 2;      /* Cluster number is origin from 2 */
+    write_to_log("c:%d,n:%d", clst, fs->n_fatent - 2);
     if (clst >= fs->n_fatent - 2) return 0;     /* Is it invalid cluster number? */
     return fs->database + fs->csize * clst;     /* Start sector number of the cluster */
 }
@@ -3620,8 +3623,6 @@ FRESULT f_read (
     FSIZE_t remain;
     UINT rcnt = 0, cc = 0, csect = 0; // rcnt isnt set before using?
     BYTE *rbuff = (BYTE*)buff;
-
-    printf("rcnt: %d, cc: %d, csect: %d\n", rcnt, cc, csect);
 
     *br = 0;    /* Clear read byte counter */
     res = validate(&fp->obj, &fs);              /* Check validity of the file object */

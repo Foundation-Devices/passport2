@@ -14,7 +14,6 @@ import trezorcrypto
 import foundation
 import passport
 from uasyncio import sleep_ms
-from logging import get_log
 from files import CardSlot, CardMissingError
 from errors import Error
 
@@ -109,9 +108,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:
-                        # error_message = "Read error: {}, Info: {}".format(e.__class__.__name__,
-                        #                                                   e.args[0] if len(e.args) == 1 else e.args)
-                        error_message = get_log()
+                        error_message = "Read error: {}, Info: {}".format(e.__class__.__name__,
+                                                                          e.args[0] if len(e.args) == 1 else e.args)
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                         return
 

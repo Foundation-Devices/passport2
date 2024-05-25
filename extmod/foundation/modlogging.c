@@ -9,7 +9,7 @@
 #include "py/objstr.h"
 
 
-#define LOG_BUFFER_SIZE 512
+#define LOG_BUFFER_SIZE 12288
 
 char log_buffer[LOG_BUFFER_SIZE] = {0};  // Initialize buffer to all zeros
 size_t log_position = 0;  // Current position in the buffer
@@ -41,7 +41,7 @@ void write_to_log(const char *format, ...) {
 
 STATIC mp_obj_t modlogging_get_log(void) {
     vstr_t vstr;
-    size_t len = strlen(log_buffer);
+    size_t len = MIN(LOG_BUFFER_SIZE, log_position);
     vstr_init_len(&vstr, len);
     memcpy(vstr.buf, log_buffer, len);
     vstr.len = len;
