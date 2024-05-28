@@ -35,7 +35,7 @@
 
 #if MICROPY_VFS
 
-#define NUM_BUFS_TO_COMPARE 3
+#define NUM_BUFS_TO_COMPARE 3  //consider 2 for less unnecessary failures
 #define MAX_READ_ATTEMPTS   9
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
@@ -106,7 +106,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (new_res == 0) {
             res = 0;
         } else {
-            write_to_log("e");
+            write_to_log("e\n");
         }
 
         curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
@@ -115,12 +115,12 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (num_reads >= NUM_BUFS_TO_COMPARE) {
             for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
                 if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
-                    write_to_log("f%di%d\n", num_reads, i);
+                    // write_to_log("f%di%d\n", num_reads, i);
                     for (int j = 0; j < buf_size; j++) {
-                        write_to_log("%02X/", compare_buffers[i][j]);
-                        write_to_log("%02X ", compare_buffers[i + 1][j]);
+                        // write_to_log("%02X/", compare_buffers[i][j]);
+                        //write_to_log("%02X ", compare_buffers[i + 1][j]);
                     }
-                    write_to_log("\n");
+                    //write_to_log("\n");
                     retry = true;
                     break;
                 }

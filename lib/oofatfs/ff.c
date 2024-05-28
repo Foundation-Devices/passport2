@@ -1108,7 +1108,6 @@ static DWORD clst2sect (    /* !=0:Sector number, 0:Failed (invalid cluster#) */
 )
 {
     clst -= 2;      /* Cluster number is origin from 2 */
-    write_to_log("c:%d,n:%d", clst, fs->n_fatent - 2);
     if (clst >= fs->n_fatent - 2) return 0;     /* Is it invalid cluster number? */
     return fs->database + fs->csize * clst;     /* Start sector number of the cluster */
 }
@@ -3645,7 +3644,10 @@ FRESULT f_read (
                     } else
 #endif
                     {
+                        // error happens here
+                        write_to_log("fpclust:%d\n", fp->clust);
                         clst = get_fat(&fp->obj, fp->clust);    /* Follow cluster chain on the FAT */
+                        write_to_log("clst:%d\n", clst);
                     }
                 }
                 if (clst < 2) ABORT(fs, FR_INT_ERR);
@@ -3653,7 +3655,7 @@ FRESULT f_read (
                 fp->clust = clst;               /* Update current cluster */
             }
             sect = clst2sect(fs, fp->clust);    /* Get current sector */
-            if (sect == 0) ABORT(fs, FR_INT_ERR);  // SD error happens here
+            if (sect == 0) ABORT(fs, FR_INT_ERR);
             sect += csect;
             cc = btr / SS(fs);                  /* When remaining bytes >= sector size, */
             if (cc > 0) {                       /* Read maximum contiguous sectors directly */
