@@ -115,12 +115,6 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (num_reads >= NUM_BUFS_TO_COMPARE) {
             for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
                 if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
-                    // write_to_log("f%di%d\n", num_reads, i);
-                    for (int j = 0; j < buf_size; j++) {
-                        // write_to_log("%02X/", compare_buffers[i][j]);
-                        //write_to_log("%02X ", compare_buffers[i + 1][j]);
-                    }
-                    //write_to_log("\n");
                     retry = true;
                     break;
                 }
@@ -130,7 +124,31 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         if (num_reads < NUM_BUFS_TO_COMPARE || (retry && num_reads < MAX_READ_ATTEMPTS)) {
             continue;
         } else {
-            memcpy(buf, compare_buffers[0], buf_size);
+
+            if (!retry) {
+                memcpy(buf, compare_buffers[0], buf_size);
+                break;
+            }
+
+            // Find and copy the first non-zero buffer
+            bool nonzero = false;
+            size_t i = 0;
+            for (i = 0; i < NUM_BUFS_TO_COMPARE && !nonzero; i++) {
+                for (size_t j = 0; j < buf_size; j++) {
+                    if (compare_buffers[i][j] != 0) {
+                        nonzero = true;
+                        break;
+                    }
+                }
+            }
+            write_to_log("buf%d\n", i);
+
+            // This should never happen, but if all are 0s, return first
+            if (i == NUM_BUFS_TO_COMPARE) {
+                i = 0;
+            }
+
+            memcpy(buf, compare_buffers[i], buf_size);
             break;
         }
     }
