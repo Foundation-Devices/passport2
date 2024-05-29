@@ -1043,17 +1043,22 @@ static FRESULT move_window (    /* Returns FR_OK or FR_DISK_ERR */
 
 
     if (sector != fs->winsect) {    /* Window offset changed? */
+        write_to_log("m");
 #if !FF_FS_READONLY
         res = sync_window(fs);      /* Write-back changes */
+        write_to_log("n");
 #endif
         if (res == FR_OK) {         /* Fill sector window with new data */
+            write_to_log("o");
             if (disk_read(fs->drv, fs->win, sector, 1) != RES_OK) {
+                write_to_log("p");
                 sector = 0xFFFFFFFF;    /* Invalidate window if read data is not valid */
                 res = FR_DISK_ERR;
             }
             fs->winsect = sector;
         }
     }
+    write_to_log("q");
     return res;
 }
 
