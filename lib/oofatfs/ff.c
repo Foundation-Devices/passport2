@@ -1043,22 +1043,17 @@ static FRESULT move_window (    /* Returns FR_OK or FR_DISK_ERR */
 
 
     if (sector != fs->winsect) {    /* Window offset changed? */
-        write_to_log("m");
 #if !FF_FS_READONLY
         res = sync_window(fs);      /* Write-back changes */
-        write_to_log("n");
 #endif
         if (res == FR_OK) {         /* Fill sector window with new data */
-            write_to_log("o");
             if (disk_read(fs->drv, fs->win, sector, 1) != RES_OK) {
-                write_to_log("p");
                 sector = 0xFFFFFFFF;    /* Invalidate window if read data is not valid */
                 res = FR_DISK_ERR;
             }
             fs->winsect = sector;
         }
     }
-    write_to_log("q");
     return res;
 }
 
@@ -1135,7 +1130,6 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
 
 
     if (clst < 2 || clst >= fs->n_fatent) { /* Check if in valid range */
-        write_to_log("err");
         val = 1;    /* Internal error */
 
     } else {
@@ -1143,7 +1137,6 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
 
         switch (fs->fs_type) {
         case FS_FAT12 :
-            write_to_log("fat12\n");
             bc = (UINT)clst; bc += bc / 2;
             if (move_window(fs, fs->fatbase + (bc / SS(fs))) != FR_OK) break;
             wc = fs->win[bc++ % SS(fs)];        /* Get 1st byte of the entry */
@@ -1153,7 +1146,6 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
             break;
 
         case FS_FAT16 :
-            write_to_log("fat16\n");
             if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 2))) != FR_OK) break;
             val = ld_word(fs->win + clst * 2 % SS(fs));     /* Simple WORD array */
             break;
@@ -1161,52 +1153,39 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
         case FS_FAT32 :
             write_to_log("fat32\n");
             if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
-            write_to_log("a");
             write_to_log("fswin:%d\nSS(fs):%d\n", fs->win, SS(fs));
             val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x0FFFFFFF;   /* Simple DWORD array but mask out upper 4 bits */
             write_to_log("val:%d\n", val);
             break;
 #if FF_FS_EXFAT
         case FS_EXFAT :
-            write_to_log("exfat\n");
             if ((obj->objsize != 0 && obj->sclust != 0) || obj->stat == 0) {    /* Object except root dir must have valid data length */
-                write_to_log("b");
                 DWORD cofs = clst - obj->sclust;    /* Offset from start cluster */
                 DWORD clen = (DWORD)((obj->objsize - 1) / SS(fs)) / fs->csize;  /* Number of clusters - 1 */
 
                 if (obj->stat == 2 && cofs <= clen) {   /* Is it a contiguous chain? */
-                    write_to_log("c");
                     val = (cofs == clen) ? 0x7FFFFFFF : clst + 1;   /* No data on the FAT, generate the value */
                     break;
                 }
                 if (obj->stat == 3 && cofs < obj->n_cont) { /* Is it in the 1st fragment? */
-                    write_to_log("d");
                     val = clst + 1;     /* Generate the value */
                     break;
                 }
                 if (obj->stat != 2) {   /* Get value from FAT if FAT chain is valid */
-                    write_to_log("e");
                     if (obj->n_frag != 0) { /* Is it on the growing edge? */
-                        write_to_log("f");
                         val = 0x7FFFFFFF;   /* Generate EOC */
                     } else {
-                        write_to_log("g");
                         if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
-                        write_to_log("h");
                         val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x7FFFFFFF;
                     }
                     break;
                 }
-                write_to_log("i");
             }
-            write_to_log("j");
             /* go to default */
 #endif
         default:
-            write_to_log("k");
             val = 1;    /* Internal error */
         }
-        write_to_log("l");
     }
 
     return val;

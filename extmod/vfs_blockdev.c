@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
@@ -60,6 +61,8 @@ int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, 
         mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
         self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
+        printf("going into readblocks");
+        printf("call method (fun=%p, self=%p, n_args=" UINT_FMT ", n_kw=" UINT_FMT ", args=%p)\n", self->readblocks[0], self->readblocks[1], 2, 0, self->readblocks);
         mp_call_method_n_kw(2, 0, self->readblocks);
         // TODO handle error return
         return 0;
@@ -67,8 +70,6 @@ int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, 
 }
 
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
-    // write_to_log("block_num: %d\nnum_blocks: %d\nblock_size: %d\nnative?: %d\n", block_num, num_blocks, self->block_size, self->flags & MP_BLOCKDEV_FLAG_NATIVE);
-
     /* if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
@@ -105,8 +106,6 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         int new_res = internal_read(self, block_num, num_blocks, compare_buffers[curr_idx]);
         if (new_res == 0) {
             res = 0;
-        } else {
-            write_to_log("e\n");
         }
 
         curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
@@ -141,7 +140,6 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
                     }
                 }
             }
-            write_to_log("buf%d\n", i);
 
             // This should never happen, but if all are 0s, return first
             if (i == NUM_BUFS_TO_COMPARE) {

@@ -25,6 +25,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 
 #include "py/runtime.h"
 #include "py/mphal.h"
@@ -462,8 +463,10 @@ STATIC HAL_StatusTypeDef sdcard_wait_finished(uint32_t timeout) {
 }
 
 mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blocks) {
+    printf("sdcard_read_blocks\n");
     // check that SD card is initialised
     if (!(pyb_sdmmc_flags & PYB_SDMMC_FLAG_ACTIVE)) {
+        printf("not initialized\n");
         return HAL_ERROR;
     }
 
@@ -554,6 +557,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         memcpy(dest, &saved_word, orig_dest - dest);
     }
 
+    printf("error value: %d\n");
     return err;
 }
 
@@ -776,6 +780,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(sd_write_obj, sd_write);
 STATIC mp_obj_t pyb_sdcard_readblocks(mp_obj_t self, mp_obj_t block_num, mp_obj_t buf) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_WRITE);
+    printf("pyb_sdcard_readblocks\n");
     mp_uint_t ret = sdcard_read_blocks(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE);
     return mp_obj_new_bool(ret == 0);
 }
