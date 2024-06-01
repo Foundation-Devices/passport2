@@ -357,6 +357,7 @@ uint32_t SDMMC_GetPowerState(SDMMC_TypeDef *SDMMCx)
 HAL_StatusTypeDef SDMMC_SendCommand(SDMMC_TypeDef *SDMMCx, SDMMC_CmdInitTypeDef *Command)
 {
   uint32_t tmpreg = 0;
+  write_to_log("sdmmc_sendcommand\n");
 
   /* Check the parameters */
   assert_param(IS_SDMMC_CMD_INDEX(Command->CmdIndex));
@@ -544,6 +545,7 @@ uint32_t SDMMC_CmdReadSingleBlock(SDMMC_TypeDef *SDMMCx, uint32_t ReadAdd)
 {
   SDMMC_CmdInitTypeDef  sdmmc_cmdinit;
   uint32_t errorstate;
+  write_to_log("sdmmc_cmdreadsingleblock\n");
 
   /* Set Block Size for Card */
   sdmmc_cmdinit.Argument         = (uint32_t)ReadAdd;
@@ -551,10 +553,11 @@ uint32_t SDMMC_CmdReadSingleBlock(SDMMC_TypeDef *SDMMCx, uint32_t ReadAdd)
   sdmmc_cmdinit.Response         = SDMMC_RESPONSE_SHORT;
   sdmmc_cmdinit.WaitForInterrupt = SDMMC_WAIT_NO;
   sdmmc_cmdinit.CPSM             = SDMMC_CPSM_ENABLE;
+  // error happens here
   (void)SDMMC_SendCommand(SDMMCx, &sdmmc_cmdinit);
 
   /* Check for error conditions */
-  write_to_log("sdmmc_cmdreadsingleblock\n");
+  // this is just retrieving the error status
   errorstate = SDMMC_GetCmdResp1(SDMMCx, SDMMC_CMD_READ_SINGLE_BLOCK, SDMMC_CMDTIMEOUT);
 
   return errorstate;
