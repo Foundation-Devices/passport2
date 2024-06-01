@@ -25,6 +25,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 
 #include "py/runtime.h"
 #include "py/mphal.h"
@@ -488,7 +489,8 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         saved_word = *(uint32_t *)dest;
     }
 
-    if (query_irq() == IRQ_STATE_ENABLED) {
+    // Let's try to disable DMA
+    if (/*query_irq() == IRQ_STATE_ENABLED*/false) {
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 
@@ -517,6 +519,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         #endif
         {
             // error happens here, returns 1
+            write_to_log("A\n");
             err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
         }
         if (err == HAL_OK) {
@@ -539,11 +542,13 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     } else {
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
+            write_to_log("B\n");
             err = HAL_MMC_ReadBlocks(&sdmmc_handle.mmc, dest, block_num, num_blocks, 60000);
         } else
         #endif
         {
-            
+            write_to_log("C\n");
+            // Potentially change 60000 to HAL_MAX_DELAY
             err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
         if (err == HAL_OK) {

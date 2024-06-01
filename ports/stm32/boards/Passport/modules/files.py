@@ -82,6 +82,9 @@ class CardSlot:
 
         cls.last_change = utime.ticks_ms()
 
+        # This is pin E3
+        # pyb.Pin is ports/stm32/pin.c pin_obj_init_helper
+        # this initializes the GPIO on the hardware level
         cls.irq = ExtInt(Pin('SD_SW'), ExtInt.IRQ_RISING_FALLING,
                          Pin.PULL_UP, card_change)
 
@@ -105,6 +108,7 @@ class CardSlot:
         # Get ready!
 
         # busy wait for card pin to debounce/settle
+        # this would explain persistent failure to detect the microsd
         while True:
             since = utime.ticks_diff(utime.ticks_ms(), self.last_change)
             if since > 50:
