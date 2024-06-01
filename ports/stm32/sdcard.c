@@ -549,7 +549,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             write_to_log("C\n");
             // Potentially change 60000 to HAL_MAX_DELAY
-            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
+            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, HAL_MAX_DELAY);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
