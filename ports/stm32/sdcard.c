@@ -25,7 +25,6 @@
  */
 
 #include <string.h>
-#include <stdio.h>
 
 #include "py/runtime.h"
 #include "py/mphal.h"
@@ -38,6 +37,7 @@
 #include "bufhelper.h"
 #include "dma.h"
 #include "irq.h"
+#include "extmod/foundation/modlogging.h"
 
 #if MICROPY_HW_ENABLE_SDCARD || MICROPY_HW_ENABLE_MMCARD
 
@@ -463,10 +463,10 @@ STATIC HAL_StatusTypeDef sdcard_wait_finished(uint32_t timeout) {
 }
 
 mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blocks) {
-    printf("sdcard_read_blocks\n");
+    write_to_log("sdcard_read_blocks\n");
     // check that SD card is initialised
     if (!(pyb_sdmmc_flags & PYB_SDMMC_FLAG_ACTIVE)) {
-        printf("not initialized\n");
+        write_to_log("a");
         return HAL_ERROR;
     }
 
@@ -476,6 +476,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     uint8_t *orig_dest = NULL;
     uint32_t saved_word;
     if (((uint32_t)dest & 3) != 0) {
+        write_to_log("b");
         // Pointer is not aligned so it needs fixing.
         // We could allocate a temporary block of RAM (as sdcard_write_blocks
         // does) but instead we are going to use the dest buffer inplace.  We
@@ -491,21 +492,26 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     }
 
     if (query_irq() == IRQ_STATE_ENABLED) {
+        write_to_log("c");
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 
         #if SDIO_USE_GPDMA
+        write_to_log("c2");
         DMA_HandleTypeDef sd_dma;
         dma_init(&sd_dma, &SDMMC_DMA, DMA_PERIPH_TO_MEMORY, &sdmmc_handle);
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
+            write_to_log("d");
             sdmmc_handle.mmc.hdmarx = &sd_dma;
         } else
         #endif
         {
+            write_to_log("e");
             sdmmc_handle.sd.hdmarx = &sd_dma;
         }
         #endif
+        write_to_log("f");
 
         // make sure cache is flushed and invalidated so when DMA updates the RAM
         // from reading the peripheral the CPU then reads the new data
@@ -514,50 +520,67 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         sdcard_reset_periph();
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
+            write_to_log("g");
             err = HAL_MMC_ReadBlocks_DMA(&sdmmc_handle.mmc, dest, block_num, num_blocks);
         } else
         #endif
         {
+            write_to_log("h");
+            // error happens here, returns 1
             err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
         }
         if (err == HAL_OK) {
+            write_to_log("i");
             err = sdcard_wait_finished(60000);
         }
+        write_to_log("j");
 
         #if SDIO_USE_GPDMA
+        write_to_log("k");
         dma_deinit(&SDMMC_DMA);
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
+            write_to_log("l");
             sdmmc_handle.mmc.hdmarx = NULL;
         } else
         #endif
         {
+            write_to_log("m");
             sdmmc_handle.sd.hdmarx = NULL;
         }
         #endif
+        write_to_log("n");
 
         restore_irq_pri(basepri);
     } else {
+        write_to_log("o");
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
+            write_to_log("p");
             err = HAL_MMC_ReadBlocks(&sdmmc_handle.mmc, dest, block_num, num_blocks, 60000);
         } else
         #endif
         {
+            
+            write_to_log("p");
             err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
         if (err == HAL_OK) {
+            write_to_log("q");
             err = sdcard_wait_finished(60000);
         }
+        write_to_log("r");
     }
+    write_to_log("s");
 
     if (orig_dest != NULL) {
+        write_to_log("t");
         // move the read data to the non-aligned position, and restore the initial bytes
         memmove(orig_dest, dest, num_blocks * SDCARD_BLOCK_SIZE);
         memcpy(dest, &saved_word, orig_dest - dest);
     }
 
-    printf("error value: %d\n");
+    write_to_log("\nerror value: %d\n", err);
     return err;
 }
 
@@ -780,7 +803,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(sd_write_obj, sd_write);
 STATIC mp_obj_t pyb_sdcard_readblocks(mp_obj_t self, mp_obj_t block_num, mp_obj_t buf) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_WRITE);
-    printf("pyb_sdcard_readblocks\n");
     mp_uint_t ret = sdcard_read_blocks(bufinfo.buf, mp_obj_get_int(block_num), bufinfo.len / SDCARD_BLOCK_SIZE);
     return mp_obj_new_bool(ret == 0);
 }

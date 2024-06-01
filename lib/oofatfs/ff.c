@@ -1153,9 +1153,7 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
         case FS_FAT32 :
             write_to_log("fat32\n");
             if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
-            write_to_log("fswin:%d\nSS(fs):%d\n", fs->win, SS(fs));
             val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x0FFFFFFF;   /* Simple DWORD array but mask out upper 4 bits */
-            write_to_log("val:%d\n", val);
             break;
 #if FF_FS_EXFAT
         case FS_EXFAT :

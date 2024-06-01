@@ -33,7 +33,6 @@
 #include "pin_static_af.h"
 #include "pendsv.h"
 #include "sdio.h"
-#include "extmod/foundation/modlogging.h"
 
 #if MICROPY_PY_NETWORK_CYW43
 
@@ -176,22 +175,17 @@ void sdio_enable_high_speed_4bit(void) {
 }
 
 void SDMMC_IRQHandler(void) {
-    write_to_log("in SDMMC_IRQHandler");
     if (SDMMC->STA & SDMMC_STA_CMDREND) {
-        write_to_log("a");
         SDMMC->ICR = SDMMC_ICR_CMDRENDC;
         uint32_t r1 = SDMMC->RESP1;
         if (SDMMC->RESPCMD == 53 && r1 & 0x800) {
-            write_to_log("bad RESP1: %lu %lx\n", SDMMC->RESPCMD, r1);
             sdmmc_error = 0xffffffff;
             SDMMC->MASK &= SDMMC_MASK_SDIOITIE;
             sdmmc_irq_state = SDMMC_IRQ_STATE_DONE;
             return;
         }
         #if defined(STM32H7)
-        write_to_log("b");
         if (!sdmmc_dma) {
-            write_to_log("b");
             while (sdmmc_buf_cur < sdmmc_buf_top && (SDMMC->STA & SDMMC_STA_DPSMACT) && !(SDMMC->STA & SDMMC_STA_RXFIFOE)) {
                 *(uint32_t *)sdmmc_buf_cur = SDMMC->FIFO;
                 sdmmc_buf_cur += 4;
@@ -199,14 +193,12 @@ void SDMMC_IRQHandler(void) {
         }
         #endif
         if (sdmmc_buf_cur >= sdmmc_buf_top) {
-            write_to_log("c");
             // data transfer finished, so we are done
             SDMMC->MASK &= SDMMC_MASK_SDIOITIE;
             sdmmc_irq_state = SDMMC_IRQ_STATE_DONE;
             return;
         }
         if (sdmmc_write) {
-            write_to_log("d");
             SDMMC->DCTRL =
                 SDMMC_DCTRL_SDIOEN
                 | SDMMC_DCTRL_RWMOD
@@ -218,20 +210,17 @@ void SDMMC_IRQHandler(void) {
                     | SDMMC_DCTRL_DTEN
             ;
             if (!sdmmc_dma) {
-                write_to_log("e");
                 SDMMC->MASK |= SDMMC_MASK_TXFIFOHEIE;
             }
         }
         sdmmc_irq_state = SDMMC_IRQ_STATE_CMD_DONE;
     } else if (SDMMC->STA & SDMMC_STA_DATAEND) {
-        write_to_log("f");
         // data transfer complete
         // note: it's possible to get DATAEND before CMDREND
         SDMMC->ICR = SDMMC_ICR_DATAENDC;
         #if defined(STM32F7)
         // check if there is some remaining data in RXFIFO
         if (!sdmmc_dma) {
-            write_to_log("g");
             while (SDMMC->STA & SDMMC_STA_RXDAVL) {
                 *(uint32_t *)sdmmc_buf_cur = SDMMC->FIFO;
                 sdmmc_buf_cur += 4;
@@ -239,30 +228,24 @@ void SDMMC_IRQHandler(void) {
         }
         #endif
         if (sdmmc_irq_state == SDMMC_IRQ_STATE_CMD_DONE) {
-            write_to_log("h");
             // command and data finished, so we are done
             SDMMC->MASK &= SDMMC_MASK_SDIOITIE;
             sdmmc_irq_state = SDMMC_IRQ_STATE_DONE;
         }
     } else if (SDMMC->STA & SDMMC_STA_TXFIFOHE) {
-        write_to_log("i");
         if (!sdmmc_dma && sdmmc_write) {
-            write_to_log("j");
             // write up to 8 words to fifo
             for (size_t i = 8; i && sdmmc_buf_cur < sdmmc_buf_top; --i) {
                 SDMMC->FIFO = *(uint32_t *)sdmmc_buf_cur;
                 sdmmc_buf_cur += 4;
             }
             if (sdmmc_buf_cur >= sdmmc_buf_top) {
-                write_to_log("k");
                 // finished, disable IRQ
                 SDMMC->MASK &= ~SDMMC_MASK_TXFIFOHEIE;
             }
         }
     } else if (SDMMC->STA & SDMMC_STA_RXFIFOHF) {
-        write_to_log("l");
         if (!sdmmc_dma && !sdmmc_write) {
-            write_to_log("m");
             // read up to 8 words from fifo
             for (size_t i = 8; i && sdmmc_buf_cur < sdmmc_buf_top; --i) {
                 *(uint32_t *)sdmmc_buf_cur = SDMMC->FIFO;
@@ -270,30 +253,25 @@ void SDMMC_IRQHandler(void) {
             }
         }
     } else if (SDMMC->STA & SDMMC_STA_SDIOIT) {
-        write_to_log("n");
         SDMMC->MASK &= ~SDMMC_MASK_SDIOITIE;
         SDMMC->ICR = SDMMC_ICR_SDIOITC;
 
         #if MICROPY_PY_NETWORK_CYW43
         extern void (*cyw43_poll)(void);
         if (cyw43_poll) {
-            write_to_log("o");
             pendsv_schedule_dispatch(PENDSV_DISPATCH_CYW43, cyw43_poll);
         }
         #endif
     } else if (SDMMC->STA & 0x3f) {
-        write_to_log("p");
         // an error
         sdmmc_error = SDMMC->STA;
         SDMMC->ICR = SDMMC_STATIC_FLAGS;
         SDMMC->MASK &= SDMMC_MASK_SDIOITIE;
         sdmmc_irq_state = SDMMC_IRQ_STATE_DONE;
     }
-    write_to_log("q");
 }
 
 int sdio_transfer(uint32_t cmd, uint32_t arg, uint32_t *resp) {
-    write_to_log("in sdio_transfer");
     #if defined(STM32F7)
     // Wait for any outstanding TX to complete
     while (SDMMC->STA & SDMMC_STA_TXACT) {
@@ -347,7 +325,6 @@ int sdio_transfer(uint32_t cmd, uint32_t arg, uint32_t *resp) {
 }
 
 int sdio_transfer_cmd53(bool write, uint32_t block_size, uint32_t arg, size_t len, uint8_t *buf) {
-    write_to_log("in sdio_transfer_cmd53");
     #if defined(STM32F7)
     // Wait for any outstanding TX to complete
     while (SDMMC->STA & SDMMC_STA_TXACT) {

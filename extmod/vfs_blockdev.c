@@ -25,7 +25,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
@@ -61,8 +60,6 @@ int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, 
         mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
         self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
-        printf("going into readblocks");
-        printf("call method (fun=%p, self=%p, n_args=" UINT_FMT ", n_kw=" UINT_FMT ", args=%p)\n", self->readblocks[0], self->readblocks[1], 2, 0, self->readblocks);
         mp_call_method_n_kw(2, 0, self->readblocks);
         // TODO handle error return
         return 0;
