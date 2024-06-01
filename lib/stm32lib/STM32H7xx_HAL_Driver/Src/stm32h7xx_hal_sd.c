@@ -252,6 +252,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
+#include "extmod/foundation/modlogging.h"
 
 /** @addtogroup STM32H7xx_HAL_Driver
   * @{
@@ -1251,6 +1252,7 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, u
   */
 HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, uint32_t BlockAdd, uint32_t NumberOfBlocks)
 {
+  write_to_log("dma\n");
   SDMMC_DataInitTypeDef config;
   uint32_t errorstate;
   uint32_t add = BlockAdd;
@@ -1321,6 +1323,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       hsd->Context = (SD_CONTEXT_READ_SINGLE_BLOCK | SD_CONTEXT_DMA);
 
       /* Read Single Block command */
+      // error happens here
       errorstate = SDMMC_CmdReadSingleBlock(hsd->Instance, add);
     }
     if(errorstate != HAL_SD_ERROR_NONE)
