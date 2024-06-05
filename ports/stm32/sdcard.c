@@ -47,7 +47,7 @@
 // The H7/F7/L4 have 2 SDMMC peripherals, but at the moment this driver only supports
 // using one of them in a given build, selected by MICROPY_HW_SDCARD_SDMMC.
 
-#if MICROPY_HW_SDCARD_SDMMC == 2
+#if MICROPY_HW_SDCARD_SDMMC == 2  // it's 1
 #define SDIO SDMMC2
 #define SDMMC_IRQHandler SDMMC2_IRQHandler
 #define SDMMC_CLK_ENABLE() __HAL_RCC_SDMMC2_CLK_ENABLE()
@@ -146,7 +146,7 @@ static uint8_t pyb_sdmmc_flags;
 //       when no sdcard was being used.
 static union {
     SD_HandleTypeDef sd;
-    #if MICROPY_HW_ENABLE_MMCARD
+    #if MICROPY_HW_ENABLE_MMCARD  // not enabled
     MMC_HandleTypeDef mmc;
     #endif
 } sdmmc_handle;
@@ -241,7 +241,7 @@ STATIC HAL_StatusTypeDef sdmmc_init_sd(void) {
     sdmmc_handle.sd.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
     #endif
     sdmmc_handle.sd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_ENABLE;
-    sdmmc_handle.sd.Init.BusWide = SDIO_BUS_WIDE_1B;
+    sdmmc_handle.sd.Init.BusWide = SDIO_BUS_WIDE_1B;  // 4B in bootloader
     sdmmc_handle.sd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
     sdmmc_handle.sd.Init.ClockDiv = SDIO_TRANSFER_CLK_DIV;
 
@@ -490,7 +490,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     }
 
     // Let's try to disable DMA
-    if (/*query_irq() == IRQ_STATE_ENABLED*/false) {
+    if (query_irq() == IRQ_STATE_ENABLED) {
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 

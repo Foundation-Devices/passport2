@@ -738,6 +738,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     dataremaining = config.DataLength;
     while(!__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR | SDMMC_FLAG_DCRCFAIL | SDMMC_FLAG_DTIMEOUT | SDMMC_FLAG_DATAEND))
     {
+      write_to_log("over:%d,dcrcfail:%d,dtimeout:%d,dataend:%d\n", __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DATAEND));
       if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXFIFOHF) && (dataremaining >= 32U))
       {
         /* Read data from SDMMC Rx FIFO */
