@@ -2,8 +2,6 @@
   ******************************************************************************
   * @file    stm32l4xx.h
   * @author  MCD Application Team
-  * @version V1.3.2
-  * @date    16-June-2017
   * @brief   CMSIS STM32L4xx Device Peripheral Access Layer Header File.
   *
   *          The file is the unique include file that the application programmer
@@ -18,29 +16,13 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
+  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
-  *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under Apache License, Version 2.0,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/Apache-2.0
   *
   ******************************************************************************
   */
@@ -75,10 +57,15 @@
    application
   */
 
-#if !defined (STM32L431xx) && !defined (STM32L432xx) && !defined (STM32L433xx) && !defined (STM32L442xx) && !defined (STM32L443xx) && \
+#if !defined (STM32L412xx) && !defined (STM32L422xx) && \
+    !defined (STM32L431xx) && !defined (STM32L432xx) && !defined (STM32L433xx) && !defined (STM32L442xx) && !defined (STM32L443xx) && \
     !defined (STM32L451xx) && !defined (STM32L452xx) && !defined (STM32L462xx) && \
     !defined (STM32L471xx) && !defined (STM32L475xx) && !defined (STM32L476xx) && !defined (STM32L485xx) && !defined (STM32L486xx) && \
-    !defined (STM32L496xx) && !defined (STM32L4A6xx)
+    !defined (STM32L496xx) && !defined (STM32L4A6xx) && \
+    !defined (STM32L4P5xx) && !defined (STM32L4Q5xx) && \
+    !defined (STM32L4R5xx) && !defined (STM32L4R7xx) && !defined (STM32L4R9xx) && !defined (STM32L4S5xx) && !defined (STM32L4S7xx) && !defined (STM32L4S9xx)
+  /* #define STM32L412xx */   /*!< STM32L412xx Devices */
+  /* #define STM32L422xx */   /*!< STM32L422xx Devices */
   /* #define STM32L431xx */   /*!< STM32L431xx Devices */
   /* #define STM32L432xx */   /*!< STM32L432xx Devices */
   /* #define STM32L433xx */   /*!< STM32L433xx Devices */
@@ -94,6 +81,13 @@
   /* #define STM32L486xx */   /*!< STM32L486xx Devices */
   /* #define STM32L496xx */   /*!< STM32L496xx Devices */
   /* #define STM32L4A6xx */   /*!< STM32L4A6xx Devices */
+  /* #define STM32L4P5xx */   /*!< STM32L4Q5xx Devices */
+  /* #define STM32L4R5xx */   /*!< STM32L4R5xx Devices */
+  /* #define STM32L4R7xx */   /*!< STM32L4R7xx Devices */
+  /* #define STM32L4R9xx */   /*!< STM32L4R9xx Devices */
+  /* #define STM32L4S5xx */   /*!< STM32L4S5xx Devices */
+  /* #define STM32L4S7xx */   /*!< STM32L4S7xx Devices */
+  /* #define STM32L4S9xx */   /*!< STM32L4S9xx Devices */
 #endif
 
 /*  Tip: To avoid modifying this file each time you need to switch between these
@@ -109,11 +103,11 @@
 #endif /* USE_HAL_DRIVER */
 
 /**
-  * @brief CMSIS Device version number V1.3.2
+  * @brief CMSIS Device version number
   */
 #define __STM32L4_CMSIS_VERSION_MAIN   (0x01) /*!< [31:24] main version */
-#define __STM32L4_CMSIS_VERSION_SUB1   (0x03) /*!< [23:16] sub1 version */
-#define __STM32L4_CMSIS_VERSION_SUB2   (0x02) /*!< [15:8]  sub2 version */
+#define __STM32L4_CMSIS_VERSION_SUB1   (0x07) /*!< [23:16] sub1 version */
+#define __STM32L4_CMSIS_VERSION_SUB2   (0x01) /*!< [15:8]  sub2 version */
 #define __STM32L4_CMSIS_VERSION_RC     (0x00) /*!< [7:0]  release candidate */
 #define __STM32L4_CMSIS_VERSION        ((__STM32L4_CMSIS_VERSION_MAIN << 24)\
                                        |(__STM32L4_CMSIS_VERSION_SUB1 << 16)\
@@ -128,7 +122,11 @@
   * @{
   */
 
-#if defined(STM32L431xx)
+#if defined(STM32L412xx)
+  #include "stm32l412xx.h"
+#elif defined(STM32L422xx)
+  #include "stm32l422xx.h"
+#elif defined(STM32L431xx)
   #include "stm32l431xx.h"
 #elif defined(STM32L432xx)
   #include "stm32l432xx.h"
@@ -158,6 +156,22 @@
   #include "stm32l496xx.h"
 #elif defined(STM32L4A6xx)
   #include "stm32l4a6xx.h"
+#elif defined(STM32L4P5xx)
+  #include "stm32l4p5xx.h"
+#elif defined(STM32L4Q5xx)
+  #include "stm32l4q5xx.h"
+#elif defined(STM32L4R5xx)
+  #include "stm32l4r5xx.h"
+#elif defined(STM32L4R7xx)
+  #include "stm32l4r7xx.h"
+#elif defined(STM32L4R9xx)
+  #include "stm32l4r9xx.h"
+#elif defined(STM32L4S5xx)
+  #include "stm32l4s5xx.h"
+#elif defined(STM32L4S7xx)
+  #include "stm32l4s7xx.h"
+#elif defined(STM32L4S9xx)
+  #include "stm32l4s9xx.h"
 #else
  #error "Please select first the target STM32L4xx device used in your application (in stm32l4xx.h file)"
 #endif
@@ -184,8 +198,8 @@ typedef enum
 
 typedef enum
 {
-  ERROR = 0,
-  SUCCESS = !ERROR
+  SUCCESS = 0,
+  ERROR = !SUCCESS
 } ErrorStatus;
 
 /**

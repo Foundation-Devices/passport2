@@ -10067,9 +10067,6 @@ typedef struct
 #define RCC_CSR_RMVF_Pos                   (24U)
 #define RCC_CSR_RMVF_Msk                   (0x1U << RCC_CSR_RMVF_Pos)          /*!< 0x01000000 */
 #define RCC_CSR_RMVF                       RCC_CSR_RMVF_Msk
-#define RCC_CSR_BORRSTF_Pos                (25U)
-#define RCC_CSR_BORRSTF_Msk                (0x1U << RCC_CSR_BORRSTF_Pos)       /*!< 0x02000000 */
-#define RCC_CSR_BORRSTF                    RCC_CSR_BORRSTF_Msk
 #define RCC_CSR_PINRSTF_Pos                (26U)
 #define RCC_CSR_PINRSTF_Msk                (0x1U << RCC_CSR_PINRSTF_Pos)       /*!< 0x04000000 */
 #define RCC_CSR_PINRSTF                    RCC_CSR_PINRSTF_Msk
