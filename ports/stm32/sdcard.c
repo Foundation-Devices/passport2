@@ -520,7 +520,9 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             // error happens here, returns 1
             write_to_log("A\n");
-            err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
+            uint32_t irq_state = disable_irq();
+            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
+            enable_irq(irq_state);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
@@ -549,7 +551,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             write_to_log("C\n");
             // Potentially change 60000 to HAL_MAX_DELAY
-            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, HAL_MAX_DELAY);
+            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);

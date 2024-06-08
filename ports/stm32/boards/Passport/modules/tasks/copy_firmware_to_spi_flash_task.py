@@ -104,7 +104,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                         if not here:
                             break
                         update_display += 1
-
                     except CardMissingError:
                         await on_done(Error.MICROSD_CARD_MISSING, None)
                     except Exception as e:

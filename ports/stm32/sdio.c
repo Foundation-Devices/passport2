@@ -179,6 +179,7 @@ void SDMMC_IRQHandler(void) {
         SDMMC->ICR = SDMMC_ICR_CMDRENDC;
         uint32_t r1 = SDMMC->RESP1;
         if (SDMMC->RESPCMD == 53 && r1 & 0x800) {
+            printf("bad RESP1: %lu %lx\n", SDMMC->RESPCMD, r1);
             sdmmc_error = 0xffffffff;
             SDMMC->MASK &= SDMMC_MASK_SDIOITIE;
             sdmmc_irq_state = SDMMC_IRQ_STATE_DONE;

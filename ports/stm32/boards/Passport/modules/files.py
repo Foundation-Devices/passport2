@@ -85,8 +85,8 @@ class CardSlot:
         # This is pin E3
         # pyb.Pin is ports/stm32/pin.c pin_obj_init_helper
         # this initializes the GPIO on the hardware level
-        # cls.irq = ExtInt(Pin('SD_SW'), ExtInt.IRQ_RISING_FALLING,
-        #                  Pin.PULL_UP, card_change)
+        cls.irq = ExtInt(Pin('SD_SW'), ExtInt.IRQ_RISING_FALLING,
+                         Pin.PULL_UP, card_change)
 
     @classmethod
     def get_sd_root(cls):
