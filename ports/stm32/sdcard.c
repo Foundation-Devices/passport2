@@ -522,6 +522,9 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
             write_to_log("A\n");
             uint32_t irq_state = disable_irq();
             err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
+            if (err != HAL_OK) {
+                write_to_log("err:%d\n", err);
+            }
             enable_irq(irq_state);
         }
         if (err == HAL_OK) {
@@ -564,7 +567,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         memcpy(dest, &saved_word, orig_dest - dest);
     }
 
-    write_to_log("err:%d\n", err);
+    write_to_log("errfinal:%d\n", err);
     return err;
 }
 

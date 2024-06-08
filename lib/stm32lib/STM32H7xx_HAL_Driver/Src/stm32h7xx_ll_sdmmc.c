@@ -357,7 +357,6 @@ uint32_t SDMMC_GetPowerState(SDMMC_TypeDef *SDMMCx)
 HAL_StatusTypeDef SDMMC_SendCommand(SDMMC_TypeDef *SDMMCx, SDMMC_CmdInitTypeDef *Command)
 {
   uint32_t tmpreg = 0;
-  write_to_log("sdmmc_sendcommand\n");
 
   /* Check the parameters */
   assert_param(IS_SDMMC_CMD_INDEX(Command->CmdIndex));
@@ -545,7 +544,6 @@ uint32_t SDMMC_CmdReadSingleBlock(SDMMC_TypeDef *SDMMCx, uint32_t ReadAdd)
 {
   SDMMC_CmdInitTypeDef  sdmmc_cmdinit;
   uint32_t errorstate;
-  write_to_log("sdmmc_cmdreadsingleblock\n");
 
   /* Set Block Size for Card */
   sdmmc_cmdinit.Argument         = (uint32_t)ReadAdd;
@@ -1240,7 +1238,6 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   /* 8 is the number of required instructions cycles for the below loop statement.
   The Timeout is expressed in ms */
   register uint32_t count = Timeout * (SystemCoreClock / 8U /1000U);
-  write_to_log("sdmmc_getcmdresp1\n");
 
   do
   {
