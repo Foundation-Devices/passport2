@@ -348,6 +348,9 @@ HAL_StatusTypeDef HAL_SD_Init(SD_HandleTypeDef *hsd)
     return HAL_ERROR;
   }
 
+  /* Initialize error code before attempting initialization so we don't inherit errors from previous init attempts */
+  hsd->ErrorCode = HAL_SD_ERROR_NONE;
+
   /* Check the parameters */
   assert_param(IS_SDMMC_ALL_INSTANCE(hsd->Instance));
   assert_param(IS_SDMMC_CLOCK_EDGE(hsd->Init.ClockEdge));
