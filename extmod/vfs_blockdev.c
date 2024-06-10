@@ -36,7 +36,7 @@
 #if MICROPY_VFS
 
 #define NUM_BUFS_TO_COMPARE 3  //consider 2 for less unnecessary failures
-#define MAX_READ_ATTEMPTS   9
+#define MAX_READ_ATTEMPTS   21
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     mp_load_method(bdev, MP_QSTR_readblocks, self->readblocks);
@@ -60,13 +60,30 @@ int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, 
         mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
         self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
-        mp_call_method_n_kw(2, 0, self->readblocks);
-        // TODO handle error return
+        mp_obj_t res = mp_call_method_n_kw(2, 0, self->readblocks);
+
+        // readblocks returns true for success
+        bool err = !mp_obj_is_true(res);
+        if (err) {
+            return 1;
+        }
         return 0;
     }
 }
 
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
+
+    int result = 1, i = 0;
+    for (; i < MAX_READ_ATTEMPTS && result != 0; i++) {
+        result = internal_read(self, block_num, num_blocks, buf);
+        if (result != 0) {
+            write_to_log("failed read %d\n", i);
+        }
+    }
+    write_to_log("final result: %d\n", result);
+    return result;
+
+    // original function
     /* if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
@@ -79,7 +96,8 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         return 0;
     } */
 
-    size_t buf_size = num_blocks * self->block_size;
+    // 3 in a row function
+    /* size_t buf_size = num_blocks * self->block_size;
     uint8_t * compare_buffers[NUM_BUFS_TO_COMPARE];
 
     for (int i = 0; i < NUM_BUFS_TO_COMPARE; i++) {
@@ -152,7 +170,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         m_del(uint8_t, compare_buffers[i], buf_size);
     }
 
-    return res;
+    return res; */
 }
 
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf) {

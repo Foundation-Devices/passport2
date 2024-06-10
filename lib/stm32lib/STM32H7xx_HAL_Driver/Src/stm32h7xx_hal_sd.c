@@ -778,7 +778,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         return HAL_TIMEOUT;
       }
     }
-    write_to_log("\nover:%d,dcrcfail:%d,dtimeout:%d,dataend:%d\n", __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DATAEND));
+    write_to_log("\nover:%d,dcrcfail:%d,dtimeout:%d,dataend:%d,time:%d\n", __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DATAEND), (HAL_GetTick() - tickstart));
     __SDMMC_CMDTRANS_DISABLE( hsd->Instance);
 
     /* Send stop transmission command in case of multiblock read */
