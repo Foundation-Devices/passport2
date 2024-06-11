@@ -1243,6 +1243,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   {
     if (count-- == 0U)
     {
+      write_to_log("TIMEOUT1\n");
       return SDMMC_ERROR_TIMEOUT;
     }
     sta_reg = SDMMCx->STA;
@@ -1251,6 +1252,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
 
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
+    write_to_log("TIMEOUT2\n");
     // error happens here
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT);
 
@@ -1258,6 +1260,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   }
   else if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL))
   {
+    write_to_log("CRCFAIL1\n");
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL);
 
     return SDMMC_ERROR_CMD_CRC_FAIL;
@@ -1273,6 +1276,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   /* Check response received is of desired command */
   if(SDMMC_GetCommandResponse(SDMMCx) != SD_CMD)
   {
+    write_to_log("CRCFAIL2\n");
     return SDMMC_ERROR_CMD_CRC_FAIL;
   }
 
@@ -1285,78 +1289,97 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   }
   else if((response_r1 & SDMMC_OCR_ADDR_OUT_OF_RANGE) == SDMMC_OCR_ADDR_OUT_OF_RANGE)
   {
+    write_to_log("OUTOFRANGE\n");
     return SDMMC_ERROR_ADDR_OUT_OF_RANGE;
   }
   else if((response_r1 & SDMMC_OCR_ADDR_MISALIGNED) == SDMMC_OCR_ADDR_MISALIGNED)
   {
+    write_to_log("MISALIGNED\n");
     return SDMMC_ERROR_ADDR_MISALIGNED;
   }
   else if((response_r1 & SDMMC_OCR_BLOCK_LEN_ERR) == SDMMC_OCR_BLOCK_LEN_ERR)
   {
+    write_to_log("LENERR\n");
     return SDMMC_ERROR_BLOCK_LEN_ERR;
   }
   else if((response_r1 & SDMMC_OCR_ERASE_SEQ_ERR) == SDMMC_OCR_ERASE_SEQ_ERR)
   {
+    write_to_log("EARSESEQERR\n");
     return SDMMC_ERROR_ERASE_SEQ_ERR;
   }
   else if((response_r1 & SDMMC_OCR_BAD_ERASE_PARAM) == SDMMC_OCR_BAD_ERASE_PARAM)
   {
+    write_to_log("BADERASEPARAM\n");
     return SDMMC_ERROR_BAD_ERASE_PARAM;
   }
   else if((response_r1 & SDMMC_OCR_WRITE_PROT_VIOLATION) == SDMMC_OCR_WRITE_PROT_VIOLATION)
   {
+    write_to_log("WRITEPROTVIOLATION\n");
     return SDMMC_ERROR_WRITE_PROT_VIOLATION;
   }
   else if((response_r1 & SDMMC_OCR_LOCK_UNLOCK_FAILED) == SDMMC_OCR_LOCK_UNLOCK_FAILED)
   {
+    write_to_log("UNLOCKFAILED\n");
     return SDMMC_ERROR_LOCK_UNLOCK_FAILED;
   }
   else if((response_r1 & SDMMC_OCR_COM_CRC_FAILED) == SDMMC_OCR_COM_CRC_FAILED)
   {
+    write_to_log("CRCFAILED\n");
     return SDMMC_ERROR_COM_CRC_FAILED;
   }
   else if((response_r1 & SDMMC_OCR_ILLEGAL_CMD) == SDMMC_OCR_ILLEGAL_CMD)
   {
+    write_to_log("ILLEGALCMD\n");
     return SDMMC_ERROR_ILLEGAL_CMD;
   }
   else if((response_r1 & SDMMC_OCR_CARD_ECC_FAILED) == SDMMC_OCR_CARD_ECC_FAILED)
   {
+    write_to_log("ECCFAILED\n");
     return SDMMC_ERROR_CARD_ECC_FAILED;
   }
   else if((response_r1 & SDMMC_OCR_CC_ERROR) == SDMMC_OCR_CC_ERROR)
   {
+    write_to_log("CCERROR\n");
     return SDMMC_ERROR_CC_ERR;
   }
   else if((response_r1 & SDMMC_OCR_STREAM_READ_UNDERRUN) == SDMMC_OCR_STREAM_READ_UNDERRUN)
   {
+    write_to_log("READUNDERRUN\n");
     return SDMMC_ERROR_STREAM_READ_UNDERRUN;
   }
   else if((response_r1 & SDMMC_OCR_STREAM_WRITE_OVERRUN) == SDMMC_OCR_STREAM_WRITE_OVERRUN)
   {
+    write_to_log("STREAMWRITEOVERRUN\n");
     return SDMMC_ERROR_STREAM_WRITE_OVERRUN;
   }
   else if((response_r1 & SDMMC_OCR_CID_CSD_OVERWRITE) == SDMMC_OCR_CID_CSD_OVERWRITE)
   {
+    write_to_log("CIDCSDOVERWRITE\n");
     return SDMMC_ERROR_CID_CSD_OVERWRITE;
   }
   else if((response_r1 & SDMMC_OCR_WP_ERASE_SKIP) == SDMMC_OCR_WP_ERASE_SKIP)
   {
+    write_to_log("WPERASESKIP\n");
     return SDMMC_ERROR_WP_ERASE_SKIP;
   }
   else if((response_r1 & SDMMC_OCR_CARD_ECC_DISABLED) == SDMMC_OCR_CARD_ECC_DISABLED)
   {
+    write_to_log("CARDECCDISABLED\n");
     return SDMMC_ERROR_CARD_ECC_DISABLED;
   }
   else if((response_r1 & SDMMC_OCR_ERASE_RESET) == SDMMC_OCR_ERASE_RESET)
   {
+    write_to_log("ERASERESET\n");
     return SDMMC_ERROR_ERASE_RESET;
   }
   else if((response_r1 & SDMMC_OCR_AKE_SEQ_ERROR) == SDMMC_OCR_AKE_SEQ_ERROR)
   {
+    write_to_log("AKESEQERR\n");
     return SDMMC_ERROR_AKE_SEQ_ERR;
   }
   else
   {
+    write_to_log("UNKNOWNERR\n");
     return SDMMC_ERROR_GENERAL_UNKNOWN_ERR;
   }
 }
