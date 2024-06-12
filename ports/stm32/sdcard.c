@@ -161,6 +161,8 @@ void sdcard_init(void) {
     // Note: the mp_hal_pin_config function will configure the GPIO in
     // fast mode which can do up to 50MHz.  This should be plenty for SDIO
     // which clocks up to 25MHz maximum.
+
+    // Bootloader has nopull on all pins
     mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CK, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CK);
     mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CMD, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CMD);
     mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D0, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D0);
@@ -241,6 +243,7 @@ STATIC HAL_StatusTypeDef sdmmc_init_sd(void) {
     sdmmc_handle.sd.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
     #endif
     sdmmc_handle.sd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_ENABLE;
+    // bootloader starts with 4B wide bus and doesn't reset to 4B
     sdmmc_handle.sd.Init.BusWide = SDIO_BUS_WIDE_1B;  // 4B in bootloader
     sdmmc_handle.sd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
     sdmmc_handle.sd.Init.ClockDiv = SDIO_TRANSFER_CLK_DIV;
@@ -276,6 +279,7 @@ STATIC HAL_StatusTypeDef sdmmc_init_mmc(void) {
     sdmmc_handle.mmc.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
     #endif
     sdmmc_handle.mmc.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_ENABLE;
+
     sdmmc_handle.mmc.Init.BusWide = SDIO_BUS_WIDE_1B;
     sdmmc_handle.mmc.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
     sdmmc_handle.mmc.Init.ClockDiv = SDIO_TRANSFER_CLK_DIV;
@@ -490,7 +494,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     }
 
     // Let's try to disable DMA
-    if (query_irq() == IRQ_STATE_ENABLED) {
+    if (/* query_irq() == IRQ_STATE_ENABLED*/false) {
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 
@@ -520,12 +524,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             // error happens here, returns 1
             write_to_log("A\n");
-            uint32_t irq_state = disable_irq();
-            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
-            if (err != HAL_OK) {
-                write_to_log("err:%d\n", err);
-            }
-            enable_irq(irq_state);
+            err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
@@ -554,7 +553,12 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             write_to_log("C\n");
             // Potentially change 60000 to HAL_MAX_DELAY
-            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
+            uint32_t irq_state = disable_irq();
+            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, HAL_MAX_DELAY);
+            if (err != HAL_OK) {
+                write_to_log("err:%d\n", err);
+            }
+            enable_irq(irq_state);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
