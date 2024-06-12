@@ -108,7 +108,7 @@ void Passport_board_init(void);
 
 // SD card detect switch
 #define MICROPY_HW_SDCARD_DETECT_PIN (pin_E3)
-#define MICROPY_HW_SDCARD_DETECT_PULL (GPIO_PULLUP) // try nopull
+#define MICROPY_HW_SDCARD_DETECT_PULL (GPIO_NOPULL) // try nopull
 #define MICROPY_HW_SDCARD_DETECT_PRESENT (GPIO_PIN_RESET)
 
 // BQ27520 fuel gauge

@@ -163,13 +163,14 @@ void sdcard_init(void) {
     // which clocks up to 25MHz maximum.
 
     // Bootloader has nopull on all pins
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CK, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CK);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CMD, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CMD);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D0, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D0);
+    //TODO: bootloader uses GPIO_SPEED_FREQ_VERY_HIGH, use mp_hal_pin_config_alt_static_speed to configure this
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CK, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_CK);
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CMD, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_CMD);
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D0, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_D0);
     #if MICROPY_HW_SDCARD_BUS_WIDTH == 4
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D1, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D1);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D2, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D2);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D3, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D3);
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D1, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_D1);
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D2, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_D2);
+    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D3, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, STATIC_AF_SDCARD_D3);
     #endif
 
     // configure the SD card detect pin
@@ -494,7 +495,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     }
 
     // Let's try to disable DMA
-    if (/* query_irq() == IRQ_STATE_ENABLED*/false) {
+    if (query_irq() == IRQ_STATE_ENABLED) {
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 
@@ -525,6 +526,9 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
             // error happens here, returns 1
             write_to_log("A\n");
             err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
+            if (err != HAL_OK) {
+                write_to_log("err:%d\n", err);
+            }
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
@@ -553,12 +557,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         {
             write_to_log("C\n");
             // Potentially change 60000 to HAL_MAX_DELAY
-            uint32_t irq_state = disable_irq();
-            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, HAL_MAX_DELAY);
-            if (err != HAL_OK) {
-                write_to_log("err:%d\n", err);
-            }
-            enable_irq(irq_state);
+            err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);

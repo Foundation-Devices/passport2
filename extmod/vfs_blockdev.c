@@ -24,19 +24,13 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/objarray.h"
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
 
-#include "extmod/foundation/modlogging.h"
-
 #if MICROPY_VFS
-
-#define NUM_BUFS_TO_COMPARE 3  //consider 2 for less unnecessary failures
-#define MAX_READ_ATTEMPTS   1000
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     mp_load_method(bdev, MP_QSTR_readblocks, self->readblocks);
@@ -52,39 +46,8 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     }
 }
 
-int internal_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
-    if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
-        mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
-        return f(buf, block_num, num_blocks);
-    } else {
-        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
-        self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
-        self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
-        mp_obj_t res = mp_call_method_n_kw(2, 0, self->readblocks);
-
-        // readblocks returns true for success
-        bool err = !mp_obj_is_true(res);
-        if (err) {
-            return 1;
-        }
-        return 0;
-    }
-}
-
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
-
-    int result = 1, i = 0;
-    for (; i < MAX_READ_ATTEMPTS && result != 0; i++) {
-        result = internal_read(self, block_num, num_blocks, buf);
-        if (result != 0) {
-            write_to_log("failed read %d\n", i);
-        }
-    }
-    write_to_log("final result: %d\n", result);
-    return result;
-
-    // original function
-    /* if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
+    if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
     } else {
@@ -94,83 +57,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         mp_call_method_n_kw(2, 0, self->readblocks);
         // TODO handle error return
         return 0;
-    } */
-
-    // 3 in a row function
-    /* size_t buf_size = num_blocks * self->block_size;
-    uint8_t * compare_buffers[NUM_BUFS_TO_COMPARE];
-
-    for (int i = 0; i < NUM_BUFS_TO_COMPARE; i++) {
-        compare_buffers[i] = m_new(uint8_t, buf_size);
-        if (compare_buffers[i] == NULL) {
-            // Handle memory allocation failure
-            for (int j = 0; j < i; j++) {
-                m_del(uint8_t, compare_buffers[j], buf_size);
-            }
-            return 1;  // Return with error
-        }
-        memset(compare_buffers[i], 0, sizeof(uint8_t) * buf_size);
     }
-
-    uint8_t num_reads = 0;
-    uint8_t curr_idx = 0;
-    int res = 1;  // If there's never a successful read, return an error
-
-    while (true) {
-        bool retry = false;
-        int new_res = internal_read(self, block_num, num_blocks, compare_buffers[curr_idx]);
-        if (new_res == 0) {
-            res = 0;
-        }
-
-        curr_idx = (curr_idx + 1) % NUM_BUFS_TO_COMPARE;
-        num_reads++;
-
-        if (num_reads >= NUM_BUFS_TO_COMPARE) {
-            for (int i = 0; i < NUM_BUFS_TO_COMPARE - 1; i++) {
-                if (memcmp(compare_buffers[i], compare_buffers[i + 1], buf_size) != 0) {
-                    retry = true;
-                    break;
-                }
-            }
-        }
-
-        if (num_reads < NUM_BUFS_TO_COMPARE || (retry && num_reads < MAX_READ_ATTEMPTS)) {
-            continue;
-        } else {
-
-            if (!retry) {
-                memcpy(buf, compare_buffers[0], buf_size);
-                break;
-            }
-
-            // Find and copy the first non-zero buffer
-            bool nonzero = false;
-            size_t i = 0;
-            for (i = 0; i < NUM_BUFS_TO_COMPARE && !nonzero; i++) {
-                for (size_t j = 0; j < buf_size; j++) {
-                    if (compare_buffers[i][j] != 0) {
-                        nonzero = true;
-                        break;
-                    }
-                }
-            }
-
-            // This should never happen, but if all are 0s, return first
-            if (i == NUM_BUFS_TO_COMPARE) {
-                i = 0;
-            }
-
-            memcpy(buf, compare_buffers[i], buf_size);
-            break;
-        }
-    }
-
-    for (int i = 0; i < NUM_BUFS_TO_COMPARE; i++) {
-        m_del(uint8_t, compare_buffers[i], buf_size);
-    }
-
-    return res; */
 }
 
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf) {
