@@ -36,7 +36,7 @@
 #if MICROPY_VFS
 
 #define NUM_BUFS_TO_COMPARE 3  //consider 2 for less unnecessary failures
-#define MAX_READ_ATTEMPTS   21
+#define MAX_READ_ATTEMPTS   1000
 
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     mp_load_method(bdev, MP_QSTR_readblocks, self->readblocks);
