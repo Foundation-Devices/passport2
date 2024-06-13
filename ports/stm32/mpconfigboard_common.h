@@ -124,7 +124,7 @@
 
 // Whether to automatically mount (and boot from) the SD card if it's present
 #ifndef MICROPY_HW_SDCARD_MOUNT_AT_BOOT
-#define MICROPY_HW_SDCARD_MOUNT_AT_BOOT (MICROPY_HW_ENABLE_SDCARD)
+#define MICROPY_HW_SDCARD_MOUNT_AT_BOOT 0
 #endif
 
 // Which SDMMC peripheral to use for the SDIO driver (1 or 2)
