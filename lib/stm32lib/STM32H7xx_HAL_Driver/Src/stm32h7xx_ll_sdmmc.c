@@ -1257,10 +1257,9 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT);
 
     // can we just ignore it?
-    // return SDMMC_ERROR_CMD_RSP_TIMEOUT;
+    return SDMMC_ERROR_CMD_RSP_TIMEOUT;
   }
-
-  if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL))
+  else if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL))
   {
     write_to_log("CRCFAIL1\n");
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL);

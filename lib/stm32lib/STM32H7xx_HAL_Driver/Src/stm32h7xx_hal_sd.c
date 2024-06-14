@@ -1316,17 +1316,17 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     write_to_log("g");
 
     /* Set Block Size for Card */
-    errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
-    if(errorstate != HAL_SD_ERROR_NONE)
-    {
-      write_to_log("h\n");
-      /* Clear all the static flags */
-      __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
-      hsd->ErrorCode |= errorstate;
-      hsd->State = HAL_SD_STATE_READY;
-      return HAL_ERROR;
-    }
-    write_to_log("i");
+    // errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
+    // if(errorstate != HAL_SD_ERROR_NONE)
+    // {
+    //   write_to_log("h\n");
+    //   /* Clear all the static flags */
+    //   __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
+    //   hsd->ErrorCode |= errorstate;
+    //   hsd->State = HAL_SD_STATE_READY;
+    //   return HAL_ERROR;
+    // }
+    // write_to_log("i");
 
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
