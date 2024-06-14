@@ -1247,7 +1247,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
       return SDMMC_ERROR_TIMEOUT;
     }
     sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT | SDMMC_FLAG_BUSYD0END)) == 0U) ||
+  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND /*| SDMMC_FLAG_CTIMEOUT*/ | SDMMC_FLAG_BUSYD0END)) == 0U) ||
          ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
 
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
@@ -1256,9 +1256,11 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
     // error happens here
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT);
 
-    return SDMMC_ERROR_CMD_RSP_TIMEOUT;
+    // can we just ignore it?
+    // return SDMMC_ERROR_CMD_RSP_TIMEOUT;
   }
-  else if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL))
+
+  if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL))
   {
     write_to_log("CRCFAIL1\n");
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CCRCFAIL);
