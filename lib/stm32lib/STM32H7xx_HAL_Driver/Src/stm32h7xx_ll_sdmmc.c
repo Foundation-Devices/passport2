@@ -1247,7 +1247,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
       return SDMMC_ERROR_TIMEOUT;
     }
     sta_reg = SDMMCx->STA;
-  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND /*| SDMMC_FLAG_CTIMEOUT*/ | SDMMC_FLAG_BUSYD0END)) == 0U) ||
+  }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND | SDMMC_FLAG_CTIMEOUT | SDMMC_FLAG_BUSYD0END)) == 0U) ||
          ((sta_reg & SDMMC_FLAG_CMDACT) != 0U ));
 
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
