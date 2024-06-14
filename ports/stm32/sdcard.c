@@ -243,7 +243,7 @@ STATIC HAL_StatusTypeDef sdmmc_init_sd(void) {
     #endif
     sdmmc_handle.sd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_ENABLE;
     // bootloader starts with 4B wide bus and doesn't reset to 4B
-    sdmmc_handle.sd.Init.BusWide = SDIO_BUS_WIDE_1B;  // 4B in bootloader
+    sdmmc_handle.sd.Init.BusWide = SDIO_BUS_WIDE_4B;  // 4B in bootloader
     sdmmc_handle.sd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
     sdmmc_handle.sd.Init.ClockDiv = SDIO_TRANSFER_CLK_DIV;
 
@@ -256,14 +256,14 @@ STATIC HAL_StatusTypeDef sdmmc_init_sd(void) {
         mp_hal_delay_ms(50);
     }
 
-    #if MICROPY_HW_SDCARD_BUS_WIDTH == 4
+    /* #if MICROPY_HW_SDCARD_BUS_WIDTH == 4
     // configure the SD bus width for 4-bit wide operation
     status = HAL_SD_ConfigWideBusOperation(&sdmmc_handle.sd, SDIO_BUS_WIDE_4B);
     if (status != HAL_OK) {
         HAL_SD_DeInit(&sdmmc_handle.sd);
         return status;
     }
-    #endif
+    #endif */
 
     return HAL_OK;
 }
