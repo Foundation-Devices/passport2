@@ -319,7 +319,8 @@ typedef struct
   */
 #define SDMMC_CCCC_ERASE                   ((uint32_t)0x00000020U)
 
-#define SDMMC_CMDTIMEOUT                   ((uint32_t)5000U)        /* Command send and response timeout     */
+// TODO: changed to 1000 ms
+#define SDMMC_CMDTIMEOUT                   ((uint32_t)1000U)        /* Command send and response timeout     */
 #define SDMMC_MAXERASETIMEOUT              ((uint32_t)63000U)       /* Max erase Timeout 63 s                */
 #define SDMMC_STOPTRANSFERTIMEOUT          ((uint32_t)100000000U)   /* Timeout for STOP TRANSMISSION command */
 
