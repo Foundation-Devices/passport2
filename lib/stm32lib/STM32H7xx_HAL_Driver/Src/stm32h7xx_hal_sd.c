@@ -1267,7 +1267,6 @@ HAL_StatusTypeDef HAL_SD_WriteBlocks_IT(SD_HandleTypeDef *hsd, uint8_t *pData, u
   */
 HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, uint32_t BlockAdd, uint32_t NumberOfBlocks)
 {
-  write_to_log("dma\n");
   SDMMC_DataInitTypeDef config;
   uint32_t errorstate;
   uint32_t add = BlockAdd;
@@ -1278,8 +1277,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     hsd->ErrorCode |= HAL_SD_ERROR_PARAM;
     return HAL_ERROR;
   }
-
-  write_to_log("b");
 
   if(hsd->State == HAL_SD_STATE_READY)
   {
@@ -1293,7 +1290,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       return HAL_ERROR;
     }
 
-    write_to_log("e");
     hsd->State = HAL_SD_STATE_BUSY;
 
     /* Initialize data control register */
@@ -1307,7 +1303,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       write_to_log("f");
       add *= 512U;
     }
-    write_to_log("g");
 
     /* Set Block Size for Card */
     errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
@@ -1320,7 +1315,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       hsd->State = HAL_SD_STATE_READY;
       return HAL_ERROR;
     }
-    write_to_log("i");
 
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
@@ -1353,7 +1347,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       // error happens here
       errorstate = SDMMC_CmdReadSingleBlock(hsd->Instance, add);
     }
-    write_to_log("l");
     if(errorstate != HAL_SD_ERROR_NONE)
     {
       write_to_log("m\n");

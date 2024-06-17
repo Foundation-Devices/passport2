@@ -9,7 +9,7 @@
 #include "py/objstr.h"
 
 
-#define LOG_BUFFER_SIZE     12288
+#define LOG_BUFFER_SIZE     16384
 #define HALF_BUFFER_SIZE    (LOG_BUFFER_SIZE / 2)
 
 char log_buffer[LOG_BUFFER_SIZE] = {0};  // Initialize buffer to all zeros
