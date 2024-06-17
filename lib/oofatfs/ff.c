@@ -29,8 +29,6 @@
 #include "ff.h"         /* Declarations of FatFs API */
 #include "diskio.h"     /* Declarations of device I/O functions */
 
-#include "extmod/foundation/modlogging.h"
-
 // DIR has been renamed FF_DIR in the public API so it doesn't clash with POSIX
 #define DIR FF_DIR
 
@@ -1151,7 +1149,6 @@ static DWORD get_fat (      /* 0xFFFFFFFF:Disk error, 1:Internal error, 2..0x7FF
             break;
 
         case FS_FAT32 :
-            write_to_log("fat32\n");
             if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
             val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x0FFFFFFF;   /* Simple DWORD array but mask out upper 4 bits */
             break;
@@ -3646,9 +3643,7 @@ FRESULT f_read (
 #endif
                     {
                         // error happens here
-                        write_to_log("fpclust:%d\n", fp->clust);
                         clst = get_fat(&fp->obj, fp->clust);    /* Follow cluster chain on the FAT */
-                        write_to_log("clst:%d\n", clst);
                     }
                 }
                 if (clst < 2) ABORT(fs, FR_INT_ERR);

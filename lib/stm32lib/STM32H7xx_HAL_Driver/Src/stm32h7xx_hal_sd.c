@@ -662,22 +662,20 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
   uint32_t add = BlockAdd;
   uint8_t *tempbuff = pData;
 
-  write_to_log("\n");
   if(NULL == pData)
   {
-    write_to_log("a");
+    write_to_log("a\n");
     hsd->ErrorCode |= HAL_SD_ERROR_PARAM;
     return HAL_ERROR;
   }
 
   if(hsd->State == HAL_SD_STATE_READY)
   {
-    write_to_log("b");
     hsd->ErrorCode = HAL_SD_ERROR_NONE;
 
     if((add + NumberOfBlocks) > (hsd->SdCard.LogBlockNbr))
     {
-      write_to_log("c");
+      write_to_log("c\n");
       hsd->ErrorCode |= HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
       return HAL_ERROR;
     }
@@ -699,13 +697,11 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     {
       /* Clear all the static flags */
       write_to_log("e\n");
-      write_to_log("errorstate:%d\n", errorstate);
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
       return HAL_ERROR;
     }
-    write_to_log("f");
 
     /* Configure the SD DPSM (Data Path State Machine) */
     config.DataTimeOut   = SDMMC_DATATIMEOUT;
@@ -737,14 +733,13 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(errorstate != HAL_SD_ERROR_NONE)
     {
       /* Clear all the static flags */
-      write_to_log("i");
+      write_to_log("i\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
-    write_to_log("k");
 
     /* Poll on SDMMC flags */
     dataremaining = config.DataLength;
@@ -771,7 +766,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       if(((HAL_GetTick()-tickstart) >=  Timeout) || (Timeout == 0U))
       {
         /* Clear all the static flags */
-        write_to_log("l");
+        write_to_log("l\n");
         __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
         hsd->ErrorCode |= HAL_SD_ERROR_TIMEOUT;
         hsd->State= HAL_SD_STATE_READY;
@@ -779,7 +774,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         return HAL_TIMEOUT;
       }
     }
-    write_to_log("\nover:%d,dcrcfail:%d,dtimeout:%d,dataend:%d,time:%d\n", __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT), __HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DATAEND), (HAL_GetTick() - tickstart));
     __SDMMC_CMDTRANS_DISABLE( hsd->Instance);
 
     /* Send stop transmission command in case of multiblock read */
@@ -792,7 +786,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         if(errorstate != HAL_SD_ERROR_NONE)
         {
           /* Clear all the static flags */
-          write_to_log("m");
+          write_to_log("m\n");
           __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
           hsd->ErrorCode |= errorstate;
           hsd->State = HAL_SD_STATE_READY;
@@ -806,7 +800,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT))
     {
       /* Clear all the static flags */
-      write_to_log("n");
+      write_to_log("n\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_TIMEOUT;
       hsd->State = HAL_SD_STATE_READY;
@@ -816,7 +810,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL))
     {
       /* Clear all the static flags */
-      write_to_log("o");
+      write_to_log("o\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_CRC_FAIL;
       hsd->State = HAL_SD_STATE_READY;
@@ -826,7 +820,7 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR))
     {
       /* Clear all the static flags */
-      write_to_log("p");
+      write_to_log("p\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_RX_OVERRUN;
       hsd->State = HAL_SD_STATE_READY;

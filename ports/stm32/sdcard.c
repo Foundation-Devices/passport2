@@ -522,10 +522,9 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         #endif
         {
             // error happens here, returns 1
-            write_to_log("A\n");
             err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
             if (err != HAL_OK) {
-                write_to_log("err:%d\n", err);
+                write_to_log("err\n");
             }
         }
         if (err == HAL_OK) {
@@ -548,12 +547,10 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
     } else {
         #if MICROPY_HW_ENABLE_MMCARD
         if (pyb_sdmmc_flags & PYB_SDMMC_FLAG_MMC) {
-            write_to_log("B\n");
             err = HAL_MMC_ReadBlocks(&sdmmc_handle.mmc, dest, block_num, num_blocks, 60000);
         } else
         #endif
         {
-            write_to_log("C\n");
             // Potentially change 60000 to HAL_MAX_DELAY
             err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
@@ -568,7 +565,6 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         memcpy(dest, &saved_word, orig_dest - dest);
     }
 
-    write_to_log("errfinal:%d\n", err);
     return err;
 }
 
