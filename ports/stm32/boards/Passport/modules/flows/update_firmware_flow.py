@@ -7,12 +7,11 @@ import lvgl as lv
 from files import CardSlot
 from constants import FW_HEADER_SIZE, FW_MAX_SIZE
 import machine
-from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage, InfoPage, LongErrorPage
+from pages import ErrorPage, ProgressPage, QuestionPage, SuccessPage, InsertMicroSDPage, InfoPage
 from tasks import copy_firmware_to_spi_flash_task
-from flows import Flow, FilePickerFlow, SaveToMicroSDFlow
+from flows import Flow, FilePickerFlow
 from utils import read_user_firmware_pubkey, is_all_zero, start_task
 from errors import Error
-from logging import get_log
 
 
 class UpdateFirmwareFlow(Flow):
@@ -115,11 +114,6 @@ class UpdateFirmwareFlow(Flow):
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()
-
-        log = get_log()
-        print(log)
-        await SaveToMicroSDFlow(filename='read_log.txt', data=log).run()
-
         if result:
             # Update copied to flash, now we need to store a setting to indicate what from->to version
             # we are updating, then reboot
@@ -148,7 +142,7 @@ class UpdateFirmwareFlow(Flow):
                 self.back()
         else:
             ui.set_is_top_level(prev_top_level)
-            await LongErrorPage("Failed to copy new firmware:\n{}".format(self.error_message)).show()
+            await ErrorPage("Failed to copy new firmware:\n{}".format(self.error_message)).show()
             await InfoPage("Passport will continue using the current firmware").show()
             self.set_result(False)
             # else we loop around to top of copy_to_flash() again and retry

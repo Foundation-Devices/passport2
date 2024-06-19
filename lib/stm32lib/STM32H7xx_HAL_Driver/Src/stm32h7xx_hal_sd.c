@@ -252,7 +252,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
-#include "extmod/foundation/modlogging.h"
 
 /** @addtogroup STM32H7xx_HAL_Driver
   * @{
@@ -664,7 +663,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
 
   if(NULL == pData)
   {
-    write_to_log("a\n");
     hsd->ErrorCode |= HAL_SD_ERROR_PARAM;
     return HAL_ERROR;
   }
@@ -675,7 +673,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
 
     if((add + NumberOfBlocks) > (hsd->SdCard.LogBlockNbr))
     {
-      write_to_log("c\n");
       hsd->ErrorCode |= HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
       return HAL_ERROR;
     }
@@ -687,7 +684,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
 
     if(hsd->SdCard.CardType != CARD_SDHC_SDXC)
     {
-      write_to_log("d");
       add *= 512U;
     }
 
@@ -696,7 +692,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(errorstate != HAL_SD_ERROR_NONE)
     {
       /* Clear all the static flags */
-      write_to_log("e\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
@@ -716,7 +711,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     /* Read block(s) in polling mode */
     if(NumberOfBlocks > 1U)
     {
-      write_to_log("g");
       hsd->Context = SD_CONTEXT_READ_MULTIPLE_BLOCK;
 
       /* Read Multi Block command */
@@ -724,7 +718,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     }
     else
     {
-      write_to_log("h");
       hsd->Context = SD_CONTEXT_READ_SINGLE_BLOCK;
 
       /* Read Single Block command */
@@ -733,7 +726,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(errorstate != HAL_SD_ERROR_NONE)
     {
       /* Clear all the static flags */
-      write_to_log("i\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
       hsd->State = HAL_SD_STATE_READY;
@@ -766,7 +758,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       if(((HAL_GetTick()-tickstart) >=  Timeout) || (Timeout == 0U))
       {
         /* Clear all the static flags */
-        write_to_log("l\n");
         __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
         hsd->ErrorCode |= HAL_SD_ERROR_TIMEOUT;
         hsd->State= HAL_SD_STATE_READY;
@@ -786,7 +777,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
         if(errorstate != HAL_SD_ERROR_NONE)
         {
           /* Clear all the static flags */
-          write_to_log("m\n");
           __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
           hsd->ErrorCode |= errorstate;
           hsd->State = HAL_SD_STATE_READY;
@@ -800,7 +790,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DTIMEOUT))
     {
       /* Clear all the static flags */
-      write_to_log("n\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_TIMEOUT;
       hsd->State = HAL_SD_STATE_READY;
@@ -810,7 +799,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_DCRCFAIL))
     {
       /* Clear all the static flags */
-      write_to_log("o\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_DATA_CRC_FAIL;
       hsd->State = HAL_SD_STATE_READY;
@@ -820,7 +808,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
     else if(__HAL_SD_GET_FLAG(hsd, SDMMC_FLAG_RXOVERR))
     {
       /* Clear all the static flags */
-      write_to_log("p\n");
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= HAL_SD_ERROR_RX_OVERRUN;
       hsd->State = HAL_SD_STATE_READY;
@@ -832,8 +819,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
       /* Nothing to do */
     }
 
-    write_to_log("q\n");
-
     /* Clear all the static flags */
     __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_DATA_FLAGS);
 
@@ -844,7 +829,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks(SD_HandleTypeDef *hsd, uint8_t *pData, uint3
   else
   {
     hsd->ErrorCode |= HAL_SD_ERROR_BUSY;
-    write_to_log("r\n");
     return HAL_ERROR;
   }
 }
@@ -1273,19 +1257,16 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
 
   if(NULL == pData)
   {
-    write_to_log("a\n");
     hsd->ErrorCode |= HAL_SD_ERROR_PARAM;
     return HAL_ERROR;
   }
 
   if(hsd->State == HAL_SD_STATE_READY)
   {
-    write_to_log("c");
     hsd->ErrorCode = HAL_SD_ERROR_NONE;
 
     if((add + NumberOfBlocks) > (hsd->SdCard.LogBlockNbr))
     {
-      write_to_log("d\n");
       hsd->ErrorCode |= HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
       return HAL_ERROR;
     }
@@ -1300,7 +1281,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
 
     if(hsd->SdCard.CardType != CARD_SDHC_SDXC)
     {
-      write_to_log("f");
       add *= 512U;
     }
 
@@ -1308,7 +1288,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     errorstate = SDMMC_CmdBlockLength(hsd->Instance, BLOCKSIZE);
     if(errorstate != HAL_SD_ERROR_NONE)
     {
-      write_to_log("h\n");
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
@@ -1332,7 +1311,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     /* Read Blocks in DMA mode */
     if(NumberOfBlocks > 1U)
     {
-      write_to_log("j");
       hsd->Context = (SD_CONTEXT_READ_MULTIPLE_BLOCK | SD_CONTEXT_DMA);
 
       /* Read Multi Block command */
@@ -1340,16 +1318,13 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
     }
     else
     {
-      write_to_log("k");
       hsd->Context = (SD_CONTEXT_READ_SINGLE_BLOCK | SD_CONTEXT_DMA);
 
       /* Read Single Block command */
-      // error happens here
       errorstate = SDMMC_CmdReadSingleBlock(hsd->Instance, add);
     }
     if(errorstate != HAL_SD_ERROR_NONE)
     {
-      write_to_log("m\n");
       /* Clear all the static flags */
       __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_FLAGS);
       hsd->ErrorCode |= errorstate;
@@ -1357,7 +1332,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
       hsd->Context = SD_CONTEXT_NONE;
       return HAL_ERROR;
     }
-    write_to_log("n\n");
 
     /* Enable transfer interrupts */
     __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND));
@@ -1367,7 +1341,6 @@ HAL_StatusTypeDef HAL_SD_ReadBlocks_DMA(SD_HandleTypeDef *hsd, uint8_t *pData, u
   }
   else
   {
-    write_to_log("o\n");
     return HAL_BUSY;
   }
 }

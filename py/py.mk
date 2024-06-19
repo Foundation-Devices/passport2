@@ -316,7 +316,6 @@ PY_EXTMOD_O_BASENAME = \
 	extmod/foundation/bip39_utils.o \
     extmod/foundation/bip39_word_info.o \
     extmod/foundation/bytewords_word_info.o \
-    extmod/foundation/modlogging.o \
     extmod/foundation/modtcc-codecs.o \
     extmod/foundation/strnlen.o \
     extmod/foundation/image_conversion.o \

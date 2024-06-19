@@ -24,7 +24,6 @@
 
 
 #include <string.h>
-#include <stdio.h>
 
 #include "ff.h"         /* Declarations of FatFs API */
 #include "diskio.h"     /* Declarations of device I/O functions */
@@ -3621,6 +3620,7 @@ FRESULT f_read (
     UINT rcnt = 0, cc = 0, csect = 0; // rcnt isnt set before using?
     BYTE *rbuff = (BYTE*)buff;
 
+
     *br = 0;    /* Clear read byte counter */
     res = validate(&fp->obj, &fs);              /* Check validity of the file object */
     if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) LEAVE_FF(fs, res);   /* Check validity */
@@ -3642,7 +3642,6 @@ FRESULT f_read (
                     } else
 #endif
                     {
-                        // error happens here
                         clst = get_fat(&fp->obj, fp->clust);    /* Follow cluster chain on the FAT */
                     }
                 }

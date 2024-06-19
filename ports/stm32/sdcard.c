@@ -25,7 +25,6 @@
  */
 
 #include <string.h>
-#include <stdio.h>
 
 #include "py/runtime.h"
 #include "py/mphal.h"
@@ -38,7 +37,6 @@
 #include "bufhelper.h"
 #include "dma.h"
 #include "irq.h"
-#include "extmod/foundation/modlogging.h"
 
 #if MICROPY_HW_ENABLE_SDCARD || MICROPY_HW_ENABLE_MMCARD
 
@@ -278,7 +276,6 @@ STATIC HAL_StatusTypeDef sdmmc_init_mmc(void) {
     sdmmc_handle.mmc.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
     #endif
     sdmmc_handle.mmc.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_ENABLE;
-
     sdmmc_handle.mmc.Init.BusWide = SDIO_BUS_WIDE_1B;
     sdmmc_handle.mmc.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
     sdmmc_handle.mmc.Init.ClockDiv = SDIO_TRANSFER_CLK_DIV;
@@ -492,7 +489,6 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         saved_word = *(uint32_t *)dest;
     }
 
-    // Let's try to disable DMA
     if (query_irq() == IRQ_STATE_ENABLED) {
         // we must disable USB irqs to prevent MSC contention with SD card
         uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
@@ -521,11 +517,7 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         } else
         #endif
         {
-            // error happens here, returns 1
             err = HAL_SD_ReadBlocks_DMA(&sdmmc_handle.sd, dest, block_num, num_blocks);
-            if (err != HAL_OK) {
-                write_to_log("err\n");
-            }
         }
         if (err == HAL_OK) {
             err = sdcard_wait_finished(60000);
@@ -551,7 +543,6 @@ mp_uint_t sdcard_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blo
         } else
         #endif
         {
-            // Potentially change 60000 to HAL_MAX_DELAY
             err = HAL_SD_ReadBlocks(&sdmmc_handle.sd, dest, block_num, num_blocks, 60000);
         }
         if (err == HAL_OK) {

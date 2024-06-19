@@ -545,9 +545,7 @@ soft_reset:
     #endif
 
     bool mounted_sdcard = false;
-    printf("mount at boot: %d\n", MICROPY_HW_SDCARD_MOUNT_AT_BOOT);
     #if MICROPY_HW_SDCARD_MOUNT_AT_BOOT
-    printf("mounting at boot\n");
     // if an SD card is present then mount it on /sd/
     if (sdcard_is_present()) {
         // if there is a file in the flash called "SKIPSD", then we don't mount the SD card
