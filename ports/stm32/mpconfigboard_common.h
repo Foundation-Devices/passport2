@@ -119,12 +119,12 @@
 
 // SD/MMC card driver interface bus width (defaults to 4 bits)
 #ifndef MICROPY_HW_SDCARD_BUS_WIDTH
-#define MICROPY_HW_SDCARD_BUS_WIDTH (1)
+#define MICROPY_HW_SDCARD_BUS_WIDTH (4)
 #endif
 
 // Whether to automatically mount (and boot from) the SD card if it's present
 #ifndef MICROPY_HW_SDCARD_MOUNT_AT_BOOT
-#define MICROPY_HW_SDCARD_MOUNT_AT_BOOT 0
+#define MICROPY_HW_SDCARD_MOUNT_AT_BOOT (MICROPY_HW_ENABLE_SDCARD)
 #endif
 
 // Which SDMMC peripheral to use for the SDIO driver (1 or 2)

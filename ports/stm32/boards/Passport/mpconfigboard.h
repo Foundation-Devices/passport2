@@ -118,3 +118,13 @@ void Passport_board_init(void);
 // LCD Teariing Effect output line
 #define MICROPY_HW_LCD_TE_PIN (pin_B5)
 #define MICROPY_HW_LCD_TE_PULL (GPIO_NOPULL)
+
+// SD/MMC card driver interface bus width (defaults to 4 bits)
+#ifndef MICROPY_HW_SDCARD_BUS_WIDTH
+#define MICROPY_HW_SDCARD_BUS_WIDTH (1)
+#endif
+
+// Whether to automatically mount (and boot from) the SD card if it's present
+#ifndef MICROPY_HW_SDCARD_MOUNT_AT_BOOT
+#define MICROPY_HW_SDCARD_MOUNT_AT_BOOT (0)
+#endif
