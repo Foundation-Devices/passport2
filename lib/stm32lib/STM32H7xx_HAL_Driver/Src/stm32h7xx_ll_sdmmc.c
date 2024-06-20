@@ -1240,7 +1240,6 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   {
     if (count-- == 0U)
     {
-      // Ignore timeout errors due to weak control line connection
       return SDMMC_ERROR_NONE;
     }
     sta_reg = SDMMCx->STA;
@@ -1249,7 +1248,6 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
 
   if(__SDMMC_GET_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT))
   {
-    // Ignore timeout errors due to weak control line connection
     __SDMMC_CLEAR_FLAG(SDMMCx, SDMMC_FLAG_CTIMEOUT);
   }
 
