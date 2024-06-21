@@ -42,9 +42,9 @@ class TemporarySeedFlow(Flow):
         from tasks import delay_task
         from pages import SuccessPage
 
-        await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
-        await SuccessPage(text='Temporary seed cleared').show()
         settings.exit_temporary_mode()
+        # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
+        await SuccessPage(text='Temporary seed cleared').show()
 
         # TODO: ui is still buggy when clearing a seed
         self.set_result(True)
