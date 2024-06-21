@@ -40,7 +40,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: |
@@ -125,7 +125,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: |
@@ -172,7 +172,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
@@ -206,7 +206,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV

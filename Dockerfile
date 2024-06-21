@@ -32,7 +32,7 @@ ENV RUSTUP_HOME="/rustup"
 ENV CARGO_HOME="/cargo"
 RUN mkdir -p /rustup /cargo && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-        sh -s -- -y --profile minimal --default-toolchain 1.70.0
+        sh -s -- -y --profile minimal --default-toolchain 1.77.1
 ENV PATH="/cargo/bin:${PATH}"
 
 # Finish installation of Rust toolchain.
