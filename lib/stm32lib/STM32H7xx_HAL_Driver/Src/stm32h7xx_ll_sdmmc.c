@@ -1240,7 +1240,7 @@ static uint32_t SDMMC_GetCmdResp1(SDMMC_TypeDef *SDMMCx, uint8_t SD_CMD, uint32_
   {
     if (count-- == 0U)
     {
-      return SDMMC_ERROR_NONE;
+      return SDMMC_ERROR_TIMEOUT;
     }
     sta_reg = SDMMCx->STA;
   }while(((sta_reg & (SDMMC_FLAG_CCRCFAIL | SDMMC_FLAG_CMDREND /*| SDMMC_FLAG_CTIMEOUT*/ | SDMMC_FLAG_BUSYD0END)) == 0U) ||
