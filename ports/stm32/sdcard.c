@@ -159,13 +159,14 @@ void sdcard_init(void) {
     // Note: the mp_hal_pin_config function will configure the GPIO in
     // fast mode which can do up to 50MHz.  This should be plenty for SDIO
     // which clocks up to 25MHz maximum.
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CK, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CK);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_CMD, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_CMD);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D0, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D0);
+
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_CK, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_CK);
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_CMD, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_CMD);
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_D0, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_D0);
     #if MICROPY_HW_SDCARD_BUS_WIDTH == 4
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D1, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D1);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D2, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D2);
-    mp_hal_pin_config_alt_static(MICROPY_HW_SDCARD_D3, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_UP, STATIC_AF_SDCARD_D3);
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_D1, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_D1);
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_D2, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_D2);
+    mp_hal_pin_config_alt_static_speed(MICROPY_HW_SDCARD_D3, MP_HAL_PIN_MODE_ALT, MP_HAL_PIN_PULL_NONE, MP_HAL_PIN_SPEED_VERY_HIGH, STATIC_AF_SDCARD_D3);
     #endif
 
     // configure the SD card detect pin
