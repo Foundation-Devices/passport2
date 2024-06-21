@@ -68,7 +68,7 @@ def create_generic_json_wallet(sw_wallet=None,
             if zp:
                 rv[name]['_pub'] = zp
 
-    if sw_wallet.get('show_fw_version', False):
+    if sw_wallet.get('export_fw_version', False):
         version = system.get_software_info()[0]
         rv['fw_version'] = version
 

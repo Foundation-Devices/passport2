@@ -51,7 +51,7 @@ def create_multisig_json_wallet(sw_wallet=None,
             # e.g., AF_P2WSH_P2SH: {'deriv':m/48'/0'/4'/1', 'acct': 4}
             accts.append({'fmt': fmt, 'deriv': dd, 'acct': acct_num})
 
-    if sw_wallet.get('show_fw_version', False):
+    if sw_wallet.get('export_fw_version', False):
         version = system.get_software_info()[0]
         fp.write('  "fw_version": "%s",\n' % version)
 

@@ -21,7 +21,7 @@ TheyaWallet = {
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-theya.json',
          'filename_pattern_multisig': '{xfp}-theya-multisig.json'}
     ],
-    'show_fw_version': True,
+    'export_fw_version': True,
     # 'skip_address_validation': True,
     # 'skip_multisig_import': True,
     # 'force_multisig_policy': True
