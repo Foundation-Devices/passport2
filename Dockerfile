@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -23,11 +23,9 @@ RUN apt-get update && \
                        pkg-config \
                        pycodestyle \
                        python3 \
-                       python3-pip && \
+                       python3-pip \
+                       reuse && \
     rm -rf /var/lib/apt/lists/*
-
-# Install reuse.
-RUN pip3 install reuse
 
 # Install rustup.
 ENV RUSTUP_HOME="/rustup"
