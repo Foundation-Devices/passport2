@@ -15,6 +15,7 @@ RUN apt-get update && \
                        autotools-dev \
                        build-essential \
                        curl \
+                       gawk \
                        gcc-arm-none-eabi \
                        git \
                        libclang-dev \
