@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+[workspace]
+members = ["stm32h7xx-hal-driver-sys"]
+
 [package]
 name = "foundation"
 version = "0.1.0"
