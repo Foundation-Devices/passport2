@@ -140,7 +140,7 @@ class SignElectrumMessageFlow(Flow):
         import microns
         from ubinascii import b2a_base64
 
-        qr_data = b2a_base64(self.signature)
+        qr_data = b2a_base64(bytes([0]) + self.signature).decode()
         print(qr_data)
         print(type(qr_data))
 
