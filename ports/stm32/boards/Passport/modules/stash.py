@@ -130,17 +130,23 @@ class SensitiveValues:
     # be a context manager, and holder to secrets in-memory
 
     def __init__(self, secret=None, for_backup=False):
-        from common import system
+        from common import system, settings
 
         if secret is None:
-            # fetch the secret from bootloader/atecc508a
-            from common import pa
+            if settings.temporary_mode:
+                if settings.get('temporary_seed', None) is None:
+                    raise ValueError('no temporary secrets yet')
+                self.secret = settings.get('temporary_seed', None)
+                self.spots = []
+            else:
+                # fetch the secret from bootloader/atecc508a
+                from common import pa
 
-            if pa.is_secret_blank():
-                raise ValueError('no secrets yet')
+                if pa.is_secret_blank():
+                    raise ValueError('no secrets yet')
 
-            self.secret = pa.fetch()
-            self.spots = [self.secret]
+                self.secret = pa.fetch()
+                self.spots = [self.secret]
         else:
             # sometimes we already know it
             # assert set(secret) != {0}
