@@ -51,7 +51,7 @@ features = ["critical-section"]
 [dependencies.secp256k1]
 version = "0.29"
 default-features = false
-features = ["lowmemory", "rand"]
+features = ["lowmemory", "rand", "recovery"]
 
 [dependencies.rand]
 version = "0.8.5"

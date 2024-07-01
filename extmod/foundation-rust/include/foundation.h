@@ -382,6 +382,20 @@ void foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
                                      uint8_t (*signature)[64]);
 
 /**
+ * Computes a ECDSA signature over the message `data`, and a recovery ID
+ *
+ * - `data` is the message hash.
+ * - `secret_key` is the secret key used to sign the message.
+ * - `signature` is the output of the resulting signature.
+ * - `recovery_id` is the output recovery ID
+ */
+void foundation_secp256k1_sign_ecdsa_recoverable(
+                                     const uint8_t (*data)[32],
+                                     const uint8_t (*secret_key)[32],
+                                     uint8_t (*signature)[64],
+                                     int32_t * recovery_id);
+
+/**
  * Computes a Schnorr signature over the message `data`.
  *
  * - `data` is the message hash.

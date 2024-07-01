@@ -60,6 +60,29 @@ pub extern "C" fn secp256k1_sign_ecdsa(
     signature.copy_from_slice(&sig.serialize_compact());
 }
 
+/// Computes a ECDSA signature over the message `data`, and a recovery ID
+///
+/// - `data` is the message hash.
+/// - `secret_key` is the secret key used to sign the message.
+/// - `signature` is the output of the resulting signature.
+/// - `recovery_id` is the output recovery ID
+#[export_name = "foundation_secp256k1_sign_ecdsa_recoverable"]
+pub extern "C" fn secp256k1_sign_ecdsa_recoverable(
+    data: &[u8; 32],
+    secret_key: &[u8; 32],
+    signature: &mut [u8; 64],
+    recovery_id: &mut i32,
+) {
+    let secret_key =
+        SecretKey::from_slice(secret_key).expect("invalid secret key");
+
+    let msg = Message::from_digest_slice(data).unwrap();
+    let sig = PRE_ALLOCATED_CTX.sign_ecdsa_recoverable(&msg, &secret_key);
+    let (rec_id, sig_bytes) = sig.serialize_compact();
+    signature.copy_from_slice(&sig_bytes);
+    *recovery_id = rec_id.to_i32();
+}
+
 /// Computes a Schnorr signature over the message `data`.
 ///
 /// - `data` is the message hash.
