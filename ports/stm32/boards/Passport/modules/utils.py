@@ -1060,6 +1060,23 @@ def sign_message_digest(digest, subpath):
     return rv
 
 
+def sign_message_digest_recoverable(digest, subpath):
+    from foundation import secp256k1
+    # do the signature itself!
+    print('digest: {}'.format(b2a_hex(digest)))
+    with stash.SensitiveValues() as sv:
+        print("subpath: {}".format(subpath))
+        node = sv.derive_path(subpath)
+        curr_address = sv.chain.address(node, AF_P2WPKH)
+        pk = node.private_key()
+        print("signing key: {}".format(b2a_hex(pk)))
+        sv.register(pk)
+
+        (signature, recovery_id) = secp256k1.sign_ecdsa_recoverable(digest, pk)
+
+    return (signature, recovery_id)
+
+
 def has_secrets():
     from common import pa
     return not pa.is_secret_blank()

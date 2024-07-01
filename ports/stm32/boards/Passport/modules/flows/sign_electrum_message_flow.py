@@ -123,11 +123,13 @@ class SignElectrumMessageFlow(Flow):
         self.goto(self.do_sign)
 
     async def do_sign(self):
-        (signature, address, error) = await spinner_task('Signing Message', sign_text_file_task,
-                                                         args=[self.message, self.subpath, self.addr_format])
+        (sig, address, error) = await spinner_task('Signing Message', sign_text_file_task,
+                                                   args=[self.message, self.subpath, self.addr_format, True])
+        (signature, recovery_id) = sig
 
         if error is None:
             self.signature = signature
+            self.recovery_id = recovery_id
             self.goto(self.show_signed)
         else:
             # TODO: Refactor this to a simpler, common error handler page?
@@ -140,7 +142,9 @@ class SignElectrumMessageFlow(Flow):
         import microns
         from ubinascii import b2a_base64
 
-        qr_data = b2a_base64(bytes([0]) + self.signature).decode()
+        compressed = 0  # 4 if compressed
+        flag = bytes([27 + self.recovery_id + compressed])
+        qr_data = b2a_base64(flag + self.signature).strip().decode()
         print(qr_data)
         print(type(qr_data))
 
