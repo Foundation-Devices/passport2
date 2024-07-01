@@ -3,26 +3,37 @@
   * @file    stm32h7xx_ll_delayblock.c
   * @author  MCD Application Team
   * @brief   DelayBlock Low Layer HAL module driver.
-  *
-  *          This file provides firmware functions to manage the following
+  *    
+  *          This file provides firmware functions to manage the following 
   *          functionalities of the Delay Block peripheral:
   *           + input clock frequency range 25MHz to 208MHz
   *           + up to 12 oversampling phases
   *
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
   @verbatim
   ==============================================================================
                        ##### DelayBlock peripheral features #####
-  ==============================================================================
+  ==============================================================================        
     [..] The Delay block is used to generate an Output clock which is de-phased from the Input
           clock. The phase of the Output clock is programmed by FW. The Output clock is then used
           to clock the receive data in i.e. a SDMMC or QSPI interface.
          The delay is Voltage and Temperature dependent, which may require FW to do re-tuning
           and recenter the Output clock phase to the receive data.
-
+    
     [..] The Delay Block features include the following:
          (+) Input clock frequency range 25MHz to 208MHz.
          (+) Up to 12 oversampling phases.
-
+         
                            ##### How to use this driver #####
   ==============================================================================
     [..]
@@ -31,21 +42,9 @@
       The DelayBlock_Enable() function, enables the DelayBlock instance, configure the delay line length
       and configure the Output clock phase.
       The DelayBlock_Disable() function, disables the DelayBlock instance by setting DEN flag to 0.
-
-
+      
+  
   @endverbatim
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
   */
 
 /* Includes ------------------------------------------------------------------*/
@@ -64,7 +63,13 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+/** @defgroup DelayBlock_LL_Private_Defines Delay Block Low Layer Private Defines
+  * @{
+  */
 #define DLYB_TIMEOUT 0xFFU
+/**
+  * @}
+  */
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -74,15 +79,15 @@
   * @{
   */
 
-/** @defgroup HAL_DELAY_LL_Group1 Initialization de-initialization functions
- *  @brief    Initialization and Configuration functions
+/** @defgroup HAL_DELAY_LL_Group1 Initialization de-initialization functions 
+ *  @brief    Initialization and Configuration functions 
  *
-@verbatim
+@verbatim    
  ===============================================================================
               ##### Initialization and de-initialization functions #####
  ===============================================================================
     [..]  This section provides functions allowing to:
-
+ 
 @endverbatim
   * @{
   */
@@ -207,4 +212,3 @@ HAL_StatusTypeDef DelayBlock_Configure(DLYB_TypeDef *DLYBx,uint32_t PhaseSel, ui
   * @}
   */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

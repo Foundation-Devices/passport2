@@ -6,13 +6,12 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -31,7 +30,7 @@
   * @{
   */
 
-#if defined (OPAMP1) || defined (OPAMP2)
+#if defined (OPAMP1) || defined (OPAMP2) 
 /** @addtogroup OPAMP_LL OPAMP
   * @{
   */
@@ -73,14 +72,14 @@
    || ((__INPUT_NONINVERTING__) == LL_OPAMP_INPUT_NONINVERT_DAC)               \
   )
 #endif /* DAC2 */
-
+  
 
 #define IS_LL_OPAMP_INPUT_INVERTING(__INPUT_INVERTING__)                       \
   (   ((__INPUT_INVERTING__) == LL_OPAMP_INPUT_INVERT_IO0)                     \
    || ((__INPUT_INVERTING__) == LL_OPAMP_INPUT_INVERT_IO1)                     \
    || ((__INPUT_INVERTING__) == LL_OPAMP_INPUT_INVERT_CONNECT_NO)              \
   )
-
+  
 /**
   * @}
   */
@@ -111,12 +110,12 @@
 ErrorStatus LL_OPAMP_DeInit(OPAMP_TypeDef* OPAMPx)
 {
   ErrorStatus status = SUCCESS;
-
+  
   /* Check the parameters */
   assert_param(IS_OPAMP_ALL_INSTANCE(OPAMPx));
-
+  
   LL_OPAMP_WriteReg(OPAMPx, CSR, 0x00000000U);
-
+ 
   return status;
 }
 
@@ -135,13 +134,13 @@ ErrorStatus LL_OPAMP_DeInit(OPAMP_TypeDef* OPAMPx)
 ErrorStatus LL_OPAMP_Init(OPAMP_TypeDef *OPAMPx, LL_OPAMP_InitTypeDef *OPAMP_InitStruct)
 {
   ErrorStatus status = SUCCESS;
-
+  
   /* Check the parameters */
   assert_param(IS_OPAMP_ALL_INSTANCE(OPAMPx));
   assert_param(IS_LL_OPAMP_POWER_MODE(OPAMP_InitStruct->PowerMode));
   assert_param(IS_LL_OPAMP_FUNCTIONAL_MODE(OPAMP_InitStruct->FunctionalMode));
   assert_param(IS_LL_OPAMP_INPUT_NONINVERTING(OPAMP_InitStruct->InputNonInverting));
-
+  
   /* Note: OPAMP inverting input can be used with OPAMP in mode standalone    */
   /*       or PGA with external capacitors for filtering circuit.             */
   /*       Otherwise (OPAMP in mode follower), OPAMP inverting input is       */
@@ -150,7 +149,7 @@ ErrorStatus LL_OPAMP_Init(OPAMP_TypeDef *OPAMPx, LL_OPAMP_InitTypeDef *OPAMP_Ini
   {
     assert_param(IS_LL_OPAMP_INPUT_INVERTING(OPAMP_InitStruct->InputInverting));
   }
-
+  
   /* Configuration of OPAMP instance :                                      */
   /*  - PowerMode                                                           */
   /*  - Functional mode                                                     */
@@ -227,4 +226,3 @@ void LL_OPAMP_StructInit(LL_OPAMP_InitTypeDef *OPAMP_InitStruct)
 
 #endif /* USE_FULL_LL_DRIVER */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
