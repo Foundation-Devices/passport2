@@ -142,7 +142,7 @@ class SignElectrumMessageFlow(Flow):
         import microns
         from ubinascii import b2a_base64
 
-        compressed = 0  # 4 if compressed
+        compressed = 4  # 0 if uncompressed
         flag = bytes([27 + self.recovery_id + compressed])
         qr_data = b2a_base64(flag + self.signature).strip().decode()
         print(qr_data)

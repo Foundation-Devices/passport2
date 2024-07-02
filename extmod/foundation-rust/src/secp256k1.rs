@@ -77,10 +77,10 @@ pub extern "C" fn secp256k1_sign_ecdsa_recoverable(
         SecretKey::from_slice(secret_key).expect("invalid secret key");
 
     let msg = Message::from_digest_slice(data).unwrap();
-    let sig = PRE_ALLOCATED_CTX.sign_ecdsa_recoverable(&msg, &secret_key);
-    let (rec_id, sig_bytes) = sig.serialize_compact();
+    let sig = PRE_ALLOCATED_CTX.sign_ecdsa_low_r(&msg, &secret_key);
+    let sig_bytes = sig.serialize_compact();
     signature.copy_from_slice(&sig_bytes);
-    *recovery_id = rec_id.to_i32();
+    *recovery_id = 0;
 }
 
 /// Computes a Schnorr signature over the message `data`.
