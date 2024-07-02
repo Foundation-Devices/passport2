@@ -27,6 +27,10 @@
 #include "secp256k1.h"
 #include "bignum.h"
 
+#ifdef USE_SECP256K1_ZKP_ECDSA
+#include "zkp_ecdsa.h"
+#endif
+
 
 /// package: trezorcrypto.ecdsa
 
@@ -118,12 +122,75 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(
     4,
     mod_trezorcrypto_ecdsa_point_add);
 
+/// def sign(
+///     secret_key: bytes,
+///     digest: bytes,
+///     compressed: bool = True,
+///     canonical: int | None = None,
+/// ) -> bytes:
+///     """
+///     Uses secret key to produce the signature of the digest.
+///     """
+STATIC mp_obj_t mod_trezorcrypto_ecdsa_sign(size_t n_args,
+                                                const mp_obj_t *args) {
+  mp_buffer_info_t sk = {0};
+  mp_buffer_info_t dig = {0};
+  mp_get_buffer_raise(args[0], &sk, MP_BUFFER_READ);
+  mp_get_buffer_raise(args[1], &dig, MP_BUFFER_READ);
+  bool compressed = (n_args < 3) || (args[2] == mp_const_true);
+  int (*is_canonical)(uint8_t by, uint8_t sig[64]) = NULL;
+#if !BITCOIN_ONLY
+  mp_int_t canonical = (n_args > 3) ? mp_obj_get_int(args[3]) : 0;
+  switch (canonical) {
+    case CANONICAL_SIG_ETHEREUM:
+      is_canonical = ethereum_is_canonical;
+      break;
+    case CANONICAL_SIG_EOS:
+      is_canonical = eos_is_canonical;
+      break;
+  }
+#endif
+  if (sk.len != 32) {
+    mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of secret key"));
+  }
+  if (dig.len != 32) {
+    mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of digest"));
+  }
+  vstr_t sig = {0};
+  vstr_init_len(&sig, 65);
+  uint8_t pby = 0;
+  int ret = 0;
+#ifdef USE_SECP256K1_ZKP_ECDSA
+  if (!is_canonical) {
+    ret = zkp_ecdsa_sign_digest(&secp256k1, (const uint8_t *)sk.buf,
+                                (const uint8_t *)dig.buf,
+                                (uint8_t *)sig.buf + 1, &pby, is_canonical);
+  } else
+#endif
+  {
+    ret = ecdsa_sign_digest(&secp256k1, (const uint8_t *)sk.buf,
+                            (const uint8_t *)dig.buf, (uint8_t *)sig.buf + 1,
+                            &pby, is_canonical);
+  }
+  if (0 != ret) {
+    vstr_clear(&sig);
+    mp_raise_ValueError(MP_ERROR_TEXT("Signing failed"));
+  }
+  sig.buf[0] = 27 + pby + compressed * 4;
+  return mp_obj_new_str_from_vstr(&mp_type_bytes, &sig);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_ecdsa_sign_obj,
+                                           2, 4,
+                                           mod_trezorcrypto_ecdsa_sign);
+
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_ecdsa_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ecdsa)},
     {MP_ROM_QSTR(MP_QSTR_scalar_multiply),
      MP_ROM_PTR(&mod_trezorcrypto_ecdsa_scalar_multiply_obj)},
     {MP_ROM_QSTR(MP_QSTR_point_add),
      MP_ROM_PTR(&mod_trezorcrypto_ecdsa_point_add_obj)},
+    {MP_ROM_QSTR(MP_QSTR_sign),
+     MP_ROM_PTR(&mod_trezorcrypto_ecdsa_sign_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_ecdsa_globals,
                             mod_trezorcrypto_ecdsa_globals_table);

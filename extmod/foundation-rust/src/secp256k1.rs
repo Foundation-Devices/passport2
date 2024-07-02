@@ -5,7 +5,7 @@ use core::ptr;
 use once_cell::sync::Lazy;
 use secp256k1::{
     ffi::types::AlignedType, AllPreallocated, Keypair, Message, Secp256k1,
-    SecretKey, PublicKey, ecdsa::RecoveryId, ecdsa::RecoverableSignature
+    SecretKey,
 };
 
 /// cbindgen:ignore
@@ -58,48 +58,6 @@ pub extern "C" fn secp256k1_sign_ecdsa(
     let msg = Message::from_digest_slice(data).unwrap();
     let sig = PRE_ALLOCATED_CTX.sign_ecdsa(&msg, &secret_key);
     signature.copy_from_slice(&sig.serialize_compact());
-}
-
-//TODO: add license from sparrow/drongo
-fn find_recovery_id(
-    msg: &Message,
-    secret_key: &SecretKey,
-    signature: &[u8; 64],
-) -> i8 {
-    // TODO: replace unwraps, handle failure?
-    let true_pubkey = PublicKey::from_secret_key(&PRE_ALLOCATED_CTX, secret_key);
-    for i in 0i8..4 {
-        let recovery_id = RecoveryId::from_i32(i.into()).unwrap();
-        let recoverable_signature = RecoverableSignature::from_compact(signature, recovery_id);
-        let possible_pubkey = recoverable_signature.recover(msg).unwrap();
-        if true_pubkey == possible_pubkey {
-            return i
-        }
-    }
-    -1
-}
-
-/// Computes a ECDSA signature over the message `data`, and a recovery ID
-///
-/// - `data` is the message hash.
-/// - `secret_key` is the secret key used to sign the message.
-/// - `signature` is the output of the resulting signature.
-/// - `recovery_id` is the output recovery ID
-#[export_name = "foundation_secp256k1_sign_ecdsa_recoverable"]
-pub extern "C" fn secp256k1_sign_ecdsa_recoverable(
-    data: &[u8; 32],
-    secret_key: &[u8; 32],
-    signature: &mut [u8; 64],
-    recovery_id: &mut i8,
-) {
-    let secret_key =
-        SecretKey::from_slice(secret_key).expect("invalid secret key");
-
-    let msg = Message::from_digest_slice(data).unwrap();
-    let sig = PRE_ALLOCATED_CTX.sign_ecdsa_low_r(&msg, &secret_key);
-    let sig_bytes = sig.serialize_compact();
-    signature.copy_from_slice(&sig_bytes);
-    *recovery_id = find_recovery_id(&msg, &secret_key, &sig_bytes);
 }
 
 /// Computes a Schnorr signature over the message `data`.

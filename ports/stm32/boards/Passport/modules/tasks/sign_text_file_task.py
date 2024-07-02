@@ -22,9 +22,9 @@ async def sign_text_file_task(on_done, text, subpath, addr_fmt, recoverable=Fals
 
     digest = chains.current_chain().hash_message(text.encode())
     if recoverable:
-        # signature will be 65 bytes or a tuple (64 bytes, recovery id)
-        (signature, recovery_id) = sign_message_digest_recoverable(digest, subpath)
-        await on_done((signature, recovery_id), address, None)
+        # signature will be 65 bytes
+        signature = sign_message_digest_recoverable(digest, subpath)
     else:
         signature = sign_message_digest(digest, subpath)
-        await on_done(signature, address, None)
+
+    await on_done(signature, address, None)

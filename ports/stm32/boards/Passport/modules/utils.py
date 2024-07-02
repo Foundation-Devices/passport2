@@ -1048,7 +1048,6 @@ def sign_message_digest(digest, subpath):
     with stash.SensitiveValues() as sv:
         print("subpath: {}".format(subpath))
         node = sv.derive_path(subpath)
-        curr_address = sv.chain.address(node, AF_P2WPKH)
         pk = node.private_key()
         print("signing key: {}".format(b2a_hex(pk)))
         sv.register(pk)
@@ -1061,23 +1060,23 @@ def sign_message_digest(digest, subpath):
 
 
 def sign_message_digest_recoverable(digest, subpath):
-    from foundation import secp256k1
+    from trezorcrypto import ecdsa
     # do the signature itself!
     print('digest: {}'.format(b2a_hex(digest)))
     with stash.SensitiveValues() as sv:
         print("subpath: {}".format(subpath))
         node = sv.derive_path(subpath)
-        curr_address = sv.chain.address(node, AF_P2WPKH)
         pk = node.private_key()
         print("signing key: {}".format(b2a_hex(pk)))
         sv.register(pk)
 
-        (signature, recovery_id) = secp256k1.sign_ecdsa_recoverable(digest, pk)
-        print("len(signature): {}".format(len(signature)))
-        print("sig hex: {}".format(b2a_hex(signature)))
-        print("recovery id: {}".format(recovery_id))
+        # returns 65 bytes that conform to the electrum message signing format
+        rv = ecdsa.sign(pk, digest)
+        print("len(rv): {}".format(len(rv)))
+        print("sig hex: {}".format(b2a_hex(rv[1:])))
+        print("recovery id: {}".format(rv[0]))
 
-    return (signature, recovery_id)
+    return rv
 
 
 def has_secrets():
