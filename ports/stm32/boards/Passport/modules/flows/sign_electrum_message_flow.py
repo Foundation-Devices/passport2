@@ -39,12 +39,6 @@ class SignElectrumMessageFlow(Flow):
         from pages import ErrorPage
         from utils import validate_sign_text
 
-        # msg = uio.StringIO(self.message)
-        # header = msg.readline()
-        # self.message = self.message[len(header)::]
-
-        # header_elements = header.split(' ')
-
         parts = self.message.split(':', 1)
         self.message = parts[1]
         header_elements = parts[0].split(' ')
@@ -52,11 +46,6 @@ class SignElectrumMessageFlow(Flow):
         if len(header_elements) != 3:
             await ErrorPage('Message format must be "signmessage {derivation_path} ascii:{message}"').show()
             self.set_result(False)
-
-        print("header:")
-        print(header_elements)
-        print("message:")
-        print(self.message)
 
         if header_elements[0] != 'signmessage':
             await ErrorPage('Not a valid message to sign').show()
@@ -78,8 +67,6 @@ class SignElectrumMessageFlow(Flow):
             self.set_result(False)
             return
 
-        print("subpath: {}".format(self.subpath))
-
         self.goto(self.show_message)
 
     async def show_message(self):
@@ -90,28 +77,24 @@ class SignElectrumMessageFlow(Flow):
         import stash
         from utils import stylize_address
 
-        result = await LongTextPage(centered=True,
-                                    text=self.message,
-                                    card_header={'title': 'Message'}).show()
-
-        self.address
-
-        if not result:
-            self.set_result(False)
-            return
-
         self.addr_format = get_addr_type_from_deriv(self.subpath)
 
         if self.addr_format is None:
             self.addr_format = AF_CLASSIC
-
-        print('addr_format: {}, AF_P2WPKH: {}, AF_CLASSIC: {}'.format(self.addr_format, AF_P2WPKH, AF_CLASSIC))
 
         with stash.SensitiveValues() as sv:
             node = sv.derive_path(self.subpath)
             self.address = sv.chain.address(node, self.addr_format)
 
         self.address = stylize_address(self.address)
+
+        result = await LongTextPage(centered=True,
+                                    text=self.message,
+                                    card_header={'title': 'Message'}).show()
+
+        if not result:
+            self.set_result(False)
+            return
 
         result = await QuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
                                     right_micron=microns.Sign).show()
@@ -140,8 +123,6 @@ class SignElectrumMessageFlow(Flow):
         from ubinascii import b2a_base64
 
         qr_data = b2a_base64(self.signature).strip().decode()
-        print(qr_data)
-        print(type(qr_data))
 
         result = await ShowQRPage(qr_data=qr_data,
                                   right_micron=microns.Checkmark).show()

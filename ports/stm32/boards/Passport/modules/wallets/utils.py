@@ -237,10 +237,6 @@ def get_addr_type_from_deriv_path(path):
 
 def get_part_from_deriv_path(path, index):
     parts = path.split('/')
-    print(parts)
-    print(len(parts))
-    print(index)
-    print(len(parts) <= index)
 
     if len(parts) <= index:
         return None

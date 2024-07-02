@@ -7,15 +7,12 @@
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
 # and is covered by GPLv3 license found in COPYING.
 #
-# SPDX-FileCopyRightText: 2019 cryptoadvance
-# SPDX-License-Identifier: MIT
-#
 # utils.py
 #
 
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
-from public_constants import DIR_BACKUPS, AF_P2WPKH
+from public_constants import DIR_BACKUPS
 from files import CardSlot
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
@@ -1044,17 +1041,11 @@ def split_to_lines(s, width):
 def sign_message_digest(digest, subpath):
     from foundation import secp256k1
     # do the signature itself!
-    print('digest: {}'.format(b2a_hex(digest)))
     with stash.SensitiveValues() as sv:
-        print("subpath: {}".format(subpath))
         node = sv.derive_path(subpath)
         pk = node.private_key()
-        print("signing key: {}".format(b2a_hex(pk)))
         sv.register(pk)
-
         rv = secp256k1.sign_ecdsa(digest, pk)
-        print("len(rv): {}".format(len(rv)))
-        print("sig: {}".format(b2a_hex(rv)))
 
     return rv
 
@@ -1062,19 +1053,12 @@ def sign_message_digest(digest, subpath):
 def sign_message_digest_recoverable(digest, subpath):
     from trezorcrypto import ecdsa
     # do the signature itself!
-    print('digest: {}'.format(b2a_hex(digest)))
     with stash.SensitiveValues() as sv:
-        print("subpath: {}".format(subpath))
         node = sv.derive_path(subpath)
         pk = node.private_key()
-        print("signing key: {}".format(b2a_hex(pk)))
         sv.register(pk)
-
         # returns 65 bytes that conform to the electrum message signing format
         rv = ecdsa.sign(pk, digest)
-        print("len(rv): {}".format(len(rv)))
-        print("sig hex: {}".format(b2a_hex(rv[1:])))
-        print("recovery id: {}".format(rv[0]))
 
     return rv
 
