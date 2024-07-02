@@ -1075,6 +1075,7 @@ def sign_message_digest_recoverable(digest, subpath):
         (signature, recovery_id) = secp256k1.sign_ecdsa_recoverable(digest, pk)
         print("len(signature): {}".format(len(signature)))
         print("sig hex: {}".format(b2a_hex(signature)))
+        print("recovery id: {}".format(recovery_id))
 
     return (signature, recovery_id)
 

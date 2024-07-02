@@ -55,7 +55,7 @@ STATIC mp_obj_t mod_foundation_secp256k1_sign_ecdsa_recoverable(mp_obj_t data_ob
     mp_buffer_info_t data;
     mp_buffer_info_t secret_key;
     uint8_t signature[64];
-    int32_t recovery_id;
+    int8_t recovery_id;
 
     mp_get_buffer_raise(data_obj, &data, MP_BUFFER_READ);
     mp_get_buffer_raise(secret_key_obj, &secret_key, MP_BUFFER_READ);

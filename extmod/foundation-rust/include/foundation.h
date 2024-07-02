@@ -393,7 +393,7 @@ void foundation_secp256k1_sign_ecdsa_recoverable(
                                      const uint8_t (*data)[32],
                                      const uint8_t (*secret_key)[32],
                                      uint8_t (*signature)[64],
-                                     int32_t * recovery_id);
+                                     int8_t * recovery_id);
 
 /**
  * Computes a Schnorr signature over the message `data`.
