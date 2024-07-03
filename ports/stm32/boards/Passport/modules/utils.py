@@ -1045,6 +1045,7 @@ def sign_message_digest(digest, subpath):
         node = sv.derive_path(subpath)
         pk = node.private_key()
         sv.register(pk)
+
         rv = secp256k1.sign_ecdsa(digest, pk)
 
     return rv
@@ -1057,7 +1058,8 @@ def sign_message_digest_recoverable(digest, subpath):
         node = sv.derive_path(subpath)
         pk = node.private_key()
         sv.register(pk)
-        # returns 65 bytes that conform to the electrum message signing format
+
+        # returns 65 byte electrum message signing format
         rv = ecdsa.sign(pk, digest)
 
     return rv

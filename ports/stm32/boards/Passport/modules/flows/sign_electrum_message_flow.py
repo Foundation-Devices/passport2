@@ -3,13 +3,16 @@
 #
 # sign_electrum_message_flow.py - Sign an electrum standard message via QR
 
-from flows import Flow
-from pages import SuccessPage, ErrorPage, InsertMicroSDPage
-from tasks import sign_text_file_task
-from utils import spinner_task, validate_sign_text
-from translations import t, T
-from public_constants import AF_CLASSIC, MSG_SIGNING_MAX_LENGTH, RFC_SIGNATURE_TEMPLATE
-import sys
+from flows import Flow, ScanQRFlow
+from pages import ErrorPage, LongTextPage, QuestionPage, ShowQRPage
+from tasks import sign_text_file_task, validate_electrum_message_task
+from utils import spinner_task, stylize_address
+from data_codecs.qr_type import QRType
+import microns
+from wallets.utils import get_addr_type_from_deriv
+from public_constants import AF_CLASSIC
+import stash
+from ubinascii import b2a_base64
 
 
 class SignElectrumMessageFlow(Flow):
@@ -20,9 +23,6 @@ class SignElectrumMessageFlow(Flow):
         super().__init__(initial_state=self.scan_message, name='Sign Electrum Message Flow')
 
     async def scan_message(self):
-        from flows import ScanQRFlow
-        from data_codecs.qr_type import QRType
-
         result = await ScanQRFlow(qr_types=[QRType.QR],
                                   data_description='a message').run()
 
@@ -35,48 +35,21 @@ class SignElectrumMessageFlow(Flow):
         self.goto(self.validate_message)
 
     async def validate_message(self):
-        import uio
-        from pages import ErrorPage
-        from utils import validate_sign_text
-
-        parts = self.message.split(':', 1)
-        self.message = parts[1]
-        header_elements = parts[0].split(' ')
-
-        if len(header_elements) != 3:
-            await ErrorPage('Message format must be "signmessage {derivation_path} ascii:{message}"').show()
-            self.set_result(False)
-
-        if header_elements[0] != 'signmessage':
-            await ErrorPage('Not a valid message to sign').show()
-            self.set_result(False)
-            return
-
-        if header_elements[2] != 'ascii':
-            await ErrorPage('Unsupported message type').show()
-            self.set_result(False)
-            return
-
-        (self.subpath, error) = validate_sign_text(self.message,
-                                                   header_elements[1],
-                                                   space_limit=False,
-                                                   check_whitespace=False)
+        res = await spinner_task('Validating Message',
+                                 validate_electrum_message_task,
+                                 args=[self.message])
+        (values, error) = res
 
         if error:
             await ErrorPage(error).show()
             self.set_result(False)
             return
 
+        (self.message, self.subpath) = values
+
         self.goto(self.show_message)
 
     async def show_message(self):
-        from pages import LongTextPage, QuestionPage
-        import microns
-        from wallets.utils import get_addr_type_from_deriv
-        from public_constants import AF_CLASSIC, AF_P2WPKH
-        import stash
-        from utils import stylize_address
-
         self.addr_format = get_addr_type_from_deriv(self.subpath)
 
         if self.addr_format is None:
@@ -112,16 +85,11 @@ class SignElectrumMessageFlow(Flow):
             self.signature = sig
             self.goto(self.show_signed)
         else:
-            # TODO: Refactor this to a simpler, common error handler page?
             await ErrorPage(text='Error while signing message: {}'.format(error)).show()
             self.set_result(False)
             return
 
     async def show_signed(self):
-        from pages import ShowQRPage
-        import microns
-        from ubinascii import b2a_base64
-
         qr_data = b2a_base64(self.signature).strip().decode()
 
         result = await ShowQRPage(qr_data=qr_data,

@@ -52,5 +52,6 @@ from .search_for_address_task import search_for_address_task
 from .set_initial_pin_task import set_initial_pin_task
 from .sign_psbt_task import sign_psbt_task
 from .sign_text_file_task import sign_text_file_task
+from .validate_electrum_message_task import validate_electrum_message_task
 from .validate_psbt_task import validate_psbt_task
 from .verify_backup_task import verify_backup_task
