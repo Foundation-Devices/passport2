@@ -11,7 +11,7 @@
 #include "bip39.h"
 #include "bip39_utils.h"
 
-#define MATCHES_LEN 80
+#define MATCHES_LEN 160
 
 extern word_info_t bip39_word_info[];
 extern word_info_t bytewords_word_info[]; // TODO: Restructure this so bip39 and bytewords are separate
