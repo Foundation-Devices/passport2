@@ -46,7 +46,6 @@ class TemporarySeedFlow(Flow):
         # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
         await SuccessPage(text='Temporary seed cleared').show()
 
-        # TODO: ui is still buggy when clearing a seed
         self.set_result(True)
         ui.full_cards_refresh()
         await self.wait_to_die()
@@ -57,8 +56,6 @@ class TemporarySeedFlow(Flow):
         from tasks import save_seed_task
         from pages import ErrorPage, SuccessPage, InfoPage
         import microns
-
-        # TODO: add page explaining child seed as temporary seed, give user change to back out
 
         result = await InfoPage('{} will be used as a temporary seed'.format(self.key['name']),
                                 left_micron=microns.Back).show()
