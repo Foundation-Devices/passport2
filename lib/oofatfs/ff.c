@@ -3617,7 +3617,7 @@ FRESULT f_read (
     FATFS *fs;
     DWORD clst, sect;
     FSIZE_t remain;
-    UINT rcnt = 0, cc = 0, csect = 0;
+    UINT rcnt, cc, csect;
     BYTE *rbuff = (BYTE*)buff;
 
 

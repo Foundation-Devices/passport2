@@ -54,13 +54,8 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
         self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
-        mp_obj_t res = mp_call_method_n_kw(2, 0, self->readblocks);
-
-        // readblocks returns true for success
-        bool err = !mp_obj_is_true(res);
-        if (err) {
-            return 1;
-        }
+        mp_call_method_n_kw(2, 0, self->readblocks);
+        // TODO handle error return
         return 0;
     }
 }
