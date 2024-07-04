@@ -96,7 +96,8 @@ class PredictiveTextInputPage(Page):
         if len(prefix) > 0:
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
-            self.predictions = get_words_matching_prefix(prefix, max=5, word_list=self.word_list)
+            self.predictions = get_words_matching_prefix(prefix, max=10, word_list=self.word_list)
+            print("len(predictions): {}".format(len(self.predictions)))
         elif self.word_idx == self.total_words - 1:
             self.predictions = [RANDOM_WORD_STRING]
         else:
