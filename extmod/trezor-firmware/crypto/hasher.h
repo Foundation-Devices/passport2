@@ -45,6 +45,7 @@ typedef enum {
   HASHER_SHA3K,
 #endif
 
+#ifndef FOUNDATION_ADDITIONS
   HASHER_BLAKE,
   HASHER_BLAKED,
   HASHER_BLAKE_RIPEMD,
@@ -53,6 +54,7 @@ typedef enum {
 
   HASHER_BLAKE2B,
   HASHER_BLAKE2B_PERSONAL,
+#endif
 } HasherType;
 
 typedef struct {

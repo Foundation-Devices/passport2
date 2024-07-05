@@ -1039,13 +1039,14 @@ def split_to_lines(s, width):
 
 
 def sign_message_digest(digest, subpath):
+    from foundation import secp256k1
     # do the signature itself!
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(subpath)
         pk = node.private_key()
         sv.register(pk)
 
-        rv = trezorcrypto.secp256k1.sign(pk, digest)
+        rv = secp256k1.sign_ecdsa(digest, pk)
 
     return rv
 
@@ -1361,11 +1362,6 @@ def get_seed_from_words(words):
     return entropy
 
 
-def nostr_pubkey_from_pk(pk):
-    from trezorcrypto import secp256k1
-    return secp256k1.publickey(pk, True)[1:]
-
-
 def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
     import tcc
     return tcc.codecs.bech32_plain_encode(key_type, key)
@@ -1373,7 +1369,7 @@ def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
 
 def nostr_sign(key, message):
     from foundation import secp256k1
-    return secp256k1.schnorr_sign(message, key)
+    return secp256k1.sign_schnorr(message, key)
 
 
 months = {

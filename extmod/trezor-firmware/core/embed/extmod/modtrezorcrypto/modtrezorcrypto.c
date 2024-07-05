@@ -34,8 +34,6 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
   }
 }
 
-#define FOUNDATION_ADDITIONS
-
 #include "modtrezorcrypto-aes.h"
 #include "modtrezorcrypto-bip32.h"
 #include "modtrezorcrypto-bip340.h"
@@ -56,7 +54,9 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-pbkdf2.h"
 #include "modtrezorcrypto-random.h"
 #include "modtrezorcrypto-ripemd160.h"
+#ifndef FOUNDATION_ADDITIONS
 #include "modtrezorcrypto-secp256k1.h"
+#endif
 #include "modtrezorcrypto-sha1.h"
 #include "modtrezorcrypto-sha256.h"
 #if USE_KECCAK
@@ -116,9 +116,9 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_trezorcrypto_random_module)},
     {MP_ROM_QSTR(MP_QSTR_ripemd160),
      MP_ROM_PTR(&mod_trezorcrypto_Ripemd160_type)},
+#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_secp256k1),
      MP_ROM_PTR(&mod_trezorcrypto_secp256k1_module)},
-#ifndef FOUNDATION_ADDITIONS
     {MP_ROM_QSTR(MP_QSTR_bip340), MP_ROM_PTR(&mod_trezorcrypto_bip340_module)},
     {MP_ROM_QSTR(MP_QSTR_sha1), MP_ROM_PTR(&mod_trezorcrypto_Sha1_type)},
 #endif // FOUNDATION_ADDITIONS

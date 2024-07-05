@@ -1,0 +1,123 @@
+name: rustup toolchain install
+author: David Tolnay
+description: Install the Rust toolchain
+branding:
+  icon: activity
+  color: purple
+
+inputs:
+  toolchain:
+    description: Rust toolchain specification -- see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification
+    required: true
+  targets:
+    description: Comma-separated list of target triples to install for this toolchain
+    required: false
+  target:
+    description: Alias for `targets`
+    required: false
+  components:
+    description: Comma-separated list of components to be additionally installed
+    required: false
+
+outputs:
+  cachekey:
+    description: A short hash of the rustc version, appropriate for use as a cache key. "20220627a831"
+    value: ${{steps.rustc-version.outputs.cachekey}}
+  name:
+    description: Rustup's name for the selected version of the toolchain. "1.62.0"  # suitable for use with `cargo +${{steps.toolchain.outputs.name}}`
+    value: ${{steps.parse.outputs.toolchain}}
+
+runs:
+  using: composite
+  steps:
+    - id: parse
+      run: |
+        : parse toolchain version
+        if [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then
+          if [[ ${{runner.os}} == macOS ]]; then
+            echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT
+          else
+            echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT
+          fi
+        elif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then
+          echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT
+        else
+          echo "toolchain=$toolchain" >> $GITHUB_OUTPUT
+        fi
+      env:
+        toolchain: ${{inputs.toolchain}}
+      shell: bash
+
+    - id: flags
+      run: |
+        : construct rustup command line
+        echo "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT
+        echo "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT
+        echo "downgrade=${{inputs.toolchain == 'nightly' && inputs.components && ' --allow-downgrade' || ''}}" >> $GITHUB_OUTPUT
+      env:
+        targets: ${{inputs.targets || inputs.target || ''}}
+        components: ${{inputs.components}}
+      shell: bash
+
+    - run: |
+        : install rustup if needed
+        if ! command -v rustup &>/dev/null; then
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail "https://sh.rustup.rs" | sh -s -- --default-toolchain none -y
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH
+        fi
+      if: runner.os != 'Windows'
+      shell: bash
+
+    - name: rustup toolchain install ${{steps.parse.outputs.toolchain}}
+      run: rustup toolchain install ${{steps.parse.outputs.toolchain}}${{steps.flags.outputs.targets}}${{steps.flags.outputs.components}} --profile minimal${{steps.flags.outputs.downgrade}} --no-self-update
+      shell: bash
+
+    - run: rustup default ${{steps.parse.outputs.toolchain}}
+      shell: bash
+
+    - id: rustc-version
+      run: |
+        : create cachekey
+        DATE=$(rustc +${{steps.parse.outputs.toolchain}} --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
+        HASH=$(rustc +${{steps.parse.outputs.toolchain}} --version --verbose | sed -ne 's/^commit-hash: //p')
+        echo "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - run: |
+        : disable incremental compilation
+        if [ -z "${CARGO_INCREMENTAL+set}" ]; then
+          echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - run: |
+        : enable colors in Cargo output
+        if [ -z "${CARGO_TERM_COLOR+set}" ]; then
+          echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - run: |
+        : enable Cargo sparse registry
+        # implemented in 1.66, stabilized in 1.68, made default in 1.70
+        if [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "${{runner.temp}}"/.implicit_cargo_registries_crates_io_protocol ]; then
+          if rustc +${{steps.parse.outputs.toolchain}} --version --verbose | grep -q '^release: 1\.6[89]\.'; then
+            touch "${{runner.temp}}"/.implicit_cargo_registries_crates_io_protocol || true
+            echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV
+          elif rustc +${{steps.parse.outputs.toolchain}} --version --verbose | grep -q '^release: 1\.6[67]\.'; then
+            touch "${{runner.temp}}"/.implicit_cargo_registries_crates_io_protocol || true
+            echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV
+          fi
+        fi
+      shell: bash
+
+    - run: |
+        : work around spurious network errors in curl 8.0
+        # https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation
+        if rustc +${{steps.parse.outputs.toolchain}} --version --verbose | grep -q '^release: 1\.7[01]\.'; then
+          echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - run: rustc +${{steps.parse.outputs.toolchain}} --version --verbose
+      shell: bash
