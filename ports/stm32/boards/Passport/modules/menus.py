@@ -48,7 +48,7 @@ def account_tools():
 
     return [
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a message', 'flow': SignElectrumMessageFlow,
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a Message', 'flow': SignElectrumMessageFlow,
          'statusbar': {'title': 'SIGN MESSAGE'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
