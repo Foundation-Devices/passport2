@@ -35,8 +35,7 @@ class SignPsbtQRFlow(Flow):
                                   data_description='a PSBT file',
                                   max_frames=self.max_frames,
                                   failure_message="Unable to Scan QR code, \
-try signing using the microSD card.\n\n{}",
-                                  pass_error=True).run()
+try signing using the microSD card.\n\n{}").run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
