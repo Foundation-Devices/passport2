@@ -59,12 +59,12 @@ Received single-part UR when multi-part reception was already in place""")
         try:
             if self.value is None:
                 self.value = ur.decoder_decode_message()
-        except ur.Other as exc:
+        except ur.OtherError as exc:
             raise DecodeError(str(exc))
-        except ur.Unsupported as exc:
+        except ur.UnsupportedError as exc:
             raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
-        finally:
-            return self.value
+
+        return self.value
 
     def qr_type(self):
         return QRType.UR2
