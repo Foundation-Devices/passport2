@@ -68,8 +68,11 @@ impl UR_Error {
     /// # Safety
     ///
     /// The same as in [`UR_Error::new`].
-    pub unsafe fn unsupported(message: &dyn fmt::Display) -> Self {
-        Self::new(message, UR_ErrorKind::UR_ERROR_KIND_UNSUPPORTED)
+    pub unsafe fn unsupported() -> Self {
+        Self::new(
+            &"Unsupported uniform resource",
+            UR_ErrorKind::UR_ERROR_KIND_UNSUPPORTED,
+        )
     }
 }
 
