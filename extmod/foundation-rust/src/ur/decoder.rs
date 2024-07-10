@@ -3,7 +3,7 @@
 
 //! Decoder.
 
-use core::{fmt, ptr, slice, str};
+use core::{ptr, slice, str};
 
 use foundation_ur::{
     bytewords, bytewords::Style, decoder::Error, max_fragment_len,
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn ur_decoder_receive(
         .and_then(|ur| match ur.sequence_count() {
             Some(n) if n > UR_DECODER_MAX_SEQUENCE_COUNT as u32 => {
                 Err(unsafe {
-                    UR_Error::other(&TooManySequences { sequence_count: n })
+                    UR_Error::too_big(n, UR_DECODER_MAX_SEQUENCE_COUNT)
                 })
             }
             _ => Ok(ur),
@@ -280,19 +280,4 @@ pub unsafe extern "C" fn ur_decode_single_part(
     };
 
     true
-}
-
-struct TooManySequences {
-    sequence_count: u32,
-}
-
-impl fmt::Display for TooManySequences {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "The UR contains more sequences than we can handle.\n\nMaximum sequence count supported: {}.\n\nMessage sequence count: {}.",
-            UR_DECODER_MAX_SEQUENCE_COUNT,
-            self.sequence_count,
-        )
-    }
 }

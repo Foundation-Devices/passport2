@@ -63,6 +63,10 @@ class ScanQRFlow(Flow):
             self.set_result(None)
             return
 
+        if result.is_ur_too_big():
+            self.set_result(Error.QR_TOO_LARGE)
+            return
+
         if result.is_failure():
             await LongErrorPage(text=self.failure_message.format(result.error)).show()
             self.set_result(None)

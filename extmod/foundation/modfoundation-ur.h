@@ -23,6 +23,11 @@ STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error);
 ///     """
 STATIC MP_DEFINE_EXCEPTION(OtherError, Exception);
 
+/// class TooBigError(Exception):
+///     """
+///     """
+STATIC MP_DEFINE_EXCEPTION(TooBigError, Exception);
+
 /// class UnsupportedError(Exception):
 ///     """
 ///     """
@@ -39,6 +44,9 @@ STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error) {
     switch (error->kind) {
         case UR_ERROR_KIND_OTHER:
             type = &mp_type_OtherError;
+            break;
+        case UR_ERROR_KIND_TOO_BIG:
+            type = &mp_type_TooBigError;
             break;
         case UR_ERROR_KIND_UNSUPPORTED:
             type = &mp_type_UnsupportedError;
@@ -660,6 +668,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_decode_single_part_obj,
 STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     /// Errors.
     {MP_ROM_QSTR(MP_QSTR_OtherError), MP_ROM_PTR(&mp_type_OtherError)},
+    {MP_ROM_QSTR(MP_QSTR_TooBigError), MP_ROM_PTR(&mp_type_TooBigError)},
     {MP_ROM_QSTR(MP_QSTR_UnsupportedError), MP_ROM_PTR(&mp_type_UnsupportedError)},
     {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_NotMultiPartError)},
 
