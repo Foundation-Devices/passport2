@@ -11,6 +11,7 @@ use foundation_urtypes::{
         PassportResponse, PathComponents,
     },
     supply_chain_validation::{Challenge, Solution},
+    value,
     value::Value,
 };
 
@@ -48,8 +49,10 @@ impl UR_Value {
         ur_type: &str,
         message: &[u8],
     ) -> Result<Self, UR_Error> {
-        let value = Value::from_ur(ur_type, message)
-            .map_err(|e| UR_Error::other(&e))?;
+        let value = Value::from_ur(ur_type, message).map_err(|e| match e {
+            value::Error::UnsupportedResource => UR_Error::unsupported(),
+            _ => UR_Error::other(&e),
+        })?;
 
         let value = match value {
             Value::Bytes(bytes) => UR_Value::Bytes {
@@ -63,11 +66,7 @@ impl UR_Value {
             Value::PassportRequest(passport_request) => {
                 UR_Value::PassportRequest(passport_request.into())
             }
-            _ => {
-                return Err(UR_Error::unsupported(
-                    &"Unsupported uniform resource",
-                ));
-            }
+            _ => return Err(UR_Error::unsupported()),
         };
 
         Ok(value)

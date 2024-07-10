@@ -31,15 +31,17 @@ class UR2Decoder(DataDecoder):
             if ur.decoder_is_empty():
                 try:
                     self.value = ur.decode_single_part(data)
-                except ur.UnsupportedError as exc:
-                    raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
+                except ur.UnsupportedError:
+                    raise DecodeError("""\
+Please check for updates to Passport and your software wallet.""")
                 except ur.OtherError as exc:
                     raise DecodeError(str(exc))
             else:
                 raise DecodeError("""\
 Received single-part UR when multi-part reception was already in place""")
-        except ur.UnsupportedError as exc:
-            raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
+        except ur.UnsupportedError:
+            raise DecodeError("""\
+Please check for updates to Passport and your software wallet.""")
         except ur.OtherError as exc:
             raise DecodeError(str(exc))
 
@@ -59,12 +61,13 @@ Received single-part UR when multi-part reception was already in place""")
         try:
             if self.value is None:
                 self.value = ur.decoder_decode_message()
-        except ur.Other as exc:
+        except ur.OtherError as exc:
             raise DecodeError(str(exc))
-        except ur.Unsupported as exc:
-            raise DecodeError("Unsupported UR.\n\n{}".format(str(exc)))
-        finally:
-            return self.value
+        except ur.UnsupportedError:
+            raise DecodeError("""\
+Please check for updates to Passport and your software wallet.""")
+
+        return self.value
 
     def qr_type(self):
         return QRType.UR2
