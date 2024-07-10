@@ -661,7 +661,7 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     /// Errors.
     {MP_ROM_QSTR(MP_QSTR_OtherError), MP_ROM_PTR(&mp_type_OtherError)},
     {MP_ROM_QSTR(MP_QSTR_UnsupportedError), MP_ROM_PTR(&mp_type_UnsupportedError)},
-    {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_UnsupportedError)},
+    {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_NotMultiPartError)},
 
     // Value.
     {MP_ROM_QSTR(MP_QSTR_NETWORK_MAINNET), MP_ROM_INT(UR_NETWORK_MAINNET)},
