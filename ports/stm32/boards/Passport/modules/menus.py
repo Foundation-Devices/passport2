@@ -63,7 +63,7 @@ def account_menu():
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_FOLDER', 'label': 'Account Tools', 'submenu': account_tools},
+        {'icon': 'ICON_SETUP', 'label': 'Account Tools', 'submenu': account_tools},
         {'icon': 'ICON_FOLDER', 'label': 'Manage Account', 'submenu': manage_account_menu},
     ]
 
