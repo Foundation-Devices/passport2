@@ -14,7 +14,7 @@ from .coinbits import CoinbitsWallet
 # from .dux_reserve import DuxReserveWallet
 from .electrum import ElectrumWallet
 from .envoy import EnvoyWallet
-# from .fullynoded import FullyNodedWallet
+from .fullynoded import FullyNodedWallet
 # from .gordian import GordianWallet
 # from .lily import LilyWallet
 from .nunchuk import NunchukWallet
@@ -37,7 +37,7 @@ supported_software_wallets = [
     CoinbitsWallet,
     # DuxReserveWallet,
     ElectrumWallet,
-    # FullyNodedWallet,
+    FullyNodedWallet,
     # GordianWallet,
     # LilyWallet,
     NunchukWallet,
