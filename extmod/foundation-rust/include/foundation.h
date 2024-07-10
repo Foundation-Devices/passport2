@@ -80,6 +80,7 @@ typedef enum {
 
 typedef enum {
   UR_ERROR_KIND_OTHER,
+  UR_ERROR_KIND_TOO_BIG,
   UR_ERROR_KIND_UNSUPPORTED,
   UR_ERROR_KIND_NOT_MULTI_PART,
 } UR_ErrorKind;

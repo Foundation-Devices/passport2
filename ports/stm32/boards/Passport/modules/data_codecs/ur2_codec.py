@@ -42,6 +42,8 @@ Received single-part UR when multi-part reception was already in place""")
         except ur.UnsupportedError:
             raise DecodeError("""\
 Please check for updates to Passport and your software wallet.""")
+        except ur.TooBigError as exc:
+            raise exc  # Re-raise as ScanQRResult has a method to check it.
         except ur.OtherError as exc:
             raise DecodeError(str(exc))
 

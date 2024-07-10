@@ -24,6 +24,7 @@ const fn max_message_len(max_characters: usize) -> usize {
 #[repr(C)]
 pub enum UR_ErrorKind {
     UR_ERROR_KIND_OTHER,
+    UR_ERROR_KIND_TOO_BIG,
     UR_ERROR_KIND_UNSUPPORTED,
     UR_ERROR_KIND_NOT_MULTI_PART,
 }
@@ -63,6 +64,35 @@ impl UR_Error {
     /// The same as in [`UR_Error::new`].
     pub unsafe fn other(message: &dyn fmt::Display) -> Self {
         Self::new(message, UR_ErrorKind::UR_ERROR_KIND_OTHER)
+    }
+
+    /// # Safety
+    ///
+    /// The same as in [`UR_Error::new`].
+    pub unsafe fn too_big(sequence_count: u32, max: usize) -> Self {
+        struct Error {
+            sequence_count: u32,
+            max: usize,
+        }
+
+        impl fmt::Display for Error {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(
+                    f,
+                    "The UR contains more sequences than we can handle.\n\nMaximum sequence count supported: {}.\n\nMessage sequence count: {}.",
+                    self.max,
+                    self.sequence_count,
+                )
+            }
+        }
+
+        Self::new(
+            &Error {
+                sequence_count,
+                max,
+            },
+            UR_ErrorKind::UR_ERROR_KIND_TOO_BIG,
+        )
     }
 
     /// # Safety
