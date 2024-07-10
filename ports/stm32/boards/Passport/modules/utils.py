@@ -1051,6 +1051,20 @@ def sign_message_digest(digest, subpath):
     return rv
 
 
+def sign_message_digest_recoverable(digest, subpath):
+    from trezorcrypto import ecdsa
+    # do the signature itself!
+    with stash.SensitiveValues() as sv:
+        node = sv.derive_path(subpath)
+        pk = node.private_key()
+        sv.register(pk)
+
+        # returns 65 byte electrum message signing format
+        rv = ecdsa.sign(pk, digest)
+
+    return rv
+
+
 def has_secrets():
     from common import pa
     return not pa.is_secret_blank()
@@ -1281,13 +1295,14 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True):
     # Check for leading or trailing whitespace
-    if text[0] == ' ':
-        return (subpath, 'File contains leading whitespace.')
+    if check_whitespace:
+        if text[0] == ' ':
+            return (subpath, 'File contains leading whitespace.')
 
-    if text[-1] == ' ':
-        (subpath, 'File contains trailing whitespace.')
+        if text[-1] == ' ':
+            return (subpath, 'File contains trailing whitespace.')
 
     # Ensure characters are in range and not too many spaces
     run = 0
@@ -1297,12 +1312,13 @@ def validate_sign_text(text, subpath):
         if ord(ch) not in MSG_CHARSET:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
-        if ch == ' ':
-            run += 1
-            if run >= MSG_MAX_SPACES:
-                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
-        else:
-            run = 0
+        if space_limit:
+            if ch == ' ':
+                run += 1
+                if run >= MSG_MAX_SPACES:
+                    return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+            else:
+                run = 0
 
     # Check subpath, if given
     if subpath:
