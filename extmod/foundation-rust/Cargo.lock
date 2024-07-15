@@ -157,9 +157,9 @@ dependencies = [
 
 [[package]]
 name = "foundation-urtypes"
-version = "0.3.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22a59d9988ac2826c9c49d02364b907ee6dfc2385ddf0dcbc8c76e43532fcf87"
+checksum = "e40662e96946962894b2ff376b848af3e8beb2939be091358dfe2df9db8eaa55"
 dependencies = [
  "foundation-arena",
  "heapless",

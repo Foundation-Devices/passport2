@@ -34,17 +34,17 @@ def create_casa_export(sw_wallet=None,
             is_mainnet = chain.ctype == 'BTC'
 
             network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
-            use_info = ur.CryptoCoinInfo(ur.CoinType.BTC, network)
-            origin = ur.CryptoKeypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
-                                      depth=0)
+            use_info = ur.CoinInfo(ur.CoinType.BTC, network)
+            origin = ur.Keypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
+                                depth=0)
 
-            crypto_hdkey = ur.new_derived_key(sv.node.public_key(),
-                                              is_private=False,
-                                              chain_code=sv.node.chain_code(),
-                                              use_info=use_info,
-                                              origin=origin)
+            hdkey = ur.new_derived_key(sv.node.public_key(),
+                                       is_private=False,
+                                       chain_code=sv.node.chain_code(),
+                                       use_info=use_info,
+                                       origin=origin)
 
-            return (crypto_hdkey, None)
+            return (hdkey, None)
     else:
         with stash.SensitiveValues() as sv:
             s = '''\
@@ -77,7 +77,7 @@ CasaWallet = {
          'import_microsd': read_multisig_config_from_microsd}
     ],
     'export_modes': [
-        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2, 'ur_type': 'crypto-hdkey', 'is_cbor': True},
+        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2, 'ur_type': 'hdkey', 'is_cbor': True},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-casa.txt', 'ext': '.txt',
          'filename_pattern_multisig': '{xfp}-casa-multisig.txt', 'ext_multisig': '.txt'}
     ],

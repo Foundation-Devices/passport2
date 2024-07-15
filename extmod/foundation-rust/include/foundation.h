@@ -118,7 +118,7 @@ typedef struct {
 typedef struct {
   UR_CoinType coin_type;
   uint64_t network;
-} UR_CryptoCoinInfo;
+} UR_CoinInfo;
 
 /**
  * Metadata for the complete or partial derivation path of a key.
@@ -140,10 +140,10 @@ typedef struct {
    * Whether `depth` is present.
    */
   bool has_depth;
-} UR_CryptoKeypath;
+} UR_Keypath;
 
 /**
- * Derived `crypto-hdkey`.
+ * Derived `hdkey`.
  */
 typedef struct {
   /**
@@ -165,7 +165,7 @@ typedef struct {
   /**
    * How the key should be used.
    */
-  UR_CryptoCoinInfo use_info;
+  UR_CoinInfo use_info;
   /**
    * Whether `use_info` is present.
    */
@@ -173,7 +173,7 @@ typedef struct {
   /**
    * How the key was derived.
    */
-  UR_CryptoKeypath origin;
+  UR_Keypath origin;
   /**
    * Whether `origin` is present.
    */
@@ -187,7 +187,7 @@ typedef struct {
 } UR_DerivedKey;
 
 /**
- * A `crypto-hdkey`.
+ * A `hdkey`.
  */
 typedef enum {
   DerivedKey,
@@ -217,7 +217,7 @@ typedef struct {
 } UR_Challenge;
 
 /**
- * Passport custom `crypto-request`.
+ * Passport custom `x-passport-request`.
  */
 typedef struct {
   /**
@@ -257,7 +257,7 @@ typedef struct {
 } UR_Solution;
 
 /**
- * Passport custom `crypto-request`.
+ * Passport custom `x-passport-response`.
  */
 typedef struct {
   /**
@@ -303,19 +303,19 @@ typedef enum {
    */
   Bytes,
   /**
-   * `crypto-hdkey`.
+   * `hdkey`.
    */
-  CryptoHDKey,
+  HDKey,
   /**
-   * `crypto-psbt`.
+   * `psbt`.
    */
-  CryptoPSBT,
+  Psbt,
   /**
-   * Passport custom `crypto-request`.
+   * Passport custom `x-passport-request`.
    */
   PassportRequest,
   /**
-   * Passport custom `crypto-response`.
+   * Passport custom `x-passport-response`.
    */
   PassportResponse,
 } UR_Value_Tag;
@@ -328,16 +328,16 @@ typedef struct {
 typedef struct {
   const uint8_t *data;
   size_t len;
-} CryptoPSBT_Body;
+} Psbt_Body;
 
 typedef struct {
   UR_Value_Tag tag;
   union {
     Bytes_Body bytes;
     struct {
-      UR_HDKey crypto_hd_key;
+      UR_HDKey hd_key;
     };
-    CryptoPSBT_Body crypto_psbt;
+    Psbt_Body psbt;
     struct {
       UR_PassportRequest passport_request;
     };
@@ -492,29 +492,28 @@ void ur_encoder_start(UR_Encoder *encoder,
 void ur_encoder_next_part(UR_Encoder *encoder, const char **ur, size_t *ur_len);
 
 /**
- * Passport custom `crypto-response`.
  * Create a new `bytes` UR.
  */
 void ur_registry_new_bytes(UR_Value *value, uint8_t *data, size_t len);
 
 /**
- * Create a new derived `crypto-hdkey` UR.
+ * Create a new derived `hdkey` UR.
  */
 void ur_registry_new_derived_key(UR_Value *value,
                                  bool is_private,
                                  const uint8_t (*key_data)[33],
                                  const uint8_t (*chain_code)[32],
-                                 const UR_CryptoCoinInfo *use_info,
-                                 const UR_CryptoKeypath *origin,
+                                 const UR_CoinInfo *use_info,
+                                 const UR_Keypath *origin,
                                  uint32_t parent_fingerprint);
 
 /**
- * Create a new `crypto-psbt` UR.
+ * Create a new `psbt` UR.
  */
-void ur_registry_new_crypto_psbt(UR_Value *value, uint8_t *data, size_t len);
+void ur_registry_new_psbt(UR_Value *value, uint8_t *data, size_t len);
 
 /**
- * Create a new Passport ustom `crypto-response` UR.
+ * Create a new Passport custom `x-passport-response` UR.
  */
 void ur_registry_new_passport_response(UR_Value *value,
                                        const uint8_t (*transaction_id)[16],
