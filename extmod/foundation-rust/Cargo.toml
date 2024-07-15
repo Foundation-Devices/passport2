@@ -29,7 +29,7 @@ version = "1"
 default-features = false
 
 [dependencies.foundation-ur]
-version = "0.2"
+version = "0.3"
 default-features = false
 
 [dependencies.foundation-urtypes]
