@@ -31,11 +31,7 @@ class TemporarySeedFlow(Flow):
                                        autobackup=False,
                                        full_backup=True,
                                        temporary=True).run()
-        print("temporary_settings: {}".format(settings.temporary_settings))
-        print("current: {}".format(settings.current))
-        print("temporary_mode: {}".format(settings.temporary_mode))
         self.set_result(result)
-        print("temporary_mode: {}".format(settings.temporary_mode))
 
     async def clear_seed(self):
         from utils import spinner_task, start_task
@@ -80,7 +76,6 @@ class TemporarySeedFlow(Flow):
             self.set_result(False)
             return
 
-        print('pk: {}'.format(pk))
         settings.enter_temporary_mode()
         (error,) = await spinner_task('Applying seed', save_seed_task, args=[pk])
 
