@@ -77,7 +77,7 @@ CasaWallet = {
          'import_microsd': read_multisig_config_from_microsd}
     ],
     'export_modes': [
-        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2, 'ur_type': 'hdkey', 'is_cbor': True},
+        {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-casa.txt', 'ext': '.txt',
          'filename_pattern_multisig': '{xfp}-casa-multisig.txt', 'ext_multisig': '.txt'}
     ],
