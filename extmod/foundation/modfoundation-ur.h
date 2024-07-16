@@ -406,7 +406,7 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
     }
 
     ur_registry_new_derived_key(&value,
-                                args[0].u_bool,
+                                args[1].u_bool,
                                 key_data.buf,
                                 chain_code_info.buf,
                                 &use_info_obj->info,
