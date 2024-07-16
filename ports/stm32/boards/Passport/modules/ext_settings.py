@@ -297,10 +297,10 @@ class ExtSettings:
         import re
         pattern = re.compile(pattern)
         matches = []
-        if self.temporary_mode or kn in DEVICE_SETTINGS:
-            matches = [k for k in self.current if pattern.search(k)]
-        else:
+        if self.temporary_mode:
             matches = [k for k in self.temporary_settings if pattern.search(k)]
+        else:
+            matches = [k for k in self.current if pattern.search(k)]
         for k in matches:
             self.remove(k)
 
