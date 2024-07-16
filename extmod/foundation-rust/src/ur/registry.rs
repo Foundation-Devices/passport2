@@ -113,6 +113,7 @@ impl<'a> From<&'a UR_HDKey> for HDKey<'a> {
 }
 
 /// Derived `hdkey`.
+#[derive(Debug)]
 #[repr(C)]
 pub struct UR_DerivedKey {
     /// `true` if this is a private key.
@@ -166,7 +167,7 @@ impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum UR_CoinType {
     BTC,
 }
@@ -180,7 +181,7 @@ impl From<UR_CoinType> for CoinType {
 }
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct UR_CoinInfo {
     pub coin_type: UR_CoinType,
     pub network: u64,
@@ -197,7 +198,7 @@ impl From<&UR_CoinInfo> for CoinInfo {
 
 /// Metadata for the complete or partial derivation path of a key.
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct UR_Keypath {
     /// The fingerprint of this key's direct ancestor.
     ///
