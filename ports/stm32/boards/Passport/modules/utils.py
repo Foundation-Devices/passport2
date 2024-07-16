@@ -1295,7 +1295,7 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True, check_ascii=True):
     # Check for leading or trailing whitespace
     if check_whitespace:
         if text[0] == ' ':
@@ -1309,7 +1309,7 @@ def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True):
     # print('text="{}"'.format(text))
     for ch in text:
         # print('ch="{}"'.format(ch))
-        if ord(ch) not in MSG_CHARSET:
+        if check_ascii and ord(ch) not in MSG_CHARSET:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
         if space_limit:
