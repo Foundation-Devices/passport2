@@ -178,7 +178,7 @@ def backup_menu():
     ]
 
 
-def key_item_menu():
+def seed_item_menu():
     from utils import toggle_key_hidden, is_key_hidden
 
     from flows import (
@@ -192,6 +192,25 @@ def key_item_menu():
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': 'ICON_HOURGLASS', 'label': 'Temporary Seed', 'flow': TemporarySeedFlow,
          'is_visible': lambda: not has_temporary_seed()},
+        {'icon': 'ICON_ERASE',
+         'label': 'Hide Key',
+         'action': lambda item, context: toggle_key_hidden(item, context),
+         'is_toggle': True,
+         'value': lambda context: is_key_hidden(context)},
+    ]
+
+
+def key_item_menu():
+    from utils import toggle_key_hidden, is_key_hidden
+
+    from flows import (
+        ViewDerivedKeyDetailsFlow,
+        RenameDerivedKeyFlow,
+        ExportDerivedKeyFlow)
+    return [
+        {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
+        {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': 'ICON_ERASE',
          'label': 'Hide Key',
          'action': lambda item, context: toggle_key_hidden(item, context),
@@ -260,7 +279,7 @@ def key_manager_menu():
 
             result.append({'icon': key_type['icon'],
                            'label': title,
-                           'submenu': key_item_menu,
+                           'submenu': seed_item_menu if key_type['words'] else key_item_menu,
                            'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
