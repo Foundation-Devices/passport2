@@ -39,7 +39,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb18c03d0db0247e147a21a6faafd5a7eb851c743db062de72018b6b7e8e4d16"
 dependencies = [
- "hex-conservative 0.2.0",
+ "hex-conservative 0.2.1",
 ]
 
 [[package]]
@@ -56,9 +56,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "cc"
-version = "1.0.98"
+version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41c270e7540d725e65ac7f1b212ac8ce349719624d7bcff99f8e2e488e8cf03f"
+checksum = "324c74f2155653c90b04f25b2a47a8a631360cb908f92a772695f430c7e31052"
 
 [[package]]
 name = "cfg-if"
@@ -102,9 +102,9 @@ checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
 
 [[package]]
 name = "either"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
+checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "embedded-hal"
@@ -142,9 +142,9 @@ checksum = "7e6bdea1eeaa5edb5355234d02f81c6dbdd4bc5146887990dd29a213029bbeae"
 
 [[package]]
 name = "foundation-ur"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a803ede27fdd585c226d4d70d3da984f5ed01efeafeed1a1eea8bc62e8c2e622"
+checksum = "71ead93a082dfa0a11c2bb43242a1cdc93b1e7976d768465b54a0703dbd3b003"
 dependencies = [
  "bitcoin_hashes 0.14.0",
  "crc",
@@ -157,9 +157,9 @@ dependencies = [
 
 [[package]]
 name = "foundation-urtypes"
-version = "0.3.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22a59d9988ac2826c9c49d02364b907ee6dfc2385ddf0dcbc8c76e43532fcf87"
+checksum = "e40662e96946962894b2ff376b848af3e8beb2939be091358dfe2df9db8eaa55"
 dependencies = [
  "foundation-arena",
  "heapless",
@@ -212,9 +212,9 @@ checksum = "212ab92002354b4819390025006c897e8140934349e8635c9b077f47b4dcbd20"
 
 [[package]]
 name = "hex-conservative"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1aa273bf451e37ed35ced41c71a5e2a4e29064afb104158f2514bcd71c2c986"
+checksum = "5313b072ce3c597065a808dbf612c4c8e8590bdbf8b579508bf7a762c5eae6cd"
 dependencies = [
  "arrayvec",
 ]
@@ -236,9 +236,9 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
 name = "minicbor"
-version = "0.24.0"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a1359d4b3ec786cdc1e44382c8c0e10965d95a173059590f62314c73be72969"
+checksum = "5f8e213c36148d828083ae01948eed271d03f95f7e72571fa242d78184029af2"
 dependencies = [
  "minicbor-derive",
 ]
@@ -335,9 +335,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.83"
+version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b33eb56c327dec362a9e55b3ad14f9d2f0904fb5a5b03b513ab5465399e9f43"
+checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
 ]
@@ -447,9 +447,9 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "syn"
-version = "2.0.65"
+version = "2.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2863d96a84c6439701d7a38f9de935ec562c8832cc55d1dde0f513b52fad106"
+checksum = "b146dcf730474b4bcd16c311627b31ede9ab149045db4d6088b3becaea046462"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -464,9 +464,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "uuid"
-version = "1.8.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
+checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 
 [[package]]
 name = "vcell"
