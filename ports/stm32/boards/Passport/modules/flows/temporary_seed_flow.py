@@ -40,7 +40,7 @@ class TemporarySeedFlow(Flow):
 
         settings.exit_temporary_mode()
         # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
-        await SuccessPage(text='Temporary seed cleared').show()
+        await SuccessPage(text='Temporary Seed Cleared').show()
 
         self.set_result(True)
         ui.full_cards_refresh()
@@ -67,7 +67,7 @@ class TemporarySeedFlow(Flow):
             self.set_result(False)
             return
 
-        (vals, error) = await spinner_task(text='Generating key',
+        (vals, error) = await spinner_task(text='Retrieving Key',
                                            task=self.key_type['task'],
                                            args=[self.key['index']])
         pk = vals['priv']
@@ -77,13 +77,13 @@ class TemporarySeedFlow(Flow):
             return
 
         settings.enter_temporary_mode()
-        (error,) = await spinner_task('Applying seed', save_seed_task, args=[pk])
+        (error,) = await spinner_task('Applying Seed', save_seed_task, args=[pk])
 
         if error is not None:
             self.set_result(None)
             return
 
-        await SuccessPage(text='Temporary seed applied.').show()
+        await SuccessPage(text='Temporary Seed Applied.').show()
 
         self.set_result(True)
         ui.full_cards_refresh()
