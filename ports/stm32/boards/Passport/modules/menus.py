@@ -4,7 +4,7 @@
 # menus.py - Menu configuration
 
 import lvgl as lv
-from utils import has_seed
+from utils import has_seed, has_temporary_seed
 # from pages import ColorPickerPage
 
 ########################################################################################
@@ -131,7 +131,7 @@ def postmix_menu():
 
 
 def plus_menu():
-    from utils import is_passphrase_active, has_temporary_seed, has_permanent_seed
+    from utils import is_passphrase_active, has_permanent_seed
     from flows import NewAccountFlow, ApplyPassphraseFlow, TemporarySeedFlow
 
     return [
@@ -171,7 +171,7 @@ def backup_menu():
     return [
         {'icon': 'ICON_BACKUP', 'label': 'Backup Now', 'flow': BackupFlow, 'is_visible': has_seed},
         {'icon': 'ICON_RETRY', 'label': 'Restore', 'flow': RestoreBackupFlow,
-         'args': {'refresh_cards_when_done': True}},
+         'args': {'refresh_cards_when_done': True}, 'is_visible': lambda: not has_temporary_seed()},
         {'icon': 'ICON_CIRCLE_CHECK', 'label': 'Verify Backup', 'flow': VerifyBackupFlow},
         {'icon': 'ICON_PIN', 'label': 'View Backup Code', 'flow': ViewBackupCodeFlow,
             'statusbar': {'title': 'BACKUP', 'icon': 'ICON_PIN'}, 'is_visible': has_seed}
@@ -179,7 +179,7 @@ def backup_menu():
 
 
 def key_item_menu():
-    from utils import toggle_key_hidden, is_key_hidden, has_temporary_seed
+    from utils import toggle_key_hidden, is_key_hidden
 
     from flows import (
         ViewDerivedKeyDetailsFlow,
@@ -391,7 +391,6 @@ def developer_pubkey_menu():
 
 def advanced_menu():
     from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow, ShowSecurityWordsSettingFlow
-    from utils import has_temporary_seed
 
     return [
         {'icon': 'ICON_SETTINGS', 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
