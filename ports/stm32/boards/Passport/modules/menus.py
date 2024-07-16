@@ -124,9 +124,7 @@ def postmix_menu():
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
-         'statusbar': {'title': 'LIST ADDRESSES'}},
+        {'icon': 'ICON_SETUP', 'label': 'Account Tools', 'submenu': account_tools},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
     ]
