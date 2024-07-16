@@ -464,7 +464,7 @@ STATIC mp_obj_t mod_foundation_ur_new_passport_response(size_t n_args,
     mp_get_buffer_raise(args[0].u_obj, &uuid, MP_BUFFER_READ);
     if (uuid.len != 16) {
         mp_raise_msg(&mp_type_ValueError,
-                    MP_ERROR_TEXT("uuid should be 33 bytes"));
+                    MP_ERROR_TEXT("uuid should be 16 bytes"));
     }
 
     GET_STR_DATA_LEN(args[1].u_obj, word1, word1_len);
