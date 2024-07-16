@@ -63,6 +63,13 @@ class ScanQRFlow(Flow):
             self.set_result(None)
             return
 
+        if result.is_unsupported():
+            await LongErrorPage(text="""Unsupported QR type.
+
+Check for updates to Passport and your software wallet.""").show()
+            self.set_result(None)
+            return
+
         if result.is_ur_too_big():
             self.set_result(Error.QR_TOO_LARGE)
             return

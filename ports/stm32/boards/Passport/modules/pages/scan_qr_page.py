@@ -151,6 +151,9 @@ class QRScanResult:
         self.num_frames = num_frames
         self.max_frames = max_frames
 
+    def is_unsupported(self):
+        return isinstance(self.error, ur.UnsupportedError)
+
     def is_failure(self):
         return self.error is not None
 
