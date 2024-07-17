@@ -10,7 +10,7 @@ from utils import spinner_task, stylize_address
 from data_codecs.qr_type import QRType
 import microns
 from wallets.utils import get_addr_type_from_deriv
-from public_constants import AF_CLASSIC
+from public_constants import AF_CLASSIC, MARGIN_FOR_ADDRESSES
 import stash
 from ubinascii import b2a_base64
 
@@ -70,7 +70,9 @@ class SignElectrumMessageFlow(Flow):
             return
 
         result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
-                                        right_micron=microns.Sign).show()
+                                        right_micron=microns.Sign,
+                                        margins=MARGIN_FOR_ADDRESSES,
+                                        top_margin=8).show()
 
         if not result:
             self.set_result(False)
