@@ -61,9 +61,7 @@ How would you like to proceed?"
             return  # Run it again with no max frames if the user wants
 
         if result == Error.QR_TOO_LARGE:
-            await ErrorPage("This transaction is too large for QR signing. \
-\nSpend fewer coins or sign via microSD card.").show()
-
+            await ErrorPage("QR code is too large, please sign with microSD.").show()
             self.set_result(False)
             return
 
