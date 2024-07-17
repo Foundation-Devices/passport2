@@ -4,7 +4,7 @@
 # sign_electrum_message_flow.py - Sign an electrum standard message via QR
 
 from flows import Flow, ScanQRFlow
-from pages import ErrorPage, LongTextPage, QuestionPage, ShowQRPage
+from pages import ErrorPage, LongTextPage, LongQuestionPage, ShowQRPage
 from tasks import sign_text_file_task, validate_electrum_message_task
 from utils import spinner_task, stylize_address
 from data_codecs.qr_type import QRType
@@ -69,8 +69,8 @@ class SignElectrumMessageFlow(Flow):
             self.set_result(False)
             return
 
-        result = await QuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
-                                    right_micron=microns.Sign).show()
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
+                                        right_micron=microns.Sign).show()
 
         if not result:
             self.set_result(False)
