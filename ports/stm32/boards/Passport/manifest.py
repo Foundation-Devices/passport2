@@ -287,7 +287,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'tasks/sign_text_file_task.py',
         'tasks/validate_electrum_message_task.py',
         'tasks/validate_psbt_task.py',
-        'tasks/verify_backup_task.py'))
+        'tasks/verify_backup_task.py',
+        'tasks/verify_firmware_signature_task.py'))
 
 # Translations
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
