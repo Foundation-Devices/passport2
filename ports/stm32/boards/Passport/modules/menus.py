@@ -283,7 +283,8 @@ def key_manager_menu():
                            'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
-                           'args': {'context': key, 'dynamic': key_type.get('menu', None)},
+                           'args': {'context': key, 'dynamic': key_type.get('menu', None),
+                                    'item_vertical_padding': 9},
                            'auto_card_header': False})
 
     result.append({'icon': 'ICON_ONE_KEY', 'label': 'New Key', 'submenu': new_key_menu})
