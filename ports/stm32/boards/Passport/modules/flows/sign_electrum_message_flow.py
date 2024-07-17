@@ -62,7 +62,7 @@ class SignElectrumMessageFlow(Flow):
         self.address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
-                                    text=self.message,
+                                    text=('\n' + self.message),
                                     card_header={'title': 'Message'}).show()
 
         if not result:
