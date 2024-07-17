@@ -14,7 +14,8 @@ from utils import derive_icon
 
 
 class MenuItem(View):
-    def __init__(self, icon='', label='', is_toggle=False, value=False, desc=None, context=None):
+    def __init__(self, icon='', label='', is_toggle=False, value=False, desc=None, context=None,
+                 vertical_padding=None):
         from views import Switch
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
@@ -24,13 +25,17 @@ class MenuItem(View):
         self.value = value
         self.desc = desc
         self.context = context
+        self.vertical_padding = (vertical_padding if vertical_padding is not None else 10)
 
         # Default style
         with Stylize(self) as default:
             default.bg_transparent()
             default.text_color(NORMAL_TEXT)
             right_pad = 8 if self.is_toggle else 0
-            default.pad(top=10, right=right_pad, bottom=10, left=10)
+            default.pad(top=self.vertical_padding,
+                        right=right_pad,
+                        bottom=self.vertical_padding,
+                        left=10)
             default.flex_align(track=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER)
             default.img_recolor(NORMAL_TEXT)
 

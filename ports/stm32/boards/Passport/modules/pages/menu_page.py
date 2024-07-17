@@ -23,7 +23,8 @@ class MenuPage(Page):
                  card_header=None,
                  statusbar=None,
                  left_micron=None,
-                 right_micron=None):
+                 right_micron=None,
+                 item_vertical_padding=None):
         super().__init__(card_header=card_header,
                          statusbar=statusbar,
                          left_micron=left_micron,
@@ -35,6 +36,7 @@ class MenuPage(Page):
         self.focus_idx = focus_idx
         self.is_top_level = is_top_level
         self.context = context
+        self.item_vertical_padding = item_vertical_padding
 
         with Stylize(self) as default:
             default.flex_fill()
@@ -67,7 +69,8 @@ class MenuPage(Page):
                 is_toggle=item_desc.get('is_toggle'),
                 value=item_desc.get('value'),
                 desc=item_desc,
-                context=self.context)
+                context=self.context,
+                vertical_padding=self.item_vertical_padding)
             is_visible = item_desc.get('is_visible')
             if is_visible is None or (callable(is_visible) and is_visible()):
                 self.visible_items.append(item)
