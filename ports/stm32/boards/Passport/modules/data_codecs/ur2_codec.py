@@ -31,17 +31,15 @@ class UR2Decoder(DataDecoder):
             if ur.decoder_is_empty():
                 try:
                     self.value = ur.decode_single_part(data)
-                except ur.UnsupportedError:
-                    raise DecodeError("""\
-Please check for updates to Passport and your software wallet.""")
+                except ur.UnsupportedError as exc:
+                    raise exc
                 except ur.OtherError as exc:
                     raise DecodeError(str(exc))
             else:
                 raise DecodeError("""\
 Received single-part UR when multi-part reception was already in place""")
-        except ur.UnsupportedError:
-            raise DecodeError("""\
-Please check for updates to Passport and your software wallet.""")
+        except ur.UnsupportedError as exc:
+            raise exc
         except ur.TooBigError as exc:
             raise exc  # Re-raise as ScanQRResult has a method to check it.
         except ur.OtherError as exc:
@@ -65,9 +63,8 @@ Please check for updates to Passport and your software wallet.""")
                 self.value = ur.decoder_decode_message()
         except ur.OtherError as exc:
             raise DecodeError(str(exc))
-        except ur.UnsupportedError:
-            raise DecodeError("""\
-Please check for updates to Passport and your software wallet.""")
+        except ur.UnsupportedError as exc:
+            raise exc
 
         return self.value
 
