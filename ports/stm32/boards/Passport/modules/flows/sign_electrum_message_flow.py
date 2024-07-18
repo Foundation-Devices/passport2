@@ -4,13 +4,13 @@
 # sign_electrum_message_flow.py - Sign an electrum standard message via QR
 
 from flows import Flow, ScanQRFlow
-from pages import ErrorPage, LongTextPage, QuestionPage, ShowQRPage
+from pages import ErrorPage, LongTextPage, LongQuestionPage, ShowQRPage
 from tasks import sign_text_file_task, validate_electrum_message_task
 from utils import spinner_task, stylize_address
 from data_codecs.qr_type import QRType
 import microns
 from wallets.utils import get_addr_type_from_deriv
-from public_constants import AF_CLASSIC
+from public_constants import AF_CLASSIC, MARGIN_FOR_ADDRESSES
 import stash
 from ubinascii import b2a_base64
 
@@ -69,8 +69,10 @@ class SignElectrumMessageFlow(Flow):
             self.set_result(False)
             return
 
-        result = await QuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
-                                    right_micron=microns.Sign).show()
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
+                                        right_micron=microns.Sign,
+                                        margins=MARGIN_FOR_ADDRESSES,
+                                        top_margin=8).show()
 
         if not result:
             self.set_result(False)
