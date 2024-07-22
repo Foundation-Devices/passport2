@@ -7,7 +7,6 @@
 #else
 #include "lvgl/lvgl.h"
 #endif
-
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
@@ -18,7 +17,7 @@
 
 const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_ICON_HOURGLASS_BACKGROUND uint8_t ICON_HOURGLASS_BACKGROUND_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
-  0xfe, 0xfe, 0xfe, 0xff, 	/*Color of index 1*/
+  0xff, 0xff, 0xff, 0xff, 	/*Color of index 1*/
 
   0x00, 0x00, 0x00,
   0x00, 0x00, 0x00,
