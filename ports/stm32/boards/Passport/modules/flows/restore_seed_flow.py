@@ -49,10 +49,12 @@ class RestoreSeedFlow(Flow):
             self.set_result(False)
             return
 
-        if permanent:
-            self.goto(self.choose_restore_method)
-        else:
+        self.temporary = not permanent
+        if self.temporary:
+            settings.enter_temporary_mode()
             self.goto(self.explain_temporary)
+        else:
+            self.goto(self.choose_restore_method)
 
     async def explain_temporary(self):
         from pages import InfoPage
@@ -66,6 +68,7 @@ class RestoreSeedFlow(Flow):
 
         if not result:
             if not self.back():
+                settings.exit_temporary_mode()
                 self.set_result(None)
             return
 
