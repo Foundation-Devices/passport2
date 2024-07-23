@@ -13,7 +13,7 @@ from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class BackupFlow(Flow):
-    def __init__(self, initial_backup=False):
+    def __init__(self, initial_backup=False, left_micron=microns.Back):
         from common import settings
         super().__init__(initial_state=self.show_intro, name='BackupFlow')
         self.backup_quiz_passed = settings.get('backup_quiz', False)
@@ -21,6 +21,7 @@ class BackupFlow(Flow):
 
         self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
         self.initial_backup = initial_backup
+        self.first_left_micron = left_micron
 
     async def show_intro(self):
         from pages import InfoPage
@@ -42,7 +43,7 @@ class BackupFlow(Flow):
         result = await InfoPage(
             icon=lv.LARGE_ICON_BACKUP,
             text=msgs,
-            left_micron=microns.Back,
+            left_micron=self.first_left_micron,
             right_micron=microns.Forward).show()
 
         if result:
