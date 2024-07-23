@@ -107,14 +107,11 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
         await on_done(Error.CORRUPT_BACKUP_FILE)
         return
 
-    if settings.temporary_mode:
-        settings.set_volatile('temporary_seed', raw)
-    else:
-        # Set the secret into the Secure Element
-        pa.change(new_secret=raw)
+    # Set the secret into the Secure Element
+    pa.change(new_secret=raw)
 
-        # Force the right chain and update XFP & XPUB
-        await pa.new_main_secret(raw, chain)
+    # Force the right chain and update XFP & XPUB
+    await pa.new_main_secret(raw, chain)
 
     # Finally, restore the settings
     for idx, k in enumerate(vals):
