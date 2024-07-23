@@ -83,7 +83,7 @@ class TemporarySeedFlow(Flow):
             self.set_result(None)
             return
 
-        await SuccessPage(text='Temporary Seed Applied.').show()
+        await SuccessPage(text='Temporary Seed Applied').show()
 
         self.set_result(True)
         ui.full_cards_refresh()

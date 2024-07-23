@@ -255,7 +255,7 @@ class UI():
                 # print('account[{}]={}'.format(account, i))
 
                 account_card = {
-                    'right_icon': 'ICON_BITCOIN' if not common.settings.temporary_mode else 'ICON_SEED',
+                    'right_icon': 'ICON_BITCOIN' if not common.settings.temporary_mode else 'ICON_HOURGLASS',
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': 'ICON_FOLDER', 'fg_color': get_account_fg(account)},
