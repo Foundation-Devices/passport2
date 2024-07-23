@@ -17,6 +17,12 @@ from common import settings
 class RestoreSeedFlow(Flow):
     def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False,
                  temporary=False):
+        initial_state = self.choose_temporary
+        if temporary:
+            initial_state = self.explain_temporary
+
+        super().__init__(initial_state=initial_state, name='RestoreSeedFlow')
+
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
         self.seed_length = None
@@ -25,14 +31,10 @@ class RestoreSeedFlow(Flow):
         self.seed_words = []
         self.full_backup = full_backup
         self.autobackup = autobackup
-        self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
         self.temporary = temporary
 
-        initial_state = self.choose_temporary
-        if self.temporary:
-            initial_state = self.explain_temporary
-
-        super().__init__(initial_state=initial_state, name='RestoreSeedFlow')
+        # This must be after super().__init__, so it isn't set to null
+        self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
 
     async def choose_temporary(self):
         from pages import ChooserPage
@@ -228,7 +230,7 @@ class RestoreSeedFlow(Flow):
             text = 'New seed imported and {}'.format('applied' if self.temporary else 'saved')
             await SuccessPage(text=text).show()
             if self.full_backup:
-                await BackupFlow(initial_backup=True).run()
+                await BackupFlow(initial_backup=True, left_micron=microns.Cancel).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
