@@ -98,7 +98,7 @@ sign version="1.0.0" screen="mono" dev="" ext="": (build screen dev ext)
     fi
 
     echo -e "\nAdding user signature...\n"
-    cosign -t {{lowercase(screen)}} -f $COSIGN_FILEPATH -k {{cosign_keypath}} -v {{version}}
+    cosign -d -t {{lowercase(screen)}} -f $COSIGN_FILEPATH -k {{cosign_keypath}} -v {{version}}
 
     # Remove .bin and append the signed filename string
     if [ {{screen}} == "color" ]
