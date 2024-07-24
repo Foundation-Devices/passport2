@@ -99,14 +99,17 @@ class RestoreBackupFlow(Flow):
         result = await PredictiveTextInputPage(
             word_list='bytewords',
             total_words=NUM_BACKUP_PASSWORD_WORDS,
-            initial_words=self.backup_password_words).show()
+            initial_words=self.backup_password_words,
+            initial_prefixes=self.backup_password_prefixes).show()
+
+        (backup_password_words, self.backup_password_prefixes, _) = result
         if result is None:
             cancel = await QuestionPage(text='Cancel password entry? ' +
                                         'All progress will be lost.').show()
             if cancel:
                 self.back()
         else:
-            self.backup_password_words, self.backup_password_prefixes = result
+            self.backup_password_words = backup_password_words
             self.decryption_password = (' ').join(self.backup_password_words)
             # print('6 words: decryption_password={}'.format(self.decryption_password))
             self.goto(self.do_restore)

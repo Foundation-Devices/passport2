@@ -29,8 +29,8 @@ class PredictiveTextInputPage(Page):
                  total_words=24,
                  card_header=None,
                  statusbar=None,
-                 initial_words=[],
-                 initial_prefixes=[],
+                 initial_words=None,
+                 initial_prefixes=None,
                  left_micron=microns.Back,
                  right_micron=microns.Forward,
                  start_index=None):
@@ -45,8 +45,8 @@ class PredictiveTextInputPage(Page):
         self.total_words = total_words
         self.word_idx = start_index if (start_index is not None and start_index < self.total_words) else 0
         self.prediction_idx = 0
-        self.selected_words = initial_words
-        self.prefixes = initial_prefixes
+        self.selected_words = initial_words or []
+        self.prefixes = initial_prefixes or []
         self.predictions = []
 
         with Stylize(self) as default:
@@ -97,7 +97,6 @@ class PredictiveTextInputPage(Page):
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
             self.predictions = get_words_matching_prefix(prefix, max=10, word_list=self.word_list)
-            print("len(predictions): {}".format(len(self.predictions)))
         elif self.word_idx == self.total_words - 1:
             self.predictions = [RANDOM_WORD_STRING]
         else:
@@ -208,7 +207,7 @@ class PredictiveTextInputPage(Page):
                 self.update_title()
                 self.update_predictions()
             else:
-                self.set_result(None)
+                self.set_result((None, self.prefixes, False))
 
     def attach(self, group):
         super().attach(group)

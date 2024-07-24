@@ -21,6 +21,7 @@ class RestoreSeedFlow(Flow):
         self.validate_text = None
         self.index = 0
         self.seed_words = []
+        self.prefixes = []
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
@@ -103,9 +104,12 @@ class RestoreSeedFlow(Flow):
             word_list='bip39',
             total_words=self.seed_length,
             initial_words=self.seed_words,
+            initial_prefixes=self.prefixes,
             start_index=self.index).show()
 
-        if result is None:
+        seed_words, self.prefixes, get_last_word = result
+
+        if seed_words is None:
             cancel = await QuestionPage(
                 text='Cancel seed entry? All progress will be lost.').show()
 
@@ -116,8 +120,7 @@ class RestoreSeedFlow(Flow):
             self.index = 0
             return
 
-        self.seed_words, self.prefixes, get_last_word = result
-
+        self.seed_words = seed_words
         if get_last_word:
 
             last_word = await RandomFinalWordFlow(self.seed_words).run()
