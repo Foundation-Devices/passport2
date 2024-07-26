@@ -98,8 +98,10 @@ class UI():
         self.active_screen.set_bg_color(bg_color)
 
     def set_cards(self, card_descs, active_idx=0):
-        assert(active_idx >= 0)
-        assert(active_idx < len(card_descs))
+        # An index out of bounds could occur when the account/passphrase/seed changes
+        # and the active_idx isnt updated
+        if active_idx < 0 or active_idx > len(card_descs):
+            active_idx = 1
 
         # print('set_cards: len={}'.format(len(card_descs)))
         self.card_descs = card_descs
@@ -336,13 +338,13 @@ class UI():
             self.next_card()
 
     # Full refresh
-    def full_cards_refresh(self):
+    def full_cards_refresh(self, go_to_account_0=False):
         from utils import start_task
 
         self.update_cards()
 
         async def restart_main_task():
-            self.start_card_task(card_idx=self.active_card_idx)
+            self.start_card_task(card_idx=(1 if go_to_account_0 else self.active_card_idx))
 
         start_task(restart_main_task())
 

@@ -41,10 +41,7 @@ class TemporarySeedFlow(Flow):
         settings.exit_temporary_mode()
         # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
         await SuccessPage(text='Temporary Seed Cleared').show()
-
-        self.set_result(True)
-        ui.full_cards_refresh()
-        await self.wait_to_die()
+        await self.finalize()
 
     async def use_child_seed(self):
         from derived_key import get_key_type_from_tn
@@ -84,7 +81,9 @@ class TemporarySeedFlow(Flow):
             return
 
         await SuccessPage(text='Temporary Seed Applied').show()
+        await self.finalize()
 
+    async def finalize(self):
         self.set_result(True)
-        ui.full_cards_refresh()
+        ui.full_cards_refresh(go_to_account_0=True)
         await self.wait_to_die()
