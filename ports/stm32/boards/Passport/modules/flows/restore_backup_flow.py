@@ -103,10 +103,11 @@ class RestoreBackupFlow(Flow):
             initial_prefixes=self.backup_password_prefixes).show()
 
         (backup_password_words, self.backup_password_prefixes, _) = result
-        if result is None:
+        if backup_password_words is None:
             cancel = await QuestionPage(text='Cancel password entry? ' +
                                         'All progress will be lost.').show()
             if cancel:
+                self.backup_password_prefixes = []
                 self.back()
         else:
             self.backup_password_words = backup_password_words
