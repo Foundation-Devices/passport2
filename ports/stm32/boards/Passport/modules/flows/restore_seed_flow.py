@@ -10,11 +10,19 @@ from pages import ErrorPage, PredictiveTextInputPage, SuccessPage, QuestionPage
 from utils import spinner_task, insufficient_randomness
 from tasks import save_seed_task
 from public_constants import SEED_LENGTHS
+import lvgl as lv
+from common import settings
 
 
 class RestoreSeedFlow(Flow):
-    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False):
-        super().__init__(initial_state=self.choose_restore_method, name='RestoreSeedFlow')
+    def __init__(self, refresh_cards_when_done=False, autobackup=True, full_backup=False,
+                 temporary=False):
+        initial_state = self.choose_temporary
+        if temporary:
+            initial_state = self.explain_temporary
+
+        super().__init__(initial_state=initial_state, name='RestoreSeedFlow')
+
         self.refresh_cards_when_done = refresh_cards_when_done
         self.seed_format = None
         self.seed_length = None
@@ -24,7 +32,50 @@ class RestoreSeedFlow(Flow):
         self.prefixes = []
         self.full_backup = full_backup
         self.autobackup = autobackup
+        self.temporary = temporary
+
+        # This must be after super().__init__, so it isn't set to null
         self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
+
+    async def choose_temporary(self):
+        from pages import ChooserPage
+
+        text = 'Save this seed, or import temporarily?'
+        options = [{'label': 'Save Seed', 'value': True},
+                   {'label': 'Temporary Seed', 'value': False}]
+
+        permanent = await ChooserPage(text=text,
+                                      icon=lv.LARGE_ICON_QUESTION,
+                                      options=options,
+                                      icon_pad=-6).show()
+        if permanent is None:
+            self.set_result(False)
+            return
+
+        self.temporary = not permanent
+        if self.temporary:
+            settings.enter_temporary_mode()
+            self.goto(self.explain_temporary)
+        else:
+            self.goto(self.choose_restore_method)
+
+    async def explain_temporary(self):
+        from pages import InfoPage
+        import microns
+
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_SEED,
+            text='Temporary seeds are not saved to Passport. Ensure you have a robust backup in place.',
+            left_micron=microns.Back,
+            right_micron=microns.Forward).show()
+
+        if not result:
+            if not self.back():
+                settings.exit_temporary_mode()
+                self.set_result(None)
+            return
+
+        self.goto(self.choose_restore_method)
 
     async def choose_restore_method(self):
         from pages import ChooserPage
@@ -38,7 +89,8 @@ class RestoreSeedFlow(Flow):
         choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
 
         if choice is None:
-            self.set_result(False)
+            if not self.back():
+                self.set_result(False)
             return
 
         self.seed_format = choice
@@ -132,7 +184,9 @@ class RestoreSeedFlow(Flow):
             self.seed_words.append(last_word)
 
         if insufficient_randomness(self.seed_words):
-            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\nSave seed and continue?"
+            save_wording = 'Save' if not settings.temporary_mode else 'Import'
+            text = "This seed contains 3 or more repeat words and may put funds at risk.\n\n{} seed and continue?" \
+                .format(save_wording)
             result2 = await ErrorPage(text=text,
                                       left_micron=microns.Cancel).show()
 
@@ -171,13 +225,15 @@ class RestoreSeedFlow(Flow):
         from utils import get_seed_from_words
 
         entropy = get_seed_from_words(self.mnemonic)
-        (error,) = await spinner_task('Saving seed', save_seed_task, args=[entropy])
+        text = '{} seed'.format('Applying' if self.temporary else 'Saving')
+        (error,) = await spinner_task(text, save_seed_task, args=[entropy])
         if error is None:
             import common
 
-            await SuccessPage(text='New seed imported and saved.').show()
+            text = 'New seed imported and {}'.format('applied' if self.temporary else 'saved')
+            await SuccessPage(text=text).show()
             if self.full_backup:
-                await BackupFlow(initial_backup=True).run()
+                await BackupFlow(initial_backup=True, left_micron=microns.Cancel).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 
@@ -188,5 +244,6 @@ class RestoreSeedFlow(Flow):
             else:
                 self.set_result(True)
         else:
-            await ErrorPage('Unable to save seed.').show()
+            text = 'Unable to {} seed'.format('apply' if self.temporary else 'save')
+            await ErrorPage(text).show()
             self.set_result(False)

@@ -98,8 +98,10 @@ class UI():
         self.active_screen.set_bg_color(bg_color)
 
     def set_cards(self, card_descs, active_idx=0):
-        assert(active_idx >= 0)
-        assert(active_idx < len(card_descs))
+        # An index out of bounds could occur when the account/passphrase/seed changes
+        # and the active_idx isnt updated
+        if active_idx < 0 or active_idx > len(card_descs):
+            active_idx = 1
 
         # print('set_cards: len={}'.format(len(card_descs)))
         self.card_descs = card_descs
@@ -255,7 +257,7 @@ class UI():
                 # print('account[{}]={}'.format(account, i))
 
                 account_card = {
-                    'right_icon': 'ICON_BITCOIN',
+                    'right_icon': 'ICON_BITCOIN' if not common.settings.temporary_mode else 'ICON_HOURGLASS',
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': 'ICON_FOLDER', 'fg_color': get_account_fg(account)},
@@ -336,10 +338,11 @@ class UI():
             self.next_card()
 
     # Full refresh
-    def full_cards_refresh(self):
+    def full_cards_refresh(self, go_to_account_0=False, go_to_plus_menu=False):
         from utils import start_task
 
-        self.update_cards()
+        self.update_cards(is_init=go_to_account_0,
+                          stay_on_last_card=go_to_plus_menu)
 
         async def restart_main_task():
             self.start_card_task(card_idx=self.active_card_idx)
