@@ -81,9 +81,9 @@ class TemporarySeedFlow(Flow):
             return
 
         await SuccessPage(text='Temporary Seed Applied').show()
-        await self.finalize()
+        await self.finalize(child=True)
 
-    async def finalize(self):
+    async def finalize(self, child=False):
         self.set_result(True)
-        ui.full_cards_refresh(go_to_account_0=True)
+        ui.full_cards_refresh(go_to_account_0=child, go_to_plus_menu=(not child))
         await self.wait_to_die()

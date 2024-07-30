@@ -338,13 +338,14 @@ class UI():
             self.next_card()
 
     # Full refresh
-    def full_cards_refresh(self, go_to_account_0=False):
+    def full_cards_refresh(self, go_to_account_0=False, go_to_plus_menu=False):
         from utils import start_task
 
-        self.update_cards()
+        self.update_cards(is_init=go_to_account_0,
+                          stay_on_last_card=go_to_plus_menu)
 
         async def restart_main_task():
-            self.start_card_task(card_idx=(1 if go_to_account_0 else self.active_card_idx))
+            self.start_card_task(card_idx=self.active_card_idx)
 
         start_task(restart_main_task())
 
