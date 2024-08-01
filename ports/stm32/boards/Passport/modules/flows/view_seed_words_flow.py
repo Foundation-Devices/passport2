@@ -230,8 +230,9 @@ class ViewSeedWordsFlow(Flow):
 
     async def show_passphrase(self):
         import stash
+        from utils import is_passphrase_active
         from pages import InfoPage
 
-        if stash.bip39_passphrase != '' and not self.external_key:
-            await InfoPage(text='Passphrase: {}'.format(stash.bip39_passphrase)).show()
+        if is_passphrase_active() and not self.external_key:
+            await InfoPage(text='Passphrase: {}'.format(stash.get_passphrase())).show()
         self.set_result(True)

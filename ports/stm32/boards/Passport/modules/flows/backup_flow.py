@@ -25,8 +25,7 @@ class BackupFlow(Flow):
 
     async def show_intro(self):
         from pages import InfoPage
-        from utils import recolor
-        import stash
+        from utils import recolor, is_passphrase_active
 
         if self.backup_quiz_passed:
             msgs = ['Passport is about to create an updated microSD backup.',
@@ -37,7 +36,7 @@ class BackupFlow(Flow):
                         recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
                     'We recommend writing down the Backup Code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
-        if stash.bip39_passphrase != '':
+        if is_passphrase_active():
             msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.')
 
         result = await InfoPage(

@@ -12,7 +12,7 @@ class ApplyPassphraseFlow(Flow):
 
         # Caller wants to set this passphrase
         self.attempted = False
-        self.prev_passphrase = stash.bip39_passphrase
+        self.prev_passphrase = stash.get_passphrase()
         self.passphrase = passphrase
         self.msg = 'Apply'
         if self.passphrase is not None:
