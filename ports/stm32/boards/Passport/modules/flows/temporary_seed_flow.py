@@ -36,10 +36,16 @@ class TemporarySeedFlow(Flow):
     async def clear_seed(self):
         from utils import spinner_task, start_task
         from tasks import delay_task
-        from pages import SuccessPage
+        from pages import SuccessPage, QuestionPage
+
+        result = await QuestionPage(text='Clear Temporary Seed?').show()
+
+        if not result:
+            # Setting result to false exits temporary mode
+            self.set_result(True)
+            return
 
         settings.exit_temporary_mode()
-        # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
         await SuccessPage(text='Temporary Seed Cleared').show()
         await self.finalize()
 
