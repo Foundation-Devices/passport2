@@ -34,11 +34,16 @@ class TemporarySeedFlow(Flow):
         self.set_result(result)
 
     async def clear_seed(self):
-        from utils import spinner_task, start_task
+        from utils import spinner_task, start_task, is_passphrase_active
         from tasks import delay_task
         from pages import SuccessPage, QuestionPage
 
-        result = await QuestionPage(text='Clear Temporary Seed?').show()
+        if is_passphrase_active():
+            text = 'Clear temporary seed? The passphrase applied to it will also be removed.'
+        else:
+            text = 'Clear Temporary Seed?'
+
+        result = await QuestionPage(text=text).show()
 
         if not result:
             # Setting result to false exits temporary mode
