@@ -71,7 +71,6 @@ class RestoreSeedFlow(Flow):
 
         if not result:
             if not self.back():
-                settings.exit_temporary_mode()
                 self.set_result(None)
             return
 
@@ -247,3 +246,8 @@ class RestoreSeedFlow(Flow):
             text = 'Unable to {} seed'.format('apply' if self.temporary else 'save')
             await ErrorPage(text).show()
             self.set_result(False)
+
+    def set_result(self, result, forget_state=True):
+        if not result:
+            settings.exit_temporary_mode()
+        super().set_result(result, forget_state)
