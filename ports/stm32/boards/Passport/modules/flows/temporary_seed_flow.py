@@ -41,7 +41,7 @@ class TemporarySeedFlow(Flow):
         if is_passphrase_active():
             text = 'Clear temporary seed? The passphrase applied to it will also be removed.'
         else:
-            text = 'Clear Temporary Seed?'
+            text = 'Clear temporary seed?'
 
         result = await QuestionPage(text=text).show()
 
@@ -51,7 +51,7 @@ class TemporarySeedFlow(Flow):
             return
 
         settings.exit_temporary_mode()
-        await SuccessPage(text='Temporary Seed Cleared').show()
+        await SuccessPage(text='Temporary seed cleared').show()
         await self.finalize()
 
     async def use_child_seed(self):
@@ -75,7 +75,7 @@ class TemporarySeedFlow(Flow):
             self.set_result(False)
             return
 
-        (vals, error) = await spinner_task(text='Retrieving Key',
+        (vals, error) = await spinner_task(text='Retrieving key',
                                            task=self.key_type['task'],
                                            args=[self.key['index']])
         pk = vals['priv']
@@ -85,13 +85,13 @@ class TemporarySeedFlow(Flow):
             return
 
         settings.enter_temporary_mode()
-        (error,) = await spinner_task('Applying Seed', save_seed_task, args=[pk])
+        (error,) = await spinner_task('Applying seed', save_seed_task, args=[pk])
 
         if error is not None:
             self.set_result(None)
             return
 
-        await SuccessPage(text='Temporary Seed Applied').show()
+        await SuccessPage(text='Temporary seed applied').show()
         await self.finalize(child=True)
 
     async def finalize(self, child=False):
