@@ -39,7 +39,7 @@ class TemporarySeedFlow(Flow):
         from pages import SuccessPage, QuestionPage
 
         if is_passphrase_active():
-            text = 'Clear temporary seed? The passphrase applied to it will also be removed.'
+            text = 'Clear temporary seed? The current passphrase will be removed.'
         else:
             text = 'Clear temporary seed?'
 
