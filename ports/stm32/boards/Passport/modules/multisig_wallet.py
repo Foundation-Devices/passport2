@@ -726,7 +726,7 @@ class MultisigWallet:
         unique_id = b2a_hex(unique_id).decode('utf-8')
 
         # TODO: why does this band-aid "multisig object is not iterable" error?
-        passphrase = stash.bip39_passphrase
+        passphrase = stash.get_passphrase()
         if passphrase != '':
             await spinner_task('Checking Multisig Config', apply_passphrase_task, args=[passphrase])
 

@@ -34,13 +34,24 @@ class TemporarySeedFlow(Flow):
         self.set_result(result)
 
     async def clear_seed(self):
-        from utils import spinner_task, start_task
+        from utils import spinner_task, start_task, is_passphrase_active
         from tasks import delay_task
-        from pages import SuccessPage
+        from pages import SuccessPage, QuestionPage
+
+        if is_passphrase_active():
+            text = 'Clear temporary seed? The current passphrase will be removed.'
+        else:
+            text = 'Clear temporary seed?'
+
+        result = await QuestionPage(text=text).show()
+
+        if not result:
+            # Setting result to false exits temporary mode
+            self.set_result(True)
+            return
 
         settings.exit_temporary_mode()
-        # await spinner_task('Clearing temporary seed', delay_task, args=[1000, False])
-        await SuccessPage(text='Temporary Seed Cleared').show()
+        await SuccessPage(text='Temporary seed cleared').show()
         await self.finalize()
 
     async def use_child_seed(self):
@@ -64,7 +75,7 @@ class TemporarySeedFlow(Flow):
             self.set_result(False)
             return
 
-        (vals, error) = await spinner_task(text='Retrieving Key',
+        (vals, error) = await spinner_task(text='Retrieving key',
                                            task=self.key_type['task'],
                                            args=[self.key['index']])
         pk = vals['priv']
@@ -74,13 +85,13 @@ class TemporarySeedFlow(Flow):
             return
 
         settings.enter_temporary_mode()
-        (error,) = await spinner_task('Applying Seed', save_seed_task, args=[pk])
+        (error,) = await spinner_task('Applying seed', save_seed_task, args=[pk])
 
         if error is not None:
             self.set_result(None)
             return
 
-        await SuccessPage(text='Temporary Seed Applied').show()
+        await SuccessPage(text='Temporary seed applied').show()
         await self.finalize(child=True)
 
     async def finalize(self, child=False):

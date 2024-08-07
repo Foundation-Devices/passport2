@@ -202,7 +202,11 @@ class UI():
                      is_init=False,
                      stay_on_last_card=False):
         from flows import MenuFlow
-        from utils import get_accounts_by_xfp, has_seed, is_extension_enabled, escape_text
+        from utils import (get_accounts_by_xfp,
+                           has_seed,
+                           is_extension_enabled,
+                           escape_text,
+                           is_passphrase_active)
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
         from constants import DEFAULT_ACCOUNT_ENTRY
@@ -268,7 +272,7 @@ class UI():
                     'args': {'menu': account_menu, 'is_top_level': True},
                     'account': account
                 }
-                if len(stash.bip39_passphrase) > 0:
+                if is_passphrase_active():
                     account_card['icon'] = 'ICON_PASSPHRASE'
 
                 card_descs.append(account_card)
@@ -277,7 +281,7 @@ class UI():
 
             for extension in supported_extensions:
                 if is_extension_enabled(extension['name']):
-                    if len(stash.bip39_passphrase) > 0:
+                    if is_passphrase_active():
                         extension['card']['icon'] = 'ICON_PASSPHRASE'
                     else:
                         extension['card']['icon'] = None

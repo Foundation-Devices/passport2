@@ -49,9 +49,9 @@ Would you like to view them now?'''
         import lvgl as lv
         import microns
         from pages import InfoPage
-        import stash
+        from utils import is_passphrase_active
 
-        if self.mention_passphrase and stash.bip39_passphrase:
+        if self.mention_passphrase and is_passphrase_active():
             text = 'Passport is about to {} and passphrase'.format(self.action_text)
         else:
             text = 'Passport is about to {}'.format(self.action_text)

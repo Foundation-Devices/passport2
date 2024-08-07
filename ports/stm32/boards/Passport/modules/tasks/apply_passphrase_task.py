@@ -12,22 +12,22 @@
 from errors import Error
 import stash
 import foundation
-from utils import bytes_to_hex_str
+from utils import bytes_to_hex_str, is_passphrase_active
 import common
 
 
 async def apply_passphrase_task(on_done, passphrase):
-    if stash.bip39_passphrase == '':
+    if not is_passphrase_active():
         # This checks if the root_xfp has been generated and saved,
         # If not, it's saved to settings for future use
         common.settings.get('root_xfp')
 
-    stash.bip39_passphrase = passphrase
+    stash.set_passphrase(passphrase)
 
     # Create a hash from the passphrase
-    if len(stash.bip39_passphrase) > 0:
+    if len(passphrase) > 0:
         digest = bytearray(32)
-        foundation.sha256(stash.bip39_passphrase, digest)
+        foundation.sha256(passphrase, digest)
         digest_hex = bytes_to_hex_str(digest)
         stash.bip39_hash = digest_hex[:8]  # Take first 8 characters (32-bits)
         # print('stash.bip39_hash={}'.format(stash.bip39_hash))
