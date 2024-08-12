@@ -268,6 +268,7 @@ class psbtProxy:
                 # update in place
                 self.subpaths[pk] = here
 
+                print("subpath my_xfp: {}".format(xfp2str(my_xfp)))
                 if here[0] == my_xfp or here[0] == swab32(my_xfp):
                     num_ours += 1
                 else:
@@ -299,6 +300,7 @@ class psbtProxy:
                 # update in place
                 self.tap_subpaths[pk] = (here, tap_hashes)
 
+                print("tap subpath my_xfp: {}".format(xfp2str(my_xfp)))
                 if here[0] == my_xfp or here[0] == swab32(my_xfp):
                     num_ours += 1
                 else:
@@ -935,6 +937,7 @@ class psbtObject(psbtProxy):
 
         from common import settings
         self.my_xfp = settings.get('xfp', 0)
+        print("psbtObject xfp: {}".format(xfp2str(self.my_xfp)))
 
         # details that we discover as we go
         self.inputs = None
@@ -1467,9 +1470,9 @@ class psbtObject(psbtProxy):
         others.discard(self.my_xfp)
         msg = ', '.join(xfp2str(i) for i in others)
 
-        raise FatalPSBTIssue('None of the keys involved in this transaction '
-                             'belong to this Passport (need %s, found %s).'
-                             % (xfp2str(self.my_xfp), msg))
+        raise FatalPSBTIssue('This transaction can be signed by these wallets: %s,'
+                             'but this passport has fingerprint %s.'
+                             % (msg, xfp2str(self.my_xfp)))
 
     @classmethod
     def read_psbt(cls, fd):
