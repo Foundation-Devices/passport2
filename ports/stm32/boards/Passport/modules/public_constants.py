@@ -128,7 +128,8 @@ DEVICE_SETTINGS = [
     'screen_brightness',
     'shutdown_timeout',
     'device_name',
-    'security_words'
+    'security_words',
+    'pin_prefix_hash'
 ]
 
 # Size of a pin prefix:
