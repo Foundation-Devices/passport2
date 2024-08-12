@@ -127,7 +127,8 @@ MARGIN_FOR_ADDRESSES = 0
 DEVICE_SETTINGS = [
     'screen_brightness',
     'shutdown_timeout',
-    'device_name'
+    'device_name',
+    'security_words'
 ]
 
 # Size of a pin prefix:
