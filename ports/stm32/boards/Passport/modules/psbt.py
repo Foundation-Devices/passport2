@@ -1469,7 +1469,7 @@ class psbtObject(psbtProxy):
 
         raise FatalPSBTIssue('None of the keys involved in this transaction '
                              'belong to this Passport (need %s, found %s).'
-                             % (xfp2str(self.my_xfp), msg))
+                             % (msg, xfp2str(self.my_xfp)))
 
     @classmethod
     def read_psbt(cls, fd):
