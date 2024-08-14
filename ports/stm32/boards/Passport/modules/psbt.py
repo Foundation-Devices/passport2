@@ -1467,9 +1467,9 @@ class psbtObject(psbtProxy):
         others.discard(self.my_xfp)
         msg = ', '.join(xfp2str(i) for i in others)
 
-        raise FatalPSBTIssue('Transaction must be signed with wallet%s %s. '
-                             'Currently active wallet is %s.'
-                             % ('' if len(others) == 1 else 's', msg, xfp2str(self.my_xfp)))
+        raise FatalPSBTIssue('None of the keys involved in this transaction '
+                             'belong to this Passport (need %s, found %s).'
+                             % (msg, xfp2str(self.my_xfp)))
 
     @classmethod
     def read_psbt(cls, fd):
