@@ -65,10 +65,6 @@ def go():
     from files import CardSlot
     CardSlot.setup()
 
-    # External SPI Flash
-    from sflash import SPIFlash
-    common.sf = SPIFlash.default()
-
     # Give a chance for early foundational changes to be applied
     from schema_evolution import handle_schema_evolutions, handle_foundational_evolutions
     uasyncio.run(handle_foundational_evolutions())

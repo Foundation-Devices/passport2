@@ -29,9 +29,6 @@ ui = None
 # PinAttempts
 pa = None
 
-# External SPI Flash
-sf = None
-
 # Avalanche noise source
 noise = None
 
