@@ -499,6 +499,37 @@ void foundation_firmware_verify_update_signatures(const uint8_t *header,
                                                   FirmwareResult *result);
 
 /**
+ * Read from the flash storage.
+ */
+bool foundation_flash_read(uint32_t offset, uint8_t *data, size_t len);
+
+/**
+ * Write to the flash storage.
+ */
+bool foundation_flash_write(uint32_t offset, const uint8_t *data, size_t len);
+
+/**
+ * Erase a sector of the flash storage.
+ */
+bool foundation_flash_sector_erase(uint32_t offset);
+
+/**
+ * Erase a block of the flash storage.
+ */
+bool foundation_flash_block_erase(uint32_t offset);
+
+/**
+ * Sets result to `true` if the flash is busy with a write or erase
+ * operation.
+ */
+bool foundation_flash_is_busy(bool *result);
+
+/**
+ * Wait until flash storage is not busy.
+ */
+bool foundation_flash_wait_done(void);
+
+/**
  * Calculate a "Schnorr" public key from the secret key.
  *
  * See also:

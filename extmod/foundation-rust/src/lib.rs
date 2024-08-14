@@ -8,6 +8,7 @@
 use cortex_m as _;
 
 pub mod firmware;
+pub mod flash;
 pub mod secp256k1;
 pub mod ur;
 

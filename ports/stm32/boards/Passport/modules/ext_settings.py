@@ -96,7 +96,7 @@ class ExtSettings:
     def load(self):
         # Search all slots for any we can read, decrypt that,
         # and pick the newest one (in unlikely case of dups)
-        from common import sf
+        from foundation import flash
 
         # reset
         self.current.clear()
@@ -112,7 +112,7 @@ class ExtSettings:
             # print('pos={}'.format(pos))
             gc.collect()
 
-            sf.read(pos, buf)
+            flash.read(pos, buf)
             if buf[0] == buf[1] == buf[2] == buf[3] == 0xff:
                 # print('probably an empty page')
                 # erased (probably)
@@ -206,8 +206,8 @@ class ExtSettings:
             h = trezorcrypto.random.bytes(256)
             for pos in blks[0:3]:
                 for i in range(0, self.slot_size, 256):
-                    sf.wait_done()
-                    sf.write(pos + i, h)
+                    flash.wait_done()
+                    flash.write(pos + i, h)
 
     def get(self, kn, default=None):
         if self.in_overrides(kn):
@@ -350,7 +350,7 @@ class ExtSettings:
         # - check randomly and pick first blank one (wear leveling, deniability)
         # - we will write and then erase old slot
         # - if "full", blow away a random one
-        from common import sf
+        from foundation import flash
 
         # print('find_spot(): last_save_slots={}'.format(self.last_save_slots))
         options = [s for s in self.slots if s != not_here and s not in self.last_save_slots]
@@ -358,7 +358,7 @@ class ExtSettings:
 
         buf = bytearray(16)
         for pos in options:
-            sf.read(pos, buf)
+            flash.read(pos, buf)
             if set(buf) == {0xff}:
                 # blank
                 return pos
@@ -374,14 +374,14 @@ class ExtSettings:
         return victim
 
     def erase_cache_entry(self, start_pos):
-        from common import sf
+        from foundation import flash
         # print('erase_cache_entry(): pos={}'.format(start_pos))
-        sf.wait_done()
+        flash.wait_done()
         for i in range(self.slot_size // SPI_FLASH_SECTOR_SIZE):
             addr = start_pos + (i * SPI_FLASH_SECTOR_SIZE)
             # print('{}: erasing addr={}'.format(self.name, addr))
-            sf.sector_erase(addr)
-            sf.wait_done()
+            flash.sector_erase(addr)
+            flash.wait_done()
 
     def erase_all(self):
         if self.temporary_mode:
