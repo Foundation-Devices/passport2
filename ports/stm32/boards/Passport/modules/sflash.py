@@ -31,7 +31,6 @@ _CMD_RDCR = const(0x35)
 _CMD_RD_DEVID = const(0x9f)
 _CMD_SEC_ERASE = const(0x20)
 _CMD_BLK_ERASE = const(0xd8)
-_CMD_CHIP_ERASE = const(0xc7)
 _CMD_C4READ = const(0xeb)
 
 
@@ -187,17 +186,6 @@ class SPIFlash:
         while True:
             if not self.is_busy():
                 return
-
-    def chip_erase(self):
-        """Erase the entire SPI flash chip
-
-        This operation can take up to 6 seconds, calling `is_busy()` is
-        recommended.
-        """
-
-        # can take up to 6 seconds, so poll is_busy()
-        self._cmd(_CMD_WREN)
-        self._cmd(_CMD_CHIP_ERASE)
 
     def sector_erase(self, address):
         """Erase a sector
