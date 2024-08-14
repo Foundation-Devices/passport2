@@ -33,6 +33,7 @@ class RestoreSeedFlow(Flow):
         self.full_backup = full_backup
         self.autobackup = autobackup
         self.temporary = temporary
+        self.get_last_word = False
 
         # This must be after super().__init__, so it isn't set to null
         self.statusbar = {'title': 'IMPORT SEED', 'icon': 'ICON_SEED'}
@@ -158,7 +159,7 @@ class RestoreSeedFlow(Flow):
             initial_prefixes=self.prefixes,
             start_index=self.index).show()
 
-        seed_words, self.prefixes, get_last_word = result
+        seed_words, self.prefixes, self.get_last_word = result
 
         if seed_words is None:
             cancel = await QuestionPage(
@@ -172,7 +173,7 @@ class RestoreSeedFlow(Flow):
             return
 
         self.seed_words = seed_words
-        if get_last_word:
+        if self.get_last_word:
 
             last_word = await RandomFinalWordFlow(self.seed_words).run()
 
@@ -231,7 +232,9 @@ class RestoreSeedFlow(Flow):
 
             text = 'New seed imported and {}'.format('applied' if self.temporary else 'saved')
             await SuccessPage(text=text).show()
-            if self.full_backup:
+
+            # Only prompt for a backup in temporary mode if the last word was generated
+            if (self.get_last_word if self.temporary else self.full_backup):
                 await BackupFlow(initial_backup=True, left_micron=microns.Cancel).run()
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
