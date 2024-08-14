@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "stm32h7xx-hal-driver"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+cmsis-device-h7-sys = { version = "0.1.0", path = "../cmsis-device-h7-sys" }
+embedded-hal = "1"
+stm32h7xx-hal-driver-sys = { version = "0.1.0", path = "../stm32h7xx-hal-driver-sys" }
