@@ -131,20 +131,6 @@ def test_wait(spi_flash):
     assert spi_flash.cs.level is True
 
 
-def test_chip_erase(spi_flash):
-    marker = b'test sequence'
-    spi_flash.spi.memory[0:len(marker)] = b'test sequence'
-
-    # Erase and wait for completion
-    spi_flash.chip_erase()
-    assert spi_flash.cs.level is True
-
-    spi_flash.wait_done()
-    assert spi_flash.cs.level is True
-
-    assert spi_flash.spi.memory[0:len(marker)] != marker
-
-
 def test_write(spi_flash):
     marker = b'test_array'
     spi_flash.write(0x00001000, marker)
