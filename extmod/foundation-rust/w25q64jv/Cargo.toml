@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "w25q64jv"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+bitflags = "2"
+embedded-hal = "1"
+embedded-storage = "0.3"
+
+[dev-dependencies]
+embedded-hal-mock = "0.11"
