@@ -6,6 +6,7 @@ members = [
     "cmsis-device-h7-sys",
     "stm32h7xx-hal-driver",
     "stm32h7xx-hal-driver-sys",
+    "w25q64jv",
 ]
 
 [package]
