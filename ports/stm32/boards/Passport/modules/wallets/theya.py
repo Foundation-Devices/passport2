@@ -22,7 +22,4 @@ TheyaWallet = {
          'filename_pattern_multisig': '{xfp}-theya-multisig.json'}
     ],
     'export_fw_version': True,
-    # 'skip_address_validation': True,
-    # 'skip_multisig_import': True,
-    # 'force_multisig_policy': True
 }

@@ -4,7 +4,7 @@
 # multisig_policy_setting_page.py - Set the multisig policy
 
 from pages import SettingPage
-from public_constants import TRUST_OFFER, TRUST_VERIFY, TRUST_PSBT
+from public_constants import TRUST_OFFER, TRUST_VERIFY, TRUST_PSBT, TRUST_DEFAULT
 
 # Chooser for trust policy
 ch = ['Ask to Import', 'Require Existing', 'Skip Verification']
@@ -24,4 +24,4 @@ class MultisigPolicySettingPage(SettingPage):
             statusbar=statusbar,
             setting_name='multisig_policy',
             options=self.OPTIONS,
-            default_value=self.OPTIONS[1].get('value'))
+            default_value=TRUST_DEFAULT)

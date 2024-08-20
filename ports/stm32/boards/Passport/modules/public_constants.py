@@ -112,6 +112,7 @@ MAX_SIGNERS = const(15)
 TRUST_VERIFY = const(0)
 TRUST_OFFER = const(1)
 TRUST_PSBT = const(2)
+TRUST_DEFAULT = TRUST_OFFER
 
 # Default Directories
 DIR_BACKUPS = 'backups'
@@ -129,7 +130,9 @@ DEVICE_SETTINGS = [
     'shutdown_timeout',
     'device_name',
     'security_words',
-    'pin_prefix_hash'
+    'pin_prefix_hash',
+    # 'multisig_policy',  # TODO: do we want these to be globally accessible?
+    # 'multisig',
 ]
 
 # Size of a pin prefix:

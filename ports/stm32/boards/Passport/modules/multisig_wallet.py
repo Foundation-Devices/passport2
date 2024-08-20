@@ -18,7 +18,7 @@ import tcc
 from ubinascii import hexlify as b2a_hex
 from utils import xfp2str, str2xfp, cleanup_deriv_path, keypath_to_str, str_to_keypath
 from public_constants import (AF_P2SH, AF_P2WSH_P2SH, AF_P2WSH, AFC_SCRIPT,
-                              TRUST_OFFER, TRUST_PSBT, TRUST_VERIFY, MAX_SIGNERS)
+                              TRUST_DEFAULT, TRUST_PSBT, TRUST_VERIFY, MAX_SIGNERS)
 from constants import MAX_MULTISIG_NAME_LEN
 from exceptions import FatalPSBTIssue
 from opcodes import OP_CHECKMULTISIG
@@ -159,13 +159,7 @@ class MultisigWallet:
     @classmethod
     def get_trust_policy(cls):
         from common import settings
-
-        which = settings.get('multisig_policy', None)
-
-        if which is None:
-            which = TRUST_VERIFY if cls.exists() else TRUST_OFFER
-
-        return which
+        return settings.get('multisig_policy', TRUST_DEFAULT)
 
     def serialize(self):
         # return a JSON-able object
@@ -328,12 +322,6 @@ class MultisigWallet:
     def get_all(cls):
         # return them all, as a generator
         return cls.iter_wallets()
-
-    @classmethod
-    def exists(cls):
-        # are there any wallets defined?
-        from common import settings
-        return bool(settings.get('multisig', False))
 
     @classmethod
     def get_count(cls):
@@ -878,7 +866,7 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
 
         if trust_mode == TRUST_VERIFY:
             # already checked for existing import and wasn't found, so fail
-            raise FatalPSBTIssue("XPUBs in PSBT do not match any existing wallet")
+            raise FatalPSBTIssue("XPUBs in PSBT do not match any existing wallet as required by multisig policy")
 
         # build up an in-memory version of the wallet.
         #  - capture address format based on path used for my leg (if standards compliant)
