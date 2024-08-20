@@ -18,7 +18,7 @@ import tcc
 from ubinascii import hexlify as b2a_hex
 from utils import xfp2str, str2xfp, cleanup_deriv_path, keypath_to_str, str_to_keypath
 from public_constants import (AF_P2SH, AF_P2WSH_P2SH, AF_P2WSH, AFC_SCRIPT,
-                              TRUST_DEFAULT, TRUST_PSBT, TRUST_VERIFY, MAX_SIGNERS)
+                              MUSIG_DEFAULT, MUSIG_SKIP, MUSIG_REQUIRE, MAX_SIGNERS)
 from constants import MAX_MULTISIG_NAME_LEN
 from exceptions import FatalPSBTIssue
 from opcodes import OP_CHECKMULTISIG
@@ -159,7 +159,7 @@ class MultisigWallet:
     @classmethod
     def get_trust_policy(cls):
         from common import settings
-        return settings.get('multisig_policy', TRUST_DEFAULT)
+        return settings.get('multisig_policy', MUSIG_DEFAULT)
 
     def serialize(self):
         # return a JSON-able object
@@ -864,7 +864,7 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
         trust_mode = cls.get_trust_policy()
         # print('import_from_psbt(): trust_mode = {}'.format(trust_mode))
 
-        if trust_mode == TRUST_VERIFY:
+        if trust_mode == MUSIG_REQUIRE:
             # already checked for existing import and wasn't found, so fail
             raise FatalPSBTIssue("XPUBs in PSBT do not match any existing wallet as required by multisig policy")
 
@@ -895,7 +895,7 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
 
         # may just keep just in-memory version, no approval required, if we are
         # trusting PSBT's today, otherwise caller will need to handle UX w.r.t new wallet
-        return ms, (trust_mode != TRUST_PSBT)
+        return ms, (trust_mode != MUSIG_SKIP)
 
     def validate_psbt_xpubs(self, xpubs_list):
         # The xpubs provided in PSBT must be exactly right, compared to our record.

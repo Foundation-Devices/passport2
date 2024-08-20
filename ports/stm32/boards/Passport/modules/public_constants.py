@@ -109,10 +109,10 @@ PSBT_OUT_TAP_BIP32_DERIVATION = const(7)
 MAX_SIGNERS = const(15)
 
 # PSBT Xpub trust policies
-TRUST_VERIFY = const(0)
-TRUST_OFFER = const(1)
-TRUST_PSBT = const(2)
-TRUST_DEFAULT = TRUST_OFFER
+MUSIG_REQUIRE = const(0)
+MUSIG_ASK = const(1)
+MUSIG_SKIP = const(2)
+MUSIG_DEFAULT = MUSIG_ASK
 
 # Default Directories
 DIR_BACKUPS = 'backups'
