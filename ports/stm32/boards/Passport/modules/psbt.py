@@ -1325,6 +1325,7 @@ class psbtObject(psbtProxy):
             if not out.is_change:
                 continue
             # it's a change output, okay if a p2sh change; we're looking at paths
+            # TODO: account for tap_subpaths
             for path in out.subpaths.values():
                 if path[0] != my_xfp:
                     continue          # possible in p2sh case
@@ -1459,10 +1460,12 @@ class psbtObject(psbtProxy):
         # collect a list of XFP's given in file that aren't ours
         others = set()
         for inp in self.inputs:
-            if not inp.subpaths:
-                continue
-            for path in inp.subpaths.values():
-                others.add(path[0])
+            if len(inp.subpaths) > 0:
+                for path in inp.subpaths.values():
+                    others.add(path[0])
+            if len(inp.tap_subpaths) > 0:
+                for (path, tap_hashes) in inp.tap_subpaths.values():
+                    others.add(path[0])
 
         others.discard(self.my_xfp)
         msg = ', '.join(xfp2str(i) for i in others)
