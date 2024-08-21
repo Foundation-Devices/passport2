@@ -442,6 +442,7 @@ def developer_menu():
             DeveloperFunctionsFlow,
             FCCTestFlow,
             SpinDelayFlow,
+            GlobalMultisigSettingFlow,
         )
         from pages import StatusPage, ShowQRPage
         from data_codecs.qr_type import QRType
@@ -463,6 +464,7 @@ def developer_menu():
             {'icon': 'ICON_ONE_KEY', 'label': 'Set PIN', 'flow': SetInitialPINFlow},
             {'icon': 'ICON_ERASE', 'label': 'Erase Child Keys', 'flow': DeleteDerivedKeysFlow},
             {'icon': 'ICON_SETTINGS', 'label': 'FCC Test', 'flow': FCCTestFlow},
+            {'icon': 'ICON_TWO_KEYS', 'label': 'Global Multisigs', 'flow': GlobalMultisigSettingFlow},
             # {'icon': 'ICON_SETTINGS', 'label': 'I\'m Busy!', 'page': LongTextPage,
             #     'args': {'show_busy': True, 'message': 'Signing Transaction...'}},
             # {'icon': 'ICON_ABOUT', 'label': 'Color Picker', 'page': ColorPickerPage},

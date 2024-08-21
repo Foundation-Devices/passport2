@@ -1569,4 +1569,19 @@ def insufficient_randomness(seed_words):
     return False
 
 
+def check_and_set_global_multisigs(_=None):
+    from public_constants import DEVICE_SETTINGS
+
+    multisig_settings = ['multisig', 'multisig_policy']
+
+    if common.settings.get('global_multisigs', False):
+        for setting in multisig_settings:
+            if setting not in DEVICE_SETTINGS:
+                DEVICE_SETTINGS.append(setting)
+    else:
+        for setting in multisig_settings:
+            if setting in DEVICE_SETTINGS:
+                DEVICE_SETTINGS.remove(setting)
+
+
 # EOF

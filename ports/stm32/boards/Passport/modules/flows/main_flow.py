@@ -12,9 +12,10 @@ class MainFlow(Flow):
 
     async def start(self):
         import common
-        from utils import start_task, is_logged_in, has_seed, xfp2str, get_accounts
+        from utils import start_task, is_logged_in, has_seed, xfp2str, get_accounts, check_and_set_global_multisigs
         from flows import SelectSetupModeFlow, LoginFlow, InitialSeedSetupFlow
         from extensions.extensions import supported_extensions
+        import passport
 
         await SelectSetupModeFlow().run()
 
@@ -49,6 +50,10 @@ class MainFlow(Flow):
             if common.settings.get(old_key):
                 common.settings.remove(old_key)
                 common.settings.set(old_key + ".{}".format(string_xfp), True)
+
+        # Conditional device settings
+        if passport.IS_DEV:
+            check_and_set_global_multisigs()
 
         common.settings.save()
 
