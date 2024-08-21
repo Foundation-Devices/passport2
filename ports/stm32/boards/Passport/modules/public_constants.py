@@ -113,6 +113,7 @@ MUSIG_REQUIRE = const(0)
 MUSIG_ASK = const(1)
 MUSIG_SKIP = const(2)
 MUSIG_DEFAULT = MUSIG_ASK
+MUSIG_TEMP_DEFAULT = MUSIG_SKIP
 
 # Default Directories
 DIR_BACKUPS = 'backups'

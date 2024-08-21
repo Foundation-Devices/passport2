@@ -5,6 +5,7 @@
 
 from pages import SettingPage
 from public_constants import MUSIG_ASK, MUSIG_REQUIRE, MUSIG_SKIP, MUSIG_DEFAULT
+from utils import get_multisig_policy
 
 # Chooser for trust policy
 ch = ['Ask to Import', 'Require Existing', 'Skip Verification']
@@ -24,4 +25,4 @@ class MultisigPolicySettingPage(SettingPage):
             statusbar=statusbar,
             setting_name='multisig_policy',
             options=self.OPTIONS,
-            default_value=MUSIG_DEFAULT)
+            default_value=get_multisig_policy())

@@ -158,8 +158,8 @@ class MultisigWallet:
 
     @classmethod
     def get_trust_policy(cls):
-        from common import settings
-        return settings.get('multisig_policy', MUSIG_DEFAULT)
+        from utils import get_multisig_policy
+        return get_multisig_policy()
 
     def serialize(self):
         # return a JSON-able object
