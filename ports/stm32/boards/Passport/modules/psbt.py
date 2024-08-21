@@ -1325,7 +1325,6 @@ class psbtObject(psbtProxy):
             if not out.is_change:
                 continue
             # it's a change output, okay if a p2sh change; we're looking at paths
-            # TODO: account for tap_subpaths
             for path in out.subpaths.values():
                 if path[0] != my_xfp:
                     continue          # possible in p2sh case
