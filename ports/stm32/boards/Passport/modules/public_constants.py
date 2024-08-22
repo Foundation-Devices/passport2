@@ -132,8 +132,6 @@ DEVICE_SETTINGS = [
     'device_name',
     'security_words',
     'pin_prefix_hash',
-    # 'multisig_policy',  # TODO: do we want these to be globally accessible?
-    # 'multisig',
 ]
 
 # Size of a pin prefix:
