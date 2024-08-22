@@ -976,17 +976,12 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
 wallet first. Differences: '''.format(recolor(COPPER_HEX, 'WARNING:')) + ', '.join(diff_items)
             is_dup = True
         elif importing and num_dups:
-            msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.'
+            msg = 'Duplicate wallet. All details are the same as an existing wallet, so it will not be added.\n\n'
             is_dup = True
-        elif not importing:
-            msg = ''
         else:
-            msg = 'Create new multisig wallet?'
+            msg = ''
 
         derivs, dsum = self.get_deriv_paths()
-
-        if importing:
-            msg += '\n\n'
 
         msg += '''{name_title}
 {name}
