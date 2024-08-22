@@ -129,7 +129,13 @@ DEVICE_SETTINGS = [
     'shutdown_timeout',
     'device_name',
     'security_words',
-    'pin_prefix_hash'
+    'pin_prefix_hash',
+    'update',
+    'firmware_title',
+    'validated_ok',
+    'terms_ok',
+    'last_qr_size_idx',
+    'last_qr_brightness',
 ]
 
 # Size of a pin prefix:
