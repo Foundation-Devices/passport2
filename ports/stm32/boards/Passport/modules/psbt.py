@@ -1173,13 +1173,13 @@ class psbtObject(psbtProxy):
             # print('proposed={}, need_approval={}'.format(proposed, need_approval))
 
             # Gen1.2 We don't do the UI part of this here, but in SignPsbtCommonFlow
-
             if need_approval:
                 self.multisig_import_needs_approval = True
             #     # do a complex UX sequence, which lets them save new wallet
             #     ch = await proposed.confirm_import()
             #     if ch != 'y':
             #         raise FatalPSBTIssue("Refused to import new wallet")
+
             self.active_multisig = proposed
         else:
             # Validate good match here. The xpubs must be exactly right, but
