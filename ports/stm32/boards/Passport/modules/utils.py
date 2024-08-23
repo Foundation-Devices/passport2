@@ -12,7 +12,7 @@
 
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
-from public_constants import DIR_BACKUPS
+from public_constants import DIR_BACKUPS, MUSIG_DEFAULT, MUSIG_TEMP_DEFAULT
 from files import CardSlot
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
@@ -1567,6 +1567,11 @@ def insufficient_randomness(seed_words):
             return True
 
     return False
+
+
+def get_multisig_policy():
+    default = MUSIG_TEMP_DEFAULT if has_temporary_seed() else MUSIG_DEFAULT
+    return common.settings.get('multisig_policy', default)
 
 
 # EOF

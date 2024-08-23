@@ -49,8 +49,10 @@ class SignPsbtCommonFlow(Flow):
         if self.psbt.multisig_import_needs_approval:
             result = await ImportMultisigWalletFlow(self.psbt.active_multisig).run()
             if not result:
-                await ErrorPage(
-                    'The transaction can still be signed, but this multisig config will not be saved.').show()
+                text = 'The transaction can still be signed, but this multisig config will not be saved.'
+                result2 = await ErrorPage(text=text, left_micron=microns.Back).show()
+                if not result2:
+                    return
 
         self.goto(self.show_transaction_details)
 
