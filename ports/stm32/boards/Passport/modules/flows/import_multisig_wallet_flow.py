@@ -40,7 +40,7 @@ class ImportMultisigWalletFlow(Flow):
     async def confirm_import(self):
         from pages import QuestionPage
 
-        result = await QuestionPage('Create new multisig wallet?').show()
+        result = await QuestionPage('Import new multisig wallet?').show()
 
         if not result:
             self.set_result(False)
