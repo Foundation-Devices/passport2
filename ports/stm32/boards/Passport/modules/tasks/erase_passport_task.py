@@ -26,6 +26,7 @@ async def erase_passport_task(on_done, full_reset):
         settings.remove('xpub')
         settings.remove('words')
         settings.remove('multisig')
+        settings.remove('multisig_policy')
         settings.remove('accounts')
         settings.remove('backup_quiz')
         settings.remove('enable_passphrase')
