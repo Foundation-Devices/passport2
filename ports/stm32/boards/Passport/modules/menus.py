@@ -35,8 +35,8 @@ def manage_account_menu():
     from pages import AccountDetailsPage
 
     return [
-        {'icon': 'ICON_FOLDER', 'label': 'Account Details', 'page': AccountDetailsPage},
-        {'icon': 'ICON_INFO', 'label': 'Rename Account', 'flow': RenameAccountFlow},
+        {'icon': 'ICON_FOLDER', 'label': 'View Details', 'page': AccountDetailsPage},
+        {'icon': 'ICON_SIGN', 'label': 'Rename Account', 'flow': RenameAccountFlow},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
         {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
@@ -160,7 +160,7 @@ def device_menu():
         {'icon': 'ICON_COUNTDOWN', 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
         {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
-        {'icon': 'ICON_SIGN', 'label': 'Device Name', 'flow': RenameDeviceFlow},
+        {'icon': 'ICON_SIGN', 'label': 'Rename Device', 'flow': RenameDeviceFlow},
         {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
     ]
 
@@ -188,7 +188,7 @@ def seed_item_menu():
         TemporarySeedFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
-        {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': 'ICON_HOURGLASS', 'label': 'Temporary Seed', 'flow': TemporarySeedFlow,
          'is_visible': lambda: not has_temporary_seed()},
@@ -209,7 +209,7 @@ def key_item_menu():
         ExportDerivedKeyFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
-        {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': 'ICON_ERASE',
          'label': 'Hide Key',
@@ -354,8 +354,8 @@ def multisig_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': 'ICON_MICROSD', 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
          'statusbar': {'title': 'EXPORT'}},
-        {'icon': 'ICON_TWO_KEYS', 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
-        {'icon': 'ICON_TWO_KEYS', 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
     ]
 
 
