@@ -36,10 +36,10 @@ def manage_account_menu():
 
     return [
         {'icon': 'ICON_FOLDER', 'label': 'View Details', 'page': AccountDetailsPage},
-        {'icon': 'ICON_SIGN', 'label': 'Rename Account', 'flow': RenameAccountFlow},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameAccountFlow},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
-        {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteAccountFlow},
     ]
 
 
