@@ -3,8 +3,9 @@
 #
 # sign_electrum_message_flow.py - Sign an electrum standard message via QR
 
-from flows import Flow, ScanQRFlow
-from pages import ErrorPage, LongTextPage, LongQuestionPage, ShowQRPage
+import lvgl as lv
+from flows import Flow, ScanQRFlow, FilePickerFlow, ReadFileFlow, SaveToMicroSDFlow
+from pages import ErrorPage, LongTextPage, LongQuestionPage, ShowQRPage, ChooserPage
 from tasks import sign_text_file_task, validate_electrum_message_task
 from utils import spinner_task, stylize_address
 from data_codecs.qr_type import QRType
@@ -20,14 +21,60 @@ class SignElectrumMessageFlow(Flow):
         self.message = None
         self.address = None
         self.signature = None
-        super().__init__(initial_state=self.scan_message, name='Sign Electrum Message Flow')
+        self.qr_flow = True
+        self.file_path = None
+        self.filename = None
+
+        super().__init__(initial_state=self.choose_mode, name='Sign Electrum Message Flow')
+
+    async def choose_mode(self):
+
+        text = '\nHow would you like to sign your message?'
+        options = [{'label': 'QR Code', 'value': True},
+                   {'label': 'microSD', 'value': False}]
+
+        result = await ChooserPage(text=text, options=options).show()
+        if result is None:
+            self.set_result(False)
+            return
+
+        self.qr_flow = result
+        if self.qr_flow:
+            self.goto(self.scan_message)
+        else:
+            self.goto(self.choose_file)
+
+    async def choose_file(self):
+        result = await FilePickerFlow(show_folders=True).run()
+
+        if result is None:
+            self.back()
+            return
+
+        filename, full_path, is_folder = result
+        if not is_folder:
+            self.file_path = full_path
+            self.filename = filename
+
+        self.goto(self.read_file)
+
+    async def read_file(self):
+        message = await ReadFileFlow(self.file_path, binary=False).run()
+
+        if not message:
+            await ErrorPage("Failed to read {}. Make sure it contains a message.".format(self.filename))
+            self.back()
+            return
+
+        self.message = message
+        self.goto(self.validate_message)
 
     async def scan_message(self):
         result = await ScanQRFlow(qr_types=[QRType.QR],
                                   data_description='a message').run()
 
         if result is None:
-            self.set_result(None)
+            self.back()
             return
 
         self.message = result
@@ -83,18 +130,36 @@ class SignElectrumMessageFlow(Flow):
     async def do_sign(self):
         (sig, address, error) = await spinner_task('Signing Message', sign_text_file_task,
                                                    args=[self.message, self.subpath, self.addr_format, True])
-        if error is None:
-            self.signature = sig
-            self.goto(self.show_signed)
-        else:
+        if error:
             await ErrorPage(text='Error while signing message: {}'.format(error)).show()
             self.set_result(False)
             return
 
-    async def show_signed(self):
-        qr_data = b2a_base64(self.signature).strip().decode()
+        self.signature = b2a_base64(sig).strip().decode()
+        if self.qr_flow:
+            self.goto(self.show_signed)
+        else:
+            self.goto(self.save_signed)
 
-        result = await ShowQRPage(qr_data=qr_data,
+    async def show_signed(self):
+        result = await ShowQRPage(qr_data=self.signature,
                                   right_micron=microns.Checkmark).show()
 
+        self.set_result(result)
+
+    async def save_signed(self):
+        orig_path, basename = self.file_path.rsplit('/', 1)
+
+        # Some users may save their message file without an extension
+        if basename.find('.') == -1:
+            base = basename
+            ext = 'txt'
+        else:
+            base, ext = basename.rsplit('.', 1)
+
+        filename = base + '-signed' + '.' + ext
+        result = await SaveToMicroSDFlow(filename=filename,
+                                         data=self.signature,
+                                         success_text="signed message",
+                                         path=orig_path).run()
         self.set_result(result)
