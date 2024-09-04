@@ -361,7 +361,7 @@ class ExtSettings:
             sf.read(pos, buf)
             if set(buf) == {0xff}:
                 # blank
-                return sf, pos
+                return pos
 
         victim = options[0]
 
@@ -371,7 +371,7 @@ class ExtSettings:
 
         self.erase_cache_entry(victim)
 
-        return sf, victim
+        return victim
 
     def erase_cache_entry(self, start_pos):
         from common import sf
@@ -406,10 +406,10 @@ class ExtSettings:
         # render as JSON, encrypt and write it.
         self.current['_revision'] = self.current.get('_revision', 1) + 1
 
-        _, pos = self.find_spot(self.my_pos)
+        pos = self.find_spot(self.my_pos)
         self.save_impl(pos, erase_old_pos=erase_old_pos)
 
-        # print('save(): sf={}, pos={}'.format(sf, pos))
+        # print('save(): pos={}'.format(pos))
 
     def save_impl(self, pos, erase_old_pos=True):
         aes = self.get_aes(pos)
