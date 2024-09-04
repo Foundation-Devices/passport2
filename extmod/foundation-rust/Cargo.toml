@@ -4,6 +4,7 @@
 [workspace]
 members = [
     "cmsis-device-h7-sys",
+    "embedded-storage-fs",
     "embedded-storage-redundant",
     "stm32h7xx-hal-driver",
     "stm32h7xx-hal-driver-sys",
