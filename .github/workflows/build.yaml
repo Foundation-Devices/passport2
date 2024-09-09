@@ -31,7 +31,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -116,7 +116,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -163,7 +163,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -197,7 +197,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
