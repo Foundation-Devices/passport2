@@ -4,16 +4,15 @@
 # fullynoded.py - FullyNoded wallet support
 #
 
-from .electrum import create_electrum_export
+from .generic_json_wallet import create_generic_json_wallet
 from .multisig_json import create_multisig_json_wallet
 from .multisig_import import read_multisig_config_from_qr, read_multisig_config_from_microsd
 from data_codecs.qr_type import QRType
-from public_constants import AF_P2WPKH
 
 FullyNodedWallet = {
-    'label': 'FullyNoded',
+    'label': 'Fully Noded',
     'sig_types': [
-        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': AF_P2WPKH, 'create_wallet': create_electrum_export},
+        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_generic_json_wallet},
         {'id': 'multisig', 'label': 'Multisig', 'addr_type': None, 'create_wallet': create_multisig_json_wallet,
          'import_qr': read_multisig_config_from_qr, 'import_microsd': read_multisig_config_from_microsd}
     ],

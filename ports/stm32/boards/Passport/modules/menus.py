@@ -4,7 +4,7 @@
 # menus.py - Menu configuration
 
 import lvgl as lv
-from utils import has_seed
+from utils import has_seed, has_temporary_seed
 # from pages import ColorPickerPage
 
 ########################################################################################
@@ -29,29 +29,41 @@ from utils import has_seed
 
 
 def manage_account_menu():
-    from flows import RenameAccountFlow, DeleteAccountFlow, ConnectWalletFlow, AddressExplorerFlow
+    from flows import (RenameAccountFlow,
+                       DeleteAccountFlow,
+                       ConnectWalletFlow)
     from pages import AccountDetailsPage
 
     return [
-        {'icon': 'ICON_FOLDER', 'label': 'Account Details', 'page': AccountDetailsPage},
-        {'icon': 'ICON_INFO', 'label': 'Rename Account', 'flow': RenameAccountFlow},
+        {'icon': 'ICON_FOLDER', 'label': 'View Details', 'page': AccountDetailsPage},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameAccountFlow},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteAccountFlow},
+    ]
+
+
+def account_tools():
+    from flows import VerifyAddressFlow, SignElectrumMessageFlow, AddressExplorerFlow
+
+    return [
+        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a Message', 'flow': SignElectrumMessageFlow,
+         'statusbar': {'title': 'SIGN MESSAGE'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
-        {'icon': 'ICON_CANCEL', 'label': 'Delete Account', 'flow': DeleteAccountFlow},
     ]
 
 
 def account_menu():
-    from flows import VerifyAddressFlow, SignPsbtQRFlow, SignPsbtMicroSDFlow
+    from flows import SignPsbtQRFlow, SignPsbtMicroSDFlow
 
     return [
         {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignPsbtQRFlow,
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
+        {'icon': 'ICON_SETUP', 'label': 'Account Tools', 'submenu': account_tools},
         {'icon': 'ICON_FOLDER', 'label': 'Manage Account', 'submenu': manage_account_menu},
     ]
 
@@ -112,17 +124,15 @@ def postmix_menu():
          'statusbar': {'title': 'SIGN'}},
         {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': SignPsbtMicroSDFlow,
          'statusbar': {'title': 'SIGN'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
-         'statusbar': {'title': 'LIST ADDRESSES'}},
+        {'icon': 'ICON_SETUP', 'label': 'Account Tools', 'submenu': account_tools},
         {'icon': 'ICON_CONNECT', 'label': 'Connect Wallet', 'flow': ConnectWalletFlow,
          'statusbar': {'title': 'CONNECT'}},
     ]
 
 
 def plus_menu():
-    from utils import is_passphrase_active
-    from flows import NewAccountFlow, ApplyPassphraseFlow
+    from utils import is_passphrase_active, has_permanent_seed
+    from flows import NewAccountFlow, ApplyPassphraseFlow, TemporarySeedFlow
 
     return [
         {'icon': 'ICON_ADD_ACCOUNT', 'label': 'New Account', 'flow': NewAccountFlow},
@@ -132,6 +142,11 @@ def plus_menu():
          'args': {'passphrase': ''}, 'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
         {'icon': 'ICON_PASSPHRASE', 'label': 'Change Passphrase', 'flow': ApplyPassphraseFlow,
          'statusbar': {'title': 'PASSPHRASE'}, 'is_visible': is_passphrase_active},
+        {'icon': 'ICON_HOURGLASS', 'label': 'Temporary Seed', 'flow': TemporarySeedFlow,
+         'statusbar': {'title': 'TEMPORARY SEED'}, 'is_visible': lambda: not has_temporary_seed()},
+        {'icon': 'ICON_HOURGLASS', 'label': 'Clear Temporary Seed', 'flow': TemporarySeedFlow,
+         'args': {'clear': True}, 'statusbar': {'title': 'TEMPORARY SEED'},
+         'is_visible': lambda: has_temporary_seed() and has_permanent_seed()},
     ]
 
 
@@ -145,7 +160,7 @@ def device_menu():
         {'icon': 'ICON_COUNTDOWN', 'label': 'Auto-Shutdown', 'page': AutoShutdownSettingPage},
         {'icon': 'ICON_PIN', 'label': 'Change PIN', 'flow': ChangePINFlow, 'is_visible': is_logged_in},
         {'icon': 'ICON_BATTERY', 'label': 'Battery', 'page': BatteryPage},
-        {'icon': 'ICON_SIGN', 'label': 'Device Name', 'flow': RenameDeviceFlow},
+        {'icon': 'ICON_SIGN', 'label': 'Rename Device', 'flow': RenameDeviceFlow},
         {'icon': 'ICON_INFO', 'label': 'About', 'flow': AboutFlow},
     ]
 
@@ -156,10 +171,32 @@ def backup_menu():
     return [
         {'icon': 'ICON_BACKUP', 'label': 'Backup Now', 'flow': BackupFlow, 'is_visible': has_seed},
         {'icon': 'ICON_RETRY', 'label': 'Restore', 'flow': RestoreBackupFlow,
-         'args': {'refresh_cards_when_done': True}},
+         'args': {'refresh_cards_when_done': True}, 'is_visible': lambda: not has_temporary_seed()},
         {'icon': 'ICON_CIRCLE_CHECK', 'label': 'Verify Backup', 'flow': VerifyBackupFlow},
         {'icon': 'ICON_PIN', 'label': 'View Backup Code', 'flow': ViewBackupCodeFlow,
             'statusbar': {'title': 'BACKUP', 'icon': 'ICON_PIN'}, 'is_visible': has_seed}
+    ]
+
+
+def seed_item_menu():
+    from utils import toggle_key_hidden, is_key_hidden
+
+    from flows import (
+        ViewDerivedKeyDetailsFlow,
+        RenameDerivedKeyFlow,
+        ExportDerivedKeyFlow,
+        TemporarySeedFlow)
+    return [
+        {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
+        {'icon': 'ICON_HOURGLASS', 'label': 'Temporary Seed', 'flow': TemporarySeedFlow,
+         'is_visible': lambda: not has_temporary_seed()},
+        {'icon': 'ICON_ERASE',
+         'label': 'Hide Key',
+         'action': lambda item, context: toggle_key_hidden(item, context),
+         'is_toggle': True,
+         'value': lambda context: is_key_hidden(context)},
     ]
 
 
@@ -172,7 +209,7 @@ def key_item_menu():
         ExportDerivedKeyFlow)
     return [
         {'icon': 'ICON_ONE_KEY', 'label': 'View Details', 'flow': ViewDerivedKeyDetailsFlow},
-        {'icon': 'ICON_INFO', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameDerivedKeyFlow, 'auto_card_header': False},
         {'icon': 'ICON_SCAN_QR', 'label': 'Export', 'flow': ExportDerivedKeyFlow},
         {'icon': 'ICON_ERASE',
          'label': 'Hide Key',
@@ -242,11 +279,12 @@ def key_manager_menu():
 
             result.append({'icon': key_type['icon'],
                            'label': title,
-                           'submenu': key_item_menu,
+                           'submenu': seed_item_menu if key_type['words'] else key_item_menu,
                            'card_header': {'title': title,
                                            'right_icon': key_type['icon']},
                            'statusbar': {'title': 'KEY MANAGER'},
-                           'args': {'context': key, 'dynamic': key_type.get('menu', None)},
+                           'args': {'context': key, 'dynamic': key_type.get('menu', None),
+                                    'item_vertical_padding': 9},
                            'auto_card_header': False})
 
     result.append({'icon': 'ICON_ONE_KEY', 'label': 'New Key', 'submenu': new_key_menu})
@@ -316,8 +354,8 @@ def multisig_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': 'ICON_MICROSD', 'label': 'Export via microSD', 'flow': ExportMultisigMicrosdFlow,
          'statusbar': {'title': 'EXPORT'}},
-        {'icon': 'ICON_TWO_KEYS', 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
-        {'icon': 'ICON_TWO_KEYS', 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameMultisigFlow, 'exit_on_success': True},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteMultisigFlow, 'exit_on_success': True},
     ]
 
 
@@ -382,7 +420,8 @@ def advanced_menu():
         {'icon': 'ICON_ONE_KEY', 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': 'ICON_MICROSD', 'label': 'microSD', 'submenu': microsd_menu},
-        {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow},
+        {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow,
+         'is_visible': lambda: not has_temporary_seed()},
         {'icon': 'ICON_SHIELD', 'label': 'Security Check', 'flow': ScvFlow,
          'args': {'envoy': False, 'ask_to_skip': False}},
     ]

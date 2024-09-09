@@ -121,26 +121,41 @@ class SecretStash:
             return 'master', ms, hd
 
 
-# optional global value: user-supplied passphrase to salt BIP39 seed process
-bip39_passphrase = ''
-bip39_hash = ''
+def set_passphrase(passphrase=''):
+    from common import settings
+    settings.set_volatile('bip39_passphrase', passphrase)
+
+
+def clear_passphrase():
+    set_passphrase('')
+
+
+def get_passphrase():
+    from common import settings
+    return settings.get('bip39_passphrase', '')
 
 
 class SensitiveValues:
     # be a context manager, and holder to secrets in-memory
 
     def __init__(self, secret=None, for_backup=False):
-        from common import system
+        from common import system, settings
 
         if secret is None:
-            # fetch the secret from bootloader/atecc508a
-            from common import pa
+            if settings.temporary_mode:
+                if settings.get('temporary_seed', None) is None:
+                    raise ValueError('no temporary secrets yet')
+                self.secret = settings.get('temporary_seed', None)
+                self.spots = []
+            else:
+                # fetch the secret from bootloader/atecc508a
+                from common import pa
 
-            if pa.is_secret_blank():
-                raise ValueError('no secrets yet')
+                if pa.is_secret_blank():
+                    raise ValueError('no secrets yet')
 
-            self.secret = pa.fetch()
-            self.spots = [self.secret]
+                self.secret = pa.fetch()
+                self.spots = [self.secret]
         else:
             # sometimes we already know it
             # assert set(secret) != {0}
@@ -148,7 +163,7 @@ class SensitiveValues:
             self.spots = []
 
         # backup during volatile bip39 encryption: do not use passphrase
-        self._bip39pw = '' if for_backup else str(bip39_passphrase)
+        self._bip39pw = '' if for_backup else str(get_passphrase())
         # print('self._bip39pw={}'.format(self._bip39pw))
 
     def __enter__(self):
@@ -222,7 +237,7 @@ class SensitiveValues:
 
         # Always store these volatile - Takes less than 1 second to recreate, and it will change whenever
         # a passphrase is entered, so no need to waste flash cycles on storing it.
-        if bip39_passphrase == '':
+        if get_passphrase() == '':
             settings.set_volatile('root_xfp', xfp)
             if save:
                 settings.set('xfp', xfp)

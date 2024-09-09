@@ -14,7 +14,7 @@ import chains
 import ujson
 import stash
 from utils import xfp2str, to_str
-from common import settings
+from common import settings, system
 from public_constants import AF_CLASSIC, AF_P2WPKH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH, AF_P2WSH, AF_P2TR
 from data_codecs.qr_type import QRType
 from foundation import ur
@@ -67,6 +67,10 @@ def create_generic_json_wallet(sw_wallet=None,
             rv[name] = dict(deriv=dd, xpub=xp, xfp=xfp, first=first_address, name=atype)
             if zp:
                 rv[name]['_pub'] = zp
+
+    if sw_wallet.get('export_fw_version', False):
+        version = system.get_software_info()[0]
+        rv['fw_version'] = version
 
     msg = ujson.dumps(rv)
 

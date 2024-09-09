@@ -10,13 +10,19 @@ MSG_CLOSE_TIMEOUT = 1000
 
 class AutoBackupFlow(Flow):
     def __init__(self, reason='System information changed.', offer=False):
+        from common import settings
         super().__init__(initial_state=self.check_for_microsd, name='AutoBackupFlow')
         self.reason = reason
         self.offer = offer
+        self.backup_quiz_passed = settings.get('backup_quiz', False)
 
     async def check_for_microsd(self):
         from files import CardSlot, CardMissingError
         from pages import QuestionPage
+
+        if not self.backup_quiz_passed:
+            self.set_result(False)
+            return
 
         try:
             with CardSlot() as card:

@@ -26,6 +26,7 @@ from sffile import SFFile
 from utils import to_str, call_later_ms
 from constants import SPI_FLASH_SECTOR_SIZE
 from passport import mem
+from public_constants import DEVICE_SETTINGS
 
 
 class ExtSettings:
@@ -45,6 +46,9 @@ class ExtSettings:
         self.current = self.default_values()
         self.overrides = {}     # volatile overide values
         self.last_save_slots = [-1, -1]
+        self.temporary_mode = False
+        self.temporary_settings = {}
+        self.temporary_overrides = {}
 
         # NOTE: We don't load the settings initially since we don't have the AES key until
         #       the user logs in successfully.
@@ -206,13 +210,13 @@ class ExtSettings:
                     sf.write(pos + i, h)
 
     def get(self, kn, default=None):
-        if kn in self.overrides:
-            return self.overrides.get(kn)
+        if self.in_overrides(kn):
+            return self.get_from_overrides(kn, default)
         else:
             # Special case for xfp and xpub -- make sure they exist and create if not
-            if kn not in self.current:
-                if kn == 'root_xfp' and 'xfp' in self.current:
-                    return self.current.get('xfp', default)
+            if not self.in_current(kn):
+                if kn == 'root_xfp' and self.in_current('xfp'):
+                    return self.get_from_current('xfp', default)
                 if kn == 'xfp' or kn == 'xpub' or kn == 'root_xfp':
                     try:
                         # Update xpub/xfp in settings after creating new wallet
@@ -229,37 +233,74 @@ class ExtSettings:
                     finally:
                         # system.hide_busy_bar()
                         # These are overrides, so return them from there
-                        return self.overrides.get(kn)
+                        return self.get_from_overrides(kn, default)
 
-            return self.current.get(kn, default)
+            return self.get_from_current(kn, default)
 
     def changed(self):
         self.is_dirty += 1
         if self.is_dirty < 2 and self.loop:
             call_later_ms(250, self.write_out())
 
-    def set(self, kn, v):
+    def set(self, kn, v, permanent=False):
         # print('set({}, {}'.format(kn, v))
-        self.current[kn] = v
-        self.changed()
+        if (not self.temporary_mode or kn in DEVICE_SETTINGS) or permanent:
+            self.current[kn] = v
+            self.changed()
+            return
+        self.temporary_settings[kn] = v
+
+    def get_from_current(self, kn, default):
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return self.current.get(kn, default)
+        return self.temporary_settings.get(kn, default)
+
+    def get_from_overrides(self, kn, default):
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return self.overrides.get(kn, default)
+        return self.temporary_overrides.get(kn, default)
 
     def set_volatile(self, kn, v):
-        self.overrides[kn] = v
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self.overrides[kn] = v
+            return
+        self.temporary_overrides[kn] = v
+
+    def in_current(self, kn):
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return kn in self.current
+        return kn in self.temporary_settings
+
+    def in_overrides(self, kn):
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            return kn in self.overrides
+        return kn in self.temporary_overrides
 
     def clear_volatile(self, kn):
-        if kn in self.overrides:
-            del self.overrides[kn]
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            if kn in self.overrides:
+                del self.overrides[kn]
+            return
+        if kn in self.temporary_overrides:
+            del self.temporary_overrides[kn]
 
     def remove(self, kn):
         # print('remove(\'{}\') called!'.format(kn))
-        if kn in self.current:
-            self.current.pop(kn, None)
-            self.changed()
+        if self.in_current(kn):
+            if not self.temporary_mode or kn in DEVICE_SETTINGS:
+                self.current.pop(kn, None)
+                self.changed()
+                return
+            self.temporary_settings.pop(kn, None)
 
     def remove_regex(self, pattern):
         import re
         pattern = re.compile(pattern)
-        matches = [k for k in self.current if pattern.search(k)]
+        matches = []
+        if self.temporary_mode:
+            matches = [k for k in self.temporary_settings if pattern.search(k)]
+        else:
+            matches = [k for k in self.current if pattern.search(k)]
         for k in matches:
             self.remove(k)
 
@@ -268,9 +309,14 @@ class ExtSettings:
         # could be just:
         #       self.current = {}
         # but accomodating the simulator here
-        rk = [k for k in self.current if k[0] != '_']
-        for k in rk:
-            del self.current[k]
+        if self.temporary_mode:
+            rk = [k for k in self.temporary_settings if k[0] != '_']
+            for k in rk:
+                del self.temporary_settings[k]
+        else:
+            rk = [k for k in self.current if k[0] != '_']
+            for k in rk:
+                del self.current[k]
 
         self.changed()
 
@@ -295,7 +341,7 @@ class ExtSettings:
         # Was sometimes running low on memory in this area: recover
         try:
             gc.collect()
-            self.save()
+            self.internal_save()
         except MemoryError:
             call_later_ms(250, self.write_out())
 
@@ -338,14 +384,22 @@ class ExtSettings:
             sf.wait_done()
 
     def erase_all(self):
+        if self.temporary_mode:
+            return
+
         for pos in self.slots:
             self.erase_cache_entry(pos)
         self.blank()
 
-    def save(self):
+    def internal_save(self):
         # Make two saves in case one is corrupted
         self.do_save(erase_old_pos=True)
         self.do_save(erase_old_pos=False)
+
+    def save(self, permanent=False):
+        if self.temporary_mode and not permanent:
+            return
+        self.internal_save()
 
     def do_save(self, erase_old_pos=True):
         # print('do_save({})'.format(erase_old_pos))
@@ -425,6 +479,20 @@ class ExtSettings:
         # act blank too, just in case.
         self.current.clear()
         self.is_dirty = 0
+
+    def enter_temporary_mode(self):
+
+        # Avoid resetting temporary settings if already in temporary mode
+        if self.temporary_mode:
+            return
+
+        self.temporary_mode = True
+        self.temporary_settings = self.default_values()
+
+    def exit_temporary_mode(self):
+        self.temporary_mode = False
+        self.temporary_settings = {}
+        self.temporary_overrides = {}
 
     @staticmethod
     def default_values():

@@ -13,7 +13,7 @@ from styles.colors import HIGHLIGHT_TEXT_HEX
 
 
 class BackupFlow(Flow):
-    def __init__(self, initial_backup=False):
+    def __init__(self, initial_backup=False, left_micron=microns.Back):
         from common import settings
         super().__init__(initial_state=self.show_intro, name='BackupFlow')
         self.backup_quiz_passed = settings.get('backup_quiz', False)
@@ -21,11 +21,11 @@ class BackupFlow(Flow):
 
         self.statusbar = {'title': 'BACKUP', 'icon': 'ICON_BACKUP'}
         self.initial_backup = initial_backup
+        self.first_left_micron = left_micron
 
     async def show_intro(self):
         from pages import InfoPage
-        from utils import recolor
-        import stash
+        from utils import recolor, is_passphrase_active
 
         if self.backup_quiz_passed:
             msgs = ['Passport is about to create an updated microSD backup.',
@@ -36,13 +36,13 @@ class BackupFlow(Flow):
                         recolor(HIGHLIGHT_TEXT_HEX, 'REQUIRED')),
                     'We recommend writing down the Backup Code on the included security card.',
                     'We consider this safe since physical access to the microSD card is required to access the backup.']
-        if stash.bip39_passphrase != '':
+        if is_passphrase_active():
             msgs.append('The current passphrase applied to Passport will not be saved as part of this backup.')
 
         result = await InfoPage(
             icon=lv.LARGE_ICON_BACKUP,
             text=msgs,
-            left_micron=microns.Back,
+            left_micron=self.first_left_micron,
             right_micron=microns.Forward).show()
 
         if result:

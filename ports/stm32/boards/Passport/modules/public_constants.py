@@ -109,9 +109,11 @@ PSBT_OUT_TAP_BIP32_DERIVATION = const(7)
 MAX_SIGNERS = const(15)
 
 # PSBT Xpub trust policies
-TRUST_VERIFY = const(0)
-TRUST_OFFER = const(1)
-TRUST_PSBT = const(2)
+MUSIG_REQUIRE = const(0)
+MUSIG_ASK = const(1)
+MUSIG_SKIP = const(2)
+MUSIG_DEFAULT = MUSIG_ASK
+MUSIG_TEMP_DEFAULT = MUSIG_SKIP
 
 # Default Directories
 DIR_BACKUPS = 'backups'
@@ -122,6 +124,21 @@ DIR_TRANSACTIONS = 'transactions'
 DIR_HEALTH_CHECKS = 'health_checks'
 
 MARGIN_FOR_ADDRESSES = 0
+
+# Device Settings, not saved to backups in temporary mode
+DEVICE_SETTINGS = [
+    'screen_brightness',
+    'shutdown_timeout',
+    'device_name',
+    'security_words',
+    'pin_prefix_hash',
+    'update',
+    'firmware_title',
+    'validated_ok',
+    'terms_ok',
+    'last_qr_size_idx',
+    'last_qr_brightness',
+]
 
 # Size of a pin prefix:
 NUM_DIGITS_FOR_SECURITY_WORDS = const(4)

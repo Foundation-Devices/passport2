@@ -14,7 +14,7 @@ class MenuFlow(Flow):
     latest_menu = None
 
     def __init__(self, menu, initial_selected_index=0, is_top_level=None, context=None,
-                 card_header=None, statusbar=None, dynamic=None):
+                 card_header=None, statusbar=None, dynamic=None, item_vertical_padding=None):
         self.menu = menu
 
         super().__init__(initial_state=self.show_menu, name='MenuFlow')
@@ -26,6 +26,7 @@ class MenuFlow(Flow):
         self.statusbar = statusbar
         self.dynamic = dynamic
         MenuFlow.latest_menu = self
+        self.item_vertical_padding = item_vertical_padding
 
     async def show_menu(self):
         from common import ui
@@ -52,6 +53,7 @@ class MenuFlow(Flow):
             right_micron=microns.Checkmark,
             is_top_level=self.is_top_level,
             context=self.context,
+            item_vertical_padding=self.item_vertical_padding
         ).show()
         if result is None:
             if ui.is_top_level():

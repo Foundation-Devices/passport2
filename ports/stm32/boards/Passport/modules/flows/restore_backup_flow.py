@@ -99,14 +99,18 @@ class RestoreBackupFlow(Flow):
         result = await PredictiveTextInputPage(
             word_list='bytewords',
             total_words=NUM_BACKUP_PASSWORD_WORDS,
-            initial_words=self.backup_password_words).show()
-        if result is None:
+            initial_words=self.backup_password_words,
+            initial_prefixes=self.backup_password_prefixes).show()
+
+        (backup_password_words, self.backup_password_prefixes, _) = result
+        if backup_password_words is None:
             cancel = await QuestionPage(text='Cancel password entry? ' +
                                         'All progress will be lost.').show()
             if cancel:
+                self.backup_password_prefixes = []
                 self.back()
         else:
-            self.backup_password_words, self.backup_password_prefixes = result
+            self.backup_password_words = backup_password_words
             self.decryption_password = (' ').join(self.backup_password_words)
             # print('6 words: decryption_password={}'.format(self.decryption_password))
             self.goto(self.do_restore)
@@ -125,6 +129,7 @@ class RestoreBackupFlow(Flow):
         from utils import start_task
         from flows import AutoBackupFlow, BackupFlow
         from pages import InfoPage
+        from common import settings
 
         # TODO: Change from spinner to ProgressPage and pass on_progress instead of None below.
         (error,) = await spinner_task(
@@ -142,6 +147,8 @@ class RestoreBackupFlow(Flow):
                 if error_2 is not None or self.backup_code != new_backup_code:
                     await InfoPage("You will receive a new Backup Code to use with your new Passport.").show()
                     await BackupFlow(initial_backup=True).run()
+                else:  # No error and self.backup_code == new_backup_code
+                    settings.set('backup_quiz', True)
             elif self.autobackup:
                 await AutoBackupFlow(offer=True).run()
 

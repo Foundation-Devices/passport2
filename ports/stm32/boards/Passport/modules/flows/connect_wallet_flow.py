@@ -25,7 +25,7 @@ from wallets.utils import (
     get_deriv_path_from_addr_type_and_acct,
     get_addr_type_from_deriv,
     derive_address)
-from public_constants import TRUST_PSBT
+from public_constants import MUSIG_SKIP
 from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
 from utils import random_hex, spinner_task
@@ -306,7 +306,7 @@ class ConnectWalletFlow(Flow):
                             self.set_result(False)
                             return
                     else:
-                        common.settings.set('multisig_policy', TRUST_PSBT)
+                        common.settings.set('multisig_policy', MUSIG_SKIP)
                         self.goto(self.complete)
                 else:
                     self.goto(self.complete)
@@ -375,7 +375,7 @@ class ConnectWalletFlow(Flow):
                             self.set_result(False)
                             return
                     else:
-                        common.settings.set('multisig_policy', TRUST_PSBT)
+                        common.settings.set('multisig_policy', MUSIG_SKIP)
                         self.goto(self.complete)
                 else:
                     self.goto(self.complete)
@@ -475,7 +475,7 @@ class ConnectWalletFlow(Flow):
                         self.set_result(False)
                         return
                 else:
-                    common.settings.set('multisig_policy', TRUST_PSBT)
+                    common.settings.set('multisig_policy', MUSIG_SKIP)
                     self.goto(self.complete)
             else:
                 self.goto(self.complete)

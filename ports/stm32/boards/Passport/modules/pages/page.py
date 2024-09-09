@@ -60,12 +60,12 @@ class Page(View):
 
     def left_action(self, is_pressed):
         # print('Page.right_action()')
-        if not is_pressed:
+        if not is_pressed and self.left_micron:
             self.set_result(False)
 
     def right_action(self, is_pressed):
         # print('Page.right_action()')
-        if not is_pressed:
+        if not is_pressed and self.right_micron:
             self.set_result(True)
 
     # By default, returns None so caller can differentiate between user pressing a button to back out

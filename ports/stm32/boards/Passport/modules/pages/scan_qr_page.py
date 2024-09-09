@@ -4,6 +4,7 @@
 
 import lvgl as lv
 from data_codecs.data_decoder import DecodeError
+from foundation import ur
 from pages import Page
 from styles.colors import TEXT_GREY
 from styles.style import Stylize
@@ -121,7 +122,7 @@ class ScanQRPage(Page):
                     qr_type = self.camera.qr_decoder.qr_type()
 
                     self.set_result(QRScanResult(data=data, qr_type=qr_type))
-            except DecodeError as exc:
+            except Exception as exc:
                 self.set_result(QRScanResult(error=exc))
 
     # Just return None.
@@ -150,8 +151,14 @@ class QRScanResult:
         self.num_frames = num_frames
         self.max_frames = max_frames
 
+    def is_unsupported(self):
+        return isinstance(self.error, ur.UnsupportedError)
+
     def is_failure(self):
         return self.error is not None
+
+    def is_ur_too_big(self):
+        return isinstance(self.error, ur.TooBigError)
 
     def is_oversized(self):
         return self.max_frames is not None and self.num_frames > self.max_frames

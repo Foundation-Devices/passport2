@@ -11,8 +11,8 @@
 
 STATIC const mp_obj_type_t mod_foundation_ur_Value_type;
 STATIC const mp_obj_type_t mod_foundation_ur_CoinType_type;
-STATIC const mp_obj_type_t mod_foundation_ur_CryptoCoinInfo_type;
-STATIC const mp_obj_type_t mod_foundation_ur_CryptoKeypath_type;
+STATIC const mp_obj_type_t mod_foundation_ur_CoinInfo_type;
+STATIC const mp_obj_type_t mod_foundation_ur_Keypath_type;
 STATIC const mp_obj_type_t mod_foundation_ur_PassportRequest_type;
 
 STATIC struct _mp_obj_PassportRequest_t *mod_foundation_ur_PassportRequest_new(UR_PassportRequest *value);
@@ -22,6 +22,11 @@ STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error);
 ///     """
 ///     """
 STATIC MP_DEFINE_EXCEPTION(OtherError, Exception);
+
+/// class TooBigError(Exception):
+///     """
+///     """
+STATIC MP_DEFINE_EXCEPTION(TooBigError, Exception);
 
 /// class UnsupportedError(Exception):
 ///     """
@@ -39,6 +44,9 @@ STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error) {
     switch (error->kind) {
         case UR_ERROR_KIND_OTHER:
             type = &mp_type_OtherError;
+            break;
+        case UR_ERROR_KIND_TOO_BIG:
+            type = &mp_type_TooBigError;
             break;
         case UR_ERROR_KIND_UNSUPPORTED:
             type = &mp_type_UnsupportedError;
@@ -80,11 +88,11 @@ STATIC void mod_foundation_ur_Value_print(const mp_print_t *print,
         case Bytes:
             mp_print_str(print, "UR_Value::Bytes");
             break;
-        case CryptoHDKey:
-            mp_print_str(print, "UR_Value::CryptoHDKey");
+        case HDKey:
+            mp_print_str(print, "UR_Value::HDKey");
             break;
-        case CryptoPSBT:
-            mp_print_str(print, "UR_Value::CryptoPSBT");
+        case Psbt:
+            mp_print_str(print, "UR_Value::Psbt");
             break;
         case PassportRequest:
             mp_print_str(print, "UR_Value::PassportRequest");
@@ -126,17 +134,17 @@ STATIC mp_obj_t mod_foundation_ur_Value_unwrap_bytes(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_bytes_obj,
                                  mod_foundation_ur_Value_unwrap_bytes);
 
-/// def unwrap_crypto_psbt(self) -> bytearray:
+/// def unwrap_psbt(self) -> bytearray:
 ///     """
 ///     """
-STATIC mp_obj_t mod_foundation_ur_Value_unwrap_crypto_psbt(mp_obj_t self_in) {
+STATIC mp_obj_t mod_foundation_ur_Value_unwrap_psbt(mp_obj_t self_in) {
     mp_obj_Value_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_check_self(self->value.tag == CryptoPSBT);
+    mp_check_self(self->value.tag == Psbt);
 
-    return mp_obj_new_bytearray_by_ref(self->value.crypto_psbt.len, (void *)self->value.crypto_psbt.data);
+    return mp_obj_new_bytearray_by_ref(self->value.psbt.len, (void *)self->value.psbt.data);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_crypto_psbt_obj,
-                                 mod_foundation_ur_Value_unwrap_crypto_psbt);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_psbt_obj,
+                                 mod_foundation_ur_Value_unwrap_psbt);
 
 /// def unwrap_passport_request(self) -> PassportRequest:
 ///     """
@@ -152,13 +160,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_passport_request
 
 STATIC const mp_rom_map_elem_t mod_foundation_ur_Value_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BYTES), MP_ROM_INT(Bytes) },
-    { MP_ROM_QSTR(MP_QSTR_CRYPTO_HDKEY), MP_ROM_INT(CryptoHDKey) },
-    { MP_ROM_QSTR(MP_QSTR_CRYPTO_PSBT), MP_ROM_INT(CryptoPSBT) },
+    { MP_ROM_QSTR(MP_QSTR_HDKEY), MP_ROM_INT(HDKey) },
+    { MP_ROM_QSTR(MP_QSTR_PSBT), MP_ROM_INT(Psbt) },
     { MP_ROM_QSTR(MP_QSTR_PASSPORT_REQUEST), MP_ROM_INT(PassportRequest) },
 
     { MP_ROM_QSTR(MP_QSTR_ur_type), MP_ROM_PTR(&mod_foundation_ur_Value_ur_type_obj) },
     { MP_ROM_QSTR(MP_QSTR_unwrap_bytes), MP_ROM_PTR(&mod_foundation_ur_Value_unwrap_bytes_obj) },
-    { MP_ROM_QSTR(MP_QSTR_unwrap_crypto_psbt), MP_ROM_PTR(&mod_foundation_ur_Value_unwrap_crypto_psbt_obj) },
+    { MP_ROM_QSTR(MP_QSTR_unwrap_psbt), MP_ROM_PTR(&mod_foundation_ur_Value_unwrap_psbt_obj) },
     { MP_ROM_QSTR(MP_QSTR_unwrap_passport_request), MP_ROM_PTR(&mod_foundation_ur_Value_unwrap_passport_request_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(mod_foundation_ur_Value_locals_dict, mod_foundation_ur_Value_locals_dict_table);
@@ -188,22 +196,22 @@ STATIC const mp_obj_type_t mod_foundation_ur_CoinType_type = {
     .locals_dict = (mp_obj_dict_t*)&mod_foundation_ur_CoinType_locals_dict,
 };
 
-/// class CryptoCoinInfo:
+/// class CoinInfo:
 ///     """
 ///     """
-typedef struct _mp_obj_CryptoCoinInfo_t {
+typedef struct _mp_obj_CoinInfo_t {
     mp_obj_base_t base;
-    UR_CryptoCoinInfo info;
-} mp_obj_CryptoCoinInfo_t;
+    UR_CoinInfo info;
+} mp_obj_CoinInfo_t;
 
-STATIC mp_obj_t mod_foundation_ur_CryptoCoinInfo_make_new(const mp_obj_type_t *type,
+STATIC mp_obj_t mod_foundation_ur_CoinInfo_make_new(const mp_obj_type_t *type,
                                                                 size_t n_args,
                                                                 size_t n_kw,
                                                                 const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 2, 2, false);
 
-    mp_obj_CryptoCoinInfo_t *o = m_new_obj(mp_obj_CryptoCoinInfo_t);
-    o->base.type = &mod_foundation_ur_CryptoCoinInfo_type;
+    mp_obj_CoinInfo_t *o = m_new_obj(mp_obj_CoinInfo_t);
+    o->base.type = &mod_foundation_ur_CoinInfo_type;
 
     o->info.coin_type = mp_obj_int_get_uint_checked(args[0]);
     o->info.network = mp_obj_int_get_uint_checked(args[1]);
@@ -211,21 +219,21 @@ STATIC mp_obj_t mod_foundation_ur_CryptoCoinInfo_make_new(const mp_obj_type_t *t
     return MP_OBJ_FROM_PTR(o);
 }
 
-STATIC const mp_obj_type_t mod_foundation_ur_CryptoCoinInfo_type = {
+STATIC const mp_obj_type_t mod_foundation_ur_CoinInfo_type = {
     { &mp_type_type },
-    .name = MP_QSTR_CryptoCoinInfo,
-    .make_new = mod_foundation_ur_CryptoCoinInfo_make_new,
+    .name = MP_QSTR_CoinInfo,
+    .make_new = mod_foundation_ur_CoinInfo_make_new,
 };
 
-/// class CryptoKeypath:
+/// class Keypath:
 ///     """
 ///     """
-typedef struct _mp_obj_CryptoKeypath_t {
+typedef struct _mp_obj_Keypath_t {
     mp_obj_base_t base;
-    UR_CryptoKeypath keypath;
-} mp_obj_CryptoKeypath_t;
+    UR_Keypath keypath;
+} mp_obj_Keypath_t;
 
-STATIC mp_obj_t mod_foundation_ur_CryptoKeypath_make_new(const mp_obj_type_t *type,
+STATIC mp_obj_t mod_foundation_ur_Keypath_make_new(const mp_obj_type_t *type,
                                                          size_t n_args,
                                                          size_t n_kw,
                                                          const mp_obj_t *all_args) {
@@ -237,8 +245,8 @@ STATIC mp_obj_t mod_foundation_ur_CryptoKeypath_make_new(const mp_obj_type_t *ty
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_obj_CryptoKeypath_t *o = m_new_obj(mp_obj_CryptoKeypath_t);
-    o->base.type = &mod_foundation_ur_CryptoKeypath_type;
+    mp_obj_Keypath_t *o = m_new_obj(mp_obj_Keypath_t);
+    o->base.type = &mod_foundation_ur_Keypath_type;
 
     if (args[0].u_obj != MP_OBJ_NULL) {
         o->keypath.source_fingerprint = mp_obj_int_get_uint_checked(args[0].u_obj);
@@ -257,10 +265,10 @@ STATIC mp_obj_t mod_foundation_ur_CryptoKeypath_make_new(const mp_obj_type_t *ty
     return MP_OBJ_FROM_PTR(o);
 }
 
-STATIC const mp_obj_type_t mod_foundation_ur_CryptoKeypath_type = {
+STATIC const mp_obj_type_t mod_foundation_ur_Keypath_type = {
     { &mp_type_type },
-    .name = MP_QSTR_CryptoKeypath,
-    .make_new = mod_foundation_ur_CryptoKeypath_make_new,
+    .name = MP_QSTR_Keypath,
+    .make_new = mod_foundation_ur_Keypath_make_new,
 };
 
 /// class PassportRequest:
@@ -352,8 +360,8 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
 {
     mp_buffer_info_t key_data = {0};
     mp_buffer_info_t chain_code_info = {0};
-    mp_obj_CryptoCoinInfo_t *use_info_obj = NULL;
-    mp_obj_CryptoKeypath_t *origin_obj = NULL;
+    mp_obj_CoinInfo_t *use_info_obj = NULL;
+    mp_obj_Keypath_t *origin_obj = NULL;
     UR_Value value = {0};
 
     static const mp_arg_t allowed_args[] = {
@@ -383,18 +391,18 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
     }
 
     if (args[3].u_obj != MP_OBJ_NULL) {
-        if (!mp_obj_is_type(args[3].u_obj, &mod_foundation_ur_CryptoCoinInfo_type)) {
+        if (!mp_obj_is_type(args[3].u_obj, &mod_foundation_ur_CoinInfo_type)) {
             mp_raise_msg(&mp_type_ValueError,
-                        MP_ERROR_TEXT("use_info should be of type CryptoCoinInfo"));
+                        MP_ERROR_TEXT("use_info should be of type CoinInfo"));
         }
 
         use_info_obj = MP_OBJ_TO_PTR(args[3].u_obj);
     }
 
     if (args[4].u_obj != MP_OBJ_NULL) {
-        if (!mp_obj_is_type(args[4].u_obj, &mod_foundation_ur_CryptoKeypath_type)) {
+        if (!mp_obj_is_type(args[4].u_obj, &mod_foundation_ur_Keypath_type)) {
             mp_raise_msg(&mp_type_ValueError,
-                        MP_ERROR_TEXT("origin should be of type CryptoKeypath"));
+                        MP_ERROR_TEXT("origin should be of type Keypath"));
         }
 
         origin_obj = MP_OBJ_TO_PTR(args[4].u_obj);
@@ -406,7 +414,7 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
     }
 
     ur_registry_new_derived_key(&value,
-                                args[0].u_bool,
+                                args[1].u_bool,
                                 key_data.buf,
                                 chain_code_info.buf,
                                 &use_info_obj->info,
@@ -419,20 +427,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_foundation_ur_new_derived_key_obj,
                                   1,
                                   mod_foundation_ur_new_derived_key);
 
-/// def new_crypto_psbt(data: bytes) -> Value:
+/// def new_psbt(data: bytes) -> Value:
 ///     """
 ///     """
-STATIC mp_obj_t mod_foundation_ur_new_crypto_psbt(mp_obj_t data_in)
+STATIC mp_obj_t mod_foundation_ur_new_psbt(mp_obj_t data_in)
 {
     mp_buffer_info_t data = {0};
     UR_Value value;
 
     mp_get_buffer_raise(data_in, &data, MP_BUFFER_READ);
-    ur_registry_new_crypto_psbt(&value, data.buf, data.len);
+    ur_registry_new_psbt(&value, data.buf, data.len);
     return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_new_crypto_psbt_obj,
-                                 mod_foundation_ur_new_crypto_psbt);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_new_psbt_obj,
+                                 mod_foundation_ur_new_psbt);
 
 
 /// def new_passport_response(data: bytes) -> Value:
@@ -464,7 +472,7 @@ STATIC mp_obj_t mod_foundation_ur_new_passport_response(size_t n_args,
     mp_get_buffer_raise(args[0].u_obj, &uuid, MP_BUFFER_READ);
     if (uuid.len != 16) {
         mp_raise_msg(&mp_type_ValueError,
-                    MP_ERROR_TEXT("uuid should be 33 bytes"));
+                    MP_ERROR_TEXT("uuid should be 16 bytes"));
     }
 
     GET_STR_DATA_LEN(args[1].u_obj, word1, word1_len);
@@ -660,8 +668,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_decode_single_part_obj,
 STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     /// Errors.
     {MP_ROM_QSTR(MP_QSTR_OtherError), MP_ROM_PTR(&mp_type_OtherError)},
+    {MP_ROM_QSTR(MP_QSTR_TooBigError), MP_ROM_PTR(&mp_type_TooBigError)},
     {MP_ROM_QSTR(MP_QSTR_UnsupportedError), MP_ROM_PTR(&mp_type_UnsupportedError)},
-    {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_UnsupportedError)},
+    {MP_ROM_QSTR(MP_QSTR_NotMultiPartError), MP_ROM_PTR(&mp_type_NotMultiPartError)},
 
     // Value.
     {MP_ROM_QSTR(MP_QSTR_NETWORK_MAINNET), MP_ROM_INT(UR_NETWORK_MAINNET)},
@@ -670,12 +679,12 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_PASSPORT_MODEL_BATCH2), MP_ROM_INT(PASSPORT_MODEL_BATCH2)},
     {MP_ROM_QSTR(MP_QSTR_Value), MP_ROM_PTR(&mod_foundation_ur_Value_type)},
     {MP_ROM_QSTR(MP_QSTR_CoinType), MP_ROM_PTR(&mod_foundation_ur_CoinType_type)},
-    {MP_ROM_QSTR(MP_QSTR_CryptoCoinInfo), MP_ROM_PTR(&mod_foundation_ur_CryptoCoinInfo_type)},
-    {MP_ROM_QSTR(MP_QSTR_CryptoKeypath), MP_ROM_PTR(&mod_foundation_ur_CryptoKeypath_type)},
+    {MP_ROM_QSTR(MP_QSTR_CoinInfo), MP_ROM_PTR(&mod_foundation_ur_CoinInfo_type)},
+    {MP_ROM_QSTR(MP_QSTR_Keypath), MP_ROM_PTR(&mod_foundation_ur_Keypath_type)},
     {MP_ROM_QSTR(MP_QSTR_PassportRequest), MP_ROM_PTR(&mod_foundation_ur_PassportRequest_type)},
     {MP_ROM_QSTR(MP_QSTR_new_bytes), MP_ROM_PTR(&mod_foundation_ur_new_bytes_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_derived_key), MP_ROM_PTR(&mod_foundation_ur_new_derived_key_obj)},
-    {MP_ROM_QSTR(MP_QSTR_new_crypto_psbt), MP_ROM_PTR(&mod_foundation_ur_new_crypto_psbt_obj)},
+    {MP_ROM_QSTR(MP_QSTR_new_psbt), MP_ROM_PTR(&mod_foundation_ur_new_psbt_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_passport_response), MP_ROM_PTR(&mod_foundation_ur_new_passport_response_obj)},
 
     // Encoder.

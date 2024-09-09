@@ -26,12 +26,14 @@ async def erase_passport_task(on_done, full_reset):
         settings.remove('xpub')
         settings.remove('words')
         settings.remove('multisig')
+        settings.remove('multisig_policy')
         settings.remove('accounts')
         settings.remove('backup_quiz')
         settings.remove('enable_passphrase')
         settings.remove_regex("^ext\\.*")
         settings.remove('next_addrs')
         settings.remove('derived_keys')
+        settings.remove('device_name')
         for key in saved_flow_keys:
             settings.remove(key)
 

@@ -3,7 +3,7 @@
 
 //! Encoder.
 
-use core::{ffi::c_char, fmt::Write};
+use core::{ffi::c_char, fmt::Write, ptr};
 
 use foundation_ur::{max_fragment_len, HeaplessEncoder};
 use minicbor::{Encode, Encoder};
@@ -106,7 +106,7 @@ pub unsafe extern "C" fn ur_encoder_start(
     let value = unsafe { value.to_value() };
 
     // SAFETY: This code assumes that runs on a single thread.
-    let message = unsafe { &mut UR_ENCODER_MESSAGE };
+    let message = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_MESSAGE) };
 
     message.clear();
     let mut e = Encoder::new(Writer(message));
@@ -142,7 +142,7 @@ pub unsafe extern "C" fn ur_encoder_next_part(
 ) {
     let part = encoder.inner.next_part();
 
-    let buf = unsafe { &mut UR_ENCODER_STRING };
+    let buf = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_STRING) };
     buf.clear();
     write!(buf, "{part}").unwrap();
     buf.push(b'\0').unwrap();

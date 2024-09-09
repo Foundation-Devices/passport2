@@ -3,7 +3,7 @@
 
 //! Uniform Resources.
 
-use core::{ffi::c_char, fmt, fmt::Write};
+use core::{ffi::c_char, fmt, fmt::Write, ptr};
 
 /// cbindgen:ignore
 #[used]
@@ -24,6 +24,7 @@ const fn max_message_len(max_characters: usize) -> usize {
 #[repr(C)]
 pub enum UR_ErrorKind {
     UR_ERROR_KIND_OTHER,
+    UR_ERROR_KIND_TOO_BIG,
     UR_ERROR_KIND_UNSUPPORTED,
     UR_ERROR_KIND_NOT_MULTI_PART,
 }
@@ -43,7 +44,7 @@ impl UR_Error {
     /// an invalid message. So the data pointed by `message` should be copied
     /// and `UR_Error` must be dropped.
     pub unsafe fn new(message: &dyn fmt::Display, kind: UR_ErrorKind) -> Self {
-        let error = &mut UR_ERROR;
+        let error = &mut *ptr::addr_of_mut!(UR_ERROR);
         error.clear();
 
         if write!(error, "{}", message).is_err() {
@@ -68,8 +69,40 @@ impl UR_Error {
     /// # Safety
     ///
     /// The same as in [`UR_Error::new`].
-    pub unsafe fn unsupported(message: &dyn fmt::Display) -> Self {
-        Self::new(message, UR_ErrorKind::UR_ERROR_KIND_UNSUPPORTED)
+    pub unsafe fn too_big(sequence_count: u32, max: usize) -> Self {
+        struct Error {
+            sequence_count: u32,
+            max: usize,
+        }
+
+        impl fmt::Display for Error {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(
+                    f,
+                    "The UR contains more sequences than we can handle.\n\nMaximum sequence count supported: {}.\n\nMessage sequence count: {}.",
+                    self.max,
+                    self.sequence_count,
+                )
+            }
+        }
+
+        Self::new(
+            &Error {
+                sequence_count,
+                max,
+            },
+            UR_ErrorKind::UR_ERROR_KIND_TOO_BIG,
+        )
+    }
+
+    /// # Safety
+    ///
+    /// The same as in [`UR_Error::new`].
+    pub unsafe fn unsupported() -> Self {
+        Self::new(
+            &"Unsupported uniform resource",
+            UR_ErrorKind::UR_ERROR_KIND_UNSUPPORTED,
+        )
     }
 }
 

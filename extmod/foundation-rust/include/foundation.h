@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define VERSION_LEN 8
+
 /**
  * Maximum size of an encoded Uniform Resource.
  *
@@ -80,6 +82,7 @@ typedef enum {
 
 typedef enum {
   UR_ERROR_KIND_OTHER,
+  UR_ERROR_KIND_TOO_BIG,
   UR_ERROR_KIND_UNSUPPORTED,
   UR_ERROR_KIND_NOT_MULTI_PART,
 } UR_ErrorKind;
@@ -108,6 +111,118 @@ typedef struct UR_Decoder UR_Decoder;
  */
 typedef struct UR_Encoder UR_Encoder;
 
+/**
+ * The result of the firmware update verification.
+ */
+typedef enum {
+  /**
+   * The firmware validation succeed.
+   */
+  FIRMWARE_RESULT_HEADER_OK,
+  /**
+   * The header format is not valid.
+   */
+  FIRMWARE_RESULT_INVALID_HEADER,
+  /**
+   * Unknown magic number.
+   */
+  FIRMWARE_RESULT_UNKNOWN_MAGIC,
+  /**
+   * The timestamp field is invalid.
+   */
+  FIRMWARE_RESULT_INVALID_TIMESTAMP,
+  /**
+   * The firmware is too small.
+   */
+  FIRMWARE_RESULT_TOO_SMALL,
+  /**
+   * The firmware is too big.
+   */
+  FIRMWARE_RESULT_TOO_BIG,
+  /**
+   * The firmware is older than the current firmware.
+   */
+  FIRMWARE_RESULT_TOO_OLD,
+  /**
+   * Public Key 1 is out of range.
+   */
+  FIRMWARE_RESULT_INVALID_PUBLIC_KEY1_INDEX,
+  /**
+   * Public Key 2 is out of range.
+   */
+  FIRMWARE_RESULT_INVALID_PUBLIC_KEY2_INDEX,
+  /**
+   * The same public key was used for the two signatures.
+   */
+  FIRMWARE_RESULT_SAME_PUBLIC_KEY,
+  /**
+   * Signature verification succeed.
+   */
+  FIRMWARE_RESULT_SIGNATURES_OK,
+  /**
+   * The user signed firmware is not valid.
+   */
+  FIRMWARE_RESULT_INVALID_USER_SIGNATURE,
+  /**
+   * The first signature verification failed.
+   */
+  FIRMWARE_RESULT_FAILED_SIGNATURE1,
+  /**
+   * The second signature verification failed.
+   */
+  FIRMWARE_RESULT_FAILED_SIGNATURE2,
+} FirmwareResult_Tag;
+
+typedef struct {
+  char version[VERSION_LEN];
+  bool signed_by_user;
+} FirmwareResult_HeaderOk_Body;
+
+typedef struct {
+  uint32_t magic;
+} FirmwareResult_UnknownMagic_Body;
+
+typedef struct {
+  uint32_t len;
+} FirmwareResult_TooSmall_Body;
+
+typedef struct {
+  uint32_t len;
+} FirmwareResult_TooBig_Body;
+
+typedef struct {
+  uint32_t timestamp;
+} FirmwareResult_TooOld_Body;
+
+typedef struct {
+  uint32_t index;
+} FirmwareResult_InvalidPublicKey1Index_Body;
+
+typedef struct {
+  uint32_t index;
+} FirmwareResult_InvalidPublicKey2Index_Body;
+
+typedef struct {
+  /**
+   * Index of the duplicated key.
+   */
+  uint32_t index;
+} FirmwareResult_SamePublicKey_Body;
+
+typedef struct {
+  FirmwareResult_Tag tag;
+  union {
+    FirmwareResult_HeaderOk_Body HEADER_OK;
+    FirmwareResult_UnknownMagic_Body UNKNOWN_MAGIC;
+    FirmwareResult_TooSmall_Body TOO_SMALL;
+    FirmwareResult_TooBig_Body TOO_BIG;
+    FirmwareResult_TooOld_Body TOO_OLD;
+    FirmwareResult_InvalidPublicKey1Index_Body INVALID_PUBLIC_KEY1_INDEX;
+    FirmwareResult_InvalidPublicKey2Index_Body INVALID_PUBLIC_KEY2_INDEX;
+    FirmwareResult_SamePublicKey_Body SAME_PUBLIC_KEY;
+  };
+} FirmwareResult;
+
 typedef struct {
   UR_ErrorKind kind;
   const char *message;
@@ -117,7 +232,7 @@ typedef struct {
 typedef struct {
   UR_CoinType coin_type;
   uint64_t network;
-} UR_CryptoCoinInfo;
+} UR_CoinInfo;
 
 /**
  * Metadata for the complete or partial derivation path of a key.
@@ -139,10 +254,10 @@ typedef struct {
    * Whether `depth` is present.
    */
   bool has_depth;
-} UR_CryptoKeypath;
+} UR_Keypath;
 
 /**
- * Derived `crypto-hdkey`.
+ * Derived `hdkey`.
  */
 typedef struct {
   /**
@@ -164,7 +279,7 @@ typedef struct {
   /**
    * How the key should be used.
    */
-  UR_CryptoCoinInfo use_info;
+  UR_CoinInfo use_info;
   /**
    * Whether `use_info` is present.
    */
@@ -172,7 +287,7 @@ typedef struct {
   /**
    * How the key was derived.
    */
-  UR_CryptoKeypath origin;
+  UR_Keypath origin;
   /**
    * Whether `origin` is present.
    */
@@ -186,7 +301,7 @@ typedef struct {
 } UR_DerivedKey;
 
 /**
- * A `crypto-hdkey`.
+ * A `hdkey`.
  */
 typedef enum {
   DerivedKey,
@@ -216,7 +331,7 @@ typedef struct {
 } UR_Challenge;
 
 /**
- * Passport custom `crypto-request`.
+ * Passport custom `x-passport-request`.
  */
 typedef struct {
   /**
@@ -256,7 +371,7 @@ typedef struct {
 } UR_Solution;
 
 /**
- * Passport custom `crypto-request`.
+ * Passport custom `x-passport-response`.
  */
 typedef struct {
   /**
@@ -302,19 +417,19 @@ typedef enum {
    */
   Bytes,
   /**
-   * `crypto-hdkey`.
+   * `hdkey`.
    */
-  CryptoHDKey,
+  HDKey,
   /**
-   * `crypto-psbt`.
+   * `psbt`.
    */
-  CryptoPSBT,
+  Psbt,
   /**
-   * Passport custom `crypto-request`.
+   * Passport custom `x-passport-request`.
    */
   PassportRequest,
   /**
-   * Passport custom `crypto-response`.
+   * Passport custom `x-passport-response`.
    */
   PassportResponse,
 } UR_Value_Tag;
@@ -327,16 +442,16 @@ typedef struct {
 typedef struct {
   const uint8_t *data;
   size_t len;
-} CryptoPSBT_Body;
+} Psbt_Body;
 
 typedef struct {
   UR_Value_Tag tag;
   union {
     Bytes_Body bytes;
     struct {
-      UR_HDKey crypto_hd_key;
+      UR_HDKey hd_key;
     };
-    CryptoPSBT_Body crypto_psbt;
+    Psbt_Body psbt;
     struct {
       UR_PassportRequest passport_request;
     };
@@ -361,13 +476,49 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
+ * Verify the header of a firmware update.
+ */
+void foundation_firmware_verify_update_header(const uint8_t *header,
+                                              size_t header_len,
+                                              uint32_t current_timestamp,
+                                              FirmwareResult *result);
+
+void foundation_firmware_verify_update_signatures(const uint8_t *header,
+                                                  size_t header_len,
+                                                  uint32_t current_timestamp,
+                                                  const uint8_t (*hash)[32],
+                                                  const uint8_t (*user_public_key)[64],
+                                                  FirmwareResult *result);
+
+/**
+ * Calculate a "Schnorr" public key from the secret key.
+ *
+ * See also:
+ *
+ * - https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#user-content-Public_Key_Conversion
+ */
+void foundation_secp256k1_public_key_schnorr(const uint8_t (*secret_key)[32],
+                                             uint8_t (*public_key)[32]);
+
+/**
+ * Computes a ECDSA signature over the message `data`.
+ *
+ * - `data` is the message hash.
+ * - `secret_key` is the secret key used to sign the message.
+ * - `signature` is the output of the resulting signature.
+ */
+void foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
+                                     const uint8_t (*secret_key)[32],
+                                     uint8_t (*signature)[64]);
+
+/**
  * Computes a Schnorr signature over the message `data`.
  *
  * - `data` is the message hash.
  * - `secret_key` is the secret key used to sign the message.
  * - `signature` is the output of the resulting signature.
  */
-void foundation_secp256k1_schnorr_sign(const uint8_t (*data)[32],
+void foundation_secp256k1_sign_schnorr(const uint8_t (*data)[32],
                                        const uint8_t (*secret_key)[32],
                                        uint8_t (*signature)[64]);
 
@@ -470,29 +621,28 @@ void ur_encoder_start(UR_Encoder *encoder,
 void ur_encoder_next_part(UR_Encoder *encoder, const char **ur, size_t *ur_len);
 
 /**
- * Passport custom `crypto-response`.
  * Create a new `bytes` UR.
  */
 void ur_registry_new_bytes(UR_Value *value, uint8_t *data, size_t len);
 
 /**
- * Create a new derived `crypto-hdkey` UR.
+ * Create a new derived `hdkey` UR.
  */
 void ur_registry_new_derived_key(UR_Value *value,
                                  bool is_private,
                                  const uint8_t (*key_data)[33],
                                  const uint8_t (*chain_code)[32],
-                                 const UR_CryptoCoinInfo *use_info,
-                                 const UR_CryptoKeypath *origin,
+                                 const UR_CoinInfo *use_info,
+                                 const UR_Keypath *origin,
                                  uint32_t parent_fingerprint);
 
 /**
- * Create a new `crypto-psbt` UR.
+ * Create a new `psbt` UR.
  */
-void ur_registry_new_crypto_psbt(UR_Value *value, uint8_t *data, size_t len);
+void ur_registry_new_psbt(UR_Value *value, uint8_t *data, size_t len);
 
 /**
- * Create a new Passport ustom `crypto-response` UR.
+ * Create a new Passport custom `x-passport-response` UR.
  */
 void ur_registry_new_passport_response(UR_Value *value,
                                        const uint8_t (*transaction_id)[16],

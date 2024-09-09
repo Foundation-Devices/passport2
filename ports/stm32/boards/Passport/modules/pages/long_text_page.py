@@ -22,7 +22,8 @@ class LongTextPage(Page):
                  statusbar=None,
                  left_micron=microns.Back,
                  right_micron=microns.Forward,
-                 margins=None):
+                 margins=None,
+                 top_margin=None):
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -33,7 +34,8 @@ class LongTextPage(Page):
         self.icon = icon
         self.icon_color = icon_color
         self.centered = centered
-        self.margins = (margins if margins is not None else 12)
+        self.side_margins = (margins if margins is not None else 12)
+        self.top_margin = (top_margin if top_margin is not None else 16)
 
         # Set non-style props
         self.set_width(lv.pct(100))
@@ -48,14 +50,14 @@ class LongTextPage(Page):
         if self.icon is not None:
             self.icon_view = Icon(self.icon, color=self.icon_color)
             with Stylize(self.icon_view) as default:
-                default.pad(top=16, bottom=8)
+                default.pad(top=self.top_margin, bottom=8)
             self.add_child(self.icon_view)
 
         self.container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
         self.container.set_width(lv.pct(100))
         with Stylize(self.container) as default:
             default.flex_fill()
-            default.pad(left=self.margins, right=self.margins)
+            default.pad(left=self.side_margins, right=self.side_margins)
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
             if not passport.IS_COLOR:

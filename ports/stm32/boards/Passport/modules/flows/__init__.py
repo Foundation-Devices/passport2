@@ -66,6 +66,7 @@ from .scv_flow import *
 from .set_chain_flow import *
 from .set_initial_pin_flow import *
 from .show_security_words_setting_flow import *
+from .sign_electrum_message_flow import *
 from .sign_text_file_flow import *
 from .sign_psbt_common_flow import *
 from .sign_psbt_microsd_flow import *
@@ -87,6 +88,7 @@ from .view_seed_words_flow import *
 # Top-level flows need to be declared after other flows that they use
 
 from .initial_seed_setup_flow import *
+from .temporary_seed_flow import *
 from .envoy_setup_flow import *
 from .manual_setup_flow import *
 from .select_setup_mode_flow import *

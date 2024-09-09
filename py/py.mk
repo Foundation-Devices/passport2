@@ -87,7 +87,9 @@ CFLAGS_MOD += -DUSE_BIP32_25519_CURVES=0 \
 	-DUSE_BIP39_GENERATE=0 \
 	-DUSE_BIP32_CACHE=0 \
 	-DBIP32_CACHE_SIZE=0 \
-	-DBIP32_CACHE_MAXDEPTH=0
+	-DBIP32_CACHE_MAXDEPTH=0 \
+	-DFOUNDATION_ADDITIONS=1 \
+	-DUSE_PRECOMPUTED_CP=0
 
 INC += -I$(TOP)/extmod/trezor-firmware/crypto \
 	-I$(TOP)/extmod/trezor-firmware/crypto/aes \
@@ -327,7 +329,6 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/ecdsa.o \
     extmod/trezor-firmware/crypto/curves.o \
     extmod/trezor-firmware/crypto/secp256k1.o \
-    extmod/trezor-firmware/crypto/nist256p1.o \
     extmod/trezor-firmware/crypto/memzero.o \
 	extmod/trezor-firmware/crypto/hmac.o \
     extmod/trezor-firmware/crypto/pbkdf2.o \
@@ -342,17 +343,11 @@ PY_EXTMOD_O_BASENAME = \
     extmod/trezor-firmware/crypto/sha2.o \
     extmod/trezor-firmware/crypto/sha3.o \
     extmod/trezor-firmware/crypto/hasher.o \
-	extmod/trezor-firmware/crypto/blake256.o \
-    extmod/trezor-firmware/crypto/blake2b.o \
-    extmod/trezor-firmware/crypto/blake2s.o \
     extmod/trezor-firmware/crypto/aes/aescrypt.o \
     extmod/trezor-firmware/crypto/aes/aeskey.o \
     extmod/trezor-firmware/crypto/aes/aestab.o \
     extmod/trezor-firmware/crypto/aes/aes_modes.o \
-    extmod/trezor-firmware/crypto/shamir.o \
-    extmod/trezor-firmware/crypto/groestl.o \
     extmod/trezor-firmware/crypto/slip39.o \
-    extmod/trezor-firmware/crypto/schnorr.o \
     extmod/trezor-firmware/crypto/rand.o \
     extmod/trezor-firmware/crypto/rfc6979.o \
     extmod/trezor-firmware/crypto/hmac_drbg.o \

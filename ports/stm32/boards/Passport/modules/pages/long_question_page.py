@@ -18,7 +18,9 @@ class LongQuestionPage(LongTextPage):
         card_header=None,
         statusbar=None,
         left_micron=microns.Cancel,
-        right_micron=microns.Checkmark
+        right_micron=microns.Checkmark,
+        margins=None,
+        top_margin=None,
     ):
         super().__init__(
             text=text,
@@ -28,4 +30,6 @@ class LongQuestionPage(LongTextPage):
             statusbar=statusbar,
             centered=True,
             left_micron=left_micron,
-            right_micron=right_micron)
+            right_micron=right_micron,
+            margins=margins,
+            top_margin=top_margin)

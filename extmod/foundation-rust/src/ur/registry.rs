@@ -7,10 +7,11 @@ use foundation_urtypes::{
     passport::Model,
     registry::PassportRequest,
     registry::{
-        CoinType, CryptoCoinInfo, CryptoHDKey, CryptoKeypath, DerivedKey,
-        PassportResponse, PathComponents,
+        CoinInfo, CoinType, DerivedKey, HDKey, Keypath, PassportResponse,
+        PathComponents,
     },
     supply_chain_validation::{Challenge, Solution},
+    value,
     value::Value,
 };
 
@@ -29,13 +30,13 @@ pub const UR_NETWORK_TESTNET: u32 = 1;
 pub enum UR_Value {
     /// `bytes`.
     Bytes { data: *const u8, len: usize },
-    /// `crypto-hdkey`.
-    CryptoHDKey(UR_HDKey),
-    /// `crypto-psbt`.
-    CryptoPSBT { data: *const u8, len: usize },
-    /// Passport custom `crypto-request`.
+    /// `hdkey`.
+    HDKey(UR_HDKey),
+    /// `psbt`.
+    Psbt { data: *const u8, len: usize },
+    /// Passport custom `x-passport-request`.
     PassportRequest(UR_PassportRequest),
-    /// Passport custom `crypto-response`.
+    /// Passport custom `x-passport-response`.
     PassportResponse(UR_PassportResponse),
 }
 
@@ -48,26 +49,24 @@ impl UR_Value {
         ur_type: &str,
         message: &[u8],
     ) -> Result<Self, UR_Error> {
-        let value = Value::from_ur(ur_type, message)
-            .map_err(|e| UR_Error::other(&e))?;
+        let value = Value::from_ur(ur_type, message).map_err(|e| match e {
+            value::Error::UnsupportedResource => UR_Error::unsupported(),
+            _ => UR_Error::other(&e),
+        })?;
 
         let value = match value {
             Value::Bytes(bytes) => UR_Value::Bytes {
                 data: bytes.as_ptr(),
                 len: bytes.len(),
             },
-            Value::CryptoPsbt(psbt) => UR_Value::CryptoPSBT {
+            Value::Psbt(psbt) => UR_Value::Psbt {
                 data: psbt.as_ptr(),
                 len: psbt.len(),
             },
             Value::PassportRequest(passport_request) => {
                 UR_Value::PassportRequest(passport_request.into())
             }
-            _ => {
-                return Err(UR_Error::unsupported(
-                    &"Unsupported uniform resource",
-                ));
-            }
+            _ => return Err(UR_Error::unsupported()),
         };
 
         Ok(value)
@@ -79,18 +78,18 @@ impl UR_Value {
     /// value is:
     ///
     /// - `UR_Value::Bytes`.
-    /// - `UR_Value::CryptoPSBT`.
+    /// - `UR_Value::Psbt`.
     pub unsafe fn to_value(&self) -> Value<'_> {
         match self {
             UR_Value::Bytes { data, len } => {
                 let buf = unsafe { slice::from_raw_parts(*data, *len) };
                 Value::Bytes(buf)
             }
-            UR_Value::CryptoPSBT { data, len } => {
+            UR_Value::Psbt { data, len } => {
                 let buf = unsafe { slice::from_raw_parts(*data, *len) };
-                Value::CryptoPsbt(buf)
+                Value::Psbt(buf)
             }
-            UR_Value::CryptoHDKey(v) => Value::CryptoHDKey(v.into()),
+            UR_Value::HDKey(v) => Value::HDKey(v.into()),
             UR_Value::PassportRequest(_) => panic!(
                 "Not implemented as it isn't needed. Should be unreachable"
             ),
@@ -99,23 +98,22 @@ impl UR_Value {
     }
 }
 
-/// A `crypto-hdkey`.
+/// A `hdkey`.
 #[repr(C)]
 pub enum UR_HDKey {
     DerivedKey(UR_DerivedKey),
 }
 
-impl<'a> From<&'a UR_HDKey> for CryptoHDKey<'a> {
-    fn from(value: &'a UR_HDKey) -> CryptoHDKey<'a> {
+impl<'a> From<&'a UR_HDKey> for HDKey<'a> {
+    fn from(value: &'a UR_HDKey) -> HDKey<'a> {
         match value {
-            UR_HDKey::DerivedKey(v) => {
-                CryptoHDKey::DerivedKey(DerivedKey::from(v))
-            }
+            UR_HDKey::DerivedKey(v) => HDKey::DerivedKey(DerivedKey::from(v)),
         }
     }
 }
 
-/// Derived `crypto-hdkey`.
+/// Derived `hdkey`.
+#[derive(Debug)]
 #[repr(C)]
 pub struct UR_DerivedKey {
     /// `true` if this is a private key.
@@ -127,11 +125,11 @@ pub struct UR_DerivedKey {
     /// Whether `chain_code` is present.
     pub has_chain_code: bool,
     /// How the key should be used.
-    pub use_info: UR_CryptoCoinInfo,
+    pub use_info: UR_CoinInfo,
     /// Whether `use_info` is present.
     pub has_use_info: bool,
     /// How the key was derived.
-    pub origin: UR_CryptoKeypath,
+    pub origin: UR_Keypath,
     /// Whether `origin` is present.
     pub has_origin: bool,
     /// The fingerprint of this key's direct ancestor.
@@ -151,12 +149,12 @@ impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
                 None
             },
             use_info: if value.has_use_info {
-                Some(CryptoCoinInfo::from(&value.use_info))
+                Some(CoinInfo::from(&value.use_info))
             } else {
                 None
             },
             origin: if value.has_origin {
-                Some(CryptoKeypath::from(&value.origin))
+                Some(Keypath::from(&value.origin))
             } else {
                 None
             },
@@ -169,7 +167,7 @@ impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum UR_CoinType {
     BTC,
 }
@@ -183,15 +181,15 @@ impl From<UR_CoinType> for CoinType {
 }
 
 #[repr(C)]
-#[derive(Clone)]
-pub struct UR_CryptoCoinInfo {
+#[derive(Debug, Clone)]
+pub struct UR_CoinInfo {
     pub coin_type: UR_CoinType,
     pub network: u64,
 }
 
-impl From<&UR_CryptoCoinInfo> for CryptoCoinInfo {
-    fn from(v: &UR_CryptoCoinInfo) -> CryptoCoinInfo {
-        CryptoCoinInfo {
+impl From<&UR_CoinInfo> for CoinInfo {
+    fn from(v: &UR_CoinInfo) -> CoinInfo {
+        CoinInfo {
             coin_type: v.coin_type.into(),
             network: v.network,
         }
@@ -200,8 +198,8 @@ impl From<&UR_CryptoCoinInfo> for CryptoCoinInfo {
 
 /// Metadata for the complete or partial derivation path of a key.
 #[repr(C)]
-#[derive(Clone)]
-pub struct UR_CryptoKeypath {
+#[derive(Debug, Clone)]
+pub struct UR_Keypath {
     /// The fingerprint of this key's direct ancestor.
     ///
     /// A value of `0` means that the fingerprint is not present.
@@ -214,9 +212,9 @@ pub struct UR_CryptoKeypath {
     pub has_depth: bool,
 }
 
-impl<'a> From<CryptoKeypath<'a>> for UR_CryptoKeypath {
-    fn from(v: CryptoKeypath<'a>) -> UR_CryptoKeypath {
-        UR_CryptoKeypath {
+impl<'a> From<Keypath<'a>> for UR_Keypath {
+    fn from(v: Keypath<'a>) -> UR_Keypath {
+        UR_Keypath {
             source_fingerprint: v
                 .source_fingerprint
                 .map(|v| v.get())
@@ -227,9 +225,9 @@ impl<'a> From<CryptoKeypath<'a>> for UR_CryptoKeypath {
     }
 }
 
-impl<'a> From<&'a UR_CryptoKeypath> for CryptoKeypath<'a> {
-    fn from(v: &UR_CryptoKeypath) -> CryptoKeypath<'a> {
-        CryptoKeypath {
+impl<'a> From<&'a UR_Keypath> for Keypath<'a> {
+    fn from(v: &UR_Keypath) -> Keypath<'a> {
+        Keypath {
             components: PathComponents::from(&[]),
             source_fingerprint: NonZeroU32::new(v.source_fingerprint),
             depth: if v.has_depth { Some(v.depth) } else { None },
@@ -237,7 +235,7 @@ impl<'a> From<&'a UR_CryptoKeypath> for CryptoKeypath<'a> {
     }
 }
 
-/// Passport custom `crypto-request`.
+/// Passport custom `x-passport-request`.
 #[repr(C)]
 pub struct UR_PassportRequest {
     /// Transaction ID.
@@ -288,7 +286,7 @@ impl From<Challenge> for UR_Challenge {
     }
 }
 
-/// Passport custom `crypto-request`.
+/// Passport custom `x-passport-response`.
 #[repr(C)]
 pub struct UR_PassportResponse {
     /// Transaction ID.
@@ -406,8 +404,6 @@ impl From<UR_PassportModel> for Model {
     }
 }
 
-/// Passport custom `crypto-response`.
-
 /// Create a new `bytes` UR.
 #[no_mangle]
 pub extern "C" fn ur_registry_new_bytes(
@@ -418,28 +414,28 @@ pub extern "C" fn ur_registry_new_bytes(
     *value = UR_Value::Bytes { data, len };
 }
 
-/// Create a new derived `crypto-hdkey` UR.
+/// Create a new derived `hdkey` UR.
 #[no_mangle]
 pub extern "C" fn ur_registry_new_derived_key(
     value: &mut UR_Value,
     is_private: bool,
     key_data: &[u8; 33],
     chain_code: Option<&[u8; 32]>,
-    use_info: Option<&UR_CryptoCoinInfo>,
-    origin: Option<&UR_CryptoKeypath>,
+    use_info: Option<&UR_CoinInfo>,
+    origin: Option<&UR_Keypath>,
     parent_fingerprint: u32,
 ) {
-    *value = UR_Value::CryptoHDKey(UR_HDKey::DerivedKey(UR_DerivedKey {
+    *value = UR_Value::HDKey(UR_HDKey::DerivedKey(UR_DerivedKey {
         is_private,
         key_data: *key_data,
         chain_code: chain_code.copied().unwrap_or([0u8; 32]),
         has_chain_code: chain_code.is_some(),
-        use_info: use_info.cloned().unwrap_or(UR_CryptoCoinInfo {
+        use_info: use_info.cloned().unwrap_or(UR_CoinInfo {
             coin_type: UR_CoinType::BTC,
             network: 0,
         }),
         has_use_info: use_info.is_some(),
-        origin: origin.cloned().unwrap_or(UR_CryptoKeypath {
+        origin: origin.cloned().unwrap_or(UR_Keypath {
             source_fingerprint: 0,
             depth: 0,
             has_depth: false,
@@ -449,17 +445,17 @@ pub extern "C" fn ur_registry_new_derived_key(
     }));
 }
 
-/// Create a new `crypto-psbt` UR.
+/// Create a new `psbt` UR.
 #[no_mangle]
-pub extern "C" fn ur_registry_new_crypto_psbt(
+pub extern "C" fn ur_registry_new_psbt(
     value: &mut UR_Value,
     data: *mut u8,
     len: usize,
 ) {
-    *value = UR_Value::CryptoPSBT { data, len };
+    *value = UR_Value::Psbt { data, len };
 }
 
-/// Create a new Passport ustom `crypto-response` UR.
+/// Create a new Passport custom `x-passport-response` UR.
 #[no_mangle]
 pub extern "C" fn ur_registry_new_passport_response(
     value: &mut UR_Value,

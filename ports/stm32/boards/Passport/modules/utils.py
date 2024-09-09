@@ -12,7 +12,7 @@
 
 import lvgl as lv
 from constants import NUM_BACKUP_CODE_SECTIONS, NUM_DIGITS_PER_BACKUP_CODE_SECTION
-from public_constants import DIR_BACKUPS
+from public_constants import DIR_BACKUPS, MUSIG_DEFAULT, MUSIG_TEMP_DEFAULT
 from files import CardSlot
 from styles.colors import DEFAULT_LARGE_ICON_COLOR
 import ustruct
@@ -1039,13 +1039,28 @@ def split_to_lines(s, width):
 
 
 def sign_message_digest(digest, subpath):
+    from foundation import secp256k1
     # do the signature itself!
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(subpath)
         pk = node.private_key()
         sv.register(pk)
 
-        rv = trezorcrypto.secp256k1.sign(pk, digest)
+        rv = secp256k1.sign_ecdsa(digest, pk)
+
+    return rv
+
+
+def sign_message_digest_recoverable(digest, subpath):
+    from trezorcrypto import ecdsa
+    # do the signature itself!
+    with stash.SensitiveValues() as sv:
+        node = sv.derive_path(subpath)
+        pk = node.private_key()
+        sv.register(pk)
+
+        # returns 65 byte electrum message signing format
+        rv = ecdsa.sign(pk, digest)
 
     return rv
 
@@ -1139,14 +1154,21 @@ def set_list(lst, index, value):
         lst[index] = value
 
 
-def has_seed():
-    from common import pa
+def has_temporary_seed():
+    if common.settings.temporary_mode:
+        return common.settings.get('temporary_seed', None) is not None
+    return False
 
+
+def has_permanent_seed():
     # pa.is_secret_blank() function returns True before we are logged in, which is not right.
     if not is_logged_in():
         return False
+    return not common.pa.is_secret_blank()
 
-    return not pa.is_secret_blank()
+
+def has_seed():
+    return has_temporary_seed() or has_permanent_seed()
 
 
 def is_logged_in():
@@ -1273,35 +1295,37 @@ def are_hidden_keys_showing():
 
 def is_passphrase_active():
     import stash
-    return stash.bip39_passphrase != ''
+    return stash.get_passphrase() != ''
 
 
 MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True, check_ascii=True):
     # Check for leading or trailing whitespace
-    if text[0] == ' ':
-        return (subpath, 'File contains leading whitespace.')
+    if check_whitespace:
+        if text[0] == ' ':
+            return (subpath, 'File contains leading whitespace.')
 
-    if text[-1] == ' ':
-        (subpath, 'File contains trailing whitespace.')
+        if text[-1] == ' ':
+            return (subpath, 'File contains trailing whitespace.')
 
     # Ensure characters are in range and not too many spaces
     run = 0
     # print('text="{}"'.format(text))
     for ch in text:
         # print('ch="{}"'.format(ch))
-        if ord(ch) not in MSG_CHARSET:
+        if check_ascii and ord(ch) not in MSG_CHARSET:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
-        if ch == ' ':
-            run += 1
-            if run >= MSG_MAX_SPACES:
-                return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
-        else:
-            run = 0
+        if space_limit:
+            if ch == ' ':
+                run += 1
+                if run >= MSG_MAX_SPACES:
+                    return (subpath, 'File contains more than {} spaces in a row'.format(MSG_MAX_SPACES - 1))
+            else:
+                run = 0
 
     # Check subpath, if given
     if subpath:
@@ -1361,11 +1385,6 @@ def get_seed_from_words(words):
     return entropy
 
 
-def nostr_pubkey_from_pk(pk):
-    from trezorcrypto import secp256k1
-    return secp256k1.publickey(pk, True)[1:]
-
-
 def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
     import tcc
     return tcc.codecs.bech32_plain_encode(key_type, key)
@@ -1373,7 +1392,7 @@ def nostr_nip19_from_key(key, key_type):  # generate nsec/npub
 
 def nostr_sign(key, message):
     from foundation import secp256k1
-    return secp256k1.schnorr_sign(message, key)
+    return secp256k1.sign_schnorr(message, key)
 
 
 months = {
@@ -1548,6 +1567,11 @@ def insufficient_randomness(seed_words):
             return True
 
     return False
+
+
+def get_multisig_policy():
+    default = MUSIG_TEMP_DEFAULT if has_temporary_seed() else MUSIG_DEFAULT
+    return common.settings.get('multisig_policy', default)
 
 
 # EOF

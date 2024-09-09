@@ -31,12 +31,11 @@ class SignPsbtQRFlow(Flow):
         import passport
 
         result = await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
-                                  ur_types=[ur.Value.CRYPTO_PSBT, ur.Value.BYTES],
+                                  ur_types=[ur.Value.PSBT, ur.Value.BYTES],
                                   data_description='a PSBT file',
                                   max_frames=self.max_frames,
                                   failure_message="Unable to Scan QR code, \
-try signing using the microSD card.\n\n{}",
-                                  pass_error=True).run()
+try signing using the microSD card.\n\n{}").run()
         if result is None:
             # User canceled the scan
             self.set_result(False)
@@ -62,17 +61,15 @@ How would you like to proceed?"
             return  # Run it again with no max frames if the user wants
 
         if result == Error.QR_TOO_LARGE:
-            await ErrorPage("This transaction is too large for QR signing. \
-\nSpend fewer coins or sign via microSD card.").show()
-
+            await ErrorPage("QR code is too large, please sign with microSD.").show()
             self.set_result(False)
             return
 
         if isinstance(result, ur.Value):
             self.ur_type = result.ur_type()
 
-            if self.ur_type == ur.Value.CRYPTO_PSBT:
-                self.raw_psbt = result.unwrap_crypto_psbt()
+            if self.ur_type == ur.Value.PSBT:
+                self.raw_psbt = result.unwrap_psbt()
             elif self.ur_type == ur.Value.BYTES:
                 self.raw_psbt = result.unwrap_bytes()
         else:
@@ -159,8 +156,8 @@ How would you like to proceed?"
             qr_data = b2a_hex(self.signed_bytes)
         else:
             qr_type = QRType.UR2
-            if self.ur_type == ur.Value.CRYPTO_PSBT:
-                qr_data = ur.new_crypto_psbt(self.signed_bytes)
+            if self.ur_type == ur.Value.PSBT:
+                qr_data = ur.new_psbt(self.signed_bytes)
             elif self.ur_type == ur.Value.BYTES:
                 qr_data = ur.new_bytes(self.signed_bytes)
             else:

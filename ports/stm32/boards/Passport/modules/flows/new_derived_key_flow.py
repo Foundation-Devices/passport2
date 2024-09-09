@@ -47,10 +47,10 @@ and keys can not be deleted. Create keys wisely.'.format(MAX_DERIVED_KEYS)
 
     async def passphrase_warning(self):
         from pages import LongTextPage
+        from utils import is_passphrase_active
         import microns
-        import stash
 
-        if len(stash.bip39_passphrase) > 0:
+        if is_passphrase_active():
             text = '''\
 \n\nThis new key will be linked to your active passphrase. \
 It will only be displayed when this same passphrase is applied. Continue?'''

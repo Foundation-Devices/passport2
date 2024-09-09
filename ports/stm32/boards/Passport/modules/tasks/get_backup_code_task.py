@@ -5,6 +5,7 @@
 
 import trezorcrypto
 from micropython import const
+from utils import has_temporary_seed
 
 # we make passwords with this number of words
 _NUM_DECIMAL_DIGITS_IN_BACKUP_CODE = const(20)
@@ -16,11 +17,14 @@ _NUM_ITERATIONS = const(_NUM_DECIMAL_DIGITS_IN_BACKUP_CODE // _NUM_DECIMAL_DIGIT
 
 
 def get_backup_code():
-    from common import system, pa
+    from common import system, pa, settings
 
     device_hash = bytearray(32)
     system.get_device_hash(device_hash)
-    secret = pa.fetch()
+    if has_temporary_seed():
+        secret = settings.get('temporary_seed')
+    else:
+        secret = pa.fetch()
     # print('secret: {}'.format(bytes_to_hex_str(secret)))
 
     hash = trezorcrypto.sha256()

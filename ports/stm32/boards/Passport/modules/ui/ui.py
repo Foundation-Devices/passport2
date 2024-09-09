@@ -98,8 +98,10 @@ class UI():
         self.active_screen.set_bg_color(bg_color)
 
     def set_cards(self, card_descs, active_idx=0):
-        assert(active_idx >= 0)
-        assert(active_idx < len(card_descs))
+        # An index out of bounds could occur when the account/passphrase/seed changes
+        # and the active_idx isnt updated
+        if active_idx < 0 or active_idx > len(card_descs):
+            active_idx = 1
 
         # print('set_cards: len={}'.format(len(card_descs)))
         self.card_descs = card_descs
@@ -200,7 +202,11 @@ class UI():
                      is_init=False,
                      stay_on_last_card=False):
         from flows import MenuFlow
-        from utils import get_accounts_by_xfp, has_seed, is_extension_enabled, escape_text
+        from utils import (get_accounts_by_xfp,
+                           has_seed,
+                           is_extension_enabled,
+                           escape_text,
+                           is_passphrase_active)
         from menus import account_menu, plus_menu
         from extensions.extensions import supported_extensions
         from constants import DEFAULT_ACCOUNT_ENTRY
@@ -255,7 +261,7 @@ class UI():
                 # print('account[{}]={}'.format(account, i))
 
                 account_card = {
-                    'right_icon': 'ICON_BITCOIN',
+                    'right_icon': 'ICON_BITCOIN' if not common.settings.temporary_mode else 'ICON_HOURGLASS',
                     'header_color': LIGHT_GREY,
                     'header_fg_color': LIGHT_TEXT,
                     'statusbar': {'title': 'ACCOUNT', 'icon': 'ICON_FOLDER', 'fg_color': get_account_fg(account)},
@@ -266,7 +272,7 @@ class UI():
                     'args': {'menu': account_menu, 'is_top_level': True},
                     'account': account
                 }
-                if len(stash.bip39_passphrase) > 0:
+                if is_passphrase_active():
                     account_card['icon'] = 'ICON_PASSPHRASE'
 
                 card_descs.append(account_card)
@@ -275,7 +281,7 @@ class UI():
 
             for extension in supported_extensions:
                 if is_extension_enabled(extension['name']):
-                    if len(stash.bip39_passphrase) > 0:
+                    if is_passphrase_active():
                         extension['card']['icon'] = 'ICON_PASSPHRASE'
                     else:
                         extension['card']['icon'] = None
@@ -336,10 +342,11 @@ class UI():
             self.next_card()
 
     # Full refresh
-    def full_cards_refresh(self):
+    def full_cards_refresh(self, go_to_account_0=False, go_to_plus_menu=False):
         from utils import start_task
 
-        self.update_cards()
+        self.update_cards(is_init=go_to_account_0,
+                          stay_on_last_card=go_to_plus_menu)
 
         async def restart_main_task():
             self.start_card_task(card_idx=self.active_card_idx)
