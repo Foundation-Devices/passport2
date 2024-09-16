@@ -86,7 +86,8 @@ class RestoreSeedFlow(Flow):
                    {'label': 'Compact SeedQR', 'value': QRType.COMPACT_SEED_QR},
                    {'label': 'SeedQR', 'value': QRType.SEED_QR}]
 
-        choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options).show()
+        choice = await ChooserPage(card_header={'title': 'Seed Format'}, options=options,
+                                   left_micron=microns.Back).show()
 
         if choice is None:
             if not self.back():
