@@ -52,7 +52,7 @@ STATIC NORETURN void mod_foundation_ur_raise(UR_Error *error) {
             type = &mp_type_UnsupportedError;
             break;
         case UR_ERROR_KIND_NOT_MULTI_PART:
-            type = &mp_type_UnsupportedError;
+            type = &mp_type_NotMultiPartError;
             break;
         default:
             type = &mp_type_RuntimeError;
