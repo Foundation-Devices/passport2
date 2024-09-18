@@ -25,10 +25,10 @@ from wallets.utils import (
     get_deriv_path_from_addr_type_and_acct,
     get_addr_type_from_deriv,
     derive_address)
-from public_constants import MUSIG_SKIP
+from public_constants import MUSIG_SKIP, MARGIN_FOR_ADDRESSES
 from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
-from utils import random_hex, spinner_task
+from utils import random_hex, spinner_task, stylize_address
 from foundation import ur
 import common
 import microns
@@ -538,9 +538,7 @@ class ConnectWalletFlow(Flow):
         self.goto(self.show_rx_address)
 
     async def show_rx_address(self):
-        from utils import split_to_lines
         from pages import LongTextPage
-        from math import ceil
         NUM_ADDRESSES = 1
 
         (addresses, error) = await spinner_task(
@@ -558,11 +556,12 @@ class ConnectWalletFlow(Flow):
 
         for entry in addresses:
             _, address = entry
-            # Split to three lines for readability (addresses are 27-34 characters)
-            max_line_len = ceil(len(address) / 3)
-            msg += split_to_lines(address, max_line_len)
+            msg += stylize_address(address)
 
-        result = await LongTextPage(text=msg, card_header={'title': 'Verify Address'}, centered=True).show()
+        result = await LongTextPage(text=msg,
+                                    card_header={'title': 'Verify Address'},
+                                    centered=True,
+                                    margins=MARGIN_FOR_ADDRESSES).show()
         if not result:
             if not self.back():
                 self.set_result(False)
