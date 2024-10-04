@@ -1038,19 +1038,6 @@ def split_to_lines(s, width):
     return '\n'.join([s[i:i + width] for i in range(0, len(s), width)])
 
 
-def sign_message_digest(digest, subpath):
-    from foundation import secp256k1
-    # do the signature itself!
-    with stash.SensitiveValues() as sv:
-        node = sv.derive_path(subpath)
-        pk = node.private_key()
-        sv.register(pk)
-
-        rv = secp256k1.sign_ecdsa(digest, pk)
-
-    return rv
-
-
 def sign_message_digest_recoverable(digest, subpath):
     from trezorcrypto import ecdsa
     # do the signature itself!

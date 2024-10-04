@@ -82,7 +82,7 @@ class SignElectrumMessageFlow(Flow):
 
     async def do_sign(self):
         (sig, address, error) = await spinner_task('Signing Message', sign_text_file_task,
-                                                   args=[self.message, self.subpath, self.addr_format, True])
+                                                   args=[self.message, self.subpath, self.addr_format])
         if error is None:
             self.signature = sig
             self.goto(self.show_signed)
