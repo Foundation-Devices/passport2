@@ -11,20 +11,17 @@
 
 import stash
 import chains
-from utils import sign_message_digest, sign_message_digest_recoverable
+from utils import sign_message_digest_recoverable
 
 
-async def sign_text_file_task(on_done, text, subpath, addr_fmt, recoverable=False):
+async def sign_text_file_task(on_done, text, subpath, addr_fmt):
 
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(subpath)
         address = sv.chain.address(node, addr_fmt)
 
     digest = chains.current_chain().hash_message(text.encode())
-    if recoverable:
-        # signature will be 65 bytes
-        signature = sign_message_digest_recoverable(digest, subpath)
-    else:
-        signature = sign_message_digest(digest, subpath)
+    # signature will be 65 bytes
+    signature = sign_message_digest_recoverable(digest, subpath)
 
     await on_done(signature, address, None)
