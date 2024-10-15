@@ -43,12 +43,23 @@ def manage_account_menu():
     ]
 
 
+def sign_message_submenu():
+    from flows import SignElectrumMessageFlow, HealthCheckMicrosdFlow
+
+    return [
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignElectrumMessageFlow,
+         'statusbar': {'title': 'SIGN MESSAGE'}},
+        {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': HealthCheckMicrosdFlow,
+         'statusbar': {'title': 'SIGN MESSAGE'}, 'args': {'normal_signing': True}},
+    ]
+
+
 def account_tools():
-    from flows import VerifyAddressFlow, SignElectrumMessageFlow, AddressExplorerFlow
+    from flows import VerifyAddressFlow, AddressExplorerFlow
 
     return [
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a Message', 'flow': SignElectrumMessageFlow,
+        {'icon': 'ICON_SIGN', 'label': 'Sign a Message', 'submenu': sign_message_submenu,
          'statusbar': {'title': 'SIGN MESSAGE'}},
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},

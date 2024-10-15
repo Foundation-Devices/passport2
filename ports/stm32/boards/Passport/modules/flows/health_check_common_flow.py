@@ -9,18 +9,19 @@ from public_constants import AF_CLASSIC
 
 
 class HealthCheckCommonFlow(Flow):
-    def __init__(self, lines):
+    def __init__(self, lines, normal_signing=False):
         super().__init__(initial_state=self.validate_lines, name='HealthCheckCommonFlow')
         self.lines = lines
         self.text = None
         self.subpath = None
         self.addr_type = AF_CLASSIC
+        self.normal_signing = normal_signing
 
     async def validate_lines(self):
         from pages import ErrorPage
         from utils import validate_sign_text
         if len(self.lines) not in [2, 3]:
-            await ErrorPage('Health check format is invalid.').show()
+            await ErrorPage('{} format is invalid.'.format('Message' if self.normal_signing else 'Health check')).show()
             self.set_result(None)
             return
 
@@ -47,7 +48,8 @@ class HealthCheckCommonFlow(Flow):
         from pages import ErrorPage
         from tasks import sign_text_file_task
         from utils import spinner_task
-        (signature, address, error) = await spinner_task('Performing Health Check', sign_text_file_task,
+        text = 'Signing message' if self.normal_signing else 'Performing health check'
+        (signature, address, error) = await spinner_task(text, sign_text_file_task,
                                                          args=[self.text, self.subpath, self.addr_type])
         if error is None:
             self.signature = signature
