@@ -20,7 +20,7 @@ class SignElectrumMessageFlow(Flow):
         self.message = None
         self.address = None
         self.signature = None
-        super().__init__(initial_state=self.scan_message, name='Sign Electrum Message Flow')
+        super().__init__(initial_state=self.scan_message, name='SignElectrumMessageFlow')
 
     async def scan_message(self):
         result = await ScanQRFlow(qr_types=[QRType.QR],
@@ -81,7 +81,7 @@ class SignElectrumMessageFlow(Flow):
         self.goto(self.do_sign)
 
     async def do_sign(self):
-        (sig, address, error) = await spinner_task('Signing Message', sign_text_file_task,
+        (sig, address, error) = await spinner_task('Signing message', sign_text_file_task,
                                                    args=[self.message, self.subpath, self.addr_format])
         if error is None:
             self.signature = sig
