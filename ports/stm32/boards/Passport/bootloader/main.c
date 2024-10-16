@@ -796,7 +796,9 @@ int main(void) {
         update_firmware();
     }
 
+#if 0
     do_verify_current_firmware();
+#endif
 
 #endif /* ifndef FACTORY_TEST */
 
@@ -836,10 +838,13 @@ int main(void) {
             version();
 
             // Final verification after installing the new firmware
+#if 0
             do_verify_current_firmware();
+#endif
         }
     }
 
+#if 0
     // Show a warning message if user-signed firmware (including Foundation Beta firmware) is loaded on the device
     if (is_user_signed_firmware_installed() == SEC_TRUE) {
         while (true) {
@@ -854,6 +859,7 @@ int main(void) {
             }
         }
     }
+#endif
 
 #endif /* FACTORY_TEST */
     // From here we'll boot to Micropython: see stm32_main() in /ports/stm32/main.c
