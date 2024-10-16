@@ -169,8 +169,10 @@ pub extern "C" fn verify_update_signatures(
             (&mut buf[1..]).copy_from_slice(v);
             buf
         })
-        .map(|v| {
-            PublicKey::from_slice(&v).expect("user public key should be valid")
+        .and_then(|v| {
+            // If we fail to parse the public key, it means that the user
+            // installed an invalid public key to the secure element.
+            PublicKey::from_slice(&v).ok()
         });
 
     let header =
