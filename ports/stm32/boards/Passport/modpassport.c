@@ -135,6 +135,10 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
                               MP_ERROR_TEXT("Same Public Key was used for both signatures (%"PRIu32")."),
                               result.SAME_PUBLIC_KEY.index);
             break;
+        case FIRMWARE_RESULT_MISSING_USER_PUBLIC_KEY:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Missing user public key"));
+            break;
         default:
             break;
     }
@@ -232,6 +236,11 @@ STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t 
         case FIRMWARE_RESULT_FAILED_SIGNATURE2:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
                          MP_ERROR_TEXT("Second signature verification failed"));
+            break;
+        case FIRMWARE_RESULT_MISSING_USER_PUBLIC_KEY:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Missing user public key"));
+            break;
         default:
             break;
     }

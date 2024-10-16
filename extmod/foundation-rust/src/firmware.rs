@@ -53,6 +53,8 @@ pub enum FirmwareResult {
     FailedSignature1,
     /// The second signature verification failed.
     FailedSignature2,
+    /// Missing user public key
+    MissingUserPublicKey,
 }
 
 impl From<VerifyHeaderError> for FirmwareResult {
@@ -85,9 +87,7 @@ impl From<VerifySignatureError> for FirmwareResult {
             }
             VerifySignatureError::FailedSignature1 { .. } => FailedSignature1,
             VerifySignatureError::FailedSignature2 { .. } => FailedSignature2,
-            // No need to implement this, see comment on
-            // verify_update_signatures.
-            VerifySignatureError::MissingUserPublicKey => unimplemented!(),
+            VerifySignatureError::MissingUserPublicKey => MissingUserPublicKey,
         }
     }
 }
@@ -187,15 +187,6 @@ pub extern "C" fn verify_update_signatures(
     ) {
         Ok(()) => {
             *result = FirmwareResult::SignaturesOk;
-        }
-        // The code calling this function must make sure that there's an user
-        // public key provided to us before verifying signatures.
-        //
-        // When verifying signatures is because we are committed to the
-        // update, i.e. the user has accepted to do it, so we must have
-        // presented an error if there was not an user public key earlier.
-        Err(VerifySignatureError::MissingUserPublicKey) => {
-            unreachable!("we always provide a user public key")
         }
         Err(e) => *result = FirmwareResult::from(e),
     }
