@@ -106,7 +106,7 @@ class UpdateFirmwareFlow(Flow):
     async def verify_firmware_signature(self):
         from common import ui
 
-        self.progress_page = ProgressPage(text='Veryfing Signatures', left_micron=None, right_micron=None)
+        self.progress_page = ProgressPage(text='Verifying signatures', left_micron=None, right_micron=None)
 
         self.verify_task = start_task(verify_firmware_signature_task(
             self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
