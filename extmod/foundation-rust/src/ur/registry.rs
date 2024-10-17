@@ -90,6 +90,8 @@ impl UR_Value {
                 Value::Psbt(buf)
             }
             UR_Value::HDKey(v) => Value::HDKey(v.into()),
+            // NOTE: This is unreachable because the firmware should never
+            // create this value as this is only created by Envoy.
             UR_Value::PassportRequest(_) => panic!(
                 "Not implemented as it isn't needed. Should be unreachable"
             ),
