@@ -34,11 +34,17 @@ pub static PRE_ALLOCATED_CTX: Lazy<Secp256k1<AllPreallocated<'static>>> =
 pub extern "C" fn secp256k1_public_key_schnorr(
     secret_key: &[u8; 32],
     public_key: &mut [u8; 32],
-) {
-    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
-        .expect("invalid secret key");
+) -> bool {
+    let keypair =
+        match Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key) {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
+
     let compressed_key = keypair.public_key().serialize();
     public_key.copy_from_slice(&compressed_key[1..]);
+
+    true
 }
 
 /// Computes a ECDSA signature over the message `data`.
@@ -51,13 +57,17 @@ pub extern "C" fn secp256k1_sign_ecdsa(
     data: &[u8; 32],
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
-) {
-    let secret_key =
-        SecretKey::from_slice(secret_key).expect("invalid secret key");
+) -> bool {
+    let secret_key = match SecretKey::from_slice(secret_key) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
 
     let msg = Message::from_digest_slice(data).unwrap();
     let sig = PRE_ALLOCATED_CTX.sign_ecdsa(&msg, &secret_key);
     signature.copy_from_slice(&sig.serialize_compact());
+
+    true
 }
 
 /// Computes a Schnorr signature over the message `data`.
@@ -70,14 +80,19 @@ pub extern "C" fn secp256k1_sign_schnorr(
     data: &[u8; 32],
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
-) {
-    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
-        .expect("invalid secret key");
+) -> bool {
+    let keypair =
+        match Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key) {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
 
     let msg = Message::from_digest_slice(data).unwrap();
     let sig =
         PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
     signature.copy_from_slice(sig.as_ref());
+
+    true
 }
 
 #[cfg(target_arch = "arm")]
