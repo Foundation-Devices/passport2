@@ -55,6 +55,8 @@ pub enum FirmwareResult {
     FailedSignature2,
     /// Missing user public key
     MissingUserPublicKey,
+    /// Invalid hash length
+    InvalidHashLength,
 }
 
 impl From<VerifyHeaderError> for FirmwareResult {
@@ -159,8 +161,13 @@ pub extern "C" fn verify_update_signatures(
     result: &mut FirmwareResult,
 ) {
     let header = unsafe { slice::from_raw_parts(header, header_len) };
-    let firmware_hash = sha256d::Hash::from_slice(hash)
-        .expect("hash should be of correct length");
+    let firmware_hash = match sha256d::Hash::from_slice(hash) {
+        Ok(v) => v,
+        Err(_) => {
+            *result = FirmwareResult::InvalidHashLength;
+            return;
+        }
+    };
 
     let user_public_key = user_public_key
         .map(|v| {

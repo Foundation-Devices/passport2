@@ -175,6 +175,10 @@ typedef enum {
    * Missing user public key
    */
   FIRMWARE_RESULT_MISSING_USER_PUBLIC_KEY,
+  /**
+   * Invalid hash length
+   */
+  FIRMWARE_RESULT_INVALID_HASH_LENGTH,
 } FirmwareResult_Tag;
 
 typedef struct {
