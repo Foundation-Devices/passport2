@@ -135,6 +135,14 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
                               MP_ERROR_TEXT("Same Public Key was used for both signatures (%"PRIu32")."),
                               result.SAME_PUBLIC_KEY.index);
             break;
+        case FIRMWARE_RESULT_MISSING_USER_PUBLIC_KEY:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Missing user public key"));
+            break;
+        case FIRMWARE_RESULT_INVALID_HASH_LENGTH:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Invalid hash length"));
+            break;
         default:
             break;
     }
@@ -145,9 +153,21 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_verify_update_header_obj,
                                  mod_passport_verify_update_header);
 
+STATIC bool array_is_zero(uint8_t *buf, size_t size)
+{
+    for (int i = 0; i < size; i++) {
+        if (buf[i] != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t validation_hash) {
-    uint8_t buf[72];
-    uint8_t public_key[64];
+    uint8_t buf[72] = {0};
+    uint8_t public_key[64] = {0};
 
     mp_buffer_info_t header_info;
     mp_get_buffer_raise(header, &header_info, MP_BUFFER_READ);
@@ -163,9 +183,16 @@ STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t 
     uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
 
     se_pair_unlock();
-    bool has_user_key = se_read_data_slot(KEYNUM_user_fw_pubkey, buf, sizeof(buf)) == 0;
-    memcpy(public_key, buf, sizeof(public_key));
+    bool has_user_key = false;
+    if (se_read_data_slot(KEYNUM_user_fw_pubkey, buf, sizeof(buf)) == 0) {
+        memcpy(public_key, buf, sizeof(public_key));
 
+        has_user_key = !array_is_zero(public_key, sizeof(public_key));
+    }
+
+    // If we fail reading the user key from the secure element just pass NULL
+    // and the verification won't take into account the user key and will
+    // return an error if it is an user signed firmware.
     FirmwareResult result = {0};
     foundation_firmware_verify_update_signatures(header_info.buf,
                                                  header_info.len,
@@ -232,6 +259,15 @@ STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t 
         case FIRMWARE_RESULT_FAILED_SIGNATURE2:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
                          MP_ERROR_TEXT("Second signature verification failed"));
+            break;
+        case FIRMWARE_RESULT_MISSING_USER_PUBLIC_KEY:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Missing user public key"));
+            break;
+        case FIRMWARE_RESULT_INVALID_HASH_LENGTH:
+            mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                         MP_ERROR_TEXT("Invalid hash length"));
+            break;
         default:
             break;
     }

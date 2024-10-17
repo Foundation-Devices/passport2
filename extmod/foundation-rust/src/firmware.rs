@@ -53,6 +53,10 @@ pub enum FirmwareResult {
     FailedSignature1,
     /// The second signature verification failed.
     FailedSignature2,
+    /// Missing user public key
+    MissingUserPublicKey,
+    /// Invalid hash length
+    InvalidHashLength,
 }
 
 impl From<VerifyHeaderError> for FirmwareResult {
@@ -85,9 +89,7 @@ impl From<VerifySignatureError> for FirmwareResult {
             }
             VerifySignatureError::FailedSignature1 { .. } => FailedSignature1,
             VerifySignatureError::FailedSignature2 { .. } => FailedSignature2,
-            // No need to implement this, see comment on
-            // verify_update_signatures.
-            VerifySignatureError::MissingUserPublicKey => unimplemented!(),
+            VerifySignatureError::MissingUserPublicKey => MissingUserPublicKey,
         }
     }
 }
@@ -159,8 +161,13 @@ pub extern "C" fn verify_update_signatures(
     result: &mut FirmwareResult,
 ) {
     let header = unsafe { slice::from_raw_parts(header, header_len) };
-    let firmware_hash = sha256d::Hash::from_slice(hash)
-        .expect("hash should be of correct length");
+    let firmware_hash = match sha256d::Hash::from_slice(hash) {
+        Ok(v) => v,
+        Err(_) => {
+            *result = FirmwareResult::InvalidHashLength;
+            return;
+        }
+    };
 
     let user_public_key = user_public_key
         .map(|v| {
@@ -169,8 +176,10 @@ pub extern "C" fn verify_update_signatures(
             (&mut buf[1..]).copy_from_slice(v);
             buf
         })
-        .map(|v| {
-            PublicKey::from_slice(&v).expect("user public key should be valid")
+        .and_then(|v| {
+            // If we fail to parse the public key, it means that the user
+            // installed an invalid public key to the secure element.
+            PublicKey::from_slice(&v).ok()
         });
 
     let header =
@@ -187,15 +196,6 @@ pub extern "C" fn verify_update_signatures(
     ) {
         Ok(()) => {
             *result = FirmwareResult::SignaturesOk;
-        }
-        // The code calling this function must make sure that there's an user
-        // public key provided to us before verifying signatures.
-        //
-        // When verifying signatures is because we are committed to the
-        // update, i.e. the user has accepted to do it, so we must have
-        // presented an error if there was not an user public key earlier.
-        Err(VerifySignatureError::MissingUserPublicKey) => {
-            unreachable!("we always provide a user public key")
         }
         Err(e) => *result = FirmwareResult::from(e),
     }
