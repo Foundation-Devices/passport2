@@ -19,6 +19,7 @@ class RenameDeviceFlow(Flow):
         from utils import spinner_task
         from tasks import delay_task
         from pages import SuccessPage
+        from flows import AutoBackupFlow
 
         name = settings.get('device_name', None) or ''
         result = await TextInputPage(initial_text=name,
@@ -44,5 +45,6 @@ class RenameDeviceFlow(Flow):
 
         await spinner_task('Renaming Device', delay_task, args=[1000, False])
         await SuccessPage(text='Device renamed successfully').show()
+        await AutoBackupFlow().run()
 
         self.set_result(True)
