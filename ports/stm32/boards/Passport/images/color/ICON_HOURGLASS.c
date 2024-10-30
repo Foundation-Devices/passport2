@@ -15,7 +15,6 @@
 #ifndef LV_ATTRIBUTE_IMG_ICON_HOURGLASS
 #define LV_ATTRIBUTE_IMG_ICON_HOURGLASS
 #endif
-
 const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_ICON_HOURGLASS uint8_t ICON_HOURGLASS_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0xfe, 0xfe, 0xfe, 0xff, 	/*Color of index 1*/
