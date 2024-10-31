@@ -7,22 +7,26 @@ import lvgl as lv
 from styles import Stylize, LocalStyle
 from views import View
 from utils import derive_icon
+import passport
 
 
 class Icon(View):
-    def __init__(self, icon, color=None, opa=None):
+    def __init__(self, icon, color=None, opa=None, bottom_pad=0, top_pad=0):
         from utils import derive_icon
 
         super().__init__()
         self.icon = derive_icon(icon)
         self.color = color
         self.opa = opa
+        self.bottom_pad = bottom_pad
+        self.top_pad = top_pad
 
         with Stylize(self) as default:
             if self.color is not None:
                 default.img_recolor(self.color)
             if self.opa is not None:
                 default.opa(self.opa)
+            default.pad(bottom=self.bottom_pad, top=self.top_pad)
 
     def set_icon(self, icon):
         from utils import derive_icon
