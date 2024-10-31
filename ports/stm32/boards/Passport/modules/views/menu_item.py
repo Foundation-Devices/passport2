@@ -11,6 +11,7 @@ from styles.colors import FOCUSED_LIST_ITEM_TEXT, FOCUSED_LIST_ITEM_BG, NORMAL_T
 from constants import MENU_ITEM_CORNER_RADIUS
 from views import View
 from utils import derive_icon
+import passport
 
 
 class MenuItem(View):
@@ -19,6 +20,7 @@ class MenuItem(View):
         from views import Switch
 
         super().__init__(flex_flow=lv.FLEX_FLOW.ROW)
+        self.icon_name = icon
         self.icon = derive_icon(icon)
         self.label = label
         self.is_toggle = is_toggle
@@ -50,7 +52,8 @@ class MenuItem(View):
             focus.img_recolor(FOCUSED_LIST_ITEM_TEXT)
 
         # Icon
-        self.icon_view = Icon(icon=self.icon)
+        bottom_pad = 1 if self.icon_name == 'ICON_CASA' and passport.IS_COLOR else 0
+        self.icon_view = Icon(icon=self.icon, bottom_pad=bottom_pad)
         self.icon_view.set_size(21, lv.SIZE.CONTENT)
         self.add_child(self.icon_view)
 
