@@ -14,8 +14,8 @@ STATIC mp_obj_t mod_foundation_secp256k1_public_key_schnorr(mp_obj_t secret_key_
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("secret key should be 32 bytes"));
     }
 
-    foundation_secp256k1_public_key_schnorr(secret_key.buf, &public_key);
-    return mp_obj_new_bytes(public_key, 32);
+    bool ret = foundation_secp256k1_public_key_schnorr(secret_key.buf, &public_key);
+    return ret ? mp_obj_new_bytes(public_key, 32) : mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_secp256k1_public_key_schnorr_obj,
                                  mod_foundation_secp256k1_public_key_schnorr);
@@ -39,11 +39,11 @@ STATIC mp_obj_t mod_foundation_secp256k1_sign_ecdsa(mp_obj_t data_obj,
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("secret key should be 32 bytes"));
     }
 
-    foundation_secp256k1_sign_ecdsa(data.buf,
-                                    secret_key.buf,
-                                    &signature);
+    bool ret = foundation_secp256k1_sign_ecdsa(data.buf,
+                                               secret_key.buf,
+                                               &signature);
 
-    return mp_obj_new_bytes(signature, sizeof(signature));
+    return ret ? mp_obj_new_bytes(signature, sizeof(signature)) : mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_secp256k1_sign_ecdsa_obj,
                                  mod_foundation_secp256k1_sign_ecdsa);
@@ -69,11 +69,11 @@ STATIC mp_obj_t mod_foundation_secp256k1_sign_schnorr(mp_obj_t data_obj,
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("secret key should be 32 bytes"));
     }
 
-    foundation_secp256k1_sign_schnorr(data.buf,
-                                      secret_key.buf,
-                                      &signature);
+    bool ret = foundation_secp256k1_sign_schnorr(data.buf,
+                                                 secret_key.buf,
+                                                 &signature);
 
-    return mp_obj_new_bytes(signature, sizeof(signature));
+    return ret ? mp_obj_new_bytes(signature, sizeof(signature)) : mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_secp256k1_sign_schnorr_obj,
                                  mod_foundation_secp256k1_sign_schnorr);
