@@ -5,6 +5,7 @@
 #ifndef _SECURE_ELEMENT_H_
 #define _SECURE_ELEMENT_H_
 
+#include <stdint.h>
 #include <stdbool.h>
 
 // Status/Error Codes that occur in 4-byte groups. See page 50, table 9-3.

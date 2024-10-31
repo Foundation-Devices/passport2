@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <stdint.h>
+
 void     rng_setup(void);
 uint32_t rng_sample(void);
 void     rng_buffer(uint8_t* result, int len);
