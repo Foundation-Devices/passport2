@@ -4,11 +4,9 @@
 
 #ifndef RING_BUFFER_H_
 #define RING_BUFFER_H_
-#if 0
-#include <stddef.h>
+
 #include <stdint.h>
-#include <stdlib.h>
-#endif
+
 #define MAX_RING_BUFFER_SIZE 16
 
 typedef uint8_t ring_buffer_size_t;
