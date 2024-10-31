@@ -5,6 +5,8 @@
 #ifndef _SECRETS_H_
 #define _SECRETS_H_
 
+#include <stdint.h>
+
 typedef struct __attribute__((packed)) {
     uint8_t pairing_secret[32];
     uint8_t se_serial_number[9];
