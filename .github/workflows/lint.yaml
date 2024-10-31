@@ -66,6 +66,19 @@ jobs:
                    --verify \
                    extmod/foundation-rust/
 
+  stm32h7xx-hal-driver-sys-up-to-date:
+    name: Are stm32h7xx-hal-driver-sys bindings up to date?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/rust-toolchain
+        with:
+          toolchain: 1.77.1
+          components: rustfmt
+      - run: sudo apt-get install -y gcc-arm-none-eabi libclang-dev
+      - run: cargo install bindgen-cli@^0.69.5 --locked
+      - run: ./extmod/foundation-rust/stm32h7xx-hal-driver-sys/bindgen.sh -c
+
   rust-tests-pass:
     name: Rust tests pass?
     needs: [rust-code-compiles]
