@@ -206,6 +206,8 @@ class Card(View):
                 self.icon_view = Image(icon, color=self.header_fg_color)
                 with Stylize(self.icon_view) as default:
                     default.align(lv.ALIGN.LEFT_MID)
+                    if self.icon == 'ICON_CASA' and passport.IS_COLOR:
+                        default.pad(top=1)
                 self.header.add_child(self.icon_view)
 
             header_title = Label(text=self.title, color=self.header_fg_color, long_mode=lv.label.LONG.SCROLL_CIRCULAR)
@@ -220,6 +222,8 @@ class Card(View):
                 self.right_icon_view = Image(right_icon, color=self.header_fg_color)
                 with Stylize(self.right_icon_view) as default:
                     default.align(lv.ALIGN.RIGHT_MID)
+                    if self.right_icon == 'ICON_CASA' and passport.IS_COLOR:
+                        default.pad(top=1)
                 self.header.add_child(self.right_icon_view)
 
             # Only draw right text if there is no right icon
