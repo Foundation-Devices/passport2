@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [workspace]
-members = ["stm32h7xx-hal-driver-sys"]
+members = [
+    "cmsis-device-h7-sys",
+    "stm32h7xx-hal-driver-sys",
+]
 
 [package]
 name = "foundation"

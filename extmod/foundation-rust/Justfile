@@ -20,7 +20,7 @@ build:
 lint:
     CC=arm-none-eabi-gcc cargo clippy --target thumbv7em-none-eabihf
     cargo fmt --check
-    ./stm32h7xx-hal-driver-sys/bindgen.sh -c
+    ./bindgen.sh -c
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h \
