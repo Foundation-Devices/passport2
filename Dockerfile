@@ -15,8 +15,10 @@ RUN apt-get update && \
                        autotools-dev \
                        build-essential \
                        curl \
+                       gawk \
                        gcc-arm-none-eabi \
                        git \
+                       libclang-dev \
                        libffi-dev \
                        libssl-dev \
                        libtool \
@@ -41,11 +43,16 @@ RUN rustup component add clippy && \
     rustup target add thumbv7em-none-eabihf
 
 # Install binaries using cargo.
+RUN cargo install bindgen-cli@^0.69.5 --locked && \
+    mv /cargo/bin/bindgen /usr/local/bin/bindgen && \
+    chmod 755 /usr/local/bin/bindgen
+
 RUN cargo install cbindgen@^0.24 --locked && \
-    cargo install just@1.23.0 --locked && \
     mv /cargo/bin/cbindgen /usr/local/bin/cbindgen && \
+    chmod 755 /usr/local/bin/cbindgen
+
+RUN cargo install just@1.23.0 --locked && \
     mv /cargo/bin/just /usr/local/bin/just && \
-    chmod 755 /usr/local/bin/cbindgen && \
     chmod 755 /usr/local/bin/just
 
 # Allow all users to use CARGO_HOME and RUSTUP_HOME.

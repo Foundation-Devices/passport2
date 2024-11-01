@@ -7,6 +7,7 @@ alias l := lint
 
 # Generate C bindings header.
 generate:
+    ./stm32h7xx-hal-driver-sys/bindgen.sh
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h
@@ -17,14 +18,15 @@ build:
 
 # Lint the crate.
 lint:
-    cargo clippy --target thumbv7em-none-eabihf
+    CC=arm-none-eabi-gcc cargo clippy --target thumbv7em-none-eabihf
     cargo fmt --check
+    ./stm32h7xx-hal-driver-sys/bindgen.sh -c
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h \
              --verify
-    cargo test --features std
+    CC=gcc cargo test --features std
 
 # Print size information
 sizes:
-    cargo run --features std
+    CC=gcc cargo run --features std
