@@ -57,6 +57,12 @@ jobs:
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
 
+    - name: Upload firmware ELF
+      uses: actions/upload-artifact@v4
+      with:
+        name: v${{env.version}}${{ matrix.build.suffix }}.elf
+        path: ports/stm32/build-Passport/firmware.elf
+
     - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v4
       with:
