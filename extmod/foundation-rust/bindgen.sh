@@ -85,7 +85,20 @@ echo "generating stm32h7xx-hal-driver-sys bindings: $stm32h7xx_hal_driver_sys_ou
 bindgen "$DIR/stm32h7xx-hal-driver-sys/bindings.h" \
         $bindgen_arguments \
         --raw-line 'use cmsis_device_h7_sys::*;' \
+        --allowlist-item '^GPIO_MODE_.*$' \
+        --allowlist-item '^GPIO_SPEED_.*$' \
+        --allowlist-item '^GPIO_(NOPULL|PULLUP|PULLDOWN)$' \
         --allowlist-item '^HAL_.*$' \
+        --allowlist-item '^SPI_MODE_(MASTER|SLAVE)$' \
+        --allowlist-item '^SPI_FIRSTBIT_(MSB|LSB)$' \
+        --allowlist-item '^SPI_TIMODE_(DISABLE|ENABLE)$' \
+        --allowlist-item '^SPI_CRCCALCULATION_(DISABLE|ENABLE)$' \
+        --allowlist-item '^SPI_NSS_POLARITY_(LOW|HIGH)$' \
+        --allowlist-item '^SPI_NSS_(SOFT|HARD_INPUT|HARD_OUTPUT)$' \
+        --allowlist-item '^SPI_BAUDRATEPRESCALER_[0-9]+$' \
+        --allowlist-item '^SPI_POLARITY_(LOW|HIGH)$' \
+        --allowlist-item '^SPI_DATASIZE_[0-9]+BIT$' \
+        --allowlist-item '^SPI_PHASE_[12]EDGE$' \
         --allowlist-type '^.*_HandleTypeDef$' \
         --allowlist-type '^.*InitTypeDef$' \
         --allowlist-type '^.*_StateTypeDef$' \
