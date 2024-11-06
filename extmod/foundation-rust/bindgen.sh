@@ -147,6 +147,7 @@ echo "generating cmsis-device-h7-sys bindings: $cmsis_device_h7_sys_output"
 bindgen "$DIR/cmsis-device-h7-sys/bindings.h" \
         $bindgen_arguments \
         --allowlist-item '^.*_BASE$' \
+        --allowlist-item '^RCC_.*$' \
         --allowlist-type 'IRQn_Type' \
         --allowlist-type '^.*_TypeDef$' \
         --output "$cmsis_device_h7_sys_output"

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+ * SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundation.xyz>
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is passed to cbindgen to generate the Rust bindings.
