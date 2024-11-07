@@ -17,7 +17,9 @@
 
 #![no_std]
 
-use embedded_storage::nor_flash::{ErrorType, NorFlash, ReadNorFlash};
+use embedded_storage::nor_flash::{
+    ErrorType, NorFlash, NorFlashError, NorFlashErrorKind, ReadNorFlash,
+};
 use heapless::Vec;
 
 /// Redundant reads layer.
@@ -56,10 +58,36 @@ impl<S, const N: usize, const QUORUM: usize> RedundantRead<S, N, QUORUM> {
     }
 }
 
+/// Errors that can happen while using [`RedundantRead`].
+#[derive(Debug)]
+pub enum Error<E> {
+    /// None of the redundant reads performed matched.
+    ///
+    /// Data consistency cannot be guaranteed.
+    InconsistentBuffers,
+    /// A device error.
+    Device(E),
+}
+
+impl<E> From<E> for Error<E> {
+    fn from(error: E) -> Self {
+        Self::Device(error)
+    }
+}
+
+impl<E: NorFlashError> NorFlashError for Error<E> {
+    fn kind(&self) -> NorFlashErrorKind {
+        match self {
+            Error::InconsistentBuffers => NorFlashErrorKind::Other,
+            Error::Device(e) => e.kind(),
+        }
+    }
+}
+
 impl<S: ErrorType, const N: usize, const QUORUM: usize> ErrorType
     for RedundantRead<S, N, QUORUM>
 {
-    type Error = S::Error;
+    type Error = Error<S::Error>;
 }
 
 impl<S: ReadNorFlash, const N: usize, const QUORUM: usize> ReadNorFlash
@@ -74,7 +102,7 @@ impl<S: ReadNorFlash, const N: usize, const QUORUM: usize> ReadNorFlash
     ) -> Result<(), Self::Error> {
         // Read is larger than what we support, just do it without redundancy.
         if bytes.len() >= N {
-            return self.storage.read(offset, bytes);
+            return self.storage.read(offset, bytes).map_err(Error::from);
         }
 
         self.storage.read(offset, bytes)?;
@@ -113,11 +141,15 @@ impl<S: ReadNorFlash, const N: usize, const QUORUM: usize> ReadNorFlash
             {
                 continue;
             } else {
-                // Copy the buffer out to the caller.
-                // Either we know they are all equal, so it doesn't matter which one we
-                // pick, or we don't know which is the right one, so just return the first one.
-                bytes.copy_from_slice(&self.buffers[0]);
-                return Ok(());
+                // If we need to retry but we exceeded the maximum read
+                // attemps then lets return an error.
+                if retry {
+                    return Err(Error::InconsistentBuffers);
+                } else {
+                    // Copy the buffer out to the caller. All buffers are equal.
+                    bytes.copy_from_slice(&self.buffers[0]);
+                    return Ok(());
+                }
             }
         }
     }
@@ -134,10 +166,10 @@ impl<S: NorFlash, const N: usize, const QUORUM: usize> NorFlash
     const ERASE_SIZE: usize = S::ERASE_SIZE;
 
     fn erase(&mut self, from: u32, to: u32) -> Result<(), Self::Error> {
-        self.storage.erase(from, to)
+        self.storage.erase(from, to).map_err(Error::from)
     }
 
     fn write(&mut self, offset: u32, bytes: &[u8]) -> Result<(), Self::Error> {
-        self.storage.write(offset, bytes)
+        self.storage.write(offset, bytes).map_err(Error::from)
     }
 }
