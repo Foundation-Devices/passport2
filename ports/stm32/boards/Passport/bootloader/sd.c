@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Foundation Devices, Inc.
-// <hello@foundationdevices.com> SPDX-License-Identifier: GPL-3.0-or-later
+// <hello@foundation.xyz> SPDX-License-Identifier: GPL-3.0-or-later
 //
 // sd.c - SD card routines
 

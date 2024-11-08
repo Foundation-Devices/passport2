@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2022 Seed Signer
 # SPDX-License-Identifier: MIT
 #
-# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # seedqr_decoder.py
