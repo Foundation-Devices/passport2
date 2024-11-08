@@ -10,7 +10,7 @@ from errors import Error
 
 
 async def fcc_copy_files_task(file_path, file_size, set_progress, set_text, on_done):
-    from common import sf
+    from foundation import flash
 
     # ==========================================================================================================
     # First, write some data to the specified file
@@ -73,13 +73,13 @@ async def fcc_copy_files_task(file_path, file_size, set_progress, set_text, on_d
 
                     if pos % 4096 == 0:
                         # erase here
-                        sf.sector_erase(pos)
-                        while sf.is_busy():
+                        flash.sector_erase(pos)
+                        while flash.is_busy():
                             await sleep_ms(10)
 
-                    sf.write(pos, buf)
+                    flash.write(pos, buf)
 
-                    while sf.is_busy():
+                    while flash.is_busy():
                         await sleep_ms(10)
 
                     pos += bytes_read
@@ -112,7 +112,7 @@ async def fcc_copy_files_task(file_path, file_size, set_progress, set_text, on_d
             if val > 253:
                 val = 1
 
-        sf.read(offset, actual_buf)
+        flash.read(offset, actual_buf)
 
         if expected_buf[0:num_to_read] != actual_buf[0:num_to_read]:
             set_text('Data read back from flash did not match!')

@@ -101,11 +101,6 @@ void Passport_board_init(void);
 #define MICROPY_HW_SPI1_SCK (pin_A5)
 #define MICROPY_HW_SPI1_MOSI (pin_A7)
 
-#define MICROPY_HW_SPI4_NSS (pin_E11)
-#define MICROPY_HW_SPI4_SCK (pin_E12)
-#define MICROPY_HW_SPI4_MISO (pin_E13)
-#define MICROPY_HW_SPI4_MOSI (pin_E14)
-
 // SD card detect switch
 #define MICROPY_HW_SDCARD_DETECT_PIN (pin_E3)
 #define MICROPY_HW_SDCARD_DETECT_PULL (GPIO_PULLUP)

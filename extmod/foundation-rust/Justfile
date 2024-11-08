@@ -7,7 +7,7 @@ alias l := lint
 
 # Generate C bindings header.
 generate:
-    ./stm32h7xx-hal-driver-sys/bindgen.sh
+    ./bindgen.sh
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h

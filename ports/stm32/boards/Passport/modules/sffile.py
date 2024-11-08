@@ -17,6 +17,7 @@
 # - last 64k of memory reserved for settings
 #
 import trezorcrypto
+from foundation import flash
 from uasyncio import sleep_ms
 
 blksize = const(65536)
@@ -41,9 +42,6 @@ class SFFile:
             self.checksum = trezorcrypto.sha256()
         else:
             self.readonly = True
-
-        from common import sf
-        self.sf = sf
 
     def tell(self):
         # where are we?
@@ -79,10 +77,10 @@ class SFFile:
         assert self.length == 0  # 'already wrote?'
 
         for i in range(0, self.max_size, blksize):
-            self.sf.block_erase(self.start + i)
+            flash.block_erase(self.start + i)
 
             # expect block erase to take up to 2 seconds
-            while self.sf.is_busy():
+            while flash.is_busy():
                 await sleep_ms(50)
 
     def __enter__(self):
@@ -93,7 +91,7 @@ class SFFile:
 
     def wait_writable(self):
         # TODO: Could add some timeout handling here.
-        while self.sf.is_busy():
+        while flash.is_busy():
             pass
 
     def write(self, b):
@@ -124,7 +122,7 @@ class SFFile:
 
             self.wait_writable()
 
-            self.sf.write(self.start + self.pos + sofar, here)
+            flash.write(self.start + self.pos + sofar, here)
 
             left -= len(here)
             sofar += len(here)
@@ -151,7 +149,7 @@ class SFFile:
             return b''
 
         rv = bytearray(ll)
-        self.sf.read(self.start + self.pos, rv)
+        flash.read(self.start + self.pos, rv)
 
         self.pos += ll
 
@@ -165,7 +163,7 @@ class SFFile:
         if actual <= 0:
             return 0
 
-        self.sf.read(self.start + self.pos, b)
+        flash.read(self.start + self.pos, b)
 
         self.pos += actual
 

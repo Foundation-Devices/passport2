@@ -4,7 +4,11 @@
 [workspace]
 members = [
     "cmsis-device-h7-sys",
+    "embedded-storage-fs",
+    "embedded-storage-redundant",
+    "stm32h7xx-hal-driver",
     "stm32h7xx-hal-driver-sys",
+    "w25q64jv",
 ]
 
 [package]
@@ -21,6 +25,17 @@ required-features = ["std"]
 version = "0.14"
 features = ["small-hash"]
 default-features = false
+
+[dependencies.embedded-storage]
+version = "0.3"
+
+[target.'cfg(not(target_arch = "arm"))'.dependencies.embedded-storage-fs]
+version = "0.1"
+path = "embedded-storage-fs"
+
+[dependencies.embedded-storage-redundant]
+version = "0.1"
+path = "embedded-storage-redundant"
 
 [dependencies.minicbor]
 version = "0.24"
@@ -74,6 +89,16 @@ features = ["std", "std_rng"]
 [dependencies.rand_core]
 version = "0.6.4"
 default-features = false
+
+[dependencies.w25q64jv]
+version = "0.1"
+path = "w25q64jv"
+
+[target.'cfg(target_arch = "arm")'.dependencies.cmsis-device-h7-sys]
+path = "cmsis-device-h7-sys"
+
+[target.'cfg(target_arch = "arm")'.dependencies.stm32h7xx-hal-driver]
+path = "stm32h7xx-hal-driver"
 
 [features]
 default = []
