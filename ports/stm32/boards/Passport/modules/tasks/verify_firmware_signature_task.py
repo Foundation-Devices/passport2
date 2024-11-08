@@ -1,7 +1,7 @@
 # Task to verify the signatures of a firmware update before copying to
 # SPI flash.
 #
-# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import passport
