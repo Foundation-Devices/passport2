@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Foundation Devices, Inc.
-// <hello@foundationdevices.com> SPDX-License-Identifier: BSD-3-Clause
+// <hello@foundation.xyz> SPDX-License-Identifier: BSD-3-Clause
 
 #include <string.h>
 #include <stdbool.h>
