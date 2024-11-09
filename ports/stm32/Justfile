@@ -59,7 +59,7 @@ lint-code: lint-py lint-c
 
 # Lint the licensing
 lint-license:
-    reuse lint
+    reuse --suppress-deprecation lint
 
 # Lint all of the project
 lint: lint-code lint-license
