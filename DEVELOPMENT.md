@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Development
 
-This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 20.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
+This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 24.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
 
 ## Setup
 In order to build the Passport firmware, you need to:
