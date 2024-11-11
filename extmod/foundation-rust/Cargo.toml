@@ -111,5 +111,5 @@ crate-type = ["lib", "staticlib"]
 lto = "fat"
 opt-level = "z"
 codegen-units = 1
-strip = true
+strip = "none"
 panic = "abort"
