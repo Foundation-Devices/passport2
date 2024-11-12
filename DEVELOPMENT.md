@@ -63,7 +63,7 @@ The makefiles used by MicroPython and Passport firmware use Autotools.  Install 
 OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only required for developers with a special Developer version of the Passport board.  If all you want to do is build the firmware and install it with a Developer Pubkey over microSD, then you do not need to install OpenOCD.
 
     cd ~/
-    git clone https://github.com/ntfreak/openocd.git
+    git clone --depth 1 --branch v0.12.0 https://github.com/ntfreak/openocd.git
     cd ~/openocd/
     ./bootstrap
     ./configure --enable-stlink
