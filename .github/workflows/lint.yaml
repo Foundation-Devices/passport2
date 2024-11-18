@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: fsfe/reuse-action@v2
+      - uses: fsfe/reuse-action@v5
 
   rust-code-compiles:
     name: Rust code compiles?
