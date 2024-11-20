@@ -87,9 +87,8 @@ pub extern "C" fn secp256k1_sign_schnorr(
             Err(_) => return false,
         };
 
-    let msg = Message::from_digest_slice(data).unwrap();
     let sig =
-        PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
+        PRE_ALLOCATED_CTX.sign_schnorr_with_rng(data, &keypair, &mut rng());
     signature.copy_from_slice(sig.as_ref());
 
     true

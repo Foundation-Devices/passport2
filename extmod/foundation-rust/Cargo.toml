@@ -22,7 +22,7 @@ name = "sizes"
 required-features = ["std"]
 
 [dependencies.bitcoin_hashes]
-version = "0.14"
+version = "0.15"
 features = ["small-hash"]
 default-features = false
 
@@ -50,11 +50,11 @@ version = "1"
 default-features = false
 
 [dependencies.foundation-firmware]
-version = "0.1.2"
+version = "0.2"
 default-features = false
 
 [dependencies.foundation-ur]
-version = "0.3"
+version = "0.4"
 default-features = false
 
 [dependencies.foundation-urtypes]
@@ -74,7 +74,7 @@ default-features = false
 features = ["critical-section"]
 
 [dependencies.secp256k1]
-version = "0.29"
+version = "0.30"
 default-features = false
 features = ["lowmemory", "rand"]
 
