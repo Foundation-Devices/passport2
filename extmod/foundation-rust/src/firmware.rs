@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use crate::secp256k1::PRE_ALLOCATED_CTX;
-use bitcoin_hashes::{sha256d, Hash};
+use bitcoin_hashes::sha256d;
 use core::{ffi::c_char, slice};
 use foundation_firmware::{VerifyHeaderError, VerifySignatureError};
 use secp256k1::PublicKey;

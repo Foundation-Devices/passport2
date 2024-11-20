@@ -74,9 +74,8 @@ pub extern "C" fn secp256k1_sign_schnorr(
     let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
         .expect("invalid secret key");
 
-    let msg = Message::from_digest_slice(data).unwrap();
     let sig =
-        PRE_ALLOCATED_CTX.sign_schnorr_with_rng(&msg, &keypair, &mut rng());
+        PRE_ALLOCATED_CTX.sign_schnorr_with_rng(data, &keypair, &mut rng());
     signature.copy_from_slice(sig.as_ref());
 }
 
