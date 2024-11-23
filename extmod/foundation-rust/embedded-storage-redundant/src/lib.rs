@@ -129,7 +129,7 @@ impl<S: ReadNorFlash, const N: usize, const QUORUM: usize> ReadNorFlash
             num_reads += 1;
 
             if num_reads >= QUORUM {
-                for i in 0..QUORUM {
+                for i in 0..(QUORUM - 1) {
                     if self.buffers[i] != self.buffers[i + 1] {
                         retry = true;
                     }
