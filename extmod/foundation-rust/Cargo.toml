@@ -37,6 +37,12 @@ path = "embedded-storage-fs"
 version = "0.1"
 path = "embedded-storage-redundant"
 
+[dependencies.embedded-storage-nom]
+version = "0.1"
+git = "https://github.com/Foundation-Devices/foundation-rs"
+branch = "psbt"
+default-features = false
+
 [dependencies.minicbor]
 version = "0.24"
 default-features = false

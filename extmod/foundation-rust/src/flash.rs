@@ -1,10 +1,24 @@
 // SPDX-FileCopyrightText: 2024 Foundation Devices, Inc. <hello@foundation.xyz>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use core::{cell::RefCell, slice};
+use core::{
+    cell::RefCell,
+    ptr::{addr_of_mut, NonNull},
+    slice,
+};
 use embedded_storage::nor_flash::{NorFlash, ReadNorFlash};
+use embedded_storage_nom::rc::{Rc, RcInner};
 use embedded_storage_redundant::RedundantRead;
 use once_cell::unsync::Lazy;
+
+/// cbindgen:ignore
+#[cfg(all(target_os = "none", target_arch = "arm"))]
+type Storage =
+    RedundantRead<w25q64jv::W25Q64JV<stm32h7xx_hal_driver::SpiDevice>, 3, 1024>;
+
+/// cbindgen:ignore
+#[cfg(not(target_arch = "arm"))]
+type Storage = RedundantRead<embedded_storage_fs::File<1, 1, 4096>, 3, 1024>;
 
 // The on-device flash storage device.
 //
@@ -14,15 +28,7 @@ use once_cell::unsync::Lazy;
 // If we reach that point in the future, I'd recommend a Mutex.
 /// cbindgen:ignore
 #[cfg(all(target_os = "none", target_arch = "arm"))]
-static mut FLASH: Lazy<
-    RefCell<
-        RedundantRead<
-            w25q64jv::W25Q64JV<stm32h7xx_hal_driver::SpiDevice>,
-            3,
-            1024,
-        >,
-    >,
-> = Lazy::new(|| {
+static mut STORAGE_RC: Lazy<RcInner<RefCell<Storage>>> = Lazy::new(|| {
     use cmsis_device_h7_sys::{GPIOE, SPI4};
     use stm32h7xx_hal_driver::{gpio, rcc, sys, Spi, SpiDevice};
     use w25q64jv::W25Q64JV;
@@ -92,7 +98,10 @@ static mut FLASH: Lazy<
     };
 
     let spi_device = SpiDevice::new(spi4, cs);
-    RefCell::new(RedundantRead::new(W25Q64JV::new(spi_device), 9))
+    RcInner::new(RefCell::new(RedundantRead::new(
+        W25Q64JV::new(spi_device),
+        9,
+    )))
 });
 
 // The flash storage for the simulator.
@@ -101,9 +110,7 @@ static mut FLASH: Lazy<
 // that is used on device is kept here.
 /// cbindgen:ignore
 #[cfg(not(target_arch = "arm"))]
-static mut FLASH: Lazy<
-    RefCell<RedundantRead<embedded_storage_fs::File<1, 1, 4096>, 3, 1024>>,
-> = Lazy::new(|| {
+static mut STORAGE_RC: Lazy<RcInner<RefCell<Storage>>> = Lazy::new(|| {
     use embedded_storage_fs::File;
 
     // NOTE: It is fine to panic here as this code is for the simulator.
@@ -111,13 +118,20 @@ static mut FLASH: Lazy<
     // The capacity is 8 MiB as in the hardware.
     let file = File::open("spi_flash.bin", 8 * 1024 * 1024)
         .expect("Could not open SPI flash file");
-    RefCell::new(RedundantRead::new(file, 3))
+    RcInner::new(RefCell::new(RedundantRead::new(file, 3)))
+});
+
+/// cbindgen:ignore
+pub static mut STORAGE: Lazy<Rc<RefCell<Storage>>> = Lazy::new(|| unsafe {
+    Rc::from_inner(NonNull::from(Lazy::force_mut(&mut *addr_of_mut!(
+        STORAGE_RC
+    ))))
 });
 
 /// Read from the flash storage.
 #[export_name = "foundation_flash_read"]
 pub extern "C" fn read(offset: u32, data: *mut u8, len: usize) -> bool {
-    let mut flash = unsafe { FLASH.borrow_mut() };
+    let mut flash = unsafe { STORAGE.borrow_mut() };
     let buf = unsafe { slice::from_raw_parts_mut(data, len) };
 
     if let Err(_) = flash.read(offset, buf) {
@@ -130,7 +144,7 @@ pub extern "C" fn read(offset: u32, data: *mut u8, len: usize) -> bool {
 /// Write to the flash storage.
 #[export_name = "foundation_flash_write"]
 pub extern "C" fn write(offset: u32, data: *const u8, len: usize) -> bool {
-    let mut flash = unsafe { FLASH.borrow_mut() };
+    let mut flash = unsafe { STORAGE.borrow_mut() };
     let buf = unsafe { slice::from_raw_parts(data, len) };
 
     if let Err(_) = flash.write(offset, buf) {
@@ -143,7 +157,7 @@ pub extern "C" fn write(offset: u32, data: *const u8, len: usize) -> bool {
 /// Erase a sector of the flash storage.
 #[export_name = "foundation_flash_sector_erase"]
 pub extern "C" fn sector_erase(offset: u32) -> bool {
-    let mut flash = unsafe { FLASH.borrow_mut() };
+    let mut flash = unsafe { STORAGE.borrow_mut() };
 
     #[cfg(target_arch = "arm")]
     {
@@ -170,7 +184,7 @@ pub extern "C" fn sector_erase(offset: u32) -> bool {
 /// Erase a block of the flash storage.
 #[export_name = "foundation_flash_block_erase"]
 pub extern "C" fn block_erase(offset: u32) -> bool {
-    let mut flash = unsafe { FLASH.borrow_mut() };
+    let mut flash = unsafe { STORAGE.borrow_mut() };
 
     #[cfg(target_arch = "arm")]
     {
@@ -202,7 +216,7 @@ pub extern "C" fn is_busy(result: &mut bool) -> bool {
 
     #[cfg(target_arch = "arm")]
     {
-        let mut flash = unsafe { FLASH.borrow_mut() };
+        let mut flash = unsafe { STORAGE.borrow_mut() };
 
         match flash.as_mut_inner().read_status_1() {
             Ok(status) => *result = status.contains(w25q64jv::Status1::BUSY),
@@ -218,7 +232,7 @@ pub extern "C" fn is_busy(result: &mut bool) -> bool {
 pub extern "C" fn wait_done() -> bool {
     #[cfg(target_arch = "arm")]
     {
-        let mut flash = unsafe { FLASH.borrow_mut() };
+        let mut flash = unsafe { STORAGE.borrow_mut() };
 
         if let Err(_) = flash.as_mut_inner().flush() {
             return false;
