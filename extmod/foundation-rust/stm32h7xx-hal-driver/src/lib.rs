@@ -67,6 +67,7 @@ pub mod gpio {
     };
 
     /// General purpose output pin.
+    #[derive(Debug)]
     pub struct OutputPin {
         instance: *mut GPIO_TypeDef,
         pin: u16,
@@ -137,6 +138,7 @@ pub fn get_tick() -> u32 {
 }
 
 /// SPI driver handle.
+#[derive(Debug)]
 pub struct Spi {
     handle: SPI_HandleTypeDef,
 }
@@ -272,6 +274,7 @@ impl SpiBus for Spi {
 
 // NOTE: Perhaps this doesn't belong in this crate as this is
 // application specific.
+#[derive(Debug)]
 pub struct SpiDevice {
     spi: Spi,
     cs: gpio::OutputPin,
