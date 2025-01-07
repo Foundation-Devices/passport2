@@ -124,7 +124,7 @@ impl<
 
         let from = usize::try_from(from).expect("u32 bigger than usize");
         let to = usize::try_from(to).expect("u32 bigger than usize");
-        self.storage[from..from + to].fill(0xFF);
+        self.storage[from..to].fill(0xFF);
         fs::write(&self.path, &self.storage)?;
         Ok(())
     }
