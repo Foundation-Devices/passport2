@@ -76,6 +76,15 @@
  */
 #define UR_NETWORK_TESTNET 1
 
+/**
+ * The Bitcoin network.
+ *
+ */
+typedef enum {
+  NETWORK_MAINNET,
+  NETWORK_TESTNET,
+} Network;
+
 typedef enum {
   BTC,
 } UR_CoinType;
@@ -222,6 +231,133 @@ typedef struct {
     FirmwareResult_SamePublicKey_Body SAME_PUBLIC_KEY;
   };
 } FirmwareResult;
+
+/**
+ * A extended private key.
+ */
+typedef struct {
+  uint8_t version[4];
+  uint8_t depth;
+  uint8_t parent_fingerprint[4];
+  uint32_t child_number;
+  uint8_t chain_code[32];
+  uint8_t private_key[32];
+} Xpriv;
+
+/**
+ * Events that happen during PSBT validation.
+ */
+typedef enum {
+  VALIDATION_EVENT_PROGRESS,
+  VALIDATION_EVENT_OUTPUT_ADDRESS,
+  VALIDATION_EVENT_CHANGE_ADDRESS,
+} ValidationEvent_Tag;
+
+typedef struct {
+  int64_t amount;
+  char address[91];
+} ValidationEvent_OutputAddress_Body;
+
+typedef struct {
+  int64_t amount;
+  char address[91];
+} ValidationEvent_ChangeAddress_Body;
+
+typedef struct {
+  ValidationEvent_Tag tag;
+  union {
+    struct {
+      uint64_t progress;
+    };
+    ValidationEvent_OutputAddress_Body OUTPUT_ADDRESS;
+    ValidationEvent_ChangeAddress_Body CHANGE_ADDRESS;
+  };
+} ValidationEvent;
+
+typedef bool (*ValidationEventCallback)(void*, const ValidationEvent*);
+
+/**
+ * The result of the PSBT validation.
+ */
+typedef enum {
+  /**
+   * Validation succeeded.
+   */
+  VALIDATION_RESULT_OK,
+  /**
+   * Internal error of the validation function.
+   */
+  VALIDATION_RESULT_INTERNAL_ERROR,
+  /**
+   * The extended private key passed is invalid.
+   */
+  VALIDATION_RESULT_INVALID_XPRIV,
+  /**
+   * Failed to parse the PSBT.
+   */
+  VALIDATION_RESULT_PARSER_ERROR,
+  VALIDATION_RESULT_INVALID_WITNESS_SCRIPT,
+  VALIDATION_RESULT_INVALID_REDEEM_SCRIPT,
+  VALIDATION_RESULT_UNSUPPORTED_SIGHASH,
+  VALIDATION_RESULT_TXID_MISMATCH,
+  VALIDATION_RESULT_MISSING_PREVIOUS_TXID,
+  VALIDATION_RESULT_MISSING_REDEEM_WITNESS_SCRIPT,
+  VALIDATION_RESULT_TAPROOT_OUTPUT_INVALID_PUBLIC_KEY,
+  VALIDATION_RESULT_TOO_MANY_OUTPUTS,
+  VALIDATION_RESULT_TOO_MANY_OUTPUT_KEYS,
+  VALIDATION_RESULT_MULTIPLE_KEYS_NOT_EXPECTED,
+  VALIDATION_RESULT_FRAUDULENT_OUTPUT_PUBLIC_KEY,
+  VALIDATION_RESULT_MISSING_OUTPUT,
+  VALIDATION_RESULT_UNKNOWN_OUTPUT_SCRIPT,
+} ValidationResult_Tag;
+
+typedef struct {
+  int64_t total_with_change;
+  int64_t total_change;
+  bool is_self_send;
+} ValidationResult_Ok_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_MissingRedeemWitnessScript_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_TaprootOutputInvalidPublicKey_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_TooManyOutputKeys_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_MultipleKeysNotExpected_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_FraudulentOutputPublicKey_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_MissingOutput_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_UnknownOutputScript_Body;
+
+typedef struct {
+  ValidationResult_Tag tag;
+  union {
+    ValidationResult_Ok_Body OK;
+    ValidationResult_MissingRedeemWitnessScript_Body MISSING_REDEEM_WITNESS_SCRIPT;
+    ValidationResult_TaprootOutputInvalidPublicKey_Body TAPROOT_OUTPUT_INVALID_PUBLIC_KEY;
+    ValidationResult_TooManyOutputKeys_Body TOO_MANY_OUTPUT_KEYS;
+    ValidationResult_MultipleKeysNotExpected_Body MULTIPLE_KEYS_NOT_EXPECTED;
+    ValidationResult_FraudulentOutputPublicKey_Body FRAUDULENT_OUTPUT_PUBLIC_KEY;
+    ValidationResult_MissingOutput_Body MISSING_OUTPUT;
+    ValidationResult_UnknownOutputScript_Body UNKNOWN_OUTPUT_SCRIPT;
+  };
+} ValidationResult;
 
 typedef struct {
   UR_ErrorKind kind;
@@ -476,6 +612,11 @@ extern UR_Decoder UR_DECODER;
 extern UR_Encoder UR_ENCODER;
 
 /**
+ * Initialize the Rust logger.
+ */
+void foundation_init_logger(void);
+
+/**
  * Verify the header of a firmware update.
  */
 void foundation_firmware_verify_update_header(const uint8_t *header,
@@ -520,6 +661,17 @@ bool foundation_flash_is_busy(bool *result);
  * Wait until flash storage is not busy.
  */
 bool foundation_flash_wait_done(void);
+
+/**
+ * Validate a PSBT in the SPI flash at `offset` of length `len`, in bytes.
+ */
+bool foundation_psbt_validate(size_t offset,
+                              size_t len,
+                              Network network,
+                              const Xpriv *xpriv,
+                              void *data,
+                              ValidationEventCallback handle_event,
+                              ValidationResult *result);
 
 /**
  * Calculate a "Schnorr" public key from the secret key.

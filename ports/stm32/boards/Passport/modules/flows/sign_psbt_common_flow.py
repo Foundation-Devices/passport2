@@ -16,29 +16,72 @@ from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 import gc
-from utils import spinner_task, recolor, stylize_address
+from utils import spinner_task, recolor, stylize_address, start_task
 
 
 class SignPsbtCommonFlow(Flow):
     def __init__(self, psbt_len):
         import chains
         super().__init__(initial_state=self.validate_psbt, name='SignPsbtCommonFlow')
-        self.psbt = None
+        self.progress_page = None
+        self.details = None
         self.psbt_len = psbt_len
         self.chain = chains.current_chain()
         self.header = 'Transaction Info'
+        self.first_output = True
+        self.first_change = True
+        self.output_addresses = None
+        self.change_addresses = None
+
+    async def validation_on_done(self, details, error=None, message=None):
+        self.details = details
+        self.error = error
+        self.error_message = message
+        self.progress_page.set_result(error is None)
+
+    def on_event(self, event_type, data):
+        if event_type == 'progress':
+            self.progress_page.set_progress(data)
+        elif event_type == 'output_address':
+            if self.first_output:
+                self.first_output = False
+            else:
+                self.output_addresses.write('\n')
+            address, amount = data
+            amount = ' '.join(self.chain.render_value(amount))
+            address = stylize_address(address)
+
+            self.output_addresses.write('\n{}\n{}\n\n{}\n{}'.format(
+                recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
+                amount,
+                recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
+                address))
+        elif event_type == 'change_address':
+            if self.first_change:
+                self.first_change = False
+            else:
+                self.change_addresses.write('\n')
+            address, _ = data
+            self.change_addresses.write(stylize_address(address))
 
     async def validate_psbt(self):
-        from pages import ErrorPage
+        import uio
+        from pages import ErrorPage, ProgressPage
 
-        (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
-                                                           args=[self.psbt_len])
-        # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
-        if error is not None:
-            await ErrorPage(error_msg).show()
-            self.set_result(None)
-        else:
+        self.first_output = True
+        self.first_change = True
+        self.output_addresses = uio.StringIO()
+        self.change_addresses = uio.StringIO()
+
+        self.progress_page = ProgressPage(text='Validating transaction', left_micron=None, right_micron=None)
+        self.validate_task = start_task(validate_psbt_task(self.validation_on_done, self.on_event, self.psbt_len))
+
+        result = await self.progress_page.show()
+        if result:
             self.goto(self.check_multisig_import)
+        else:
+            await ErrorPage(self.error_message).show()
+            self.set_result(None)
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
@@ -46,13 +89,13 @@ class SignPsbtCommonFlow(Flow):
 
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
-        if self.psbt.multisig_import_needs_approval:
-            result = await ImportMultisigWalletFlow(self.psbt.active_multisig).run()
-            if not result:
-                text = 'The transaction can still be signed, but this multisig config will not be saved.'
-                result2 = await ErrorPage(text=text, left_micron=microns.Back).show()
-                if not result2:
-                    return
+        # if self.details.multisig_import_needs_approval:
+        #     result = await ImportMultisigWalletFlow(self.details.active_multisig).run()
+        #     if not result:
+        #         text = 'The transaction can still be signed, but this multisig config will not be saved.'
+        #         result2 = await ErrorPage(text=text, left_micron=microns.Back).show()
+        #         if not result2:
+        #             return
 
         self.goto(self.show_transaction_details)
 
@@ -62,40 +105,21 @@ class SignPsbtCommonFlow(Flow):
         from public_constants import MARGIN_FOR_ADDRESSES
 
         try:
-            outputs = uio.StringIO()
-
-            if self.psbt.self_send:
-                outputs.write("\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send')))
-
-            first = True
-            for idx, tx_out in self.psbt.output_iter():
-                gc.collect()
-                outp = self.psbt.outputs[idx]
-                # Show change outputs if this is a self-send
-                if outp.is_change and not self.psbt.self_send:
-                    continue
-
-                if first:
-                    first = False
-                else:
-                    outputs.write('\n')
-
-                outputs.write(self.render_output(tx_out))
+            rendered_details = uio.StringIO()
+            if self.details.is_self_send():
+                rendered_details.write("\n{}\n".format(recolor(HIGHLIGHT_TEXT_HEX, 'Self-Send')))
+            rendered_details.write(self.output_addresses.getvalue())
 
             gc.collect()
 
-            # print('total_out={} total_in={}
-            # change={}'.format=(self.psbt.total_value_out, self.psbt.total_value_in,
-            # self.psbt.total_value_in - self.psbt.total_value_out))
-
             result = await LongTextPage(
-                text=outputs.getvalue(),
+                text=rendered_details.getvalue(),
                 centered=True,
                 card_header={'title': self.header},
                 margins=MARGIN_FOR_ADDRESSES,
             ).show()
             if result:
-                if self.psbt.self_send:
+                if self.details.is_self_send():
                     self.goto(self.show_warnings)
                 else:
                     self.goto(self.show_change)
@@ -147,9 +171,11 @@ class SignPsbtCommonFlow(Flow):
             if not result:
                 self.back()
             else:
-                self.goto(self.sign_transaction)
+                self.set_result(None)
+                # self.goto(self.sign_transaction) TODO
         else:
-            self.goto(self.sign_transaction)
+            self.set_result(None)
+            # self.goto(self.sign_transaction) TODO
 
     async def sign_transaction(self):
         from tasks import double_check_psbt_change_task
@@ -171,7 +197,7 @@ class SignPsbtCommonFlow(Flow):
         else:
             # TODO: Why do this here instead of in validate?
             (error_msg, error) = await spinner_task('Signing Transaction',
-                                                    double_check_psbt_change_task, args=[self.psbt])
+                                                    double_check_psbt_change_task, args=[self.details])
 
             gc.collect()
             if error is not None:
@@ -180,7 +206,7 @@ class SignPsbtCommonFlow(Flow):
                 return
 
             (error_msg, error) = await spinner_task('Signing Transaction',
-                                                    sign_psbt_task, args=[self.psbt])
+                                                    sign_psbt_task, args=[self.details])
             gc.collect()
             if error is not None:
                 await ErrorPage(error_msg).show()
@@ -188,30 +214,8 @@ class SignPsbtCommonFlow(Flow):
                 return
 
             # print('>>>>>>>>> SIGNED!!!!!')
-            self.set_result(self.psbt)
+            self.set_result(self.details)
             # or in error self.set_result(None)
-
-    def render_output(self, o):
-        # Pretty-print a transactions output.
-        # - expects CTxOut object
-        # - gives user-visible string
-        #
-
-        val = ' '.join(self.chain.render_value(o.nValue))
-        dest = self.chain.render_address(o.scriptPubKey)
-
-        if dest.startswith("OP_RETURN"):
-            return '\n{}\n{}'.format(
-                recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
-                dest.split('\n', 1)[1])  # user-defined message starts after "OP_RETURN:\n"
-
-        dest = stylize_address(dest)
-
-        return '\n{}\n{}\n\n{}\n{}'.format(
-            recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
-            val,
-            recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
-            dest)
 
     def render_change_text(self):
         import uio
@@ -221,31 +225,22 @@ class SignPsbtCommonFlow(Flow):
         # - show the total amount, and list addresses
         with uio.StringIO() as msg:
             msg.write('\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Amount')))
-            total = 0
-            addrs = []
-            # print('len(outputs)={}'.format(len(self.psbt.outputs)))
-            for idx, tx_out in self.psbt.output_iter():
-                outp = self.psbt.outputs[idx]
-                if not outp.is_change:
-                    continue
-                # print('idx: {} output:{}'.format(idx, self.chain.render_address(tx_out.scriptPubKey)))
-                total += tx_out.nValue
-                addrs.append(stylize_address(self.chain.render_address(tx_out.scriptPubKey)))
 
-            if len(addrs) == 0:
+            total = self.details.total_change()
+            if total == 0:
                 msg.write('\nNo change')
                 return msg.getvalue()
 
             total_val = ' '.join(self.chain.render_value(total))
-
             msg.write('\n%s\n' % total_val)
 
-            if len(addrs) == 1:
-                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'), addrs[0]))
+            multiple_addresses = not self.first_change
+            if multiple_addresses:
+                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'),
+                                              self.change_addresses.getvalue()))
             else:
-                msg.write('\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Addresses')))
-                for a in addrs:
-                    msg.write('%s\n\n' % a)
+                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'),
+                                              self.change_addresses.getvalue()))
 
             return msg.getvalue()
 
@@ -262,19 +257,19 @@ class SignPsbtCommonFlow(Flow):
 
             # gc.collect()
 
-            fee = self.psbt.calculate_fee()
-            if fee is not None:
-                amount, units = self.chain.render_value(fee)
-                msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
+            msg.write('TODO.\n')
 
-            # # NEW: show where all the change outputs are going
-            # self.render_change_text(msg)
-            # gc.collect()
+            # fee = self.details.calculate_fee()
+            # if fee is not None:
+            #     amount, units = self.chain.render_value(fee)
+            #     msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
 
-            if self.psbt.warnings and len(self.psbt.warnings) > 0:
-                msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
-                for label, m in self.psbt.warnings:
-                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
-                    gc.collect()
+            # TODO: Warnings
+            #
+            # if self.details.warnings and len(self.details.warnings) > 0:
+            #     msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
+            #     for label, m in self.details.warnings:
+            #         msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+            #         gc.collect()
 
             return msg.getvalue()

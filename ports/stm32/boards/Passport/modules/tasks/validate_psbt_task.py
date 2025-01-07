@@ -10,39 +10,41 @@
 # validate_psbt_task.py - Sign a PSBT that is in external SPI flash
 
 
-async def validate_psbt_task(on_done, psbt_len):
+async def validate_psbt_task(on_done, on_event, psbt_len):
     from errors import Error
     from exceptions import FraudulentChangeOutput, FatalPSBTIssue
-    from psbt import psbtObject
+    from foundation import psbt
     from public_constants import TXN_INPUT_OFFSET
     from sffile import SFFile
+    import chains
+    import stash
     import gc
 
     error_msg = None
     error_code = None
 
     # Do the main validation
-    psbt = None
+    details = None
     try:
-        # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
-        with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
-            psbt = psbtObject.read_psbt(fd)
+        print('offset={} len={}'.format(TXN_INPUT_OFFSET, psbt_len))
 
-        gc.collect()
-        await psbt.validate()
-        gc.collect()
-        psbt.consider_inputs()
-        gc.collect()
-        psbt.consider_keys()
-        gc.collect()
-        psbt.consider_outputs()
+        chain = chains.current_chain()
+        is_testnet = chain.ctype == 'TBTC'
 
+        with stash.SensitiveValues() as sv:
+            xpriv = psbt.Xpriv(chain_code=sv.node.chain_code(),
+                               private_key=sv.node.private_key())
+            details = psbt.validate(TXN_INPUT_OFFSET, psbt_len, is_testnet, xpriv, on_event)
         # All went well!
-    except FraudulentChangeOutput as e:
+    except psbt.InvalidPSBTError as e:
+        # print('validate_psbt_task 2')
+        error_msg = e.args[0]
+        error_code = Error.PSBT_FATAL_ERROR
+    except psbt.FraudulentPSBTError as e:
         # print('validate_psbt_task 1')
         error_msg = e.args[0]
         error_code = Error.PSBT_FRAUDULENT_CHANGE_ERROR
-    except FatalPSBTIssue as e:
+    except psbt.InternalPSBTError as e:
         # print('validate_psbt_task 2')
         error_msg = e.args[0]
         error_code = Error.PSBT_FATAL_ERROR
@@ -55,10 +57,6 @@ async def validate_psbt_task(on_done, psbt_len):
         error_msg = 'Invalid PSBT: {}'.format(e)
         error_code = Error.PSBT_FATAL_ERROR
     finally:
-        # print('validate_psbt_task 5 - finally')
-        if error_code is not None:
-            del psbt
-            psbt = None
         gc.collect()
 
-        await on_done(psbt, error_msg, error_code)
+        await on_done(details, error_msg, error_code)

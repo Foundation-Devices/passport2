@@ -7,8 +7,10 @@
 #[cfg(target_arch = "arm")]
 use cortex_m as _;
 
+pub mod bip32;
 pub mod firmware;
 pub mod flash;
+pub mod psbt;
 pub mod secp256k1;
 pub mod ur;
 
@@ -28,4 +30,38 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     writeln!(stdout, "{}", info).ok();
 
     loop {}
+}
+
+pub struct Logger;
+
+impl log::Log for Logger {
+    fn enabled(&self, _: &log::Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        #[cfg(target_arch = "arm")]
+        {
+            use core::fmt::Write;
+
+            writeln!(stdout::Stdout, "[{}]: {}", record.level(), record.args())
+                .ok();
+        }
+
+        #[cfg(not(target_arch = "arm"))]
+        println!("[{}]: {}", record.level(), record.args());
+    }
+
+    fn flush(&self) {}
+}
+
+/// cbindgen:ignore
+static LOGGER: Logger = Logger;
+
+/// Initialize the Rust logger.
+#[export_name = "foundation_init_logger"]
+pub unsafe extern "C" fn init_logger() {
+    log::set_logger_racy(&LOGGER)
+        .map(|()| log::set_max_level(log::LevelFilter::Trace))
+        .expect("Failed to initialize logger")
 }

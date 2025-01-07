@@ -24,7 +24,10 @@ def go():
     import common
     import tasks
     import passport
+    import foundation
     from utils import get_screen_brightness
+
+    foundation.init_logger()
 
     # Initialize the common objects
 
