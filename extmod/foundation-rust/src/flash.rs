@@ -107,7 +107,9 @@ static mut FLASH: Lazy<
     use embedded_storage_fs::File;
 
     // NOTE: It is fine to panic here as this code is for the simulator.
-    let file = File::open("spi_flash.bin", 1000)
+    //
+    // The capacity is 8 MiB as in the hardware.
+    let file = File::open("spi_flash.bin", 8 * 1024 * 1024)
         .expect("Could not open SPI flash file");
     RefCell::new(RedundantRead::new(file, 3))
 });
