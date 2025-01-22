@@ -60,9 +60,15 @@ impl<
     where
         P: AsRef<Path>,
     {
-        let mut file = fs::File::open(&path)?;
         let mut storage = Vec::new();
-        file.read_to_end(&mut storage)?;
+        match fs::File::open(&path) {
+            Ok(mut f) => {
+                f.read_to_end(&mut storage)?;
+            }
+            // If no file is found, the storage will become a new file
+            Err(e) if e.kind() == io::ErrorKind::NotFound => (),
+            Err(e) => Err(e)?,
+        };
 
         // If the file doesn't match the capacity just resize it, it can
         // silently truncate the file or extend it and fill it with blank
@@ -124,7 +130,7 @@ impl<
 
         let from = usize::try_from(from).expect("u32 bigger than usize");
         let to = usize::try_from(to).expect("u32 bigger than usize");
-        self.storage[from..from + to].fill(0xFF);
+        self.storage[from..to].fill(0xFF);
         fs::write(&self.path, &self.storage)?;
         Ok(())
     }

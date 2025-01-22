@@ -143,11 +143,23 @@ pub extern "C" fn write(offset: u32, data: *const u8, len: usize) -> bool {
 /// Erase a sector of the flash storage.
 #[export_name = "foundation_flash_sector_erase"]
 pub extern "C" fn sector_erase(offset: u32) -> bool {
+    let mut flash = unsafe { FLASH.borrow_mut() };
+
     #[cfg(target_arch = "arm")]
     {
-        let mut flash = unsafe { FLASH.borrow_mut() };
+        if flash.as_mut_inner().sector_erase(offset).is_err() {
+            return false;
+        }
+    }
 
-        if let Err(_) = flash.as_mut_inner().sector_erase(offset) {
+    #[cfg(not(target_arch = "arm"))]
+    {
+        // Erase 4 KiB.
+        if flash
+            .as_mut_inner()
+            .erase(offset, offset + (4 * 1024))
+            .is_err()
+        {
             return false;
         }
     }
@@ -158,11 +170,23 @@ pub extern "C" fn sector_erase(offset: u32) -> bool {
 /// Erase a block of the flash storage.
 #[export_name = "foundation_flash_block_erase"]
 pub extern "C" fn block_erase(offset: u32) -> bool {
+    let mut flash = unsafe { FLASH.borrow_mut() };
+
     #[cfg(target_arch = "arm")]
     {
-        let mut flash = unsafe { FLASH.borrow_mut() };
+        if flash.as_mut_inner().block_erase_64kib(offset).is_err() {
+            return false;
+        }
+    }
 
-        if let Err(_) = flash.as_mut_inner().block_erase_64kib(offset) {
+    #[cfg(not(target_arch = "arm"))]
+    {
+        // Erase 64 KiB.
+        if flash
+            .as_mut_inner()
+            .erase(offset, offset + (64 * 1024))
+            .is_err()
+        {
             return false;
         }
     }
