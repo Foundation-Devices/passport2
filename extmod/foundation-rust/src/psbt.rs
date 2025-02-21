@@ -126,8 +126,7 @@ pub enum ValidationEvent {
     ChangeAddress { amount: i64, address: [c_char; 91] },
 }
 
-fn to_static_cstr<const N: usize>(s: &[u8], result: &mut [c_char; N])
-{
+fn to_static_cstr<const N: usize>(s: &[u8], result: &mut [c_char; N]) {
     result.fill(0);
 
     let len = s.len().min(N - 1);
