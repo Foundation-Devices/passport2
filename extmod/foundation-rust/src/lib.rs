@@ -62,6 +62,6 @@ static LOGGER: Logger = Logger;
 #[export_name = "foundation_init_logger"]
 pub unsafe extern "C" fn init_logger() {
     log::set_logger_racy(&LOGGER)
-        .map(|()| log::set_max_level(log::LevelFilter::Trace))
+        .map(|()| log::set_max_level(log::LevelFilter::Debug))
         .expect("Failed to initialize logger")
 }

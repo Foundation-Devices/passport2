@@ -248,28 +248,31 @@ class SignPsbtCommonFlow(Flow):
         import uio
 
         with uio.StringIO() as msg:
-            # # mention warning at top
-            # wl = len(self.psbt.warnings)
-            # if wl == 1:
-            #     msg.write('(1 warning below)\n\n')
-            # elif wl >= 2:
-            #     msg.write('(%d warnings below)\n\n' % wl)
-
             # gc.collect()
 
-            msg.write('TODO.\n')
+            fee = self.details.fee()
+            amount, units = self.chain.render_value(fee)
+            msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
 
-            # fee = self.details.calculate_fee()
-            # if fee is not None:
-            #     amount, units = self.chain.render_value(fee)
-            #     msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
+            warnings = []
 
-            # TODO: Warnings
-            #
-            # if self.details.warnings and len(self.details.warnings) > 0:
-            #     msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
-            #     for label, m in self.details.warnings:
-            #         msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
-            #         gc.collect()
+            if self.details.is_self_send():
+                fee_percentage = (fee / (fee + self.details.total_with_change())) * 100
+                if fee_percentage >= 5:
+                    warnings.append(('Big Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
+            else:
+                total_non_change = self.details.total_with_change() - self.details.total_change()
+                if fee > total_non_change:
+                    warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
+                else:
+                    fee_percentage = (fee / (fee + total_non_change)) * 100
+                    if fee_percentage >= 5:
+                        warnings.append(('Big Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
+
+            if len(warnings) > 0:
+                msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
+                for label, m in warnings:
+                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+                    gc.collect()
 
             return msg.getvalue()

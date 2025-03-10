@@ -69,9 +69,13 @@ static NORETURN void mod_foundation_psbt_raise_validation(ValidationResult *resu
             mp_raise_msg(&mp_type_FraudulentPSBTError,
                          MP_ERROR_TEXT("Taproot output public key is invalid"));
             break;
+        case VALIDATION_RESULT_TOO_MANY_INPUTS:
+            mp_raise_msg(&mp_type_InvalidPSBTError,
+                         MP_ERROR_TEXT("Transaction has too many inputs for Passport to handle"));
+            break;
         case VALIDATION_RESULT_TOO_MANY_OUTPUTS:
             mp_raise_msg(&mp_type_InvalidPSBTError,
-                         MP_ERROR_TEXT("Output has too many outputs for Passport to handle"));
+                         MP_ERROR_TEXT("Transaction has too many outputs for Passport to handle"));
             break;
         case VALIDATION_RESULT_TOO_MANY_OUTPUT_KEYS:
             mp_raise_msg(&mp_type_InvalidPSBTError,
@@ -92,6 +96,10 @@ static NORETURN void mod_foundation_psbt_raise_validation(ValidationResult *resu
         case VALIDATION_RESULT_UNKNOWN_OUTPUT_SCRIPT:
             mp_raise_msg(&mp_type_InvalidPSBTError,
                          MP_ERROR_TEXT("Unsupported output script"));
+            break;
+        case VALIDATION_RESULT_FRAUDULENT_WITNESS_UTXO:
+            mp_raise_msg(&mp_type_InvalidPSBTError,
+                         MP_ERROR_TEXT("The witness UTXO of an input is fraudulent"));
             break;
         default:
             mp_raise_msg(&mp_type_InternalPSBTError,
@@ -175,6 +183,7 @@ typedef struct _mp_obj_TransactionDetails_t {
     int64_t total_with_change;
     int64_t total_change;
     bool is_self_send;
+    int64_t fee;
 } mp_obj_TransactionDetails_t;
 
 /// def total_with_change(self) -> int:
@@ -199,6 +208,17 @@ STATIC mp_obj_t mod_foundation_psbt_TransactionDetails_total_change(mp_obj_t sel
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_total_change_obj,
                                  mod_foundation_psbt_TransactionDetails_total_change);
 
+/// def fee(self) -> int:
+///     """
+///     """
+STATIC mp_obj_t mod_foundation_psbt_TransactionDetails_fee(mp_obj_t self_in) {
+    mp_obj_TransactionDetails_t *self = MP_OBJ_TO_PTR(self_in);
+
+    return mp_obj_new_int(self->fee);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_fee_obj,
+                                 mod_foundation_psbt_TransactionDetails_fee);
+
 /// def is_self_send(self) -> boolean:
 ///     """
 ///     """
@@ -217,6 +237,8 @@ STATIC const mp_rom_map_elem_t mod_foundation_psbt_TransactionDetails_locals_dic
       MP_ROM_PTR(&mod_foundation_psbt_TransactionDetails_total_change_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_self_send),
       MP_ROM_PTR(&mod_foundation_psbt_TransactionDetails_is_self_send_obj) },
+    { MP_ROM_QSTR(MP_QSTR_fee),
+      MP_ROM_PTR(&mod_foundation_psbt_TransactionDetails_fee_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(mod_foundation_psbt_TransactionDetails_locals_dict,
                             mod_foundation_psbt_TransactionDetails_locals_dict_table);
@@ -308,6 +330,7 @@ STATIC mp_obj_t mod_foundation_psbt_validate(size_t n_args, const mp_obj_t *pos_
     o->total_with_change = result.OK.total_with_change;
     o->total_change = result.OK.total_change;
     o->is_self_send = result.OK.is_self_send;
+    o->fee = result.OK.fee;
 
     return MP_OBJ_FROM_PTR(o);
 }

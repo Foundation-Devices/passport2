@@ -300,22 +300,30 @@ typedef enum {
   VALIDATION_RESULT_INVALID_REDEEM_SCRIPT,
   VALIDATION_RESULT_UNSUPPORTED_SIGHASH,
   VALIDATION_RESULT_TXID_MISMATCH,
+  VALIDATION_RESULT_MISSING_OUTPUT_POINT,
   VALIDATION_RESULT_MISSING_PREVIOUS_TXID,
   VALIDATION_RESULT_MISSING_REDEEM_WITNESS_SCRIPT,
   VALIDATION_RESULT_TAPROOT_OUTPUT_INVALID_PUBLIC_KEY,
+  VALIDATION_RESULT_TOO_MANY_INPUTS,
   VALIDATION_RESULT_TOO_MANY_OUTPUTS,
   VALIDATION_RESULT_TOO_MANY_OUTPUT_KEYS,
   VALIDATION_RESULT_MULTIPLE_KEYS_NOT_EXPECTED,
   VALIDATION_RESULT_FRAUDULENT_OUTPUT_PUBLIC_KEY,
   VALIDATION_RESULT_MISSING_OUTPUT,
   VALIDATION_RESULT_UNKNOWN_OUTPUT_SCRIPT,
+  VALIDATION_RESULT_FRAUDULENT_WITNESS_UTXO,
 } ValidationResult_Tag;
 
 typedef struct {
   int64_t total_with_change;
   int64_t total_change;
   bool is_self_send;
+  int64_t fee;
 } ValidationResult_Ok_Body;
+
+typedef struct {
+  uint64_t index;
+} ValidationResult_MissingOutputPoint_Body;
 
 typedef struct {
   uint64_t index;
@@ -346,9 +354,14 @@ typedef struct {
 } ValidationResult_UnknownOutputScript_Body;
 
 typedef struct {
+  uint64_t index;
+} ValidationResult_FraudulentWitnessUtxo_Body;
+
+typedef struct {
   ValidationResult_Tag tag;
   union {
     ValidationResult_Ok_Body OK;
+    ValidationResult_MissingOutputPoint_Body MISSING_OUTPUT_POINT;
     ValidationResult_MissingRedeemWitnessScript_Body MISSING_REDEEM_WITNESS_SCRIPT;
     ValidationResult_TaprootOutputInvalidPublicKey_Body TAPROOT_OUTPUT_INVALID_PUBLIC_KEY;
     ValidationResult_TooManyOutputKeys_Body TOO_MANY_OUTPUT_KEYS;
@@ -356,6 +369,7 @@ typedef struct {
     ValidationResult_FraudulentOutputPublicKey_Body FRAUDULENT_OUTPUT_PUBLIC_KEY;
     ValidationResult_MissingOutput_Body MISSING_OUTPUT;
     ValidationResult_UnknownOutputScript_Body UNKNOWN_OUTPUT_SCRIPT;
+    ValidationResult_FraudulentWitnessUtxo_Body FRAUDULENT_WITNESS_UTXO;
   };
 } ValidationResult;
 

@@ -45,6 +45,7 @@ pub enum ValidationResult {
         total_with_change: i64,
         total_change: i64,
         is_self_send: bool,
+        fee: i64,
     },
     /// Internal error of the validation function.
     InternalError,
@@ -56,6 +57,9 @@ pub enum ValidationResult {
     InvalidRedeemScript,
     UnsupportedSighash,
     TxidMismatch,
+    MissingOutputPoint {
+        index: u64,
+    },
     MissingPreviousTxid,
     MissingRedeemWitnessScript {
         index: u64,
@@ -63,6 +67,7 @@ pub enum ValidationResult {
     TaprootOutputInvalidPublicKey {
         index: u64,
     },
+    TooManyInputs,
     TooManyOutputs,
     TooManyOutputKeys {
         index: u64,
@@ -79,6 +84,9 @@ pub enum ValidationResult {
     UnknownOutputScript {
         index: u64,
     },
+    FraudulentWitnessUtxo {
+        index: u64,
+    },
 }
 
 impl From<ValidationError> for ValidationResult {
@@ -89,6 +97,9 @@ impl From<ValidationError> for ValidationResult {
             ValidationError::InvalidRedeemScript => Self::InvalidRedeemScript,
             ValidationError::UnsupportedSighash => Self::UnsupportedSighash,
             ValidationError::TxidMismatch => Self::TxidMismatch,
+            ValidationError::MissingOutputPoint { index } => {
+                Self::MissingOutputPoint { index }
+            }
             ValidationError::MissingPreviousTxid => Self::MissingPreviousTxid,
             ValidationError::MissingRedeemWitnessScript { index } => {
                 Self::MissingRedeemWitnessScript { index }
@@ -96,6 +107,7 @@ impl From<ValidationError> for ValidationResult {
             ValidationError::TaprootOutputInvalidPublicKey { index } => {
                 Self::TaprootOutputInvalidPublicKey { index }
             }
+            ValidationError::TooManyInputs => Self::TooManyInputs,
             ValidationError::TooManyOutputs => Self::TooManyOutputs,
             ValidationError::TooManyOutputKeys { index } => {
                 Self::TooManyOutputKeys { index }
@@ -111,6 +123,9 @@ impl From<ValidationError> for ValidationResult {
             }
             ValidationError::UnknownOutputScript { index } => {
                 Self::UnknownOutputScript { index }
+            }
+            ValidationError::FraudulentWitnessUtxo { index } => {
+                Self::FraudulentWitnessUtxo { index }
             }
         }
     }
@@ -221,6 +236,7 @@ pub extern "C" fn validate(
                 total_with_change: details.total_with_change,
                 total_change: details.total_change,
                 is_self_send: details.is_self_send(),
+                fee: details.fee(),
             };
             true
         }
