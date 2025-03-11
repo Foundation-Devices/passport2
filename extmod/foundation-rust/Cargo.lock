@@ -263,7 +263,7 @@ dependencies = [
 [[package]]
 name = "embedded-storage-nom"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#0d43cefa77f9e3b6878b3eb49d21704d173a4117"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
 dependencies = [
  "embedded-storage",
  "heapless",
@@ -334,7 +334,7 @@ checksum = "7e6bdea1eeaa5edb5355234d02f81c6dbdd4bc5146887990dd29a213029bbeae"
 [[package]]
 name = "foundation-bip32"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#0d43cefa77f9e3b6878b3eb49d21704d173a4117"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
 dependencies = [
  "bitcoin_hashes",
  "nom",
@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "foundation-psbt"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#0d43cefa77f9e3b6878b3eb49d21704d173a4117"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
 dependencies = [
  "bech32",
  "bitcoin-primitives",
@@ -470,9 +470,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.170"
+version = "0.2.171"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "875b3680cb2f8f71bdcf9a30f38d48282f5d3c95cbf9b3fa57269bb5d5c06828"
+checksum = "c19937216e9d3aa9956d9bb8dfc0b0c8beb6058fc4f7a4dc4d850edf86a237d6"
 
 [[package]]
 name = "log"

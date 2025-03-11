@@ -49,12 +49,18 @@ class SignPsbtCommonFlow(Flow):
                 self.output_addresses.write('\n')
             address, amount = data
             amount = ' '.join(self.chain.render_value(amount))
+
+            if address.startswith('OP_RETURN:'):
+                destination = 'Message'
+            else:
+                destination = 'Destination'
+
             address = stylize_address(address)
 
             self.output_addresses.write('\n{}\n{}\n\n{}\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
                 amount,
-                recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
+                recolor(HIGHLIGHT_TEXT_HEX, destination),
                 address))
         elif event_type == 'change_address':
             if self.first_change:
@@ -259,15 +265,15 @@ class SignPsbtCommonFlow(Flow):
             if self.details.is_self_send():
                 fee_percentage = (fee / (fee + self.details.total_with_change())) * 100
                 if fee_percentage >= 5:
-                    warnings.append(('Big Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
+                    warnings.append(('Large Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
             else:
                 total_non_change = self.details.total_with_change() - self.details.total_change()
                 if fee > total_non_change:
-                    warnings.append(('Huge Fee', 'Network fee is larger than the amount you are sending.'))
+                    warnings.append(('Large Fee', 'Network fee is larger than the amount you are sending.'))
                 else:
                     fee_percentage = (fee / (fee + total_non_change)) * 100
                     if fee_percentage >= 5:
-                        warnings.append(('Big Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
+                        warnings.append(('Large Fee', 'Network fee is %.1f%% of total amount' % fee_percentage))
 
             if len(warnings) > 0:
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
