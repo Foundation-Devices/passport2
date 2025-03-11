@@ -33,7 +33,7 @@ class SignPsbtCommonFlow(Flow):
         self.output_addresses = None
         self.change_addresses = None
 
-    async def validation_on_done(self, details, error=None, message=None):
+    async def validation_on_done(self, details, message=None, error=None):
         self.details = details
         self.error = error
         self.error_message = message
