@@ -66,7 +66,7 @@ class SignPsbtCommonFlow(Flow):
             if self.first_change:
                 self.first_change = False
             else:
-                self.change_addresses.write('\n')
+                self.change_addresses.write('\n\n')
             address, _ = data
             self.change_addresses.write(stylize_address(address))
 
@@ -242,7 +242,7 @@ class SignPsbtCommonFlow(Flow):
 
             multiple_addresses = not self.first_change
             if multiple_addresses:
-                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'),
+                msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Addresses'),
                                               self.change_addresses.getvalue()))
             else:
                 msg.write('\n{}\n{}\n'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Change Address'),
