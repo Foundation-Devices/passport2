@@ -62,9 +62,9 @@ static mut STORAGE_RC: Lazy<RcInner<RefCell<Storage>>> = Lazy::new(|| {
         CLKPhase: sys::SPI_PHASE_1EDGE,
         NSS: sys::SPI_NSS_SOFT,
         // NOTE: See ports/stm32/boards/Passport/frequency.c for the clock
-        // value of SPI4-5, it uses the PCLK2 clock, and it currently is
-        // 120 MHz, so divided by 16 provides a clock of 7.5 MHz.
-        BaudRatePrescaler: sys::SPI_BAUDRATEPRESCALER_16,
+        // value of SPI4-5, it uses the pll3_q_ck clock, and it currently is
+        // 125 MHz, so divided by 2 provides a clock of 62.5 MHz.
+        BaudRatePrescaler: sys::SPI_BAUDRATEPRESCALER_2,
         FirstBit: sys::SPI_FIRSTBIT_MSB,
         TIMode: sys::SPI_TIMODE_DISABLE,
         CRCCalculation: sys::SPI_CRCCALCULATION_DISABLE,
