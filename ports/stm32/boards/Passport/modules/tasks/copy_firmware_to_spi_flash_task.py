@@ -15,21 +15,22 @@ import foundation
 import passport
 from uasyncio import sleep_ms
 from files import CardSlot, CardMissingError
+from foundation import flash
 from errors import Error
 
 
 TIMEOUT_MS = 1000
 
 
-async def sleep_and_timeout(sleep_time_ms, timeout_ms, sf):
-    while sf.is_busy():
+async def sleep_and_timeout(sleep_time_ms, timeout_ms):
+    while flash.is_busy():
         await sleep_ms(sleep_time_ms)
         timeout_ms -= sleep_time_ms
         assert timeout_ms > 0, 'Firmware update timed out'
 
 
 async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done):
-    from common import system, sf
+    from common import system
 
     try:
         with CardSlot() as card:
@@ -74,8 +75,8 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     update_hash = s.digest()
 
                     # Erase first page
-                    sf.sector_erase(0)
-                    await sleep_and_timeout(10, TIMEOUT_MS, sf)
+                    flash.sector_erase(0)
+                    await sleep_and_timeout(10, TIMEOUT_MS)
 
                     buf = bytearray(256)        # must be flash page size
 
@@ -115,13 +116,13 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     try:
                         if pos % 4096 == 0:
                             # erase here
-                            sf.sector_erase(pos)
-                            await sleep_and_timeout(10, TIMEOUT_MS, sf)
+                            flash.sector_erase(pos)
+                            await sleep_and_timeout(10, TIMEOUT_MS)
 
-                        sf.write(pos, buf)
+                        flash.write(pos, buf)
 
                         # full page write: 0.6 to 3ms
-                        await sleep_and_timeout(1, TIMEOUT_MS, sf)
+                        await sleep_and_timeout(1, TIMEOUT_MS)
 
                         pos += here
                         if passport.IS_SIMULATOR:
@@ -138,7 +139,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, on_progress, on_done)
                     # Do this at the end so we know the rest worked - prevent bootloader from installing bad firmware
                     buf[0:32] = update_hash  # Copy into the buf we'll use to write to SPI flash
 
-                    sf.write(0, buf)  # Need to write the entire page of 256 bytes
+                    flash.write(0, buf)  # Need to write the entire page of 256 bytes
 
                     # Success
                 except CardMissingError:
