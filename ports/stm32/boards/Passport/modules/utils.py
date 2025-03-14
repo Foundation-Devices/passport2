@@ -1474,8 +1474,8 @@ def escape_text(text):
 def stylize_address(address):
     from styles.colors import TEXT_GREY_HEX, BLACK_HEX
 
-    if address.startswith("OP_RETURN"):
-        return address
+    if address.startswith("OP_RETURN:"):
+        return address[10:]
 
     num_wm = 0
 

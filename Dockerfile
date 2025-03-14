@@ -43,11 +43,11 @@ RUN rustup component add clippy && \
     rustup target add thumbv7em-none-eabihf
 
 # Install binaries using cargo.
-RUN cargo install bindgen-cli@^0.69.5 --locked && \
+RUN cargo install bindgen-cli@^0.71.1 --locked && \
     mv /cargo/bin/bindgen /usr/local/bin/bindgen && \
     chmod 755 /usr/local/bin/bindgen
 
-RUN cargo install cbindgen@^0.24 --locked && \
+RUN cargo install cbindgen@^0.28 --locked && \
     mv /cargo/bin/cbindgen /usr/local/bin/cbindgen && \
     chmod 755 /usr/local/bin/cbindgen
 

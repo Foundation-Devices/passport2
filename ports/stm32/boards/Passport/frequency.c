@@ -108,7 +108,7 @@ void frequency_turbo_toggle(bool enable) {
     PeriphClkInitStruct.PLL3.PLL3N           = 31;    // Multiply to 250 MHz (8 MHz * 31.25).
     PeriphClkInitStruct.PLL3.PLL3FRACN       = 2048;  // 0.25
     PeriphClkInitStruct.PLL3.PLL3P           = 4;     // 62.5 MHz (unused).
-    PeriphClkInitStruct.PLL3.PLL3Q           = 2;     // 125 MHz (used for SPI123).
+    PeriphClkInitStruct.PLL3.PLL3Q           = 2;     // 125 MHz (used for SPI123 and SPI45).
     PeriphClkInitStruct.PLL3.PLL3R           = 4;     // 62.5 MHz (unused).
     PeriphClkInitStruct.PLL3.PLL3RGE         = RCC_PLL2VCIRANGE_3;
     PeriphClkInitStruct.PLL3.PLL3VCOSEL      = RCC_PLL2VCOMEDIUM;
@@ -118,7 +118,7 @@ void frequency_turbo_toggle(bool enable) {
     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;                // pll1_q_ck
 #endif                                                                                 // SCREEN_MODE_MONO
     PeriphClkInitStruct.SdmmcClockSelection       = RCC_SDMMCCLKSOURCE_PLL;            // pll1_q_ck
-    PeriphClkInitStruct.Spi45ClockSelection       = RCC_SPI45CLKSOURCE_D2PCLK1;        // rcc_pclk
+    PeriphClkInitStruct.Spi45ClockSelection       = RCC_SPI45CLKSOURCE_PLL3;           // pll3_q_ck
     PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;  // rcc_pclk
     PeriphClkInitStruct.RngClockSelection         = RCC_RNGCLKSOURCE_HSI48;            // hsi48_ck
     PeriphClkInitStruct.I2c123ClockSelection      = RCC_I2C123CLKSOURCE_D2PCLK1;       // rcc_pclk

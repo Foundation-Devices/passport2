@@ -10,8 +10,8 @@ use core::{
 };
 use embedded_hal::spi::{Operation, SpiBus};
 use stm32h7xx_hal_driver_sys::{
-    HAL_GetTick, HAL_LockTypeDef, HAL_SPI_Init, HAL_SPI_Receive,
-    HAL_SPI_StateTypeDef, HAL_SPI_Transmit, HAL_StatusTypeDef,
+    HAL_GetTick, HAL_LockTypeDef, HAL_SPI_GetError, HAL_SPI_Init,
+    HAL_SPI_Receive, HAL_SPI_StateTypeDef, HAL_SPI_Transmit, HAL_StatusTypeDef,
     HAL_StatusTypeDef::HAL_OK, SPI_HandleTypeDef, SPI_InitTypeDef,
     HAL_MAX_DELAY, HAL_SPI_ERROR_NONE,
 };
@@ -67,6 +67,7 @@ pub mod gpio {
     };
 
     /// General purpose output pin.
+    #[derive(Debug)]
     pub struct OutputPin {
         instance: *mut GPIO_TypeDef,
         pin: u16,
@@ -137,6 +138,7 @@ pub fn get_tick() -> u32 {
 }
 
 /// SPI driver handle.
+#[derive(Debug)]
 pub struct Spi {
     handle: SPI_HandleTypeDef,
 }
@@ -170,7 +172,9 @@ impl Spi {
 
         let status = HAL_SPI_Init(&mut spi.handle as *mut SPI_HandleTypeDef);
         if status != HAL_OK {
-            let code = NonZeroU32::new(spi.handle.ErrorCode);
+            let code = NonZeroU32::new(HAL_SPI_GetError(
+                &mut spi.handle as *mut SPI_HandleTypeDef,
+            ));
             Err(Error::Hal { status, code })
         } else {
             Ok(spi)
@@ -225,7 +229,9 @@ impl SpiBus for Spi {
         };
 
         if status != HAL_OK {
-            let code = NonZeroU32::new(self.handle.ErrorCode);
+            let code = NonZeroU32::new(unsafe {
+                HAL_SPI_GetError(&mut self.handle as *mut SPI_HandleTypeDef)
+            });
             return Err(Error::Hal { status, code });
         }
 
@@ -243,7 +249,9 @@ impl SpiBus for Spi {
         };
 
         if status != HAL_OK {
-            let code = NonZeroU32::new(self.handle.ErrorCode);
+            let code = NonZeroU32::new(unsafe {
+                HAL_SPI_GetError(&mut self.handle as *mut SPI_HandleTypeDef)
+            });
             return Err(Error::Hal { status, code });
         }
 
@@ -272,6 +280,7 @@ impl SpiBus for Spi {
 
 // NOTE: Perhaps this doesn't belong in this crate as this is
 // application specific.
+#[derive(Debug)]
 pub struct SpiDevice {
     spi: Spi,
     cs: gpio::OutputPin,

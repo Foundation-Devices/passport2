@@ -26,6 +26,7 @@
 
 #include "modfoundation-bip39.h"
 #include "modfoundation-flash.h"
+#include "modfoundation-psbt.h"
 #include "modfoundation-qr.h"
 #include "modfoundation-secp56k1.h"
 #include "modfoundation-ur.h"
@@ -97,6 +98,17 @@ STATIC mp_obj_t mod_foundation_sha256(mp_obj_t data, mp_obj_t digest)
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_sha256_obj, mod_foundation_sha256);
+
+/// def init_logger() -> None:
+///     '''
+///     Initialize the Rust logger
+///     '''
+STATIC mp_obj_t mod_foundation_init_logger(void)
+{
+    foundation_init_logger();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_foundation_init_logger_obj, mod_foundation_init_logger);
 
 /// class FixedBytesIO:
 ///     """
@@ -279,6 +291,7 @@ STATIC const mp_rom_map_elem_t foundation_module_globals_table[] = {
     /* Modules */
     {MP_ROM_QSTR(MP_QSTR_bip39), MP_ROM_PTR(&mod_foundation_bip39_module)},
     {MP_ROM_QSTR(MP_QSTR_flash), MP_ROM_PTR(&mod_foundation_flash_module)},
+    {MP_ROM_QSTR(MP_QSTR_psbt), MP_ROM_PTR(&mod_foundation_psbt_module)},
     {MP_ROM_QSTR(MP_QSTR_qr), MP_ROM_PTR(&mod_foundation_qr_module)},
     {MP_ROM_QSTR(MP_QSTR_secp256k1), MP_ROM_PTR(&mod_foundation_secp256k1_module)},
     {MP_ROM_QSTR(MP_QSTR_ur), MP_ROM_PTR(&mod_foundation_ur_module)},
@@ -286,6 +299,7 @@ STATIC const mp_rom_map_elem_t foundation_module_globals_table[] = {
     /* Bare functions */
     {MP_ROM_QSTR(MP_QSTR_convert_rgb565_to_grayscale), MP_ROM_PTR(&mod_foundation_convert_rgb565_to_grayscale_obj)},
     {MP_ROM_QSTR(MP_QSTR_sha256), MP_ROM_PTR(&mod_foundation_sha256_obj)},
+    {MP_ROM_QSTR(MP_QSTR_init_logger), MP_ROM_PTR(&mod_foundation_init_logger_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(foundation_module_globals, foundation_module_globals_table);
 
