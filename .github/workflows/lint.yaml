@@ -59,7 +59,7 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
-      - run: cargo install cbindgen@^0.24 --locked
+      - run: cargo install cbindgen@^0.28 --locked
       - run: |
           cbindgen --config extmod/foundation-rust/cbindgen.toml \
                    --output extmod/foundation-rust/include/foundation.h \
@@ -76,7 +76,7 @@ jobs:
           toolchain: 1.77.1
           components: rustfmt
       - run: sudo apt-get install -y gcc-arm-none-eabi libclang-dev
-      - run: cargo install bindgen-cli@^0.69.5 --locked
+      - run: cargo install bindgen-cli@^0.71.1 --locked
       - run: ./extmod/foundation-rust/bindgen.sh -c
 
   rust-tests-pass:
