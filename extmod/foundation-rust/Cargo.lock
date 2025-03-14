@@ -263,7 +263,7 @@ dependencies = [
 [[package]]
 name = "embedded-storage-nom"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#62bad84379bbf46e5c92da228bacb2122726f178"
 dependencies = [
  "embedded-storage",
  "heapless",
@@ -334,7 +334,7 @@ checksum = "7e6bdea1eeaa5edb5355234d02f81c6dbdd4bc5146887990dd29a213029bbeae"
 [[package]]
 name = "foundation-bip32"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#62bad84379bbf46e5c92da228bacb2122726f178"
 dependencies = [
  "bitcoin_hashes",
  "nom",
@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "foundation-psbt"
 version = "0.1.0"
-source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#1ba261472ef777b72a1124f4818e584307c714ea"
+source = "git+https://github.com/Foundation-Devices/foundation-rs?branch=psbt#62bad84379bbf46e5c92da228bacb2122726f178"
 dependencies = [
  "bech32",
  "bitcoin-primitives",
@@ -612,9 +612,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.21.0"
+version = "1.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde51589ab56b20a6f686b2c68f7a0bd6add753d697abf720d63f8db3ab7b1ad"
+checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
 dependencies = [
  "critical-section",
  "portable-atomic",
@@ -688,9 +688,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.39"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1f1914ce909e1658d9907913b4b91947430c7d9be598b15a1912935b8c04801"
+checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
 dependencies = [
  "proc-macro2",
 ]
@@ -853,9 +853,9 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 
 [[package]]
 name = "uuid"
-version = "1.15.1"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f540e3240398cce6128b64ba83fdbdd86129c16a3aa1a3a252efd66eb3d587"
+checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
 
 [[package]]
 name = "vcell"

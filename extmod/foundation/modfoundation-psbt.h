@@ -4,6 +4,7 @@
 #include "py/obj.h"
 #include "py/objexcept.h"
 #include "foundation.h"
+#include <stdint.h>
 
 STATIC const mp_obj_type_t mod_foundation_psbt_Xpriv_type;
 
@@ -180,10 +181,10 @@ STATIC const mp_obj_type_t mod_foundation_psbt_Xpriv_type = {
 ///     """
 typedef struct _mp_obj_TransactionDetails_t {
     mp_obj_base_t base;
-    int64_t total_with_change;
-    int64_t total_change;
+    uint64_t total_with_change;
+    uint64_t total_change;
+    uint64_t fee;
     bool is_self_send;
-    int64_t fee;
 } mp_obj_TransactionDetails_t;
 
 /// def total_with_change(self) -> int:
@@ -192,7 +193,7 @@ typedef struct _mp_obj_TransactionDetails_t {
 STATIC mp_obj_t mod_foundation_psbt_TransactionDetails_total_with_change(mp_obj_t self_in) {
     mp_obj_TransactionDetails_t *self = MP_OBJ_TO_PTR(self_in);
 
-    return mp_obj_new_int(self->total_with_change);
+    return mp_obj_new_int_from_ull(self->total_with_change);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_total_with_change_obj,
                                  mod_foundation_psbt_TransactionDetails_total_with_change);
@@ -203,7 +204,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_total_wi
 STATIC mp_obj_t mod_foundation_psbt_TransactionDetails_total_change(mp_obj_t self_in) {
     mp_obj_TransactionDetails_t *self = MP_OBJ_TO_PTR(self_in);
 
-    return mp_obj_new_int(self->total_change);
+    return mp_obj_new_int_from_ull(self->total_change);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_total_change_obj,
                                  mod_foundation_psbt_TransactionDetails_total_change);
@@ -214,7 +215,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_total_ch
 STATIC mp_obj_t mod_foundation_psbt_TransactionDetails_fee(mp_obj_t self_in) {
     mp_obj_TransactionDetails_t *self = MP_OBJ_TO_PTR(self_in);
 
-    return mp_obj_new_int(self->fee);
+    return mp_obj_new_int_from_ull(self->fee);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_psbt_TransactionDetails_fee_obj,
                                  mod_foundation_psbt_TransactionDetails_fee);
@@ -329,8 +330,8 @@ STATIC mp_obj_t mod_foundation_psbt_validate(size_t n_args, const mp_obj_t *pos_
     o->base.type = &mod_foundation_psbt_TransactionDetails_type;
     o->total_with_change = result.OK.total_with_change;
     o->total_change = result.OK.total_change;
-    o->is_self_send = result.OK.is_self_send;
     o->fee = result.OK.fee;
+    o->is_self_send = result.OK.is_self_send;
 
     return MP_OBJ_FROM_PTR(o);
 }

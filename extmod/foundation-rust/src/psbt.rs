@@ -38,14 +38,15 @@ impl From<Network> for foundation_psbt::address::Network {
 /// The result of the PSBT validation.
 /// cbindgen:rename-all=ScreamingSnakeCase
 /// cbindgen:prefix-with-name
+#[derive(Debug)]
 #[repr(C)]
 pub enum ValidationResult {
     /// Validation succeeded.
     Ok {
-        total_with_change: i64,
-        total_change: i64,
+        total_with_change: u64,
+        total_change: u64,
+        fee: u64,
         is_self_send: bool,
-        fee: i64,
     },
     /// Internal error of the validation function.
     InternalError,
@@ -137,8 +138,8 @@ impl From<ValidationError> for ValidationResult {
 #[repr(C)]
 pub enum ValidationEvent {
     Progress(u64),
-    OutputAddress { amount: i64, address: [c_char; 91] },
-    ChangeAddress { amount: i64, address: [c_char; 91] },
+    OutputAddress { amount: u64, address: [c_char; 91] },
+    ChangeAddress { amount: u64, address: [c_char; 91] },
 }
 
 fn to_static_cstr<const N: usize>(s: &[u8], result: &mut [c_char; N]) {
@@ -161,7 +162,7 @@ impl From<foundation_psbt::validation::Event> for ValidationEvent {
                 to_static_cstr(address.as_bytes(), &mut address_cstr);
 
                 ValidationEvent::OutputAddress {
-                    amount,
+                    amount: amount.to_sat(),
                     address: address_cstr,
                 }
             }
@@ -170,7 +171,7 @@ impl From<foundation_psbt::validation::Event> for ValidationEvent {
                 to_static_cstr(address.as_bytes(), &mut address_cstr);
 
                 ValidationEvent::ChangeAddress {
-                    amount,
+                    amount: amount.to_sat(),
                     address: address_cstr,
                 }
             }
@@ -233,11 +234,12 @@ pub extern "C" fn validate(
     }) {
         Ok(details) => {
             *result = ValidationResult::Ok {
-                total_with_change: details.total_with_change,
-                total_change: details.total_change,
+                total_with_change: details.total_with_change.to_sat(),
+                total_change: details.total_change.to_sat(),
+                fee: details.fee().to_sat(),
                 is_self_send: details.is_self_send(),
-                fee: details.fee(),
             };
+
             true
         }
         Err(Error::Parse(e)) => {

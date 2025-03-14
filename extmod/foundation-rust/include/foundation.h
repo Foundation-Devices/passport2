@@ -254,12 +254,12 @@ typedef enum {
 } ValidationEvent_Tag;
 
 typedef struct {
-  int64_t amount;
+  uint64_t amount;
   char address[91];
 } ValidationEvent_OutputAddress_Body;
 
 typedef struct {
-  int64_t amount;
+  uint64_t amount;
   char address[91];
 } ValidationEvent_ChangeAddress_Body;
 
@@ -315,10 +315,10 @@ typedef enum {
 } ValidationResult_Tag;
 
 typedef struct {
-  int64_t total_with_change;
-  int64_t total_change;
+  uint64_t total_with_change;
+  uint64_t total_change;
+  uint64_t fee;
   bool is_self_send;
-  int64_t fee;
 } ValidationResult_Ok_Body;
 
 typedef struct {
@@ -621,8 +621,14 @@ typedef struct {
 extern "C" {
 #endif // __cplusplus
 
+/**
+ * Statically allocted decoder.
+ */
 extern UR_Decoder UR_DECODER;
 
+/**
+ * Statically allocated encoder.
+ */
 extern UR_Encoder UR_ENCODER;
 
 /**
@@ -849,7 +855,7 @@ void ur_registry_new_passport_response(UR_Value *value,
                                        size_t passport_firmware_version_len);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-#endif /* FOUNDATION_H */
+#endif  /* FOUNDATION_H */
