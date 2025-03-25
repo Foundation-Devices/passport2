@@ -26,6 +26,7 @@ extern const lv_img_dsc_t PROGRESS_BAR_FG;
 extern const lv_img_dsc_t PROGRESS_CAP_LEFT;
 extern const lv_img_dsc_t PROGRESS_CAP_RIGHT_BG;
 extern const lv_img_dsc_t PROGRESS_CAP_RIGHT;
-extern const lv_img_dsc_t SPLASH;
+extern const lv_img_dsc_t SPLASH_DARK;
+extern const lv_img_dsc_t SPLASH_LIGHT;
 #endif
 

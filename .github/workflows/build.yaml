@@ -15,7 +15,8 @@ jobs:
         build:
           [
             { screen: 'mono', suffix: '-founders-passport', hash_suffix: '-founders'},
-            { screen: 'color', suffix: '-passport', hash_suffix: ''},
+            { screen: 'color', colorway: 'light', suffix: '-passport-light', hash_suffix: '-light'},
+            { screen: 'color', colorway: 'dark', suffix: '-passport-dark', hash_suffix: '-dark'},
           ]
 
     services:
@@ -131,6 +132,7 @@ jobs:
     - run: |
         echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
         echo "SCREEN_MODE=$(echo ${{ matrix.screen }} | tr a-z A-Z)" >> $GITHUB_ENV
+        echo "COLORWAY"=$(echo ${{ matrix.colorway }} | tr a-z A-Z)" >> $GITHUB_ENV
 
     - name: Build
       run: just build-bootloader ${{ matrix.screen }}
@@ -138,8 +140,8 @@ jobs:
     - name: Upload bootloader
       uses: actions/upload-artifact@v4
       with:
-        name: bootloader-${{ env.SCREEN_MODE }}.bin
-        path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}.bin
+          name: bootloader-${{ env.SCREEN_MODE }}-${{ env.COLORWAY }}.bin
+          path: ports/stm32/boards/Passport/bootloader/arm/release/bootloader-${{ env.SCREEN_MODE }}-${{ env.COLORWAY }}.bin
 
   simulator:
     name: Simulator

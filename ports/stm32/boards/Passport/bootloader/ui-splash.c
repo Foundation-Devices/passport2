@@ -20,7 +20,11 @@
 
 void show_splash(char* message) {
 #ifdef SCREEN_MODE_COLOR
-    display_image(0, 0, SPLASH.header.w, SPLASH.header.h, SPLASH.data, DRAW_MODE_INDEXED_8_BIT);
+#ifdef COLORWAY_LIGHT
+    display_image(0, 0, SPLASH_LIGHT.header.w, SPLASH_LIGHT.header.h, SPLASH_LIGHT.data, DRAW_MODE_INDEXED_8_BIT);
+#else
+    display_image(0, 0, SPLASH_DARK.header.w, SPLASH_DARK.header.h, SPLASH_DARK.data, DRAW_MODE_INDEXED_8_BIT);
+#endif
 #else
     display_fill(COLOR_WHITE);
 #endif
