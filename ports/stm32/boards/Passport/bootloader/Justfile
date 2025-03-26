@@ -38,7 +38,7 @@ clean:
 
 # Build and flash the bootloader, appending the existing secrets, if any.
 # If no secrets are present in the device, then just flash the raw bootloader.
-flash screen="mono" colorway="light" rel="release" factory_test="": (build screen rel factory_test) && (reset)
+flash screen="mono" colorway="light" rel="release" factory_test="": (build screen colorway rel factory_test) && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 
