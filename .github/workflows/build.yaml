@@ -132,7 +132,7 @@ jobs:
     - run: |
         echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
         echo "SCREEN_MODE=$(echo ${{ matrix.screen }} | tr a-z A-Z)" >> $GITHUB_ENV
-        echo "COLORWAY"=$(echo ${{ matrix.colorway }} | tr a-z A-Z)" >> $GITHUB_ENV
+        echo "COLORWAY=$(echo ${{ matrix.colorway }} | tr a-z A-Z)" >> $GITHUB_ENV
 
     - name: Build
       run: just build-bootloader ${{ matrix.screen }}
