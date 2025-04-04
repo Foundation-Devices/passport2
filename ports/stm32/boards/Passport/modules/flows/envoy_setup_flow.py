@@ -17,7 +17,7 @@ import microns
 
 class EnvoySetupFlow(Flow):
     def __init__(self):
-        super().__init__(initial_state=self.check_if_envoy_installed, settings_key='envoy_setup', name='EnvoySetupFlow')
+        super().__init__(initial_state=self.show_envoy_app_url, settings_key='envoy_setup', name='EnvoySetupFlow')
         self.restore()
 
     # This stage is no longer needed, but older devices may try to access it
