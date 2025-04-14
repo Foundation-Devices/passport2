@@ -11,25 +11,22 @@ openocd_cfg := join(contribdir, "openocd.cfg")
 
 # Build the bootloader (debug, release, locked or production)
 # NOTE: Pass "factory_test" for factory_test to enable it.
-build screen="mono" rel="release" factory_test="": clean
+build screen="mono" colorway="light" rel="release" factory_test="": clean
     #!/usr/bin/env bash
     set -e
     echo -e "\nBuilding Bootloader..."
 
-    echo {{ if screen == "mono" { "Building with SCREEN_MODE=MONO" } else if screen == "color" { "Building with SCREEN_MODE=COLOR" } else { error("Unsupported screen type. Use 'mono' or 'color'") } }}
-
-    make {{rel}} SCREEN_MODE={{uppercase(screen)}} FACTORY_TEST={{factory_test}}
+    echo {{ if screen == "mono" { "Building for MONO screen" } else if screen == "color" { "Building for COLOR screen" } else { error("Invalid screen type '" + screen + "'. Must be 'mono' or 'color'") } }}
+    if [[ "{{screen}}" == "color" ]]; then
+        echo {{ if colorway == "light" { "Building LIGHT colorway" } else if colorway == "dark" { "Building DARK colorway" } else { error("Invalid colorway type '" + colorway + "'. Must be 'light' or 'dark'") } }}
+    fi
+    make {{rel}} SCREEN_MODE={{uppercase(screen)}} COLORWAY={{uppercase(colorway)}} FACTORY_TEST={{factory_test}}
 
     if [[ "{{rel}}" == "debug" ]]; then
         FOLDER=debug
     else
         FOLDER=release
     fi
-
-    # if test -f "secrets"; then
-    #     echo -e "\nAppending secrets to the end..."
-    #     add-secrets -b arm/${FOLDER}/bootloader-{{uppercase(screen)}}.bin -s secrets
-    # fi
 
     echo -e "\nBootloader Build Complete"
 
@@ -41,7 +38,7 @@ clean:
 
 # Build and flash the bootloader, appending the existing secrets, if any.
 # If no secrets are present in the device, then just flash the raw bootloader.
-flash screen="mono" rel="release" factory_test="": (build screen rel factory_test) && (reset)
+flash screen="mono" colorway="light" rel="release" factory_test="": (build screen colorway rel factory_test) && (reset)
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -54,13 +51,13 @@ flash screen="mono" rel="release" factory_test="": (build screen rel factory_tes
     if cmp -s ${DEVICE_SECRETS_BIN} ${EMPTY_SECRETS_BIN};
     then
         echo "Board doesn't have secrets, flashing raw firmware"
-        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin 0x8000000"
+        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}.bin 0x8000000"
     else
         echo "Appending existing secrets to the bootloader"
-        add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin" -s ${DEVICE_SECRETS_BIN}
+        add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}.bin" -s ${DEVICE_SECRETS_BIN}
 
         echo "Flashing bootloader with secrets"
-        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
+        just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}-secrets.bin 0x8000000"
     fi
 
     # Remove the tmp files
@@ -69,13 +66,13 @@ flash screen="mono" rel="release" factory_test="": (build screen rel factory_tes
 
 
 # Build and flash the bootloader with no secrets (use to setup a new Secure Element)
-flash-only screen="mono" rel="release": && (reset)
-    just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin 0x8000000"
+flash-only screen="mono" colorway="light" rel="release": && (reset)
+    just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}.bin 0x8000000"
 
 # Build and flash the bootloader with saved secrets (use to restore the bootloader of a bricked device)
-flash-with-secrets screen="mono" rel="release": && (reset)
-    add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}.bin" -s secrets
-    just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-secrets.bin 0x8000000"
+flash-with-secrets screen="mono" colorway="light" rel="release": && (reset)
+    add-secrets -b "arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}.bin" -s secrets
+    just run-ocd-command "flash write_image erase arm/{{rel}}/bootloader-{{uppercase(screen)}}-{{uppercase(colorway)}}-secrets.bin 0x8000000"
 
 # Reset the Passport
 reset: (run-ocd-command "reset")

@@ -14,7 +14,7 @@
 
 include constants.mk
 
-BOOTLOADER_VERSION = 2.1
+BOOTLOADER_VERSION = 2.2
 
 # Toolchain
 TOOLCHAIN = arm-none-eabi-
@@ -43,7 +43,7 @@ VPATH += $(PASSPORT_PATH)/common/micro-ecc
 VPATH += $(CURDIR)/images/$(shell echo $(SCREEN_MODE) | tr A-Z a-z)
 
 # Basename of all targets
-TARGET_NAME = bootloader-$(SCREEN_MODE)
+TARGET_NAME = bootloader-$(SCREEN_MODE)-$(COLORWAY)
 TARGETDIR   = arm
 
 # Source files. Important: Add them also to link-script.ld to control placement.
@@ -63,7 +63,11 @@ SOURCES += printf.c
 SOURCES += passport_fonts.c
 
 # Graphics
-SOURCES += SPLASH.c
+ifeq ($(COLORWAY),LIGHT)
+SOURCES += SPLASH_LIGHT.c
+else
+SOURCES += SPLASH_DARK.c
+endif
 SOURCES += BACKGROUND.c
 SOURCES += ICON_ABOUT.c
 SOURCES += ICON_BACK.c
@@ -155,6 +159,11 @@ CFLAGS += -mtune=cortex-m7 -mcpu=cortex-m7 -DSTM32H753xx
 CFLAGS += -I. -I$(PASSPORT_PATH)/include -I$(PASSPORT_PATH)/common/micro-ecc -I$(CURDIR)/images
 CFLAGS += -DPASSPORT_BOOTLOADER
 CFLAGS += -DSCREEN_MODE_$(SCREEN_MODE)=1
+ifeq ($(COLORWAY),LIGHT)
+CFLAGS += -DCOLORWAY_LIGHT=1
+else
+CFLAGS += -DCOLORWAY_DARK=1
+endif
 CFLAGS += -DLV_LVGL_H_INCLUDE_SIMPLE
 ifeq ($(findstring production,$(MAKECMDGOALS)),production)
 CFLAGS += -DPRODUCTION_BUILD

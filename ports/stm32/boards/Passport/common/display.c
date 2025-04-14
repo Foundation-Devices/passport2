@@ -155,7 +155,13 @@ void display_image(uint16_t x, uint16_t y, uint16_t image_w, uint16_t image_h, c
 // image that might have been rendered there.
 void display_progress_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t percent, char* message) {
 #ifndef DEBUG
-    display_image(0, 0, SPLASH.header.w, SPLASH.header.h, SPLASH.data, lv_cf_mode_to_draw_mode(SPLASH.header.cf));
+#ifdef COLORWAY_LIGHT
+    display_image(0, 0, SPLASH_LIGHT.header.w, SPLASH_LIGHT.header.h, SPLASH_LIGHT.data,
+                  lv_cf_mode_to_draw_mode(SPLASH_LIGHT.header.cf));
+#else
+    display_image(0, 0, SPLASH_DARK.header.w, SPLASH_DARK.header.h, SPLASH_DARK.data,
+                  lv_cf_mode_to_draw_mode(SPLASH_DARK.header.cf));
+#endif
 #endif
     x = x + PROGRESS_CAP_LEFT.header.w;
     w = w - PROGRESS_CAP_LEFT.header.w - PROGRESS_CAP_RIGHT.header.w;
