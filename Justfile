@@ -44,7 +44,7 @@ build-add-secrets: (run-in-docker "make -C ports/stm32/boards/Passport/tools/add
 # Build the cosign tool.
 build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
 
-# Sign the built firmware using a private key and the cosign tool
+# Sign the built firmware using a private key and the cosign tool, keypath should usually be "/keys/user.pem"
 sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
 
 # Produce hashes of the firmware
@@ -84,6 +84,7 @@ mpy-cross: (run-in-docker "make -C mpy-cross PROG=mpy-cross-docker BUILD=build-d
 run-in-docker command:
     {{DOCKER_RUN}} --rm \
         -v $(pwd):/workspace \
+        -v ~/bin/keys:/keys \
         -w /workspace \
         -e MPY_CROSS="/workspace/mpy-cross/mpy-cross-docker" \
         --entrypoint bash \
