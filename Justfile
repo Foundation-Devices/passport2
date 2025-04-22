@@ -13,7 +13,7 @@ build-docker:
     $DOCKER_CMD build -t ${DOCKER_IMAGE} .
 
 # Build the firmware inside docker.
-build-firmware screen="mono": mpy-cross (run-in-docker ("just ports/stm32/build " + screen))
+build-firmware screen="mono" dev="": mpy-cross (run-in-docker ("just ports/stm32/build " + screen + " " + dev))
 
 # build the bootloader inside docker
 build-bootloader screen="mono": (run-in-docker ("just ports/stm32/boards/Passport/bootloader/build " + screen))
@@ -45,7 +45,7 @@ build-add-secrets: (run-in-docker "make -C ports/stm32/boards/Passport/tools/add
 build-cosign: (run-in-docker "make -C ports/stm32/boards/Passport/tools/cosign")
 
 # Sign the built firmware using a private key and the cosign tool, keypath should usually be "/keys/user.pem"
-sign keypath version screen="mono": (build-firmware screen) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen))
+sign keypath version screen="mono" dev="": (build-firmware screen dev) (build-cosign) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/sign " + version + " " + screen + " " + dev))
 
 # Produce hashes of the firmware
 hash keypath version file screen="mono": (sign keypath version screen) (run-in-docker ("just cosign_filepath=build-Passport/firmware-" + uppercase(screen) + ".bin cosign_keypath=" + keypath + " ports/stm32/hash " + file + " " + screen))
