@@ -16,7 +16,7 @@ build-docker:
 build-firmware screen="mono" dev="": mpy-cross (run-in-docker ("just ports/stm32/build " + screen + " " + dev))
 
 # build the bootloader inside docker
-build-bootloader screen="mono": (run-in-docker ("just ports/stm32/boards/Passport/bootloader/build " + screen))
+build-bootloader screen="mono" colorway="light" rel="release": (run-in-docker ("just ports/stm32/boards/Passport/bootloader/build " + screen + " " + colorway + " " + rel))
 
 # Run the built firmware through SHA256
 verify-sha sha screen="mono":
