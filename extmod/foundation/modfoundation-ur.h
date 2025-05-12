@@ -526,9 +526,9 @@ STATIC mp_obj_t mod_foundation_ur_encoder_start(mp_obj_t value_in,
 
     value = MP_OBJ_TO_PTR(value_in);
     max_fragment_len = mp_obj_int_get_uint_checked(max_fragment_len_in);
-    bool ret = ur_encoder_start(&UR_ENCODER, &value->value, max_fragment_len);
+    ur_encoder_start(&UR_ENCODER, &value->value, max_fragment_len);
 
-    return ret ? mp_const_true : mp_const_false;
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_ur_encoder_start_obj,
                                  mod_foundation_ur_encoder_start);
