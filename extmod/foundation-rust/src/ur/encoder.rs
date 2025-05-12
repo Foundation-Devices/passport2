@@ -98,7 +98,7 @@ pub unsafe extern "C" fn ur_encoder_start(
     encoder: &mut UR_Encoder,
     value: &UR_Value,
     max_chars: usize,
-) -> bool {
+) {
     // SAFETY: The UR_Value can contain some raw pointers which need to be
     // accessed in order to convert it to a `ur::registry::BaseValue` which
     // is then encoded below, so the pointers lifetime only need to be valid
@@ -110,17 +110,13 @@ pub unsafe extern "C" fn ur_encoder_start(
 
     message.clear();
     let mut e = Encoder::new(Writer(message));
-    if let Err(_) = value.encode(&mut e, &mut ()) {
-        return false;
-    }
+    value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
 
     encoder.inner.start(
         value.ur_type(),
         message,
         max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );
-
-    true
 }
 
 /// Returns the UR corresponding to the next fountain encoded part.

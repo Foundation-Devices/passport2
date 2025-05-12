@@ -505,7 +505,7 @@ void foundation_firmware_verify_update_signatures(const uint8_t *header,
  *
  * - https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#user-content-Public_Key_Conversion
  */
-bool foundation_secp256k1_public_key_schnorr(const uint8_t (*secret_key)[32],
+void foundation_secp256k1_public_key_schnorr(const uint8_t (*secret_key)[32],
                                              uint8_t (*public_key)[32]);
 
 /**
@@ -515,7 +515,7 @@ bool foundation_secp256k1_public_key_schnorr(const uint8_t (*secret_key)[32],
  * - `secret_key` is the secret key used to sign the message.
  * - `signature` is the output of the resulting signature.
  */
-bool foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
+void foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
                                      const uint8_t (*secret_key)[32],
                                      uint8_t (*signature)[64]);
 
@@ -526,7 +526,7 @@ bool foundation_secp256k1_sign_ecdsa(const uint8_t (*data)[32],
  * - `secret_key` is the secret key used to sign the message.
  * - `signature` is the output of the resulting signature.
  */
-bool foundation_secp256k1_sign_schnorr(const uint8_t (*data)[32],
+void foundation_secp256k1_sign_schnorr(const uint8_t (*data)[32],
                                        const uint8_t (*secret_key)[32],
                                        uint8_t (*signature)[64]);
 
@@ -605,7 +605,7 @@ bool ur_decode_single_part(const uint8_t *ur,
  * This function assumes that is called on the same thread and its not used
  * concurrently.
  */
-bool ur_encoder_start(UR_Encoder *encoder,
+void ur_encoder_start(UR_Encoder *encoder,
                       const UR_Value *value,
                       size_t max_chars);
 

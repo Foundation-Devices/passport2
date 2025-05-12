@@ -79,8 +79,7 @@ class UR2Encoder(DataEncoder):
     def encode(self, value, max_fragment_len=200):
         """Initialize the encoder using the given UR data value"""
 
-        if not ur.encoder_start(value, max_fragment_len):
-            raise Exception('Failed to encode UR')
+        ur.encoder_start(value, max_fragment_len)
 
     def next_part(self):
         """Returns the next part of the UR encoder"""

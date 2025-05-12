@@ -48,8 +48,8 @@ impl UR_Error {
         error.clear();
 
         if write!(error, "{}", message).is_err() {
-            // NOTE: Make sure UR_ERROR always can fit this string.
-            write!(error, "Error is too long to display.").ok();
+            write!(error, "Error is too long to display.")
+                .expect("This error string should fit");
         }
 
         Self {

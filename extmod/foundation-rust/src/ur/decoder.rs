@@ -179,19 +179,15 @@ pub extern "C" fn ur_decoder_decode_message(
         }
     };
 
-    // NOTE: This should be unreachable because after
-    // decoder.inner.message() == Ok(_) the ur_type should
-    // exist.
-    let ur_type = match decoder.inner.ur_type() {
-        Some(v) => v,
-        None => {
-            *error = unsafe { UR_Error::other(&"UR type is not set") };
-            return false;
-        }
+    let result = unsafe {
+        UR_Value::from_ur(
+            decoder
+                .inner
+                .ur_type()
+                .expect("decoder should already contain the UR type"),
+            message,
+        )
     };
-
-    let result = unsafe { UR_Value::from_ur(ur_type, message) };
-
     *value = match result {
         Ok(v) => v,
         Err(e) => {
@@ -213,12 +209,9 @@ pub unsafe extern "C" fn ur_validate(ur: *const u8, ur_len: usize) -> bool {
     // SAFETY: ur and ur_len are assumed to be valid.
     let ur = unsafe { slice::from_raw_parts(ur, ur_len) };
     if let Ok(Ok(ur)) = str::from_utf8(ur).map(UR::parse) {
-        // NOTE: UR::parse will never return a deserialized variant when parsing
-        // a UR string.
-        let bytewords = match ur.as_bytewords() {
-            Some(v) => v,
-            None => return false,
-        };
+        let bytewords = ur
+            .as_bytewords()
+            .expect("Parsed URs shouldn't be in a deserialized variant");
 
         return bytewords::validate(bytewords, Style::Minimal).is_ok();
     }
@@ -256,28 +249,17 @@ pub unsafe extern "C" fn ur_decode_single_part(
     let message =
         unsafe { &mut *ptr::addr_of_mut!(UR_DECODER_SINGLE_PART_MESSAGE) };
     message.clear();
+    message
+        .resize(UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN, 0)
+        .expect("Message buffer should have the same size as in the constant");
 
-    // NOTE: This should never happen as we are resizing to it's capacity
-    // defined as a constant.
-    if let Err(_) = message.resize(UR_DECODER_MAX_SINGLE_PART_MESSAGE_LEN, 0) {
-        *error = unsafe { UR_Error::other(&"Could not resize message buffer") };
-        return false;
-    }
-
-    // NOTE: This should never happen as when a UR is parsed it should always
-    // contain the bytewords.
-    let bytewords = match ur.as_bytewords() {
-        Some(v) => v,
-        None => {
-            *error = unsafe {
-                UR_Error::other(&"Could not retrieve bytewords from UR")
-            };
-            return false;
-        }
-    };
-
-    let result = bytewords::decode_to_slice(bytewords, message, Style::Minimal)
-        .map_err(|e| unsafe { UR_Error::other(&e) });
+    let result = bytewords::decode_to_slice(
+        ur.as_bytewords()
+            .expect("Uniform Resource should contain bytewords"),
+        message,
+        Style::Minimal,
+    )
+    .map_err(|e| unsafe { UR_Error::other(&e) });
 
     match result {
         Ok(len) => message.truncate(len),
