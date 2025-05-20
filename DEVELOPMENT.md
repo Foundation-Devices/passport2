@@ -39,7 +39,7 @@ First install the `rustup` tool from [rustup.rs](https://rustup.rs/).
 
 Then run the following commands:
 
-    rustup default 1.67.1
+    rustup default 1.77.1
 
     # For the simulator. Only if on macOS with an M1 CPU.
     rustup target add aarch64-unknown-none 

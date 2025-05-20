@@ -17,40 +17,27 @@ import microns
 
 class EnvoySetupFlow(Flow):
     def __init__(self):
-        super().__init__(initial_state=self.check_if_envoy_installed, settings_key='envoy_setup', name='EnvoySetupFlow')
+        super().__init__(initial_state=self.show_envoy_app_url, settings_key='envoy_setup', name='EnvoySetupFlow')
         self.restore()
 
-    # Open Envoy and select "Setup a New Passport"
-
+    # This stage is no longer needed, but older devices may try to access it
+    # through their saved onboarding state.
     async def check_if_envoy_installed(self):
-        from pages import ChooserPage
-        from utils import recolor
-        from styles.colors import HIGHLIGHT_TEXT_HEX
-
-        options = [{'label': 'Continue on Envoy', 'value': True},
-                   {'label': 'Install Envoy App', 'value': False}]
-
-        is_envoy_installed = await ChooserPage(
-            text='In Envoy, select:\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Set up a new Passport')),
-            options=options,
-            icon=lv.LARGE_ICON_INFO,
-            left_micron=microns.Back,
-            initial_value=options[0].get('value')).show()
-        if is_envoy_installed is None:
-            self.set_result(False)
-        elif is_envoy_installed:
-            self.goto(self.scv_flow)
-        else:
-            self.goto(self.show_envoy_app_url)
+        self.goto(self.show_envoy_app_url)
 
     async def show_envoy_app_url(self):
         from pages import ShowQRPage
+        import passport
+        from common import system
 
+        hw_version = 1.2 if passport.IS_COLOR else 1
+        fw_version = system.get_software_info()[0]
+        qr_data = 'https://qr.foundation.xyz/?t={}&v={}'.format(hw_version, fw_version)
         result = await ShowQRPage(
-            qr_data='https://foundation.xyz/download',
-            caption='Scan from your phone to download Envoy.\n').show()
+            qr_data=qr_data,
+            caption='Scan with your phone\'s camera or on Envoy.\n').show()
         if not result:
-            self.back()
+            self.set_result(False)
         else:
             self.goto(self.scv_flow)
 
