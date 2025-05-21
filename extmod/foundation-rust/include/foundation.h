@@ -20,6 +20,10 @@
 
 #define VERSION_LEN 8
 
+#define FIRMWARE_MAGIC_MONO 1346458451
+
+#define FIRMWARE_MAGIC_COLOR 1397965136
+
 /**
  * Maximum size of an encoded Uniform Resource.
  *
@@ -183,6 +187,7 @@ typedef enum {
 
 typedef struct {
   char version[VERSION_LEN];
+  uint32_t magic;
   bool signed_by_user;
 } FirmwareResult_HeaderOk_Body;
 
