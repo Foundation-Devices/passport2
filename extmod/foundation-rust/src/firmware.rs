@@ -212,7 +212,13 @@ mod tests {
     #[test]
     fn sanity_test() {
         assert_eq!(VERSION_LEN, foundation_firmware::VERSION_LEN);
-        assert_eq!(FIRMWARE_MAGIC_MONO, foundation_firmware::Information::MAGIC_MONO);
-        assert_eq!(FIRMWARE_MAGIC_COLOR, foundation_firmware::Information::MAGIC_COLOR);
+        assert_eq!(
+            FIRMWARE_MAGIC_MONO,
+            foundation_firmware::Information::MAGIC_MONO
+        );
+        assert_eq!(
+            FIRMWARE_MAGIC_COLOR,
+            foundation_firmware::Information::MAGIC_COLOR
+        );
     }
 }
