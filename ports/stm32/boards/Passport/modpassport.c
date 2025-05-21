@@ -19,6 +19,12 @@
 #include "se-config.h"
 #include "se.h"
 
+#if defined(SCREEN_MODE_MONO)
+#define FIRMWARE_MAGIC FIRMWARE_MAGIC_MONO
+#elif defined(SCREEN_MODE_COLOR)
+#define FIRMWARE_MAGIC FIRMWARE_MAGIC_COLOR
+#endif
+
 /// package: passport
 
 STATIC MP_DEFINE_EXCEPTION(InvalidFirmwareUpdate, Exception);
@@ -86,9 +92,13 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
                                              header_info.len,
                                              firmware_timestamp,
                                              &result);
-
     switch (result.tag) {
         case FIRMWARE_RESULT_HEADER_OK:
+            if (result.HEADER_OK.magic != FIRMWARE_MAGIC) {
+                mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
+                             MP_ERROR_TEXT("The firmware is not for this device model."));
+            }
+
             tuple[0] = mp_obj_new_str_copy(&mp_type_str,
                                            (const uint8_t*)result.HEADER_OK.version,
                                            strlen((const char*)result.HEADER_OK.version));
@@ -96,14 +106,15 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
             return mp_obj_new_tuple(2, tuple);
         case FIRMWARE_RESULT_INVALID_HEADER:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
-                         MP_ERROR_TEXT("Invalid firmware header"));
+                         MP_ERROR_TEXT("Invalid firmware header."));
+            break;
         case FIRMWARE_RESULT_UNKNOWN_MAGIC:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
-                         MP_ERROR_TEXT("Unknown firmware magic bytes"));
+                         MP_ERROR_TEXT("Unknown firmware magic bytes."));
             break;
         case FIRMWARE_RESULT_INVALID_TIMESTAMP:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
-                         MP_ERROR_TEXT("Invalid firmware timestamp"));
+                         MP_ERROR_TEXT("Invalid firmware timestamp."));
             break;
         case FIRMWARE_RESULT_TOO_SMALL:
             mp_raise_msg_varg(&mp_type_InvalidFirmwareUpdate,
