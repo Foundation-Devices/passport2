@@ -97,6 +97,7 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
         case FIRMWARE_RESULT_INVALID_HEADER:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
                          MP_ERROR_TEXT("Invalid firmware header"));
+            break;
         case FIRMWARE_RESULT_UNKNOWN_MAGIC:
             mp_raise_msg(&mp_type_InvalidFirmwareUpdate,
                          MP_ERROR_TEXT("Unknown firmware magic bytes"));
