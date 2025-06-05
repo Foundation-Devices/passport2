@@ -58,3 +58,5 @@ class TestKeypadPage(Page):
             common.keypad.disable_nav_and_select_keys(False)
             common.ui.set_right_micron(microns.Forward)
             common.ui.set_left_micron(microns.Back)
+            self.right_micron = microns.Forward
+            self.left_micron = microns.Back
