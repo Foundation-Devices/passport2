@@ -791,7 +791,12 @@ class psbtInputProxy(psbtProxy):
 
             # print("redeem: %s" % b2a_hex(redeem_script))
             M, N = disassemble_multisig_mn(redeem_script)
-            xfp_paths = sorted(self.subpaths.values())
+            paths = []
+            if inp.subpaths:
+                paths.extend(inp.subpaths.values())
+            if inp.tap_subpaths:
+                paths.extend([path for (path, tap_hash) in inp.tap_subpaths.values()])
+            xfp_paths = sorted(paths)
 
             if not psbt.active_multisig:
                 # search for multisig wallet
@@ -1292,7 +1297,12 @@ class psbtObject(psbtProxy):
                 continue
             if not inp.subpaths:
                 continue        # not expected if we're signing it
-            for path in inp.subpaths.values():
+            paths = []
+            if inp.subpaths:
+                paths.extend(inp.subpaths.values())
+            if inp.tap_subpaths:
+                paths.extend([path for (path, tap_hash) in inp.tap_subpaths.values()])
+            for path in paths:
                 if path[0] == my_xfp:
                     in_paths.append(path[1:])
 
@@ -1325,7 +1335,12 @@ class psbtObject(psbtProxy):
             if not out.is_change:
                 continue
             # it's a change output, okay if a p2sh change; we're looking at paths
-            for path in out.subpaths.values():
+            paths = []
+            if inp.subpaths:
+                paths.extend(inp.subpaths.values())
+            if inp.tap_subpaths:
+                paths.extend([path for (path, tap_hash) in inp.tap_subpaths.values()])
+            for path in paths:
                 if path[0] != my_xfp:
                     continue          # possible in p2sh case
 
