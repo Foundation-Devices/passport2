@@ -8,6 +8,13 @@ use foundation_firmware::{VerifyHeaderError, VerifySignatureError};
 use secp256k1::PublicKey;
 
 pub const VERSION_LEN: usize = 8;
+
+// These are defined here as cbindgen does not support generating C
+// definitions for items outside of this crate.
+//
+// Note: keep in sync. with:
+//
+//  - ports/stm32/boards/Passport/include/fwheader.h
 pub const FIRMWARE_MAGIC_MONO: u32 = 0x50415353;
 pub const FIRMWARE_MAGIC_COLOR: u32 = 0x53534150;
 
