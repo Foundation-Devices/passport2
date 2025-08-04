@@ -791,12 +791,7 @@ class psbtInputProxy(psbtProxy):
 
             # print("redeem: %s" % b2a_hex(redeem_script))
             M, N = disassemble_multisig_mn(redeem_script)
-            paths = []
-            if self.subpaths:
-                paths.extend(self.subpaths.values())
-            if self.tap_subpaths:
-                paths.extend([path for (path, tap_hash) in self.tap_subpaths.values()])
-            xfp_paths = sorted(paths)
+            xfp_paths = sorted(self.subpaths.values())
 
             if not psbt.active_multisig:
                 # search for multisig wallet
