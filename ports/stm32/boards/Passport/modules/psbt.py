@@ -1678,7 +1678,7 @@ class psbtObject(psbtProxy):
 
         assert sighash_type == SIGHASH_DEFAULT
 
-        if self.hashPrevouts is None:
+        if self.hashPrevouts is None or self.hashAmounts is None or self.hashScriptPubkeys is None:
             # First time thru, we'll need to hash up this stuff.
 
             prevouts = trezorcrypto.sha256()
