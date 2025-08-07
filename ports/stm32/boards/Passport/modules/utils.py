@@ -1270,6 +1270,9 @@ def is_extension_enabled(ext_name):
 
 def toggle_showing_hidden_keys():
     from common import ui
+    import gc
+
+    gc.collect()
     showing = common.settings.get('showing_hidden_keys', False)
     common.settings.set_volatile('showing_hidden_keys', not showing)
     ui.update_cards_on_top_level()
@@ -1452,7 +1455,9 @@ def derive_icon(icon):
 def toggle_key_hidden(item, key):
     from common import settings
     from utils import get_derived_keys
+    import gc
 
+    gc.collect()
     keys = get_derived_keys()
     keys.remove(key)
     key['hidden'] = not key['hidden']

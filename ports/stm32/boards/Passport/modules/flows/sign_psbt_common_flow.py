@@ -129,7 +129,7 @@ class SignPsbtCommonFlow(Flow):
                 self.goto(self.show_warnings)
         except Exception as e:
             await ErrorPage(text='Invalid PSBT: {}'.format(e)).show()
-            self.set_result(False)
+            self.set_result(None)
 
     async def show_warnings(self):
         from pages import LongTextPage
