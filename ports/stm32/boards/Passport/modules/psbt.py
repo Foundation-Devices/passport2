@@ -959,6 +959,9 @@ class psbtObject(psbtProxy):
         self.hashOutputs = None
 
         # taproot additions to reused segwit hashes
+        self.tap_hashPrevouts = None
+        self.tap_hashSequence = None
+        self.tap_hashOutputs = None
         self.hashAmounts = None
         self.hashScriptPubkeys = None
 
@@ -1678,7 +1681,7 @@ class psbtObject(psbtProxy):
 
         assert sighash_type == SIGHASH_DEFAULT
 
-        if self.hashPrevouts is None or self.hashAmounts is None or self.hashScriptPubkeys is None:
+        if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
 
             prevouts = trezorcrypto.sha256()
@@ -1694,10 +1697,10 @@ class psbtObject(psbtProxy):
                 script_pubkeys.update(ser_string(utxo.scriptPubKey))
                 sequences.update(pack("<I", txi.nSequence))
 
-            self.hashPrevouts = prevouts.digest()
+            self.tap_hashPrevouts = prevouts.digest()
             self.hashAmounts = amounts.digest()
             self.hashScriptPubkeys = script_pubkeys.digest()
-            self.hashSequence = sequences.digest()
+            self.tap_hashSequence = sequences.digest()
 
             del prevouts, amounts, script_pubkeys, sequences, txi
 
@@ -1706,7 +1709,7 @@ class psbtObject(psbtProxy):
             for out_idx, txo in self.output_iter():
                 outputs.update(txo.serialize())
 
-            self.hashOutputs = outputs.digest()
+            self.tap_hashOutputs = outputs.digest()
 
             del outputs, txo
             gc.collect()
@@ -1714,11 +1717,11 @@ class psbtObject(psbtProxy):
         data = bytes([sighash_type])
         data += pack('<i', self.txn_version)
         data += pack('<I', self.lock_time)
-        data += self.hashPrevouts
+        data += self.tap_hashPrevouts
         data += self.hashAmounts
         data += self.hashScriptPubkeys
-        data += self.hashSequence
-        data += self.hashOutputs
+        data += self.tap_hashSequence
+        data += self.tap_hashOutputs
 
         spend_type = (2 * ext_flag) + (1 if annex is not None else 0)
         data += pack('B', spend_type)
