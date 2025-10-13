@@ -3,10 +3,14 @@
 #
 
 import lvgl as lv
-from styles.colors import FD_BLUE, TEXT_GREY, VERY_LIGHT_GREY, WHITE
+from styles.colors import FD_BLUE, TEXT_GREY, VERY_LIGHT_GREY, WHITE, RED
 from styles.local_style import LocalStyle
 from styles.style import Stylize
 from .view import View
+
+# Define custom colors for the keypad
+LIGHT_PINK = lv.color_hex(0xFFB6C1)
+LIGHT_BLUE = lv.color_hex(0xADD8E6)
 
 WIDTH = 210
 HEIGHT = 300
@@ -42,24 +46,24 @@ class Keypad(View):
         self.set_size(lv.pct(100), lv.pct(100))
 
         self.key_state = {
-            '1': {'pressed': False, 'released': False, 'frame': None},
-            '2': {'pressed': False, 'released': False, 'frame': None},
-            '3': {'pressed': False, 'released': False, 'frame': None},
-            '4': {'pressed': False, 'released': False, 'frame': None},
-            '5': {'pressed': False, 'released': False, 'frame': None},
-            '6': {'pressed': False, 'released': False, 'frame': None},
-            '7': {'pressed': False, 'released': False, 'frame': None},
-            '8': {'pressed': False, 'released': False, 'frame': None},
-            '9': {'pressed': False, 'released': False, 'frame': None},
-            '0': {'pressed': False, 'released': False, 'frame': None},
-            '*': {'pressed': False, 'released': False, 'frame': None},
-            '#': {'pressed': False, 'released': False, 'frame': None},
-            'l': {'pressed': False, 'released': False, 'frame': None},
-            'r': {'pressed': False, 'released': False, 'frame': None},
-            'u': {'pressed': False, 'released': False, 'frame': None},
-            'd': {'pressed': False, 'released': False, 'frame': None},
-            'x': {'pressed': False, 'released': False, 'frame': None},
-            'y': {'pressed': False, 'released': False, 'frame': None},
+            '1': {'pressed': 0, 'released': 0, 'frame': None},
+            '2': {'pressed': 0, 'released': 0, 'frame': None},
+            '3': {'pressed': 0, 'released': 0, 'frame': None},
+            '4': {'pressed': 0, 'released': 0, 'frame': None},
+            '5': {'pressed': 0, 'released': 0, 'frame': None},
+            '6': {'pressed': 0, 'released': 0, 'frame': None},
+            '7': {'pressed': 0, 'released': 0, 'frame': None},
+            '8': {'pressed': 0, 'released': 0, 'frame': None},
+            '9': {'pressed': 0, 'released': 0, 'frame': None},
+            '0': {'pressed': 0, 'released': 0, 'frame': None},
+            '*': {'pressed': 0, 'released': 0, 'frame': None},
+            '#': {'pressed': 0, 'released': 0, 'frame': None},
+            'l': {'pressed': 0, 'released': 0, 'frame': None},
+            'r': {'pressed': 0, 'released': 0, 'frame': None},
+            'u': {'pressed': 0, 'released': 0, 'frame': None},
+            'd': {'pressed': 0, 'released': 0, 'frame': None},
+            'x': {'pressed': 0, 'released': 0, 'frame': None},
+            'y': {'pressed': 0, 'released': 0, 'frame': None},
         }
 
         y = TOP_MARGIN
@@ -120,42 +124,52 @@ class Keypad(View):
         if key_state is not None:
             key_frame = key_state.get('frame')
             if key_frame is not None:
-                pressed = key_state.get('pressed')
-                released = key_state.get('released')
+                pressed_count = key_state.get('pressed')
+                released_count = key_state.get('released')
                 with LocalStyle(key_frame) as style:
-                    if pressed:
-                        style.border_width(3)
-                    else:
+                    # Border styling based on pressed count
+                    if pressed_count == 0:
                         style.border_width(1)
                         style.border_color(TEXT_GREY)
+                    elif pressed_count % 2 == 1:  # odd
+                        style.border_width(3)
+                        style.border_color(FD_BLUE)
+                    else:  # even and > 0
+                        style.border_width(3)
+                        style.border_color(RED)
 
-                    if released:
-                        style.bg_color(FD_BLUE)
-                        style.text_color(WHITE)
-                    else:
+                    # Background styling based on released count
+                    if released_count == 0:
                         style.bg_color(VERY_LIGHT_GREY)
+                    elif released_count % 2 == 1:  # odd
+                        style.bg_color(LIGHT_PINK)
+                    else:  # even and > 0
+                        style.bg_color(LIGHT_BLUE)
 
             key_label = key_state.get('label')
             if key_label is not None:
+                released_count = key_state.get('released')
                 with LocalStyle(key_label) as style:
-                    if released:
+                    # Adjust text color based on background
+                    if released_count == 0:
+                        style.text_color(TEXT_GREY)
+                    else:
                         style.text_color(WHITE)
 
     def should_finish(self):
         all_were_pressed = True
         for key in self.key_state:
-            if not self.key_state[key]['released']:
+            if self.key_state[key]['released'] == 0:
                 all_were_pressed = False
 
         return all_were_pressed
 
     def on_key(self, key, pressed):
         if key in self.key_state:
-            # Setting these states is a one-way trip
-            if self.key_state.get(key)['pressed'] is False and pressed:
-                self.key_state.get(key)['pressed'] = True
-
-            if self.key_state.get(key)['released'] is False and not pressed:
-                self.key_state.get(key)['released'] = True
+            # Increment counts on each event
+            if pressed:
+                self.key_state.get(key)['pressed'] += 1
+            else:
+                self.key_state.get(key)['released'] += 1
 
             self.update_key(key)
