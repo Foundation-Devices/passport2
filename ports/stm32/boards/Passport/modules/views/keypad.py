@@ -142,9 +142,9 @@ class Keypad(View):
                     if released_count == 0:
                         style.bg_color(VERY_LIGHT_GREY)
                     elif released_count % 2 == 1:  # odd
-                        style.bg_color(LIGHT_PINK)
-                    else:  # even and > 0
                         style.bg_color(LIGHT_BLUE)
+                    else:  # even and > 0
+                        style.bg_color(LIGHT_PINK)
 
             key_label = key_state.get('label')
             if key_label is not None:
@@ -162,7 +162,8 @@ class Keypad(View):
             if self.key_state[key]['released'] == 0:
                 all_were_pressed = False
 
-        return all_were_pressed
+        # Allow pressing all multiple times, exit by pressing the enter key 5 times
+        return all_were_pressed and self.key_state['y']['released'] >= 5
 
     def on_key(self, key, pressed):
         if key in self.key_state:
