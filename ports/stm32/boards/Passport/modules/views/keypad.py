@@ -67,14 +67,14 @@ class Keypad(View):
         }
 
         y = TOP_MARGIN
-        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 4, y, small=True)
-        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 4, y + NUMKEY_VGAP + KEY_HEIGHT, small=True)
+        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 4, y)
+        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 4, y + NUMKEY_VGAP + KEY_HEIGHT)
         self.add_key('l', HALF_WIDTH - KEY_WIDTH // 4 - NUMKEY_HGAP -
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
+                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
         self.add_key('r', HALF_WIDTH - KEY_WIDTH // 4 + NUMKEY_HGAP +
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
-        self.add_key('x', SIDE_MARGIN, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
-        self.add_key('y', WIDTH - SIDE_MARGIN - KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
+                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
+        self.add_key('x', SIDE_MARGIN, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
+        self.add_key('y', WIDTH - SIDE_MARGIN - KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
 
         y += NUMKEY_VGAP + (NUMKEY_VGAP + KEY_HEIGHT) * 2
 
@@ -105,6 +105,8 @@ class Keypad(View):
             label = '##'
         else:
             label = key
+
+        label = "{}: {}".format(label, self.key_state[key]['released'])
         key_label = Label(text=label, color=TEXT_GREY)
         with Stylize(key_label) as label:
             label.align(lv.ALIGN.CENTER)
@@ -149,6 +151,15 @@ class Keypad(View):
             key_label = key_state.get('label')
             if key_label is not None:
                 released_count = key_state.get('released')
+
+                if key == '#':
+                    label = '##'
+                else:
+                    label = key
+
+                label = "{}: {}".format(label, released_count)
+                key_label.set_text(label)
+
                 with LocalStyle(key_label) as style:
                     # Adjust text color based on background
                     if released_count == 0:
