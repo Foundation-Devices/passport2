@@ -16,11 +16,10 @@ WIDTH = 210
 HEIGHT = 300
 HALF_WIDTH = WIDTH // 2
 
-SIDE_MARGIN = 15
 TOP_MARGIN = 10
-NUMKEY_HGAP = 10
-NUMKEY_VGAP = 5
-KEY_WIDTH = 50
+NUMKEY_HGAP = 4
+NUMKEY_VGAP = 1
+KEY_WIDTH = 46
 KEY_HEIGHT = 24
 
 Keys = [
@@ -67,14 +66,14 @@ class Keypad(View):
         }
 
         y = TOP_MARGIN
-        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 4, y)
-        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 4, y + NUMKEY_VGAP + KEY_HEIGHT)
-        self.add_key('l', HALF_WIDTH - KEY_WIDTH // 4 - NUMKEY_HGAP -
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
-        self.add_key('r', HALF_WIDTH - KEY_WIDTH // 4 + NUMKEY_HGAP +
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
-        self.add_key('x', SIDE_MARGIN, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
-        self.add_key('y', WIDTH - SIDE_MARGIN - KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2)
+        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 2, y)
+        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 2, y + NUMKEY_VGAP + KEY_HEIGHT * 2)
+        self.add_key('l', HALF_WIDTH - KEY_WIDTH - NUMKEY_HGAP // 2,
+                     y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('r', HALF_WIDTH + NUMKEY_HGAP // 2,
+                     y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('x', HALF_WIDTH - 2 * KEY_WIDTH - 3 * NUMKEY_HGAP // 2, y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('y', HALF_WIDTH + KEY_WIDTH + 3 * NUMKEY_HGAP // 2, y + (NUMKEY_VGAP + KEY_HEIGHT))
 
         y += NUMKEY_VGAP + (NUMKEY_VGAP + KEY_HEIGHT) * 2
 
@@ -82,8 +81,8 @@ class Keypad(View):
         for row in range(len(Keys)):
             for col in range(len(Keys[row])):
                 key = Keys[row][col]
-                key_x = (SIDE_MARGIN + SIDE_MARGIN // 2) + (col * (KEY_WIDTH + NUMKEY_HGAP))
-                key_y = y + row * (KEY_HEIGHT + NUMKEY_VGAP)
+                key_x = HALF_WIDTH + ((col - 1) * (KEY_WIDTH + NUMKEY_HGAP)) - KEY_WIDTH // 2
+                key_y = y + row * (KEY_HEIGHT + NUMKEY_VGAP) + KEY_HEIGHT
                 self.add_key(key, key_x, key_y)
 
     def add_key(self, key, key_x, key_y, small=False):
