@@ -8,6 +8,7 @@ from .bitcoin_core import BitcoinCoreWallet
 from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
+from .bull import BullBitcoinWallet
 from .casa import CasaWallet
 from .coinbits import CoinbitsWallet
 # from .caravan import CaravanWallet
@@ -32,6 +33,7 @@ supported_software_wallets = [
     KeeperWallet,
     BlueWallet,
     BtcPayWallet,
+    BullBitcoinWallet,
     # CaravanWallet,
     CasaWallet,
     CoinbitsWallet,
