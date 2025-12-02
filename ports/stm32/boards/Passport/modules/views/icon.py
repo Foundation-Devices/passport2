@@ -7,7 +7,6 @@ import lvgl as lv
 from styles import Stylize, LocalStyle
 from views import View
 from utils import derive_icon
-import passport
 
 
 class Icon(View):
