@@ -9,6 +9,15 @@ use secp256k1::PublicKey;
 
 pub const VERSION_LEN: usize = 8;
 
+// These are defined here as cbindgen does not support generating C
+// definitions for items outside of this crate.
+//
+// Note: keep in sync. with:
+//
+//  - ports/stm32/boards/Passport/include/fwheader.h
+pub const FIRMWARE_MAGIC_MONO: u32 = 0x50415353;
+pub const FIRMWARE_MAGIC_COLOR: u32 = 0x53534150;
+
 /// The result of the firmware update verification.
 /// cbindgen:rename-all=ScreamingSnakeCase
 /// cbindgen:prefix-with-name
@@ -18,6 +27,7 @@ pub enum FirmwareResult {
     /// The firmware validation succeed.
     HeaderOk {
         version: [c_char; VERSION_LEN],
+        magic: u32,
         signed_by_user: bool,
     },
     /// The header format is not valid.
@@ -143,6 +153,7 @@ pub extern "C" fn verify_update_header(
 
             *result = FirmwareResult::HeaderOk {
                 version,
+                magic: header.information.magic,
                 signed_by_user: header.is_signed_by_user(),
             };
         }
@@ -208,5 +219,13 @@ mod tests {
     #[test]
     fn sanity_test() {
         assert_eq!(VERSION_LEN, foundation_firmware::VERSION_LEN);
+        assert_eq!(
+            FIRMWARE_MAGIC_MONO,
+            foundation_firmware::Information::MAGIC_MONO
+        );
+        assert_eq!(
+            FIRMWARE_MAGIC_COLOR,
+            foundation_firmware::Information::MAGIC_COLOR
+        );
     }
 }
