@@ -16,11 +16,10 @@ WIDTH = 210
 HEIGHT = 300
 HALF_WIDTH = WIDTH // 2
 
-SIDE_MARGIN = 15
 TOP_MARGIN = 10
-NUMKEY_HGAP = 10
-NUMKEY_VGAP = 5
-KEY_WIDTH = 50
+NUMKEY_HGAP = 4
+NUMKEY_VGAP = 1
+KEY_WIDTH = 46
 KEY_HEIGHT = 24
 
 Keys = [
@@ -67,14 +66,14 @@ class Keypad(View):
         }
 
         y = TOP_MARGIN
-        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 4, y, small=True)
-        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 4, y + NUMKEY_VGAP + KEY_HEIGHT, small=True)
-        self.add_key('l', HALF_WIDTH - KEY_WIDTH // 4 - NUMKEY_HGAP -
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
-        self.add_key('r', HALF_WIDTH - KEY_WIDTH // 4 + NUMKEY_HGAP +
-                     KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
-        self.add_key('x', SIDE_MARGIN, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
-        self.add_key('y', WIDTH - SIDE_MARGIN - KEY_WIDTH // 2, y + (NUMKEY_VGAP + KEY_HEIGHT) // 2, small=True)
+        self.add_key('u', HALF_WIDTH - KEY_WIDTH // 2, y)
+        self.add_key('d', HALF_WIDTH - KEY_WIDTH // 2, y + NUMKEY_VGAP + KEY_HEIGHT * 2)
+        self.add_key('l', HALF_WIDTH - KEY_WIDTH - NUMKEY_HGAP // 2,
+                     y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('r', HALF_WIDTH + NUMKEY_HGAP // 2,
+                     y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('x', HALF_WIDTH - 2 * KEY_WIDTH - 3 * NUMKEY_HGAP // 2, y + (NUMKEY_VGAP + KEY_HEIGHT))
+        self.add_key('y', HALF_WIDTH + KEY_WIDTH + 3 * NUMKEY_HGAP // 2, y + (NUMKEY_VGAP + KEY_HEIGHT))
 
         y += NUMKEY_VGAP + (NUMKEY_VGAP + KEY_HEIGHT) * 2
 
@@ -82,8 +81,8 @@ class Keypad(View):
         for row in range(len(Keys)):
             for col in range(len(Keys[row])):
                 key = Keys[row][col]
-                key_x = (SIDE_MARGIN + SIDE_MARGIN // 2) + (col * (KEY_WIDTH + NUMKEY_HGAP))
-                key_y = y + row * (KEY_HEIGHT + NUMKEY_VGAP)
+                key_x = HALF_WIDTH + ((col - 1) * (KEY_WIDTH + NUMKEY_HGAP)) - KEY_WIDTH // 2
+                key_y = y + row * (KEY_HEIGHT + NUMKEY_VGAP) + KEY_HEIGHT
                 self.add_key(key, key_x, key_y)
 
     def add_key(self, key, key_x, key_y, small=False):
@@ -105,6 +104,8 @@ class Keypad(View):
             label = '##'
         else:
             label = key
+
+        label = "{}: {}".format(label, self.key_state[key]['released'])
         key_label = Label(text=label, color=TEXT_GREY)
         with Stylize(key_label) as label:
             label.align(lv.ALIGN.CENTER)
@@ -142,13 +143,22 @@ class Keypad(View):
                     if released_count == 0:
                         style.bg_color(VERY_LIGHT_GREY)
                     elif released_count % 2 == 1:  # odd
-                        style.bg_color(LIGHT_PINK)
-                    else:  # even and > 0
                         style.bg_color(LIGHT_BLUE)
+                    else:  # even and > 0
+                        style.bg_color(LIGHT_PINK)
 
             key_label = key_state.get('label')
             if key_label is not None:
                 released_count = key_state.get('released')
+
+                if key == '#':
+                    label = '##'
+                else:
+                    label = key
+
+                label = "{}: {}".format(label, released_count)
+                key_label.set_text(label)
+
                 with LocalStyle(key_label) as style:
                     # Adjust text color based on background
                     if released_count == 0:
@@ -162,7 +172,8 @@ class Keypad(View):
             if self.key_state[key]['released'] == 0:
                 all_were_pressed = False
 
-        return all_were_pressed
+        # Allow pressing all multiple times, exit by pressing the enter key 5 times
+        return all_were_pressed and self.key_state['y']['released'] >= 5
 
     def on_key(self, key, pressed):
         if key in self.key_state:
