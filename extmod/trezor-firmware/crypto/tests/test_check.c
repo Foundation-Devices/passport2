@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <check.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5556,6 +5557,170 @@ START_TEST(test_mnemonic_find_word) {
 }
 END_TEST
 
+// Test that mnemonic_to_bits executes in constant time regardless of word
+// indices. This helps verify resistance to timing side-channel attacks.
+//
+// Uses 1000 PRNG-generated phrases for statistically meaningful correlation
+// analysis. Phrases are generated with a fixed seed for reproducibility.
+// The test runs all phrases in interleaved fashion to simulate real-world
+// usage and detect cache-based timing leaks.
+START_TEST(test_mnemonic_to_bits_constant_time) {
+// Include wordlist for phrase generation
+#include "bip39_english.h"
+
+  const int NUM_PHRASES = 1000;
+  const int ITERATIONS = 1000;
+  const int WORDS_PER_PHRASE = 12;
+  const uint32_t PRNG_SEED = 0xDEADBEEF;  // Fixed seed for reproducibility
+
+  // Simple PRNG (xorshift32) for reproducible random numbers
+  uint32_t prng_state = PRNG_SEED;
+#define PRNG_NEXT()                                                \
+  (prng_state ^= prng_state << 13, prng_state ^= prng_state >> 17, \
+   prng_state ^= prng_state << 5, prng_state)
+
+  // Allocate storage for phrases and their average indices
+  char (*phrases)[256] = malloc(NUM_PHRASES * 256);
+  int *avg_indices = malloc(NUM_PHRASES * sizeof(int));
+  double *times = malloc(NUM_PHRASES * sizeof(double));
+  ck_assert(phrases != NULL && avg_indices != NULL && times != NULL);
+
+  // Generate NUM_PHRASES random phrases
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    phrases[p][0] = '\0';
+    int total_index = 0;
+
+    for (int w = 0; w < WORDS_PER_PHRASE; w++) {
+      int word_idx = PRNG_NEXT() % BIP39_WORDS;
+      total_index += word_idx;
+
+      if (w > 0) strcat(phrases[p], " ");
+      strcat(phrases[p], wordlist[word_idx]);
+    }
+    avg_indices[p] = total_index / WORDS_PER_PHRASE;
+    times[p] = 0.0;
+  }
+
+  uint8_t bits[64];
+  struct timespec start, end;
+
+  // Warm up - run each phrase once to load code/data into cache
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    mnemonic_to_bits(phrases[p], bits);
+  }
+
+  // Interleaved timing: run all phrases in each iteration
+  printf("  Running %d iterations of %d phrases...\n", ITERATIONS, NUM_PHRASES);
+  fflush(stdout);
+  for (int iter = 0; iter < ITERATIONS; iter++) {
+    if (iter % 100 == 0) {
+      printf("    Progress: %d/%d (%d%%)\r", iter, ITERATIONS,
+             iter * 100 / ITERATIONS);
+      fflush(stdout);
+    }
+    for (int p = 0; p < NUM_PHRASES; p++) {
+      clock_gettime(CLOCK_MONOTONIC, &start);
+      mnemonic_to_bits(phrases[p], bits);
+      clock_gettime(CLOCK_MONOTONIC, &end);
+
+      double elapsed =
+          (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+      times[p] += elapsed;
+    }
+  }
+  printf("    Progress: %d/%d (100%%)   \n", ITERATIONS, ITERATIONS);
+
+  // Calculate average time per call
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    times[p] /= ITERATIONS;
+  }
+
+  // Calculate mean and standard deviation
+  double sum = 0.0;
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    sum += times[p];
+  }
+  double mean = sum / NUM_PHRASES;
+
+  double variance = 0.0;
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    double diff = times[p] - mean;
+    variance += diff * diff;
+  }
+  variance /= NUM_PHRASES;
+  double stddev = sqrt(variance);
+
+  // Coefficient of variation (CV)
+  double cv = (stddev / mean) * 100.0;
+
+  // Find max deviation
+  double max_deviation_percent = 0.0;
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    double deviation_percent = fabs(times[p] - mean) / mean * 100.0;
+    if (deviation_percent > max_deviation_percent) {
+      max_deviation_percent = deviation_percent;
+    }
+  }
+
+  // Calculate Pearson correlation between average word index and timing
+  // With 1000 data points, this is statistically meaningful
+  double sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_x2 = 0.0, sum_y2 = 0.0;
+  for (int p = 0; p < NUM_PHRASES; p++) {
+    double x = (double)avg_indices[p];
+    double y = times[p];
+    sum_x += x;
+    sum_y += y;
+    sum_xy += x * y;
+    sum_x2 += x * x;
+    sum_y2 += y * y;
+  }
+  double n = (double)NUM_PHRASES;
+  double correlation =
+      (n * sum_xy - sum_x * sum_y) /
+      (sqrt(n * sum_x2 - sum_x * sum_x) * sqrt(n * sum_y2 - sum_y * sum_y));
+
+  // Print results
+  printf("\n  Constant-time test results (%d phrases, %d iterations each):\n",
+         NUM_PHRASES, ITERATIONS);
+  printf("  Mean time: %.9f seconds\n", mean);
+  printf("  Std dev:   %.9f seconds\n", stddev);
+  printf("  CV:        %.2f%%\n", cv);
+  printf("  Max deviation: %.2f%%\n", max_deviation_percent);
+  printf("  Correlation (avg_index vs time): %.6f\n", correlation);
+
+  // Show a few sample phrases for verification
+  printf("  Sample phrases:\n");
+  for (int i = 0; i < 5; i++) {
+    double deviation_percent = (times[i] - mean) / mean * 100.0;
+    printf("    [avg_idx=%4d]: %.9f sec (%+.2f%%)\n",
+           avg_indices[i], times[i], deviation_percent);
+  }
+
+  // Free allocated memory
+  free(phrases);
+  free(avg_indices);
+  free(times);
+
+  // Assert timing variation is within acceptable bounds
+  ck_assert_msg(cv < 5.0,
+                "Coefficient of variation too high (%.2f%%), suggesting "
+                "non-constant-time behavior",
+                cv);
+
+  ck_assert_msg(max_deviation_percent < 100.0,
+                "Max timing deviation too high (%.2f%%), suggesting "
+                "non-constant-time behavior",
+                max_deviation_percent);
+
+  // With 1000 data points, correlation is statistically meaningful
+  // A value > 0.1 would indicate a timing leak correlated with word index
+  ck_assert_msg(fabs(correlation) < 0.1,
+                "Timing correlates with word index (r=%.6f), suggesting "
+                "non-constant-time behavior",
+                correlation);
+}
+END_TEST
+
 START_TEST(test_slip39_get_word) {
   static const struct {
     const int index;
@@ -9726,6 +9891,7 @@ Suite *test_suite(void) {
   tcase_add_test(tc, test_mnemonic_check);
   tcase_add_test(tc, test_mnemonic_to_bits);
   tcase_add_test(tc, test_mnemonic_find_word);
+  tcase_add_test(tc, test_mnemonic_to_bits_constant_time);
   suite_add_tcase(s, tc);
 
   tc = tcase_create("slip39");
