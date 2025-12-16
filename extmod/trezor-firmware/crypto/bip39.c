@@ -94,13 +94,50 @@ const char *mnemonic_from_data(const uint8_t *data, int len) {
 
 void mnemonic_clear(void) { memzero(mnemo, sizeof(mnemo)); }
 
-int mnemonic_to_bits(const char *mnemonic, uint8_t *bits) {
+// Maximum length of a BIP-39 word (including null terminator)
+#define BIP39_MAX_WORD_LEN 9
+
+// Constant-time comparison of two null-terminated strings up to max length.
+// Returns 1 if equal, 0 if different.
+// This function executes in constant time regardless of string content,
+// providing resistance against timing side-channel attacks.
+static int ct_word_eq(const char* input, const char* wordlist_word) {
+  uint32_t diff = 0;
+  uint32_t active = 0xFFFFFFFF;
+
+  for (int i = 0; i < BIP39_MAX_WORD_LEN; i++) {
+    uint8_t a = (uint8_t)input[i];
+    uint8_t b = (uint8_t)wordlist_word[i];
+
+    // Accumulate XOR difference only while active
+    diff |= (a ^ b) & active;
+
+    // Deactivate when either string terminates (constant-time mask update)
+    // For a uint8_t value: if a==0, (a-1) sign-extends to 0xFFFFFFFF, >>31 = 1
+    // If a!=0, (a-1) is in [0,254], >>31 = 0. Negating gives the mask.
+    uint32_t a_term = -((uint32_t)(a - 1) >> 31);
+    uint32_t b_term = -((uint32_t)(b - 1) >> 31);
+    active &= ~(a_term | b_term);
+  }
+
+  // Return 1 if equal (diff == 0), 0 otherwise
+  // When diff == 0: (0 - 1) = 0xFFFFFFFF, >> 8, & 1 = 1
+  // When diff != 0: (diff - 1) >> 8, & 1 = 0 for diff in [1, 255]
+  return (int)(1 & ((diff - 1) >> 8));
+}
+
+// Constant-time implementation to prevent side-channel attacks.
+// This function always iterates through the entire wordlist for each word,
+// uses constant-time string comparison, and avoids data-dependent branching
+// when converting word indices to bits.
+int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   if (!mnemonic) {
     return 0;
   }
 
   uint32_t i = 0, n = 0;
 
+  // Count spaces to determine word count (word count is public information)
   while (mnemonic[i]) {
     if (mnemonic[i] == ' ') {
       n++;
@@ -117,14 +154,16 @@ int mnemonic_to_bits(const char *mnemonic, uint8_t *bits) {
     return 0;
   }
 
-  char current_word[10] = {0};
+  char current_word[BIP39_MAX_WORD_LEN] = {0};
   uint32_t j = 0, k = 0, ki = 0, bi = 0;
   uint8_t result[32 + 1] = {0};
+  uint32_t all_words_found = 0xFFFFFFFF;  // Track if all words were found
 
   memzero(result, sizeof(result));
   i = 0;
   while (mnemonic[i]) {
     j = 0;
+    memzero(current_word, sizeof(current_word));
     while (mnemonic[i] != ' ' && mnemonic[i] != 0) {
       if (j >= sizeof(current_word) - 1) {
         return 0;
@@ -137,28 +176,43 @@ int mnemonic_to_bits(const char *mnemonic, uint8_t *bits) {
     if (mnemonic[i] != 0) {
       i++;
     }
-    k = 0;
-    for (;;) {
-      if (!wordlist[k]) {  // word not found
-        return 0;
-      }
-      if (strcmp(current_word, wordlist[k]) == 0) {  // word found on index k
-        for (ki = 0; ki < 11; ki++) {
-          if (k & (1 << (10 - ki))) {
-            result[bi / 8] |= 1 << (7 - (bi % 8));
-          }
-          bi++;
-        }
-        break;
-      }
-      k++;
+
+    // Constant-time wordlist search: always iterate through ALL 2048 words
+    // to prevent timing attacks that could reveal word indices
+    uint32_t found_index = 0;
+    uint32_t found = 0;
+
+    for (k = 0; k < BIP39_WORDS; k++) {
+      int eq = ct_word_eq(current_word, wordlist[k]);
+      // Constant-time selection: mask is 0xFFFFFFFF if match, 0 otherwise
+      uint32_t mask = -(uint32_t)eq;
+      found_index = (found_index & ~mask) | (k & mask);
+      found |= mask;
+    }
+
+    // Track if this word was found (constant-time accumulation)
+    all_words_found &= found;
+
+    // Constant-time bit extraction and setting
+    // Always execute all 11 iterations, no conditional branching on bit values
+    for (ki = 0; ki < 11; ki++) {
+      uint8_t bit = (found_index >> (10 - ki)) & 1;
+      result[bi / 8] |= bit << (7 - (bi % 8));
+      bi++;
     }
   }
+
+  // Check all words were found
+  if (all_words_found == 0) {
+    return 0;
+  }
+
   if (bi != n * 11) {
     return 0;
   }
   memcpy(bits, result, sizeof(result));
   memzero(result, sizeof(result));
+  memzero(current_word, sizeof(current_word));
 
   // returns amount of entropy + checksum BITS
   return n * 11;
