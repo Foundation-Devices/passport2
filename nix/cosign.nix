@@ -2,27 +2,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 {
   self,
-  system,
   pkgs,
-}: let
-  src = pkgs.stdenv.mkDerivation {
-    name = "cosign-src";
-    src = self + "/ports/stm32/boards/Passport/tools/cosign";
-    # TODO: account for darwin and arm architectures
+  ...
+}: {
+  cosign = pkgs.stdenv.mkDerivation {
+    pname = "passport-cosign";
+    version = "0.1.0";
+    src = self + "/ports/stm32/boards/Passport";
+    nativeBuildInputs = [ pkgs.pkg-config ];
+    buildInputs = [ pkgs.openssl ];
+    dontConfigure = true;
+    NIX_CFLAGS_COMPILE = "-Wno-error=int-conversion";
 
     buildPhase = ''
-      make
+      runHook preBuild
+      make -C tools/cosign
+      runHook postBuild
     '';
 
     installPhase = ''
-      cp x86/release/cosign $out
+      runHook preInstall
+      mkdir -p $out/bin
+      cp tools/cosign/x86/release/cosign $out/bin/cosign
+      runHook postInstall
     '';
-    outputHash = "sha256-6GEfi9zx7+RLpIbxdT6K2uMRyJ1V78aVebM+vWZmwQY=";
-    outputHashMode = "recursive";
-  };
-in {
-  cosign = pkgs.stdenv.mkDerivation {
-    pname = "cosign";
-    inherit src;
   };
 }

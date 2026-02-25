@@ -6,7 +6,7 @@
   pkgs,
   fenix,
 }: let
-  toolchainSha256 = lib.fakeSha256;
+  toolchainSha256 = "sha256-3St/9/UKo/6lz2Kfq2VmlzHyufduALpiIKaaKX4Pq0g=";
 
   baseToolchain = fenix.packages.${system}.fromToolchainFile {
     file = self + "/extmod/foundation-rust/rust-toolchain.toml";
