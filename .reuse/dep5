@@ -102,6 +102,7 @@ Files:
   simulator/*.png
   simulator/*.jpg
   version.txt
+  flake.lock
 Copyright: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 License: GPL-3.0-or-later
 
