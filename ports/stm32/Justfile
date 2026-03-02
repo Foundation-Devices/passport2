@@ -208,7 +208,7 @@ images: (convert-images "boards/Passport/images" "true") (convert-images "boards
 
 # LVGL Image Conversion Tool
 convert-images image_path process_mono='false':
-    #!/usr/bin/python3
+    #!/usr/bin/env python3
     import os
     from os import listdir
     image_path = '{{image_path}}'
@@ -379,7 +379,7 @@ fmt: fmt-py fmt-c
 
 
 convert-screenshot from_file to_file:
-    #!/usr/bin/python3
+    #!/usr/bin/env python3
     from PIL import Image, ImageOps
     raw_bits = open('{{from_file}}', 'rb').read()
     WIDTH = 240
