@@ -35,7 +35,7 @@ class EnvoySetupFlow(Flow):
         qr_data = 'https://qr.foundation.xyz/?t={}&v={}'.format(hw_version, fw_version)
         result = await ShowQRPage(
             qr_data=qr_data,
-            caption='Scan with your phone\'s camera or on Envoy.\n').show()
+            caption='Scan with your phone\'s camera to start setup\n').show()
         if not result:
             self.set_result(False)
         else:
