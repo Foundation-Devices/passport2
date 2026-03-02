@@ -70,6 +70,8 @@
             pkgs.wayland
             pkgs.libdecor
             pkgs.libglvnd
+            pkgs.libICE
+            pkgs.libSM
             pkgs.libx11
             pkgs.libxau
             pkgs.libxcb
@@ -101,6 +103,9 @@
                 fi
                 if [ -z "''${SDL_RENDER_DRIVER:-}" ]; then
                   export SDL_RENDER_DRIVER=software
+                fi
+                if [ "$(uname -s)" = "Linux" ] && [ -z "''${QT_QPA_PLATFORM:-}" ]; then
+                  export QT_QPA_PLATFORM=xcb
                 fi
                 export MPY_CROSS="$repo_root/mpy-cross/mpy-cross"
                 if [ ! -x "$MPY_CROSS" ]; then
