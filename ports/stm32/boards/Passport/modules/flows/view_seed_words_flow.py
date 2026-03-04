@@ -136,7 +136,8 @@ class ViewSeedWordsFlow(Flow):
                                        mention_passphrase=self.mention_passphrase,
                                        initial=self.initial,
                                        allow_skip=self.allow_skip,
-                                       key_manager=self.key_manager).run()
+                                       key_manager=self.key_manager,
+                                       view_text="Export").run()
 
         if not result:
             self.back()
