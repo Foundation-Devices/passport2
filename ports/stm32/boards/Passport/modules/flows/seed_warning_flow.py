@@ -13,8 +13,7 @@ class SeedWarningFlow(Flow):
                  info_type_text=None,
                  initial=False,
                  allow_skip=True,
-                 key_manager=False,
-                 view_text="View"):
+                 key_manager=False):
         self.mention_passphrase = mention_passphrase
         self.action_text = action_text or "display your seed words"
         self.continue_text = continue_text or "funds"
@@ -22,7 +21,6 @@ class SeedWarningFlow(Flow):
         self.allow_skip = allow_skip
         self.initial = initial
         self.key_manager = key_manager
-        self.view_text = view_text or "View"
         initial_state = self.show_skippable if (initial and allow_skip) else self.show_intro
         super().__init__(initial_state=initial_state, name='SeedWarningFlow')
 
@@ -59,7 +57,8 @@ Would you like to view them now?'''
             else:
                 text = 'Passport is about to {}'.format(self.action_text)
         else:
-            text = 'Foundation and other legitimate companies will never ask you to share these words outside of Passport.'
+            text = 'Foundation and other legitimate companies will never ask you ' \
+                   'to share these words outside of Passport.'
 
         # Empty microns have no action, so backing out isn't allowed
         left_micron = microns.Back if self.allow_skip else None
@@ -124,17 +123,13 @@ Would you like to view them now?'''
         from pages import QuestionPage
         import microns
 
-        # text = 'Anyone requesting you expose {} outside Passport ' \
-        #        'will gain full control over your {}. Take care.' \
-        #        .format(self.info_type_text, self.continue_text)
-        text = 'Anyone with access to your seed words gains full control over your funds. {} your seed words now?'.format(self.view_text)
+        text = 'Anyone with access to your seed words gains full ' \
+               'control over your funds. View your seed words now?'
 
         left_micron = microns.Cancel
 
         if not self.allow_skip:
             left_micron = None
-        # else:
-        #     text += '\n\nContinue?'
 
         result = await QuestionPage(text, left_micron=left_micron).show()
         self.set_result(result)
