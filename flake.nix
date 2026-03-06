@@ -84,32 +84,28 @@
             zlib
           ];
           mkShell = packages:
-            pkgs.mkShellNoCC {
-              inherit packages;
-              hardeningDisable = [ "all" ];
-              CC = "${pkgs.gcc13}/bin/gcc";
-              CXX = "${pkgs.gcc13}/bin/g++";
-              MPY_CROSS = "${customPackages.mpy-cross}/bin/mpy-cross";
-              shellHook = ''
-                if [ -n "''${LD_LIBRARY_PATH:-}" ]; then
-                  export LD_LIBRARY_PATH=''${LD_LIBRARY_PATH}:${runtimeLibPath}
-                else
-                  export LD_LIBRARY_PATH=${runtimeLibPath}
-                fi
-                if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -z "''${SDL_VIDEODRIVER:-}" ]; then
-                  export SDL_VIDEODRIVER=wayland
-                fi
-                if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -z "''${SDL_VIDEO_WAYLAND_PREFER_LIBDECOR:-}" ]; then
-                  export SDL_VIDEO_WAYLAND_PREFER_LIBDECOR=1
-                fi
-                if [ -z "''${SDL_RENDER_DRIVER:-}" ]; then
-                  export SDL_RENDER_DRIVER=software
-                fi
-                if [ "$(uname -s)" = "Linux" ] && [ -z "''${QT_QPA_PLATFORM:-}" ]; then
-                  export QT_QPA_PLATFORM=xcb
-                fi
-              '';
-            };
+            pkgs.mkShellNoCC (
+              {
+                inherit packages;
+                hardeningDisable = [ "all" ];
+                CC = "${pkgs.gcc13}/bin/gcc";
+                CXX = "${pkgs.gcc13}/bin/g++";
+                LD_LIBRARY_PATH = runtimeLibPath;
+                MPY_CROSS = "${customPackages.mpy-cross}/bin/mpy-cross";
+                shellHook = ''
+                  if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -z "''${SDL_VIDEODRIVER:-}" ]; then
+                    export SDL_VIDEODRIVER=wayland
+                  fi
+                  if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -z "''${SDL_VIDEO_WAYLAND_PREFER_LIBDECOR:-}" ]; then
+                    export SDL_VIDEO_WAYLAND_PREFER_LIBDECOR=1
+                  fi
+                '';
+              }
+              // lib.optionalAttrs pkgs.stdenv.isLinux {
+                QT_QPA_PLATFORM = "xcb";
+                SDL_RENDER_DRIVER = "software";
+              }
+            );
 
           buildPackages =
             with pkgs;
