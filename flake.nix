@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Foundation Devices, Inc. <hello@foundation.xyz>
+# SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 {
   description = "Passport Core development environment";
@@ -53,6 +53,7 @@
             fenix
             ;
         }
+        // import ./nix/mpy-cross.nix { inherit self pkgs; }
         // import ./nix/cosign.nix { inherit self system pkgs; }
       );
 
@@ -64,32 +65,32 @@
             config.allowUnfree = true;
           };
           customPackages = self.packages.${system};
-          runtimeLibPath = pkgs.lib.makeLibraryPath [
-            pkgs.stdenv.cc.cc.lib
-            pkgs.glib
-            pkgs.wayland
-            pkgs.libdecor
-            pkgs.libglvnd
-            pkgs.libICE
-            pkgs.libSM
-            pkgs.libx11
-            pkgs.libxau
-            pkgs.libxcb
-            pkgs.libxdmcp
-            pkgs.libxext
-            pkgs.libxkbcommon
-            pkgs.SDL2
-            pkgs.sdl3
-            pkgs.zlib
+          runtimeLibPath = with pkgs; pkgs.lib.makeLibraryPath [
+            stdenv.cc.cc.lib
+            glib
+            wayland
+            libdecor
+            libglvnd
+            libICE
+            libSM
+            libx11
+            libxau
+            libxcb
+            libxdmcp
+            libxext
+            libxkbcommon
+            SDL2
+            sdl3
+            zlib
           ];
           mkShell = packages:
-            pkgs.mkShell {
+            pkgs.mkShellNoCC {
               inherit packages;
-              hardeningDisable = [ "fortify" ];
+              hardeningDisable = [ "all" ];
+              CC = "${pkgs.gcc13}/bin/gcc";
+              CXX = "${pkgs.gcc13}/bin/g++";
+              MPY_CROSS = "${customPackages.mpy-cross}/bin/mpy-cross";
               shellHook = ''
-                repo_root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-                export CC=${pkgs.gcc13}/bin/gcc
-                export CXX=${pkgs.gcc13}/bin/g++
                 if [ -n "''${LD_LIBRARY_PATH:-}" ]; then
                   export LD_LIBRARY_PATH=''${LD_LIBRARY_PATH}:${runtimeLibPath}
                 else
@@ -106,10 +107,6 @@
                 fi
                 if [ "$(uname -s)" = "Linux" ] && [ -z "''${QT_QPA_PLATFORM:-}" ]; then
                   export QT_QPA_PLATFORM=xcb
-                fi
-                export MPY_CROSS="$repo_root/mpy-cross/mpy-cross"
-                if [ ! -x "$MPY_CROSS" ]; then
-                  make -C "$repo_root/mpy-cross"
                 fi
               '';
             };
@@ -139,6 +136,7 @@
             ]
             ++ [
               customPackages.cosign
+              customPackages.mpy-cross
               customPackages.rust-core
             ];
 
