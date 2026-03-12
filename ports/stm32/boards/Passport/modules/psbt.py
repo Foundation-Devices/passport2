@@ -1320,8 +1320,12 @@ class psbtObject(psbtProxy):
         # Assumption: common wallets modulate the last two components only
         # of the path. Typically m/.../change/index where change is {0, 1}
         # and index changes slowly over lifetime of wallet (increasing)
+        # With the use of super-accounts that combine taproot and segwit
+        # accounts of the same account index, the purpose (index 0)
+        # can mismatch and still be part of the same super-account.
         path_len = shortest
-        path_prefix = in_paths[0][0:-2]
+        path_prefix = in_paths[0][1:-2]
+        full_path_prefix = in_paths[0][0:-2]
         idx_max = max(i[-1] & 0x7fffffff for i in in_paths) + 200
         hard_pattern = hard_bits(in_paths[0])
 
@@ -1344,7 +1348,7 @@ class psbtObject(psbtProxy):
                     iss = "has wrong path length (%d not %d)" % (len(path), path_len)
                 elif hard_bits(path) != hard_pattern:
                     iss = "has different hardening pattern"
-                elif path[0:len(path_prefix)] != path_prefix:
+                elif path[1:-2] != path_prefix:
                     iss = "goes to different path prefix"
                 elif (path[-2] & 0x7fffffff) not in {0, 1}:
                     iss = "second last component not 0 or 1"
@@ -1356,7 +1360,7 @@ class psbtObject(psbtProxy):
 
                 probs.append("Output #%d: %s: %s not %s/{0~1}%s/{0~%d}%s expected"
                              % (nout, iss, keypath_to_str(path, skip=0),
-                                keypath_to_str(path_prefix, skip=0),
+                                keypath_to_str(full_path_prefix, skip=0),
                                 "'" if hard_pattern[-2] else "",
                                 idx_max, "'" if hard_pattern[-1] else "",
                                 ))
