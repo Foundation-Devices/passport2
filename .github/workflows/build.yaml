@@ -8,7 +8,7 @@ on: [push]
 jobs:
   firmware:
     name: Firmware
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -32,7 +32,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -41,7 +41,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: |
@@ -57,6 +57,12 @@ jobs:
         just hash signing_key.pem "${version}" build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
+
+    - name: Upload firmware ELF
+      uses: actions/upload-artifact@v4
+      with:
+        name: v${{env.version}}${{ matrix.build.suffix }}.elf
+        path: ports/stm32/build-Passport/firmware.elf
 
     - name: Upload firmware (unsigned)
       uses: actions/upload-artifact@v4
@@ -96,7 +102,7 @@ jobs:
 
   bootloader:
     name: Bootloader
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [firmware]
 
     # TODO: SFT-1077.
@@ -117,7 +123,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -126,7 +132,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: |
@@ -145,7 +151,7 @@ jobs:
 
   simulator:
     name: Simulator
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [firmware]
 
     strategy:
@@ -165,7 +171,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -174,7 +180,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV
@@ -184,7 +190,7 @@ jobs:
 
   build-tools:
     name: Tools
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     services:
       registry:
@@ -199,7 +205,7 @@ jobs:
     - uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         context: .
@@ -208,7 +214,7 @@ jobs:
         tags: localhost:5000/foundation-devices/passport2:latest
     - uses: ./.github/actions/rust-toolchain
       with:
-       toolchain: 1.70.0
+       toolchain: 1.77.1
        targets: thumbv7em-none-eabihf
     - run: cargo install just@1.23.0 --locked
     - run: echo "DOCKER_IMAGE=localhost:5000/foundation-devices/passport2:latest" >> $GITHUB_ENV

@@ -1,12 +1,12 @@
 <!--
-SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # Development
 
-This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 20.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
+This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 24.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
 
 ## Setup
 In order to build the Passport firmware, you need to:
@@ -63,7 +63,7 @@ The makefiles used by MicroPython and Passport firmware use Autotools.  Install 
 OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only required for developers with a special Developer version of the Passport board.  If all you want to do is build the firmware and install it with a Developer Pubkey over microSD, then you do not need to install OpenOCD.
 
     cd ~/
-    git clone https://github.com/ntfreak/openocd.git
+    git clone --depth 1 --branch v0.12.0 https://github.com/ntfreak/openocd.git
     cd ~/openocd/
     ./bootstrap
     ./configure --enable-stlink
