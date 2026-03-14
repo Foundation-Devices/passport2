@@ -17,6 +17,7 @@ from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
 from taproot import output_script
+from silent_payments import is_silent_payment_address, decode_silent_payment_address
 
 # See SLIP 132 <https://github.com/satoshilabs/slips/blob/master/slip-0132.md>
 # for background on these version bytes. Not to be confused with SLIP-32 which involves Bech32.
