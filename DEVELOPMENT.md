@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Development
 
-This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 24.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds.
+This document describes how to develop for Passport.  The instructions below describe how to set up the development environment and build Passport on a system running **Ubuntu 24.04**.  This OS is used for official Passport builds, as well as in the Dockerfile described below which creates reproducible builds. There is also a nix option for development that requires minimal system-wide modifications.
 
 ## Setup
 In order to build the Passport firmware, you need to:
@@ -32,6 +32,19 @@ Foundation requires commits to be linted and to have specific commit messages in
 
 ### Install Dependencies
 Several tools are required for building Passport.
+
+### Nix Install
+This option allows you to quickly set up a stable development environment quickly with nix. If you aren't developing on NixOS, you can install [Determinate Nix](https://docs.determinate.systems/determinate-nix/).
+
+After installation, navigate to the passport2 directory, and run `nix develop` to enter a devshell. The first run will take some time to download and build dependencies. The devshell can be exited with `exit`.
+
+If you find yourself not in your default shell when running `nix develop`, you may want to run:
+
+```
+nix develop -c $SHELL
+```
+
+This will start your preferred shell (bash, zsh, etc.) with your personal config intact.
 
 #### Install Rust Toolchain
 
@@ -63,7 +76,7 @@ The makefiles used by MicroPython and Passport firmware use Autotools.  Install 
 OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only required for developers with a special Developer version of the Passport board.  If all you want to do is build the firmware and install it with a Developer Pubkey over microSD, then you do not need to install OpenOCD.
 
     cd ~/
-    git clone --depth 1 --branch v0.12.0 https://github.com/ntfreak/openocd.git
+    git clone --depth 1 --branch v0.12.0 https://github.com/openocd-org/openocd.git
     cd ~/openocd/
     ./bootstrap
     ./configure --enable-stlink
@@ -71,7 +84,18 @@ OpenOCD is used to connect to the STLink V2 debug probe.  Note that this is only
     sudo make install
     sudo cp /usr/local/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
     sudo udevadm control --reload
+    sudo usermod -aG plugdev <username>
+    # Log out or reboot so that group changes take effect
 
+For NixOS users, set the udev rules for OpenOCD by adding the following to your config:
+
+    # Define plugdev group if it doesn't already exist
+    users.groups.plugdev = {};
+    services.udev.packages = [ pkgs.openocd ];
+    users.users.<username>.extraGroups = [ "plugdev" ];
+    # Log out or reboot so that group changes take effect
+
+Nix users on other operating systems will need to copy the file from [OpenOCD's Github](https://github.com/openocd-org/openocd/blob/master/contrib/60-openocd.rules) to their relevant udev configuration, and follow the instructions above to reload the udev rules.
 
 ## Building Passport Firmware
 Passport comes with a set of `Justfile` command scripts.  Using these commands requires that you first install the `just` command runner by either following the instructions at [github.com/casey/just#installation](https://github.com/casey/just#installation) or using 
