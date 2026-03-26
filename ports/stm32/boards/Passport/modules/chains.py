@@ -312,6 +312,8 @@ CommonDerivations = [
 
     ('BIP84 (Native Segwit P2WPKH)', "m/84'/{coin_type}'/{account}'/{change}/{idx}",
      AF_P2WPKH),           # generates bc1 bech32 addresses
+    ('BIP86 (Taproot P2TR)', "m/86'/{coin_type}'/{account}'/{change}/{idx}",
+     AF_P2TR),
 ]
 
 
