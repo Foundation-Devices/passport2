@@ -597,13 +597,17 @@ class psbtInputProxy(psbtProxy):
             # - someday we will expand to other types, but not yet
             raise FatalPSBTIssue('Can only do SIGHASH_ALL')
 
-        if self.part_sig:
-            # How complete is the set of signatures so far?
-            # - assuming PSBT creator doesn't give us extra data not required
-            # - seems harmless if they fool us into thinking already signed; we do nothing
-            # - could also look at pubkey needed vs. sig provided
-            # - could consider structure of MofN in p2sh cases
-            num_subpaths = len(self.tap_subpaths) if len(self.tap_subpaths) > 0 else len(self.subpaths)
+        # How complete is the set of signatures so far?
+        # - assuming PSBT creator doesn't give us extra data not required
+        # - seems harmless if they fool us into thinking already signed; we do nothing
+        # - could also look at pubkey needed vs. sig provided
+        # - could consider structure of MofN in p2sh cases
+        num_subpaths = len(self.subpaths)
+
+        if len(self.tap_subpaths) > 0:
+            # For key-path taproot signing, presence of tap_key_sig means the input is signed.
+            self.fully_signed = self.tap_key_sig is not None
+        elif num_subpaths > 0:
             self.fully_signed = len(self.part_sig) >= num_subpaths
         else:
             # No signatures at all yet for this input (typical non multisig)
