@@ -61,7 +61,7 @@ def account_tools():
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
         {'icon': 'ICON_SIGN', 'label': 'Sign a Message', 'submenu': sign_message_submenu,
          'statusbar': {'title': 'SIGN MESSAGE'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+        {'icon': 'ICON_LIST', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
     ]
 
