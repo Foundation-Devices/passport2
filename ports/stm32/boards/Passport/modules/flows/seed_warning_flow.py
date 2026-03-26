@@ -51,10 +51,14 @@ Would you like to view them now?'''
         from pages import InfoPage
         from utils import is_passphrase_active
 
-        if self.mention_passphrase and is_passphrase_active():
-            text = 'Passport is about to {} and passphrase'.format(self.action_text)
+        if self.key_manager:
+            if self.mention_passphrase and is_passphrase_active():
+                text = 'Passport is about to {} and passphrase'.format(self.action_text)
+            else:
+                text = 'Passport is about to {}'.format(self.action_text)
         else:
-            text = 'Passport is about to {}'.format(self.action_text)
+            text = 'Foundation and other legitimate companies will never ask you ' \
+                   'to share these words outside of Passport.'
 
         # Empty microns have no action, so backing out isn't allowed
         left_micron = microns.Back if self.allow_skip else None
@@ -77,6 +81,27 @@ Would you like to view them now?'''
             self.set_result(True)
             return
 
+        self.goto(self.scam_warning)
+
+    async def scam_warning(self):
+        from pages import InfoPage
+        import microns
+        import lvgl as lv
+
+        left_micron = microns.Back
+        right_micron = microns.Forward
+
+        text = 'Any request to share these words or enter them ' \
+               'into an app or website is a scam.'
+
+        result = await InfoPage(
+            icon=lv.LARGE_ICON_SEED, text=text,
+            left_micron=left_micron, right_micron=right_micron).show()
+
+        if not result:
+            self.back()
+            return
+
         self.goto(self.confirm_show)
 
     async def prompt_backup(self):
@@ -92,21 +117,19 @@ Would you like to view them now?'''
             self.back()
             return
 
-        self.goto(self.confirm_show)
+        self.goto(self.scam_warning)
 
     async def confirm_show(self):
         from pages import QuestionPage
         import microns
 
-        text = 'Anyone requesting you expose {} outside Passport ' \
-               'will gain full control over your {}. Take care.' \
-               .format(self.info_type_text, self.continue_text)
+        text = 'Anyone with access to your seed words gains full ' \
+               'control over your funds. View your seed words now?'
+
         left_micron = microns.Cancel
 
         if not self.allow_skip:
             left_micron = None
-        else:
-            text += '\n\nContinue?'
 
         result = await QuestionPage(text, left_micron=left_micron).show()
         self.set_result(result)
