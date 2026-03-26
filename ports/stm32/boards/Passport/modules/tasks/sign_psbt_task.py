@@ -80,8 +80,7 @@ async def sign_psbt_task(on_done, psbt):
                     # single pubkey <=> single key
                     which_key = inp.required_key
 
-                    assert not inp.added_sig, "already done??"
-                    assert not inp.tap_key_sig, "already done taproot??"
+                    assert not (inp.added_sig or inp.tap_key_sig), "This transaction has already been signed"
 
                     if len(inp.subpaths) > 0 and \
                         (inp.subpaths[which_key][0] == psbt.my_xfp or
