@@ -50,7 +50,6 @@ class HealthCheckCommonFlow(Flow):
 
         self.goto(self.sign_health_check)
 
-
     async def show_message(self):
         import stash
         from utils import stylize_address
