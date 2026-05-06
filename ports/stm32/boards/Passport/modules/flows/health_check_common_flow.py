@@ -42,6 +42,45 @@ class HealthCheckCommonFlow(Flow):
             return
 
         self.subpath = subpath
+
+        # User Interaction for non-health check signing
+        if self.normal_signing:
+            self.goto(self.show_message)
+            return
+
+        self.goto(self.sign_health_check)
+
+
+    async def show_message(self):
+        import stash
+        from utils import stylize_address
+        from pages import LongTextPage, LongQuestionPage
+        import microns
+        from public_constants import MARGIN_FOR_ADDRESSES
+
+        with stash.SensitiveValues() as sv:
+            node = sv.derive_path(self.subpath)
+            self.address = sv.chain.address(node, self.addr_type)
+
+        self.address = stylize_address(self.address)
+
+        result = await LongTextPage(centered=True,
+                                    text=('\n' + self.text),
+                                    card_header={'title': 'Message'}).show()
+
+        if not result:
+            self.set_result(False)
+            return
+
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
+                                        right_micron=microns.Sign,
+                                        margins=MARGIN_FOR_ADDRESSES,
+                                        top_margin=8).show()
+
+        if not result:
+            self.set_result(False)
+            return
+
         self.goto(self.sign_health_check)
 
     async def sign_health_check(self):

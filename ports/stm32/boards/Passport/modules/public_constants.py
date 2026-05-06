@@ -146,10 +146,10 @@ NUM_DIGITS_FOR_SECURITY_WORDS = const(4)
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
 {msg}
------BEGIN SIGNATURE-----
+-----BEGIN {blockchain} SIGNATURE-----
 {addr}
 {sig}
------END {blockchain} SIGNED MESSAGE-----
+-----END {blockchain} SIGNATURE-----
 '''
 
 MULTISIG_EXPORT_TEMPLATE = '''\
