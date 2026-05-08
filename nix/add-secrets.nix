@@ -9,8 +9,6 @@
     pname = "passport-add-secrets";
     version = "0.1.0";
     src = self + "/ports/stm32/boards/Passport";
-    nativeBuildInputs = [ pkgs.pkg-config ];
-    buildInputs = [ pkgs.openssl ];
     dontConfigure = true;
     NIX_CFLAGS_COMPILE = "-Wno-error=int-conversion";
 
