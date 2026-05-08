@@ -317,18 +317,6 @@ def bitcoin_menu():
     ]
 
 
-def security_menu():
-    from flows import ChangePINFlow, SignTextFileFlow, NewSeedFlow, RestoreSeedFlow
-
-    return [
-        {'icon': 'ICON_SEED', 'label': 'Restore Seed', 'flow': RestoreSeedFlow, 'is_visible': lambda: not has_seed(),
-         'args': {'refresh_cards_when_done': True}},
-        {'icon': 'ICON_SEED', 'label': 'New Seed', 'flow': NewSeedFlow, 'is_visible': lambda: not has_seed(),
-         'args': {'refresh_cards_when_done': True}},
-        {'icon': 'ICON_SIGN', 'label': 'Sign Text File', 'flow': SignTextFileFlow, 'is_visible': has_seed},
-    ]
-
-
 def update_menu():
     from flows import UpdateFirmwareFlow, ViewCurrentFirmwareFlow
     from utils import is_logged_in
