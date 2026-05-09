@@ -61,7 +61,7 @@ class HealthCheckCommonFlow(Flow):
             node = sv.derive_path(self.subpath)
             self.address = sv.chain.address(node, self.addr_type)
 
-        self.address = stylize_address(self.address)
+        display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
                                     text=('\n' + self.text),
@@ -71,7 +71,7 @@ class HealthCheckCommonFlow(Flow):
             self.set_result(False)
             return
 
-        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(display_address),
                                         right_micron=microns.Sign,
                                         margins=MARGIN_FOR_ADDRESSES,
                                         top_margin=8).show()
@@ -88,7 +88,7 @@ class HealthCheckCommonFlow(Flow):
         from utils import spinner_task
         text = 'Signing message' if self.normal_signing else 'Performing health check'
         (signature, address, error) = await spinner_task(text, sign_text_file_task,
-                                                         args=[self.text, self.subpath, self.addr_type])
+                                                         args=[self.text, self.subpath, self.addr_type, self.address if self.normal_signing else None])
         if error is None:
             self.signature = signature
             self.address = address
