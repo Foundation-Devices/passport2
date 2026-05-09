@@ -126,6 +126,7 @@
               python3
               python3Packages.pip
               python3Packages.virtualenv
+              python3Packages.autopep8
               reuse
               rust-cbindgen
               xterm

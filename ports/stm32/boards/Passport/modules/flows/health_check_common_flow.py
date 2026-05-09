@@ -87,8 +87,13 @@ class HealthCheckCommonFlow(Flow):
         from tasks import sign_text_file_task
         from utils import spinner_task
         text = 'Signing message' if self.normal_signing else 'Performing health check'
-        (signature, address, error) = await spinner_task(text, sign_text_file_task,
-                                                         args=[self.text, self.subpath, self.addr_type, self.address if self.normal_signing else None])
+        (signature, address, error) = \
+            await spinner_task(text,
+                               sign_text_file_task,
+                               args=[self.text,
+                                     self.subpath,
+                                     self.addr_type,
+                                     self.address if self.normal_signing else None])
         if error is None:
             self.signature = signature
             self.address = address
