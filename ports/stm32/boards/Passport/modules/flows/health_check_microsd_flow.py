@@ -53,6 +53,29 @@ class HealthCheckMicrosdFlow(Flow):
     async def parse_message(self):
         from flows import ReadFileFlow
 
+        # Cap file size for general message signing. Health-check protocol
+        # files have implicit length constraints and are exempted.
+        if self.normal_signing:
+            import os
+            from files import CardSlot, CardMissingError
+            from pages import ErrorPage
+            from public_constants import MSG_SIGNING_MAX_LENGTH
+
+            try:
+                with CardSlot() as card:
+                    size = os.stat(self.file_path)[6]
+            except CardMissingError:
+                await ErrorPage('microSD card removed.').show()
+                self.set_result(False)
+                return
+
+            if size > MSG_SIGNING_MAX_LENGTH:
+                await ErrorPage(
+                    'Message file is too long. Max length is {} bytes.'.format(MSG_SIGNING_MAX_LENGTH)
+                ).show()
+                self.set_result(False)
+                return
+
         data = await ReadFileFlow(self.file_path, binary=False).run()
 
         if not data:
