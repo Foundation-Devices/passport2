@@ -68,7 +68,7 @@ class HealthCheckCommonFlow(Flow):
                                     card_header={'title': 'Message'}).show()
 
         if not result:
-            self.set_result(False)
+            self.set_result(None)
             return
 
         result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(display_address),
@@ -77,7 +77,7 @@ class HealthCheckCommonFlow(Flow):
                                         top_margin=8).show()
 
         if not result:
-            self.set_result(False)
+            self.set_result(None)
             return
 
         self.goto(self.sign_health_check)
