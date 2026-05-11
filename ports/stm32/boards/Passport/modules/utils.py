@@ -304,7 +304,7 @@ class InputMode():
     NUMERIC = 2
     PUNCTUATION = 3
 
-    @ classmethod
+    @classmethod
     def to_str(cls, mode):
         if mode == InputMode.UPPER_ALPHA:
             return 'A-Z'
@@ -317,7 +317,7 @@ class InputMode():
         else:
             return ''
 
-    @ classmethod
+    @classmethod
     def cycle_to_next(cls, mode):
         if mode == InputMode.NUMERIC:
             return InputMode.LOWER_ALPHA
@@ -326,7 +326,7 @@ class InputMode():
         else:
             return InputMode.NUMERIC
 
-    @ classmethod
+    @classmethod
     def get_icon(cls, mode):
         if mode == InputMode.UPPER_ALPHA:
             return lv.ICON_INPUT_MODE_UPPER_ALPHA

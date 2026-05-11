@@ -42,6 +42,44 @@ class HealthCheckCommonFlow(Flow):
             return
 
         self.subpath = subpath
+
+        # User Interaction for non-health check signing
+        if self.normal_signing:
+            self.goto(self.show_message)
+            return
+
+        self.goto(self.sign_health_check)
+
+    async def show_message(self):
+        import stash
+        from utils import stylize_address
+        from pages import LongTextPage, LongQuestionPage
+        import microns
+        from public_constants import MARGIN_FOR_ADDRESSES
+
+        with stash.SensitiveValues() as sv:
+            node = sv.derive_path(self.subpath)
+            self.address = sv.chain.address(node, self.addr_type)
+
+        display_address = stylize_address(self.address)
+
+        result = await LongTextPage(centered=True,
+                                    text=('\n' + self.text),
+                                    card_header={'title': 'Message'}).show()
+
+        if not result:
+            self.set_result(None)
+            return
+
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(display_address),
+                                        right_micron=microns.Sign,
+                                        margins=MARGIN_FOR_ADDRESSES,
+                                        top_margin=8).show()
+
+        if not result:
+            self.set_result(None)
+            return
+
         self.goto(self.sign_health_check)
 
     async def sign_health_check(self):
@@ -49,8 +87,13 @@ class HealthCheckCommonFlow(Flow):
         from tasks import sign_text_file_task
         from utils import spinner_task
         text = 'Signing message' if self.normal_signing else 'Performing health check'
-        (signature, address, error) = await spinner_task(text, sign_text_file_task,
-                                                         args=[self.text, self.subpath, self.addr_type])
+        (signature, address, error) = \
+            await spinner_task(text,
+                               sign_text_file_task,
+                               args=[self.text,
+                                     self.subpath,
+                                     self.addr_type,
+                                     self.address if self.normal_signing else None])
         if error is None:
             self.signature = signature
             self.address = address
