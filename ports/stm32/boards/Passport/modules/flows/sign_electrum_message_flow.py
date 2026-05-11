@@ -59,7 +59,7 @@ class SignElectrumMessageFlow(Flow):
             node = sv.derive_path(self.subpath)
             self.address = sv.chain.address(node, self.addr_format)
 
-        self.address = stylize_address(self.address)
+        display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
                                     text=('\n' + self.message),
@@ -69,7 +69,7 @@ class SignElectrumMessageFlow(Flow):
             self.set_result(False)
             return
 
-        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(self.address),
+        result = await LongQuestionPage(text='Sign message with this address?\n\n{}'.format(display_address),
                                         right_micron=microns.Sign,
                                         margins=MARGIN_FOR_ADDRESSES,
                                         top_margin=8).show()
@@ -82,7 +82,7 @@ class SignElectrumMessageFlow(Flow):
 
     async def do_sign(self):
         (sig, address, error) = await spinner_task('Signing message', sign_text_file_task,
-                                                   args=[self.message, self.subpath, self.addr_format])
+                                                   args=[self.message, self.subpath, self.addr_format, self.address])
         if error is None:
             self.signature = sig
             self.goto(self.show_signed)
