@@ -54,7 +54,8 @@
             ;
         }
         // import ./nix/mpy-cross.nix { inherit self pkgs; }
-        // import ./nix/cosign.nix { inherit self system pkgs; }
+        // import ./nix/cosign.nix { inherit self pkgs; }
+        // import ./nix/add-secrets.nix { inherit self pkgs; }
       );
 
       devShells = forAllSystems (
@@ -132,6 +133,7 @@
               xterm
             ]
             ++ [
+              customPackages.add-secrets
               customPackages.cosign
               customPackages.mpy-cross
               customPackages.rust-core

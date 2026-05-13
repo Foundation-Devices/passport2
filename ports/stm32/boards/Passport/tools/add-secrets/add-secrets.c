@@ -62,7 +62,7 @@ static int read_file(char* path, uint8_t** buffer, size_t* size) {
     }
 
     stat(path, &info);
-    *buffer = (uint8_t*)calloc(1, info.st_size + sizeof(ulong));
+    *buffer = (uint8_t*)calloc(1, info.st_size + sizeof(unsigned long));
     if (*buffer == NULL) {
         printf("insufficient memory\n");
         return -1;
