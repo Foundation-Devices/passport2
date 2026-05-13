@@ -53,34 +53,42 @@ class HealthCheckMicrosdFlow(Flow):
     async def parse_message(self):
         from flows import ReadFileFlow
 
-        # Cap file size for general message signing. Health-check protocol
-        # files have implicit length constraints and are exempted.
+        # Bound the read inside one CardSlot() lifetime; a separate pre-stat
+        # would leave a TOCTOU window if the card/file is swapped mid-flow.
         if self.normal_signing:
-            import os
-            from files import CardSlot, CardMissingError
             from pages import ErrorPage
             from public_constants import MSG_SIGNING_MAX_LENGTH
 
-            try:
-                with CardSlot() as card:
-                    size = os.stat(self.file_path)[6]
-            except CardMissingError:
-                await ErrorPage('microSD card removed.').show()
+            cap = MSG_SIGNING_MAX_LENGTH + 1
+
+            def bounded_read(fd):
+                return fd.read(cap)
+
+            raw = await ReadFileFlow(self.file_path, binary=True, read_fn=bounded_read).run()
+
+            if not raw:
                 self.set_result(False)
                 return
 
-            if size > MSG_SIGNING_MAX_LENGTH:
+            if len(raw) > MSG_SIGNING_MAX_LENGTH:
                 await ErrorPage(
                     'Message file is too long. Max length is {} bytes.'.format(MSG_SIGNING_MAX_LENGTH)
                 ).show()
                 self.set_result(False)
                 return
 
-        data = await ReadFileFlow(self.file_path, binary=False).run()
+            try:
+                data = raw.decode('utf-8')
+            except (UnicodeError, AttributeError):
+                await ErrorPage('Message file contains invalid text.').show()
+                self.set_result(False)
+                return
+        else:
+            data = await ReadFileFlow(self.file_path, binary=False).run()
 
-        if not data:
-            self.set_result(False)
-            return
+            if not data:
+                self.set_result(False)
+                return
 
         self.lines = data.split('\n')
         self.goto(self.common_flow)
