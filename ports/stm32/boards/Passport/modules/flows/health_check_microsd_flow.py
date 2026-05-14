@@ -27,6 +27,12 @@ def is_signable(filename, path=None):
     return True
 
 
+def bounded_message_read(fd):
+    from public_constants import MSG_SIGNING_MAX_LENGTH
+
+    return fd.read(MSG_SIGNING_MAX_LENGTH + 1)
+
+
 class HealthCheckMicrosdFlow(Flow):
     def __init__(self, context=None, normal_signing=False):
         super().__init__(initial_state=self.choose_file, name='HealthCheckMicrosdFlow')
@@ -59,12 +65,7 @@ class HealthCheckMicrosdFlow(Flow):
             from pages import ErrorPage
             from public_constants import MSG_SIGNING_MAX_LENGTH
 
-            cap = MSG_SIGNING_MAX_LENGTH + 1
-
-            def bounded_read(fd):
-                return fd.read(cap)
-
-            raw = await ReadFileFlow(self.file_path, binary=True, read_fn=bounded_read).run()
+            raw = await ReadFileFlow(self.file_path, binary=True, read_fn=bounded_message_read).run()
 
             if not raw:
                 self.set_result(False)
