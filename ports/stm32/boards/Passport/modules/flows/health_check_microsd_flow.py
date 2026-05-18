@@ -27,6 +27,12 @@ def is_signable(filename, path=None):
     return True
 
 
+def bounded_message_read(fd):
+    from public_constants import MSG_SIGNING_MAX_LENGTH
+
+    return fd.read(MSG_SIGNING_MAX_LENGTH + 1)
+
+
 class HealthCheckMicrosdFlow(Flow):
     def __init__(self, context=None, normal_signing=False):
         super().__init__(initial_state=self.choose_file, name='HealthCheckMicrosdFlow')
@@ -53,11 +59,37 @@ class HealthCheckMicrosdFlow(Flow):
     async def parse_message(self):
         from flows import ReadFileFlow
 
-        data = await ReadFileFlow(self.file_path, binary=False).run()
+        # Bound the read inside one CardSlot() lifetime; a separate pre-stat
+        # would leave a TOCTOU window if the card/file is swapped mid-flow.
+        if self.normal_signing:
+            from pages import ErrorPage
+            from public_constants import MSG_SIGNING_MAX_LENGTH
 
-        if not data:
-            self.set_result(False)
-            return
+            raw = await ReadFileFlow(self.file_path, binary=True, read_fn=bounded_message_read).run()
+
+            if not raw:
+                self.set_result(False)
+                return
+
+            if len(raw) > MSG_SIGNING_MAX_LENGTH:
+                await ErrorPage(
+                    'Message file is too long. Max length is {} bytes.'.format(MSG_SIGNING_MAX_LENGTH)
+                ).show()
+                self.set_result(False)
+                return
+
+            try:
+                data = raw.decode('utf-8')
+            except (UnicodeError, AttributeError):
+                await ErrorPage('Message file contains invalid text.').show()
+                self.set_result(False)
+                return
+        else:
+            data = await ReadFileFlow(self.file_path, binary=False).run()
+
+            if not data:
+                self.set_result(False)
+                return
 
         self.lines = data.split('\n')
         self.goto(self.common_flow)
