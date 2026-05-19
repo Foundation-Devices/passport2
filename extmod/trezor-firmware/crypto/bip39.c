@@ -94,9 +94,6 @@ const char *mnemonic_from_data(const uint8_t *data, int len) {
 
 void mnemonic_clear(void) { memzero(mnemo, sizeof(mnemo)); }
 
-// Maximum length of a BIP-39 word (including null terminator)
-#define BIP39_MAX_WORD_LEN 9
-
 // Constant-time comparison of two null-terminated strings up to max length.
 // Returns 1 if equal, 0 if different.
 // This function executes in constant time regardless of string content,
@@ -310,9 +307,9 @@ int mnemonic_find_word(const char *word) {
 const char *mnemonic_complete_word(const char *prefix, int len) {
   // we need to perform linear search,
   // because we want to return the first match
-  for (const char *const *w = wordlist; *w != 0; w++) {
-    if (strncmp(*w, prefix, len) == 0) {
-      return *w;
+  for (int k = 0; k < BIP39_WORDS; k++) {
+    if (strncmp(wordlist[k], prefix, len) == 0) {
+      return wordlist[k];
     }
   }
   return NULL;
@@ -331,8 +328,8 @@ uint32_t mnemonic_word_completion_mask(const char *prefix, int len) {
     return 0x3ffffff;  // all letters (bits 1-26 set)
   }
   uint32_t res = 0;
-  for (const char *const *w = wordlist; *w != 0; w++) {
-    const char *word = *w;
+  for (int k = 0; k < BIP39_WORDS; k++) {
+    const char *word = wordlist[k];
     if (strncmp(word, prefix, len) == 0 && word[len] >= 'a' &&
         word[len] <= 'z') {
       res |= 1 << (word[len] - 'a');
