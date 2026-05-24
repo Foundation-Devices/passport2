@@ -371,3 +371,5 @@ static const char wordlist[][BIP39_MAX_WORD_LEN] = {
     "yellow",   "you",      "young",    "youth",    "zebra",    "zero",
     "zone",     "zoo",
 };
+_Static_assert(sizeof(wordlist) / sizeof(wordlist[0]) == BIP39_WORDS,
+               "wordlist row count != BIP39_WORDS");

@@ -132,16 +132,24 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
     return 0;
   }
 
+  // Pad input into a fixed-size buffer so both parsing passes always iterate
+  // exactly BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN positions, removing
+  // the mnemonic-length signal from the original while(mnemonic[i]) bounds.
+  // A 24-word mnemonic is at most 24*8 + 23 = 215 chars; 216 bytes suffices.
+  char padded[BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN + 1];
+  memzero(padded, sizeof(padded));
+  strncpy(padded, mnemonic, BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN);
+
   uint32_t i = 0, n = 0;
 
-  // Count spaces to determine word count (word count is public information)
-  while (mnemonic[i]) {
-    if (mnemonic[i] == ' ') {
-      n++;
-    }
-    i++;
+  // Count spaces in a fixed-length pass.  Zeros past the real content
+  // contribute nothing, so the count is correct without early termination.
+  for (i = 0; i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN; i++) {
+    n += (uint32_t)(padded[i] == ' ');
   }
-  n++;
+  if (padded[0] != '\0') {
+    n++;  // one more word than spaces (non-empty input)
+  }
 
   // check that number of words is valid for BIP-39:
   // (a) between 128 and 256 bits of initial entropy (12 - 24 words)
@@ -155,22 +163,42 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   uint32_t j = 0, k = 0, ki = 0, bi = 0;
   uint8_t result[32 + 1] = {0};
   uint32_t all_words_found = 0xFFFFFFFF;  // Track if all words were found
+  uint32_t word_too_long = 0;             // Set if any word exceeds max length
 
   memzero(result, sizeof(result));
   i = 0;
-  while (mnemonic[i]) {
+  for (uint32_t w = 0; w < n; w++) {
     j = 0;
     memzero(current_word, sizeof(current_word));
-    while (mnemonic[i] != ' ' && mnemonic[i] != 0) {
-      if (j >= sizeof(current_word) - 1) {
-        return 0;
+
+    // Fixed inner loop: always BIP39_MAX_WORD_LEN - 1 iterations.
+    // Uses a latching past_delim flag to suppress copies after the word
+    // boundary instead of breaking early on input-dependent data.
+    uint32_t past_delim = 0;
+    for (uint32_t ci = 0; ci < BIP39_MAX_WORD_LEN - 1; ci++) {
+      char c = padded[i + ci];
+      uint32_t is_delim = (uint32_t)((c == ' ') | (c == '\0'));
+      past_delim |= is_delim;
+      if (!past_delim) {
+        current_word[j++] = c;
       }
-      current_word[j] = mnemonic[i];
-      i++;
-      j++;
     }
-    current_word[j] = 0;
-    if (mnemonic[i] != 0) {
+
+    // Advance i past the characters copied into current_word
+    i += j;
+
+    // If past_delim was never set the word overruns BIP39_MAX_WORD_LEN - 1;
+    // skip remaining characters.  Valid mnemonics never take this path.
+    if (!past_delim) {
+      word_too_long = 1;
+      while (i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN &&
+             padded[i] != ' ' && padded[i] != '\0') {
+        i++;
+      }
+    }
+
+    // Skip the word delimiter (space) if present
+    if (i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN && padded[i] == ' ') {
       i++;
     }
 
@@ -199,8 +227,8 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
     }
   }
 
-  // Check all words were found
-  if (all_words_found == 0) {
+  // Check all words were found and no word exceeded the maximum length
+  if (all_words_found == 0 || word_too_long) {
     return 0;
   }
 
@@ -210,6 +238,7 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   memcpy(bits, result, sizeof(result));
   memzero(result, sizeof(result));
   memzero(current_word, sizeof(current_word));
+  memzero(padded, sizeof(padded));
 
   // returns amount of entropy + checksum BITS
   return n * 11;
