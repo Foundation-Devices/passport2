@@ -156,6 +156,7 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   // (b) number of bits divisible by 33 (1 checksum bit per 32 input bits)
   //     - that is, (n * 11) % 33 == 0, so n % 3 == 0
   if (n < 12 || n > 24 || (n % 3)) {
+    memzero(padded, sizeof(padded));
     return 0;
   }
 
@@ -167,16 +168,22 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
 
   memzero(result, sizeof(result));
   i = 0;
-  for (uint32_t w = 0; w < n; w++) {
+  // Outer loop always runs BIP39_MNEMONIC_MAX_WORDS (24) iterations so that
+  // the word count n does not influence total iteration count (timing).
+  // Dummy iterations (w >= n) are masked out and do not affect the result.
+  for (uint32_t w = 0; w < BIP39_MNEMONIC_MAX_WORDS; w++) {
+    // active is 0xFFFFFFFF for real words (w < n), 0 for dummy iterations.
+    uint32_t active = -(uint32_t)(w < n);
     j = 0;
     memzero(current_word, sizeof(current_word));
 
-    // Fixed inner loop: always BIP39_MAX_WORD_LEN - 1 iterations.
-    // Uses a latching past_delim flag to suppress copies after the word
-    // boundary instead of breaking early on input-dependent data.
+    // Fixed inner loop: always BIP39_MAX_WORD_LEN iterations (was -1, which
+    // caused 8-char words to never set past_delim → spurious word_too_long).
+    // Each read is bounds-checked to prevent OOB on crafted overlong input.
     uint32_t past_delim = 0;
-    for (uint32_t ci = 0; ci < BIP39_MAX_WORD_LEN - 1; ci++) {
-      char c = padded[i + ci];
+    for (uint32_t ci = 0; ci < BIP39_MAX_WORD_LEN; ci++) {
+      uint32_t idx = i + ci;
+      char c = (idx < (uint32_t)(sizeof(padded) - 1)) ? padded[idx] : '\0';
       uint32_t is_delim = (uint32_t)((c == ' ') | (c == '\0'));
       past_delim |= is_delim;
       if (!past_delim) {
@@ -187,18 +194,18 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
     // Advance i past the characters copied into current_word
     i += j;
 
-    // If past_delim was never set the word overruns BIP39_MAX_WORD_LEN - 1;
+    // If past_delim was never set the word overruns BIP39_MAX_WORD_LEN;
     // skip remaining characters.  Valid mnemonics never take this path.
     if (!past_delim) {
       word_too_long = 1;
-      while (i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN &&
+      while (i < (uint32_t)(sizeof(padded) - 1) &&
              padded[i] != ' ' && padded[i] != '\0') {
         i++;
       }
     }
 
     // Skip the word delimiter (space) if present
-    if (i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN && padded[i] == ' ') {
+    if (i < (uint32_t)(sizeof(padded) - 1) && padded[i] == ' ') {
       i++;
     }
 
@@ -215,26 +222,26 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
       found |= mask;
     }
 
-    // Track if this word was found (constant-time accumulation)
-    all_words_found &= found;
+    // Only require found for active (non-dummy) words.
+    all_words_found &= (found | ~active);
 
-    // Constant-time bit extraction and setting
-    // Always execute all 11 iterations, no conditional branching on bit values
+    // Constant-time bit extraction; mask out dummy-word contributions so
+    // they do not alter result bits beyond the n*11 active bits.
     for (ki = 0; ki < 11; ki++) {
-      uint8_t bit = (found_index >> (10 - ki)) & 1;
-      result[bi / 8] |= bit << (7 - (bi % 8));
+      uint8_t bit = (uint8_t)((found_index >> (10 - ki)) & 1);
+      result[bi / 8] |= (bit << (7 - (bi % 8))) & (uint8_t)(active & 0xFFu);
       bi++;
     }
   }
 
   // Check all words were found and no word exceeded the maximum length
   if (all_words_found == 0 || word_too_long) {
+    memzero(padded, sizeof(padded));
+    memzero(current_word, sizeof(current_word));
+    memzero(result, sizeof(result));
     return 0;
   }
 
-  if (bi != n * 11) {
-    return 0;
-  }
   memcpy(bits, result, sizeof(result));
   memzero(result, sizeof(result));
   memzero(current_word, sizeof(current_word));
