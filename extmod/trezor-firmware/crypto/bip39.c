@@ -135,18 +135,24 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   // Pad input into a fixed-size buffer so both parsing passes always iterate
   // exactly BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN positions, removing
   // the mnemonic-length signal from the original while(mnemonic[i]) bounds.
-  // A 24-word mnemonic is at most 24*8 + 23 = 215 chars; 216 bytes suffices.
+  // BIP39_MAX_WORD_LEN counts one 8-byte word plus one following separator:
+  // either a space between words or the trailing '\0' after the final word.
+  // Therefore BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN bytes are enough
+  // for the longest valid mnemonic string, and this buffer keeps one extra
+  // byte of headroom.
   char padded[BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN + 1];
   memzero(padded, sizeof(padded));
   strncpy(padded, mnemonic, BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN);
 
   uint32_t i = 0, n = 0;
 
-  // Count spaces in a fixed-length pass.  Zeros past the real content
-  // contribute nothing, so the count is correct without early termination.
+  // Count words by counting spaces in a fixed-length pass.
+  // Zeros past the real content contribute nothing, so
+  // the count is correct without early termination.
   for (i = 0; i < BIP39_MNEMONIC_MAX_WORDS * BIP39_MAX_WORD_LEN; i++) {
     n += (uint32_t)(padded[i] == ' ');
   }
+
   if (padded[0] != '\0') {
     n++;  // one more word than spaces (non-empty input)
   }
