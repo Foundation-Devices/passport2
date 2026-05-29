@@ -183,8 +183,7 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
     j = 0;
     memzero(current_word, sizeof(current_word));
 
-    // Fixed inner loop: always BIP39_MAX_WORD_LEN iterations (was -1, which
-    // caused 8-char words to never set past_delim → spurious word_too_long).
+    // Always run BIP39_MAX_WORD_LEN iterations.
     // Each read is bounds-checked to prevent OOB on crafted overlong input.
     uint32_t past_delim = 0;
     for (uint32_t ci = 0; ci < BIP39_MAX_WORD_LEN; ci++) {
@@ -201,7 +200,7 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
     i += j;
 
     // If past_delim was never set the word overruns BIP39_MAX_WORD_LEN;
-    // skip remaining characters.  Valid mnemonics never take this path.
+    // skip remaining characters. Valid mnemonics never take this path.
     if (!past_delim) {
       word_too_long = 1;
       while (i < (uint32_t)(sizeof(padded) - 1) &&
