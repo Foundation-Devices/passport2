@@ -53,6 +53,26 @@ def purpose_mismatch_allowed(purpose):
     return (purpose & 0x7fffffff) in [84, 86]
 
 
+def expected_single_sig_addr_type(subpath):
+    # Map the derivation purpose in a single-sig BIP32 path to the script family
+    # the change output must use.
+    if not subpath or len(subpath) < 6:
+        return None
+
+    purpose = subpath[1] & 0x7fffffff
+
+    if purpose == 44:
+        return 'p2pkh'
+    if purpose == 49:
+        return 'p2sh-p2wpkh'
+    if purpose == 84:
+        return 'p2wpkh'
+    if purpose == 86:
+        return 'p2tr'
+
+    return None
+
+
 def _skip_n_objs(fd, n, cls):
     # skip N sized objects in the stream, for example a vectors of CTxIns
     # - returns starting position
@@ -409,11 +429,14 @@ class psbtOutputProxy(psbtProxy):
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
+            expected_addr_type = expected_single_sig_addr_type(next(iter(self.subpaths.values())))
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
+            expected_addr_type = 'p2tr'
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
+            expected_addr_type = None
 
         if addr_type == 'p2pk':
             # output is public key (not a hash, much less common)
@@ -445,8 +468,15 @@ class psbtOutputProxy(psbtProxy):
                     redeem_script[0] == 0 and redeem_script[1] == 20:
 
                 # it's actually segwit p2pkh inside p2sh
-                pkh = redeem_script[2:22]
-                expect_pkh = hash160(expect_pubkey)
+                if expected_addr_type and expected_addr_type != 'p2sh-p2wpkh':
+                    raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
+
+                expect_redeem_script = b'\x00\x14' + hash160(expect_pubkey)
+                if redeem_script != expect_redeem_script:
+                    raise FraudulentChangeOutput(out_idx,
+                                                 "P2SH-P2WPKH redeem script provided, and doesn't match")
+
+                expect_pkh = hash160(expect_redeem_script)
 
             else:
                 # Multisig change output, for wallet we're supposed to be a part of.
@@ -504,8 +534,15 @@ class psbtOutputProxy(psbtProxy):
         elif addr_type == 'p2pkh':
             # input is hash160 of a single public key
             assert len(addr_or_pubkey) == 20
+
+            actual_addr_type = 'p2wpkh' if is_segwit else 'p2pkh'
+            if expected_addr_type and actual_addr_type != expected_addr_type:
+                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
+
             expect_pkh = hash160(expect_pubkey)
         elif addr_type == 'p2tr':
+            if expected_addr_type and expected_addr_type != 'p2tr':
+                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
             expect_pkh = output_script(expect_pubkey, None)[2:]
         else:
             # we don't know how to "solve" this type of input
