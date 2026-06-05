@@ -54,3 +54,7 @@ def test_psbt_fee(test):
 
 def test_unchained(test):
     assert test('unchained.py') == b'OK'
+
+
+def test_psbt_change_validation(test):
+    assert test('psbt_change_validation.py') == b'OK'
