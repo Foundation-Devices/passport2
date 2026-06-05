@@ -54,3 +54,7 @@ def test_multisig_xpub_validation(test):
 
 def test_psbt_fee(test):
     assert test('psbt_fee.py') == b'OK'
+
+
+def test_psbt_change_validation(test):
+    assert test('psbt_change_validation.py') == b'OK'
