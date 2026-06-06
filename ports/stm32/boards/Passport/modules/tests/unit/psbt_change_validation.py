@@ -5,30 +5,39 @@
 # Regression tests for PSBT change classification edge-cases.
 
 from exceptions import FraudulentChangeOutput
-from psbt import psbtOutputProxy
+from psbt import psbtObject, psbtOutputProxy
 from serializations import CTxOut, hash160
+from taproot import output_script
 
 
 MY_XFP = 0x12345678
 PURPOSE_49 = 0x80000000 | 49
+PURPOSE_84 = 0x80000000 | 84
+PURPOSE_86 = 0x80000000 | 86
 COIN_0 = 0x80000000
 ACCOUNT_0 = 0x80000000
 PUBKEY = b'\x02' + (b'\x11' * 32)
+TAP_PUBKEY = b'\x33' * 32
 PUBKEY_HASH = hash160(PUBKEY)
 REDEEM_SCRIPT = b'\x00\x14' + PUBKEY_HASH
 GOOD_P2SH = b'\xa9\x14' + hash160(REDEEM_SCRIPT) + b'\x87'
 BAD_P2SH = b'\xa9\x14' + (b'\x22' * 20) + b'\x87'
 NATIVE_P2WPKH = b'\x00\x14' + PUBKEY_HASH
-SUBPATH = [MY_XFP, PURPOSE_49, COIN_0, ACCOUNT_0, 1, 7]
+TAPROOT_SCRIPT = output_script(TAP_PUBKEY, None)
+BIP49_SUBPATH = [MY_XFP, PURPOSE_49, COIN_0, ACCOUNT_0, 1, 7]
+BIP84_INPUT_SUBPATH = [MY_XFP, PURPOSE_84, COIN_0, ACCOUNT_0, 0, 3]
+BIP84_CHANGE_SUBPATH = [MY_XFP, PURPOSE_84, COIN_0, ACCOUNT_0, 1, 7]
+BIP86_INPUT_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 0, 9]
+BIP86_CHANGE_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 1, 8]
 
 
 class FakeOutput:
     validate = psbtOutputProxy.validate
 
-    def __init__(self, script_pubkey):
-        self.subpaths = {PUBKEY: SUBPATH}
-        self.tap_subpaths = None
-        self.redeem_script = REDEEM_SCRIPT
+    def __init__(self, script_pubkey, subpaths=None, tap_subpaths=None, redeem_script=None):
+        self.subpaths = subpaths
+        self.tap_subpaths = tap_subpaths
+        self.redeem_script = redeem_script
         self.witness_script = None
         self.is_change = False
         self._txo = CTxOut(0, script_pubkey)
@@ -43,18 +52,77 @@ class FakeOutput:
 
 def must_fail(script_pubkey):
     try:
-        FakeOutput(script_pubkey).validate(0, CTxOut(0, script_pubkey), MY_XFP, None)
+        FakeOutput(script_pubkey,
+                   subpaths={PUBKEY: BIP49_SUBPATH},
+                   redeem_script=REDEEM_SCRIPT).validate(0, CTxOut(0, script_pubkey), MY_XFP, None)
     except FraudulentChangeOutput:
         return
 
     raise RuntimeError('expected FraudulentChangeOutput')
 
 
-valid = FakeOutput(GOOD_P2SH)
+class FakeInput:
+    def __init__(self, subpaths=None, tap_subpaths=None, required_key=None):
+        self.subpaths = subpaths or {}
+        self.tap_subpaths = tap_subpaths or {}
+        self.required_key = required_key
+        self.fully_signed = False
+
+
+class FakePsbt:
+    consider_dangerous_change = psbtObject.consider_dangerous_change
+
+    def __init__(self, inputs, outputs):
+        self.inputs = inputs
+        self.outputs = outputs
+        self.warnings = []
+
+
+def assert_no_mixed_change_warning(outputs):
+    mixed_inputs = [
+        FakeInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY),
+        FakeInput(tap_subpaths={TAP_PUBKEY: (BIP86_INPUT_SUBPATH, [])}, required_key=TAP_PUBKEY),
+    ]
+    fake_psbt = FakePsbt(mixed_inputs, outputs)
+    fake_psbt.consider_dangerous_change(MY_XFP)
+    assert fake_psbt.warnings == []
+
+
+valid = FakeOutput(GOOD_P2SH,
+                   subpaths={PUBKEY: BIP49_SUBPATH},
+                   redeem_script=REDEEM_SCRIPT)
 valid.validate(0, CTxOut(0, GOOD_P2SH), MY_XFP, None)
 assert valid.is_change is True
 
 must_fail(BAD_P2SH)
 must_fail(NATIVE_P2WPKH)
+
+valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
+assert valid_mixed_segwit_change.is_change is True
+assert_no_mixed_change_warning([valid_mixed_segwit_change])
+
+valid_mixed_taproot_change = FakeOutput(TAPROOT_SCRIPT,
+                                        tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
+valid_mixed_taproot_change.validate(0, CTxOut(0, TAPROOT_SCRIPT), MY_XFP, None)
+assert valid_mixed_taproot_change.is_change is True
+assert_no_mixed_change_warning([valid_mixed_taproot_change])
+
+wrong_tap_metadata_for_segwit = FakeOutput(NATIVE_P2WPKH,
+                                           tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
+try:
+    wrong_tap_metadata_for_segwit.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
+except FraudulentChangeOutput:
+    pass
+else:
+    raise RuntimeError('expected FraudulentChangeOutput for segwit output with taproot metadata')
+
+wrong_segwit_metadata_for_taproot = FakeOutput(TAPROOT_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+try:
+    wrong_segwit_metadata_for_taproot.validate(0, CTxOut(0, TAPROOT_SCRIPT), MY_XFP, None)
+except FraudulentChangeOutput:
+    pass
+else:
+    raise RuntimeError('expected FraudulentChangeOutput for taproot output with segwit metadata')
 
 return_value.write(b'OK')
