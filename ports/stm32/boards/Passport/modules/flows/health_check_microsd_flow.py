@@ -91,7 +91,7 @@ class HealthCheckMicrosdFlow(Flow):
                 self.set_result(False)
                 return
 
-        self.lines = data.split('\n')
+        self.lines = data.splitlines()
         self.goto(self.common_flow)
 
     async def common_flow(self):

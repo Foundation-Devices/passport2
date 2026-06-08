@@ -4,7 +4,7 @@
 # health_check_common_flow.py - Scan and process a health check QR code in `crypto-request` format
 
 from flows import Flow
-from wallets.utils import get_addr_type_from_string
+from wallets.utils import get_addr_type_from_deriv, get_addr_type_from_string
 from public_constants import AF_CLASSIC
 
 
@@ -20,19 +20,33 @@ class HealthCheckCommonFlow(Flow):
     async def validate_lines(self):
         from pages import ErrorPage
         from utils import validate_sign_text
-        if len(self.lines) not in [2, 3]:
-            await ErrorPage('{} format is invalid.'.format('Message' if self.normal_signing else 'Health check')).show()
-            self.set_result(None)
-            return
+        err_label = 'Message' if self.normal_signing else 'Health check'
 
-        # Common function to validate the message
-        self.text = self.lines[0]
-        self.subpath = self.lines[1]
+        if self.lines and self.lines[0].startswith('signmessage '):
+            raw = '\n'.join(self.lines)
+            parts = raw.split(' ', 2)
+            if len(parts) != 3 or not parts[2].startswith('ascii:'):
+                await ErrorPage('{} format is invalid.'.format(err_label)).show()
+                self.set_result(None)
+                return
 
-        if len(self.lines) == 3:
-            self.addr_type = get_addr_type_from_string(self.lines[2])
-        # print('text={}'.format(self.text))
-        # print('subpath={}'.format(self.subpath))
+            self.subpath = parts[1]
+            self.text = parts[2][len('ascii:'):]
+
+            derived = get_addr_type_from_deriv(self.subpath)
+            if derived is not None:
+                self.addr_type = derived
+        else:
+            if len(self.lines) not in [2, 3]:
+                await ErrorPage('{} format is invalid.'.format(err_label)).show()
+                self.set_result(None)
+                return
+
+            self.text = self.lines[0]
+            self.subpath = self.lines[1]
+
+            if len(self.lines) == 3:
+                self.addr_type = get_addr_type_from_string(self.lines[2])
 
         # Validate
         (subpath, error) = validate_sign_text(self.text, self.subpath)
