@@ -16,7 +16,7 @@ from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import sign_psbt_task, validate_psbt_task
 import gc
-from utils import spinner_task, recolor, stylize_address
+from utils import escape_text, spinner_task, recolor, stylize_address
 
 
 class SignPsbtCommonFlow(Flow):
@@ -203,7 +203,7 @@ class SignPsbtCommonFlow(Flow):
         if dest.startswith("OP_RETURN"):
             return '\n{}\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
-                dest.split('\n', 1)[1])  # user-defined message starts after "OP_RETURN:\n"
+                escape_text(dest.split('\n', 1)[1]))  # user-defined message starts after "OP_RETURN:\n"
 
         dest = stylize_address(dest)
 
@@ -274,7 +274,7 @@ class SignPsbtCommonFlow(Flow):
             if self.psbt.warnings and len(self.psbt.warnings) > 0:
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
                 for label, m in self.psbt.warnings:
-                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, escape_text(label)), escape_text(m)))
                     gc.collect()
 
             return msg.getvalue()
