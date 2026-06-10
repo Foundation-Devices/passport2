@@ -20,11 +20,15 @@ class HealthCheckCommonFlow(Flow):
     async def validate_lines(self):
         from pages import ErrorPage
         from utils import validate_sign_text
+
         err_label = 'Message' if self.normal_signing else 'Health check'
 
+        # single-line `signmessage <path> ascii:<message>` (Envoy export)
+        # Multiline messages are preserved by joining lines back before splitting.
         if self.lines and self.lines[0].startswith('signmessage '):
             raw = '\n'.join(self.lines)
             parts = raw.split(' ', 2)
+
             if len(parts) != 3 or not parts[2].startswith('ascii:'):
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
                 self.set_result(None)
@@ -33,7 +37,17 @@ class HealthCheckCommonFlow(Flow):
             self.subpath = parts[1]
             self.text = parts[2][len('ascii:'):]
 
+            (subpath, error) = validate_sign_text(self.text, self.subpath)
+
+            if error is not None:
+                await ErrorPage(text=error).show()
+                self.set_result(None)
+                return
+
+            self.subpath = subpath
+
             derived = get_addr_type_from_deriv(self.subpath)
+
             if derived is not None:
                 self.addr_type = derived
         else:
@@ -48,14 +62,14 @@ class HealthCheckCommonFlow(Flow):
             if len(self.lines) == 3:
                 self.addr_type = get_addr_type_from_string(self.lines[2])
 
-        # Validate
-        (subpath, error) = validate_sign_text(self.text, self.subpath)
-        if error is not None:
-            await ErrorPage(text=error).show()
-            self.set_result(None)
-            return
+            (subpath, error) = validate_sign_text(self.text, self.subpath)
 
-        self.subpath = subpath
+            if error is not None:
+                await ErrorPage(text=error).show()
+                self.set_result(None)
+                return
+
+            self.subpath = subpath
 
         # User Interaction for non-health check signing
         if self.normal_signing:
