@@ -167,7 +167,7 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   }
 
   char current_word[BIP39_MAX_WORD_LEN] = {0};
-  uint32_t j = 0, k = 0, ki = 0, bi = 0;
+  uint32_t k = 0, ki = 0, bi = 0;
   uint8_t result[32 + 1] = {0};
   uint32_t all_words_found = 0xFFFFFFFF;  // Track if all words were found
   uint32_t word_too_long = 0;             // Set if any word exceeds max length
@@ -180,24 +180,30 @@ int mnemonic_to_bits(const char* mnemonic, uint8_t* bits) {
   for (uint32_t w = 0; w < BIP39_MNEMONIC_MAX_WORDS; w++) {
     // active is 0xFFFFFFFF for real words (w < n), 0 for dummy iterations.
     uint32_t active = -(uint32_t)(w < n);
-    j = 0;
     memzero(current_word, sizeof(current_word));
 
     // Always run BIP39_MAX_WORD_LEN iterations.
     // Each read is bounds-checked to prevent OOB on crafted overlong input.
+    // The store is unconditional and writes to a fixed index, so the NUMBER of
+    // stores does not depend on word length (constant-time copy). Bytes at or
+    // after the delimiter are masked to 0; because reads start at the word
+    // boundary this produces the same left-aligned, zero-padded buffer as the
+    // previous compacting copy.
     uint32_t past_delim = 0;
+    uint32_t wordlen = 0;
     for (uint32_t ci = 0; ci < BIP39_MAX_WORD_LEN; ci++) {
       uint32_t idx = i + ci;
       char c = (idx < (uint32_t)(sizeof(padded) - 1)) ? padded[idx] : '\0';
       uint32_t is_delim = (uint32_t)((c == ' ') | (c == '\0'));
       past_delim |= is_delim;
-      if (!past_delim) {
-        current_word[j++] = c;
-      }
+      // keep = 0xFF for characters before the delimiter, 0x00 at/after it.
+      uint8_t keep = (uint8_t)(past_delim - 1);
+      current_word[ci] = (char)((uint8_t)c & keep);
+      wordlen += (uint32_t)(keep & 1);
     }
 
-    // Advance i past the characters copied into current_word
-    i += j;
+    // Advance past the copied characters
+    i += wordlen;
 
     // If past_delim was never set the word overruns BIP39_MAX_WORD_LEN;
     // skip remaining characters. Valid mnemonics never take this path.
