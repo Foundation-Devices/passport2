@@ -1301,7 +1301,7 @@ class psbtObject(psbtProxy):
                 continue
             if not inp.required_key:
                 continue
-            if not inp.subpaths:
+            if not inp.subpaths and not inp.tap_subpaths:
                 continue        # not expected if we're signing it
             paths = []
             if inp.subpaths:
