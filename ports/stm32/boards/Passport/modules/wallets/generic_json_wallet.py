@@ -72,6 +72,11 @@ def create_generic_json_wallet(sw_wallet=None,
         version = system.get_software_info()[0]
         rv['fw_version'] = version
 
+    # Optional device/model tag; importers (e.g. Coconut Wallet) use it to label the wallet.
+    model = sw_wallet.get('model')
+    if model:
+        rv['model'] = model
+
     msg = ujson.dumps(rv)
 
     if export_mode == 'qr' and qr_type == QRType.UR2:
