@@ -10,6 +10,7 @@ from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
 from .bull import BullBitcoinWallet
 from .casa import CasaWallet
+from .coconut import CoconutWallet
 from .coinbits import CoinbitsWallet
 # from .caravan import CaravanWallet
 # from .dux_reserve import DuxReserveWallet
@@ -36,6 +37,7 @@ supported_software_wallets = [
     BullBitcoinWallet,
     # CaravanWallet,
     CasaWallet,
+    CoconutWallet,
     CoinbitsWallet,
     # DuxReserveWallet,
     ElectrumWallet,
