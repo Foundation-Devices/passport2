@@ -15,6 +15,8 @@ BECH32M_CONST = 0x2BC830A3
 _BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 _BECH32_GENERATORS = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA,
                       0x3D4233DD, 0x2A1462B3)
+GENERATOR_PUBLIC_KEY = bytes.fromhex(
+    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
 
 
 def _bytes32(value):
@@ -275,11 +277,139 @@ def _point_multiply(scalar, point):
     return _parse_public_key(result)
 
 
+def _point_subtract(left, right):
+    return _point_add(left, (right[0], FIELD_PRIME - right[1]))
+
+
+def _optional_point_multiply(scalar, point):
+    scalar %= GROUP_ORDER
+    if scalar == 0:
+        return None
+    return _point_multiply(scalar, point)
+
+
+def _optional_point_subtract(left, right):
+    if left is None:
+        if right is None:
+            return None
+        return right[0], FIELD_PRIME - right[1]
+    if right is None:
+        return left
+    return _point_subtract(left, right)
+
+
 def _normalize_input_key(secret_key, is_taproot):
     scalar = _checked_scalar(secret_key)
     if is_taproot and (_generator_multiply(scalar)[1] & 1):
         scalar = GROUP_ORDER - scalar
     return scalar
+
+
+def _aggregate_input_key(input_private_keys):
+    aggregate_key = 0
+    for secret_key, is_taproot in input_private_keys:
+        aggregate_key = (aggregate_key +
+                         _normalize_input_key(secret_key, is_taproot)) % GROUP_ORDER
+    if aggregate_key == 0:
+        raise ValueError("aggregate input private key is zero")
+    return aggregate_key
+
+
+def create_dleq_proof(secret_key, public_key, auxiliary_random=None,
+                      generator=GENERATOR_PUBLIC_KEY, message=None):
+    """Create a BIP374 proof that ``a*G`` and ``a*B`` share secret ``a``."""
+
+    secret = _checked_scalar(secret_key)
+    public_point = _parse_public_key(public_key)
+    generator_point = _parse_public_key(generator)
+    if message is None:
+        message = bytes()
+    elif len(message) not in (0, 32):
+        raise ValueError("BIP374 message must contain 32 bytes")
+    if auxiliary_random is None:
+        auxiliary_random = trezorcrypto.random.bytes(32)
+    if len(auxiliary_random) != 32:
+        raise ValueError("BIP374 auxiliary random data must contain 32 bytes")
+
+    secret_bytes = _bytes32(secret)
+    public_a = _point_multiply(secret, generator_point)
+    shared_secret = _point_multiply(secret, public_point)
+    auxiliary_hash = _tagged_hash("BIP0374/aux", auxiliary_random)
+    masked_secret = bytes(
+        left ^ right for left, right in zip(secret_bytes, auxiliary_hash))
+    nonce = int.from_bytes(_tagged_hash(
+        "BIP0374/nonce",
+        masked_secret + _compress_point(public_a) +
+        _compress_point(shared_secret) + message), "big") % GROUP_ORDER
+    if nonce == 0:
+        raise ValueError("BIP374 nonce is zero")
+
+    nonce_g = _point_multiply(nonce, generator_point)
+    nonce_b = _point_multiply(nonce, public_point)
+    challenge = int.from_bytes(_tagged_hash(
+        "BIP0374/challenge",
+        _compress_point(public_a) + _compress_point(public_point) +
+        _compress_point(shared_secret) + _compress_point(generator_point) +
+        _compress_point(nonce_g) + _compress_point(nonce_b) + message), "big")
+    response = (nonce + challenge * secret) % GROUP_ORDER
+    proof = _bytes32(challenge) + _bytes32(response)
+
+    if not verify_dleq_proof(
+            _compress_point(public_a), public_key,
+            _compress_point(shared_secret), proof, generator, message):
+        raise ValueError("generated BIP374 proof did not verify")
+    return proof
+
+
+def verify_dleq_proof(public_a, public_b, shared_secret, proof,
+                      generator=GENERATOR_PUBLIC_KEY, message=None):
+    """Return whether a BIP374 discrete-log equality proof is valid."""
+
+    try:
+        if len(proof) != 64:
+            return False
+        if message is None:
+            message = bytes()
+        elif len(message) not in (0, 32):
+            return False
+
+        point_a = _parse_public_key(public_a)
+        point_b = _parse_public_key(public_b)
+        point_c = _parse_public_key(shared_secret)
+        generator_point = _parse_public_key(generator)
+        challenge = int.from_bytes(proof[:32], "big")
+        response = int.from_bytes(proof[32:], "big")
+        if response >= GROUP_ORDER:
+            return False
+
+        nonce_g = _optional_point_subtract(
+            _optional_point_multiply(response, generator_point),
+            _optional_point_multiply(challenge, point_a))
+        nonce_b = _optional_point_subtract(
+            _optional_point_multiply(response, point_b),
+            _optional_point_multiply(challenge, point_c))
+        if nonce_g is None or nonce_b is None:
+            return False
+        expected = int.from_bytes(_tagged_hash(
+            "BIP0374/challenge",
+            _compress_point(point_a) + _compress_point(point_b) +
+            _compress_point(point_c) + _compress_point(generator_point) +
+            _compress_point(nonce_g) + _compress_point(nonce_b) + message), "big")
+        return challenge == expected
+    except (TypeError, ValueError):
+        return False
+
+
+def create_global_ecdh_share(input_private_keys, scan_public_key,
+                             auxiliary_random=None):
+    """Create the BIP375 global ECDH share and matching BIP374 proof."""
+
+    aggregate_key = _aggregate_input_key(input_private_keys)
+    scan_point = _parse_public_key(scan_public_key)
+    share = _compress_point(_point_multiply(aggregate_key, scan_point))
+    proof = create_dleq_proof(
+        _bytes32(aggregate_key), scan_public_key, auxiliary_random)
+    return share, proof
 
 
 def create_outputs_with_shared_secrets(input_private_keys, outpoints, recipients):
@@ -298,12 +428,7 @@ def create_outputs_with_shared_secrets(input_private_keys, outpoints, recipients
     if any(len(outpoint) != 36 for outpoint in outpoints):
         raise ValueError("outpoints must use 36-byte Bitcoin serialization")
 
-    aggregate_key = 0
-    for secret_key, is_taproot in input_private_keys:
-        aggregate_key = (aggregate_key +
-                         _normalize_input_key(secret_key, is_taproot)) % GROUP_ORDER
-    if aggregate_key == 0:
-        raise ValueError("aggregate input private key is zero")
+    aggregate_key = _aggregate_input_key(input_private_keys)
 
     aggregate_public_key = _generator_multiply(aggregate_key)
     input_hash = _checked_scalar(_tagged_hash(

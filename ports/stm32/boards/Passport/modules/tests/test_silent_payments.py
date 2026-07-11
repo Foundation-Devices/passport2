@@ -459,6 +459,60 @@ def test_official_nums_taproot_input_vector(silent_payments):
         "79e79897c52935bfd97fc6e076a6431a0c7543ca8c31e0fc3cf719bb572c842d")]
 
 
+def test_bip374_official_generate_and_verify_vector(silent_payments):
+    generator = bytes.fromhex(
+        "02cef38f55e78b321a1f785cb1c6e33dfcef9784c18bdc4e279801c449ccdfb88e")
+    secret = bytes.fromhex(
+        "07ff93d43f1012a5d4a44aba55240212ed39c87b3344e46757d99f24177fc576")
+    public_b = bytes.fromhex(
+        "02dad4b35c2379ba8334c9a5dda8f6e6d5cd575a7cc9d3ca4faaac51839daaa30f")
+    auxiliary_random = bytes.fromhex(
+        "cb979b0fc8ccc7f237751e719d992fcc324b6500af33999cd54a3e5c05fb1ea4")
+    message = bytes.fromhex(
+        "efb07d4b382d3da1079fbf24df623ba6c2e4c764993bbfa6dd7a4fe4aaf33859")
+    expected_proof = bytes.fromhex(
+        "7e7e934169e0bf4706e6b29e5a621c7fe199a524744a25af80071e111c0e2e94"
+        "118e730d8add118dd2ee4f7d1cc183e1b87168362d1a6f85c16d8671a3fc7a8a")
+    public_a = bytes.fromhex(
+        "02b540b22c2c5ef0dc886abdaad27498453d893265560bc08a187319af6f845f58")
+    shared_secret = bytes.fromhex(
+        "03fefe00951dcd0ef10b12523393c2b8113119de4fdeeab320694e96bdccd2775b")
+
+    proof = silent_payments.create_dleq_proof(
+        secret, public_b, auxiliary_random, generator, message)
+
+    assert proof == expected_proof
+    assert silent_payments.verify_dleq_proof(
+        public_a, public_b, shared_secret, proof, generator, message)
+    corrupted = proof[:-1] + bytes([proof[-1] ^ 1])
+    assert not silent_payments.verify_dleq_proof(
+        public_a, public_b, shared_secret, corrupted, generator, message)
+
+
+def test_bip375_global_share_uses_taproot_normalization(silent_payments):
+    scan_key = bytes.fromhex(
+        "034bccb1c570ac1f3bc42d61fe35de605b99626501ccb20297e1acbbf2d7152aa1")
+    auxiliary_random = bytes.fromhex(
+        "c8d7056abd4726eb5a0f198740af14d6c1f0c16e5d7a37eaec621b661e669ac4")
+    odd_secret = (6).to_bytes(32, "big")
+    normalized_secret = (
+        silent_payments.GROUP_ORDER - 6).to_bytes(32, "big")
+
+    share, proof = silent_payments.create_global_ecdh_share(
+        [(odd_secret, True)], scan_key, auxiliary_random)
+    expected_share = silent_payments._compress_point(
+        silent_payments._point_multiply(
+            int.from_bytes(normalized_secret, "big"),
+            silent_payments._parse_public_key(scan_key)))
+    public_a = silent_payments._compress_point(
+        silent_payments._generator_multiply(
+            int.from_bytes(normalized_secret, "big")))
+
+    assert share == expected_share
+    assert silent_payments.verify_dleq_proof(
+        public_a, scan_key, share, proof)
+
+
 def test_rejects_oversized_recipient_group(silent_payments):
     with pytest.raises(ValueError, match="K_MAX"):
         silent_payments.create_outputs(
