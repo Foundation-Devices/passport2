@@ -121,6 +121,104 @@ def decode_address(address, expected_hrp=None):
     return hrp, version, scan_public_key, spend_public_key
 
 
+def create_output_scripts_from_psbt(psbt, addresses, sensitive_values,
+                                    expected_hrp=None):
+    """Derive BIP352 P2TR scripts for a validated, single-owner PSBT.
+
+    ``psbt.consider_inputs()`` must have run so each input has a verified
+    signing key. Eligible inputs owned by another signer are rejected because
+    their private keys are required for the aggregate sender key.
+    """
+
+    import stash
+    from taproot import taproot_tweak_seckey
+    from utils import keypath_to_str, swab32
+
+    recipients = []
+    for address in addresses:
+        _, _, scan_key, spend_key = decode_address(address, expected_hrp)
+        recipients.append((scan_key, spend_key))
+
+    outpoints = []
+    input_private_keys = []
+    try:
+        for input_index, txin in psbt.input_iter():
+            outpoints.append(txin.prevout.serialize())
+            psbt_input = psbt.inputs[input_index]
+            if not psbt_input.has_utxo():
+                raise ValueError("silent payment input is missing its UTXO")
+
+            utxo = psbt_input.get_utxo(txin.prevout.n)
+            address_type, _, is_segwit = utxo.get_address()
+            is_taproot = address_type == "p2tr"
+
+            if address_type == "p2pkh":
+                is_eligible = True
+            elif address_type == "p2sh":
+                redeem_script = (psbt_input.get(psbt_input.redeem_script)
+                                 if psbt_input.redeem_script else None)
+                is_eligible = (not is_segwit and
+                               redeem_script is not None and
+                               len(redeem_script) == 22 and
+                               redeem_script[:2] == b"\x00\x14")
+            elif address_type == "p2tr":
+                is_eligible = True
+            else:
+                # P2PK and multisig inputs are excluded by BIP352.
+                is_eligible = False
+
+            if not is_eligible:
+                continue
+
+            which_key = psbt_input.required_key
+            if not isinstance(which_key, bytes):
+                raise ValueError(
+                    "silent payment eligible input is not controlled by Passport")
+
+            if is_taproot:
+                path_info = psbt_input.tap_subpaths.get(which_key)
+                if path_info is None or path_info[1]:
+                    raise ValueError("unsupported taproot silent payment input")
+                path = path_info[0]
+            else:
+                path = psbt_input.subpaths.get(which_key)
+
+            if not path or path[0] not in (psbt.my_xfp, swab32(psbt.my_xfp)):
+                raise ValueError("silent payment input path does not belong to Passport")
+
+            node = sensitive_values.derive_path(
+                keypath_to_str(path), register=False)
+            raw_private_key = None
+            try:
+                public_key = node.public_key()
+                expected_public_key = public_key[1:] if is_taproot else public_key
+                if expected_public_key != which_key:
+                    raise ValueError("silent payment input path produced wrong key")
+
+                raw_private_key = node.private_key()
+                if is_taproot:
+                    output_private_key = taproot_tweak_seckey(
+                        raw_private_key, bytes())
+                    stash.blank_object(raw_private_key)
+                    raw_private_key = None
+                else:
+                    output_private_key = raw_private_key
+                    raw_private_key = None
+
+                input_private_keys.append((output_private_key, is_taproot))
+            finally:
+                if raw_private_key is not None:
+                    stash.blank_object(raw_private_key)
+                stash.blank_object(node)
+
+        output_keys = create_outputs(
+            input_private_keys, outpoints, recipients)
+        return [b"\x51\x20" + output_key for output_key in output_keys]
+    finally:
+        for private_key, _ in input_private_keys:
+            stash.blank_object(private_key)
+
+
 def _lift_x(x_coord):
     if x_coord >= FIELD_PRIME:
         raise ValueError("invalid secp256k1 x coordinate")

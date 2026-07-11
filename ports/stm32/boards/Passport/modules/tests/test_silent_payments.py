@@ -98,6 +98,98 @@ def _install_crypto_shims(monkeypatch):
     monkeypatch.setitem(sys.modules, "trezorcrypto", trezorcrypto)
 
 
+def _install_psbt_adapter_shims(monkeypatch, taproot_key=None):
+    blanked = []
+
+    stash = types.ModuleType("stash")
+    stash.blank_object = blanked.append
+    monkeypatch.setitem(sys.modules, "stash", stash)
+
+    taproot = types.ModuleType("taproot")
+    taproot.taproot_tweak_seckey = lambda private_key, tree_hash: taproot_key
+    monkeypatch.setitem(sys.modules, "taproot", taproot)
+
+    utils = types.ModuleType("utils")
+    utils.keypath_to_str = lambda path: "/".join(str(item) for item in path[1:])
+    utils.swab32 = lambda value: int.from_bytes(
+        value.to_bytes(4, "little"), "big")
+    monkeypatch.setitem(sys.modules, "utils", utils)
+    return blanked
+
+
+class FakeNode:
+    def __init__(self, public_key, private_key):
+        self._public_key = public_key
+        self._private_key = private_key
+
+    def public_key(self):
+        return self._public_key
+
+    def private_key(self):
+        return self._private_key
+
+
+class FakeSensitiveValues:
+    def __init__(self, nodes):
+        self.nodes = nodes
+
+    def derive_path(self, path, register=False):
+        assert register is False
+        return self.nodes[path]
+
+
+class FakePrevout:
+    def __init__(self, serialized, index):
+        self.serialized = serialized
+        self.n = index
+
+    def serialize(self):
+        return self.serialized
+
+
+class FakeTxIn:
+    def __init__(self, outpoint, index):
+        self.prevout = FakePrevout(outpoint, index)
+
+
+class FakeUtxo:
+    def __init__(self, address_type, is_segwit=False):
+        self.address_type = address_type
+        self.is_segwit = is_segwit
+
+    def get_address(self):
+        return self.address_type, b"", self.is_segwit
+
+
+class FakePsbtInput:
+    def __init__(self, utxo, required_key=None, subpaths=None,
+                 tap_subpaths=None, redeem_script=None):
+        self.utxo_value = utxo
+        self.required_key = required_key
+        self.subpaths = subpaths or {}
+        self.tap_subpaths = tap_subpaths or {}
+        self.redeem_script = redeem_script
+
+    def has_utxo(self):
+        return True
+
+    def get_utxo(self, index):
+        return self.utxo_value
+
+    def get(self, value):
+        return value
+
+
+class FakePsbt:
+    def __init__(self, xfp, inputs, outpoints):
+        self.my_xfp = xfp
+        self.inputs = inputs
+        self.txins = [FakeTxIn(outpoint, 0) for outpoint in outpoints]
+
+    def input_iter(self):
+        return enumerate(self.txins)
+
+
 @pytest.fixture
 def silent_payments(monkeypatch):
     _install_crypto_shims(monkeypatch)
@@ -169,6 +261,149 @@ def test_rejects_invalid_public_keys_with_valid_checksum(silent_payments):
     address = _encode_address(silent_payments, "sp", 0, invalid_keys)
     with pytest.raises(ValueError, match="compressed or uncompressed"):
         silent_payments.decode_address(address)
+
+
+def test_derives_output_script_from_owned_psbt_inputs(
+        silent_payments, monkeypatch):
+    blanked = _install_psbt_adapter_shims(monkeypatch)
+    xfp = 0x12345678
+    private_keys = [secret for secret, _ in _legacy_inputs()]
+    public_keys = [
+        bytes.fromhex(
+            "025a1e61f898173040e20616d43e9f496fba90338a39faa1ed98fcbaeee4dd9be5"),
+        bytes.fromhex(
+            "03bd85685d03d111699b15d046319febe77f8de5286e9e512703cdee1bf3be3792"),
+    ]
+    inputs = [
+        FakePsbtInput(
+            FakeUtxo("p2pkh"), key, {key: [xfp, index + 1]})
+        for index, key in enumerate(public_keys)
+    ]
+    outpoints = [
+        _outpoint(
+            "f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16", 0),
+        _outpoint(
+            "a1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d", 0),
+    ]
+    psbt = FakePsbt(xfp, inputs, outpoints)
+    sensitive_values = FakeSensitiveValues({
+        str(index + 1): FakeNode(public_keys[index], private_keys[index])
+        for index in range(2)
+    })
+
+    scripts = silent_payments.create_output_scripts_from_psbt(
+        psbt, [SILENT_PAYMENT_ADDRESS], sensitive_values, expected_hrp="sp")
+    assert scripts == [b"\x51\x20" + bytes.fromhex(
+        "3e9fce73d4e77a4809908e3c3a2e54ee147b9312dc5044a193d1fc85de46e3c1")]
+    assert private_keys[0] in blanked and private_keys[1] in blanked
+
+
+def test_rejects_external_eligible_psbt_input(silent_payments, monkeypatch):
+    _install_psbt_adapter_shims(monkeypatch)
+    psbt = FakePsbt(
+        0x12345678,
+        [FakePsbtInput(FakeUtxo("p2pkh"))],
+        [_outpoint("00" * 32, 0)])
+    with pytest.raises(ValueError, match="not controlled"):
+        silent_payments.create_output_scripts_from_psbt(
+            psbt, [SILENT_PAYMENT_ADDRESS], FakeSensitiveValues({}))
+
+
+def test_tweaks_taproot_psbt_input_and_blanks_keys(
+        silent_payments, monkeypatch):
+    output_private_key = bytes.fromhex("11" * 32)
+    blanked = _install_psbt_adapter_shims(monkeypatch, output_private_key)
+    captured = {}
+
+    def capture_create_outputs(keys, outpoints, recipients):
+        captured["keys"] = list(keys)
+        return [bytes.fromhex("44" * 32)]
+
+    monkeypatch.setattr(
+        silent_payments, "create_outputs", capture_create_outputs)
+
+    xfp = 0x12345678
+    internal_key = bytes.fromhex("22" * 32)
+    internal_private_key = bytes.fromhex("33" * 32)
+    psbt_input = FakePsbtInput(
+        FakeUtxo("p2tr", True), internal_key,
+        tap_subpaths={internal_key: ([xfp, 1], [])})
+    psbt = FakePsbt(xfp, [psbt_input], [_outpoint("01" * 32, 0)])
+    sensitive_values = FakeSensitiveValues({
+        "1": FakeNode(b"\x02" + internal_key, internal_private_key)
+    })
+
+    scripts = silent_payments.create_output_scripts_from_psbt(
+        psbt, [SILENT_PAYMENT_ADDRESS], sensitive_values)
+    assert scripts == [b"\x51\x20" + bytes.fromhex("44" * 32)]
+    assert captured["keys"] == [(output_private_key, True)]
+    assert internal_private_key in blanked
+    assert output_private_key in blanked
+
+
+def test_skips_p2pk_and_accepts_wrapped_p2wpkh(
+        silent_payments, monkeypatch):
+    blanked = _install_psbt_adapter_shims(monkeypatch)
+    captured = {}
+
+    def capture_create_outputs(keys, outpoints, recipients):
+        captured["keys"] = list(keys)
+        captured["outpoints"] = list(outpoints)
+        return [bytes.fromhex("55" * 32)]
+
+    monkeypatch.setattr(
+        silent_payments, "create_outputs", capture_create_outputs)
+
+    xfp = 0x12345678
+    public_key = bytes.fromhex(
+        "025a1e61f898173040e20616d43e9f496fba90338a39faa1ed98fcbaeee4dd9be5")
+    private_key = _legacy_inputs()[0][0]
+    outpoints = [_outpoint("02" * 32, 0), _outpoint("03" * 32, 1)]
+    inputs = [
+        FakePsbtInput(FakeUtxo("p2pk")),
+        FakePsbtInput(
+            FakeUtxo("p2sh"), public_key, {public_key: [xfp, 1]},
+            redeem_script=b"\x00\x14" + bytes(20)),
+    ]
+    psbt = FakePsbt(xfp, inputs, outpoints)
+    sensitive_values = FakeSensitiveValues({
+        "1": FakeNode(public_key, private_key)
+    })
+
+    scripts = silent_payments.create_output_scripts_from_psbt(
+        psbt, [SILENT_PAYMENT_ADDRESS], sensitive_values)
+    assert scripts == [b"\x51\x20" + bytes.fromhex("55" * 32)]
+    assert captured["keys"] == [(private_key, False)]
+    assert captured["outpoints"] == outpoints
+    assert private_key in blanked
+
+
+def test_blanks_private_keys_when_output_derivation_fails(
+        silent_payments, monkeypatch):
+    blanked = _install_psbt_adapter_shims(monkeypatch)
+
+    def fail_create_outputs(keys, outpoints, recipients):
+        raise RuntimeError("derivation failed")
+
+    monkeypatch.setattr(
+        silent_payments, "create_outputs", fail_create_outputs)
+    xfp = 0x12345678
+    public_key = bytes.fromhex(
+        "025a1e61f898173040e20616d43e9f496fba90338a39faa1ed98fcbaeee4dd9be5")
+    private_key = _legacy_inputs()[0][0]
+    psbt = FakePsbt(
+        xfp,
+        [FakePsbtInput(
+            FakeUtxo("p2pkh"), public_key, {public_key: [xfp, 1]})],
+        [_outpoint("04" * 32, 0)])
+    sensitive_values = FakeSensitiveValues({
+        "1": FakeNode(public_key, private_key)
+    })
+
+    with pytest.raises(RuntimeError, match="derivation failed"):
+        silent_payments.create_output_scripts_from_psbt(
+            psbt, [SILENT_PAYMENT_ADDRESS], sensitive_values)
+    assert private_key in blanked
 
 
 def test_official_simple_send_vector(silent_payments):
