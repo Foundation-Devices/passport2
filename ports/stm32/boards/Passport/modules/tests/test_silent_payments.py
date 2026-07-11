@@ -94,6 +94,7 @@ def _install_crypto_shims(monkeypatch):
     trezorcrypto = types.ModuleType("trezorcrypto")
     trezorcrypto.sha256 = hashlib.sha256
     trezorcrypto.ecdsa = FakeEcdsa
+    trezorcrypto.random = types.SimpleNamespace(bytes=lambda length: bytes([42]) * length)
     monkeypatch.setitem(sys.modules, "foundation", foundation)
     monkeypatch.setitem(sys.modules, "trezorcrypto", trezorcrypto)
 
@@ -169,6 +170,8 @@ class FakePsbtInput:
         self.subpaths = subpaths or {}
         self.tap_subpaths = tap_subpaths or {}
         self.redeem_script = redeem_script
+        self.sp_ecdh_shares = {}
+        self.sp_dleq_proofs = {}
 
     def has_utxo(self):
         return True
@@ -185,6 +188,9 @@ class FakePsbt:
         self.my_xfp = xfp
         self.inputs = inputs
         self.txins = [FakeTxIn(outpoint, 0) for outpoint in outpoints]
+        self.outputs = []
+        self.sp_ecdh_shares = {}
+        self.sp_dleq_proofs = {}
 
     def input_iter(self):
         return enumerate(self.txins)
@@ -228,6 +234,8 @@ def test_decodes_official_v0_address(silent_payments):
     assert silent_payments.decode_address(
         SILENT_PAYMENT_ADDRESS.upper(), expected_hrp="sp") == (
             "sp", 0, SCAN_KEY, SPEND_KEY)
+    assert silent_payments.encode_address(
+        SCAN_KEY, SPEND_KEY, "sp") == SILENT_PAYMENT_ADDRESS
 
 
 def test_rejects_mixed_case_wrong_network_and_bad_checksum(silent_payments):
@@ -542,6 +550,54 @@ def test_bip375_binds_sorted_codes_to_original_output_indexes(silent_payments):
     tampered[5] = tampered[5][:-1] + bytes([tampered[5][-1] ^ 1])
     assert not silent_payments.verify_bip375_output_scripts(
         input_keys, outpoints, output_info, tampered)
+
+
+def test_bip375_psbt_adapter_returns_proofs_and_blanks_keys(
+        silent_payments, monkeypatch):
+    blanked = _install_psbt_adapter_shims(monkeypatch)
+    xfp = 0x12345678
+    private_key = _legacy_inputs()[0][0]
+    public_key = bytes.fromhex(
+        "025a1e61f898173040e20616d43e9f496fba90338a39faa1ed98fcbaeee4dd9be5")
+    psbt_input = FakePsbtInput(
+        FakeUtxo("p2pkh"), public_key, {public_key: [xfp, 1]})
+    psbt = FakePsbt(
+        xfp, [psbt_input], [_outpoint("12" * 32, 0)])
+    psbt.outputs = [types.SimpleNamespace(output_script=None) for _ in range(3)]
+    sensitive_values = FakeSensitiveValues({
+        "1": FakeNode(public_key, private_key)
+    })
+    info = SCAN_KEY + SPEND_KEY
+
+    scripts, global_data = silent_payments.create_bip375_data_from_psbt(
+        psbt, [(2, info)], sensitive_values)
+
+    share, proof = global_data[SCAN_KEY]
+    aggregate_public_key = silent_payments._compress_point(
+        silent_payments._generator_multiply(
+            int.from_bytes(private_key, "big")))
+    assert set(scripts) == {2}
+    assert len(scripts[2]) == 34 and scripts[2][:2] == b"\x51\x20"
+    assert silent_payments.verify_dleq_proof(
+        aggregate_public_key, SCAN_KEY, share, proof)
+    assert private_key in blanked
+
+    psbt.sp_ecdh_shares = {SCAN_KEY: share}
+    psbt.sp_dleq_proofs = {SCAN_KEY: proof}
+    silent_payments.create_bip375_data_from_psbt(
+        psbt, [(2, info)], sensitive_values)
+
+    psbt.sp_dleq_proofs[SCAN_KEY] = proof[:-1] + bytes([proof[-1] ^ 1])
+    with pytest.raises(ValueError, match="global DLEQ"):
+        silent_payments.create_bip375_data_from_psbt(
+            psbt, [(2, info)], sensitive_values)
+
+    psbt.sp_ecdh_shares = {}
+    psbt.sp_dleq_proofs = {}
+    psbt.outputs[2].output_script = b"present"
+    with pytest.raises(ValueError, match="coverage"):
+        silent_payments.create_bip375_data_from_psbt(
+            psbt, [(2, info)], sensitive_values)
 
 
 def test_bip375_rejects_ambiguous_or_malformed_output_info(silent_payments):

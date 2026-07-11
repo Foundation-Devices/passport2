@@ -21,7 +21,7 @@ from public_constants import MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
-from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
+from serializations import COutPoint, CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
 from serializations import ser_push_data, uint256_from_bytes
 from serializations import ser_string
 from ubinascii import hexlify as b2a_hex
@@ -35,7 +35,14 @@ from public_constants import (
     PSBT_OUT_BIP32_DERIVATION, MAX_PATH_DEPTH, PSBT_IN_TAP_BIP32_DERIVATION,
     PSBT_OUT_TAP_BIP32_DERIVATION, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_SCRIPT_SIG,
     PSBT_IN_TAP_LEAF_SCRIPT, PSBT_IN_TAP_INTERNAL_KEY, PSBT_IN_TAP_MERKLE_ROOT,
-    PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE
+    PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE, PSBT_GLOBAL_TX_VERSION,
+    PSBT_GLOBAL_FALLBACK_LOCKTIME, PSBT_GLOBAL_INPUT_COUNT,
+    PSBT_GLOBAL_OUTPUT_COUNT, PSBT_GLOBAL_TX_MODIFIABLE,
+    PSBT_GLOBAL_SP_ECDH_SHARE, PSBT_GLOBAL_SP_DLEQ, PSBT_GLOBAL_VERSION,
+    PSBT_IN_PREVIOUS_TXID, PSBT_IN_OUTPUT_INDEX, PSBT_IN_SEQUENCE,
+    PSBT_IN_REQUIRED_TIME_LOCKTIME, PSBT_IN_REQUIRED_HEIGHT_LOCKTIME,
+    PSBT_IN_SP_ECDH_SHARE, PSBT_IN_SP_DLEQ, PSBT_OUT_AMOUNT,
+    PSBT_OUT_SCRIPT, PSBT_OUT_SP_V0_INFO, PSBT_OUT_SP_V0_LABEL
 )
 
 # print some things
@@ -317,10 +324,14 @@ class psbtProxy:
 # Track details of each output of PSBT
 #
 class psbtOutputProxy(psbtProxy):
-    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT}
+    short_values = {PSBT_OUT_AMOUNT, PSBT_OUT_SP_V0_LABEL}
+    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
+               PSBT_OUT_AMOUNT, PSBT_OUT_SCRIPT, PSBT_OUT_SP_V0_INFO,
+               PSBT_OUT_SP_V0_LABEL}
     blank_flds = ('unknown', 'subpaths', 'redeem_script', 'witness_script',
                   'is_change', 'num_our_keys', 'tap_internal_key', 'tap_tree',
-                  'tap_subpaths')
+                  'tap_subpaths', 'amount', 'output_script', 'computed_script',
+                  'sp_v0_info', 'sp_v0_label')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -353,8 +364,43 @@ class psbtOutputProxy(psbtProxy):
             if not self.tap_subpaths:
                 self.tap_subpaths = {}
             self.tap_subpaths[key[1:]] = val
+        elif kt == PSBT_OUT_AMOUNT:
+            assert len(val) == 8, "invalid PSBTv2 output amount"
+            self.amount = unpack('<q', val)[0]
+        elif kt == PSBT_OUT_SCRIPT:
+            self.output_script = val
+        elif kt == PSBT_OUT_SP_V0_INFO:
+            assert val[1] == 66, "invalid BIP375 output info"
+            self.sp_v0_info = val
+        elif kt == PSBT_OUT_SP_V0_LABEL:
+            assert len(val) == 4, "invalid BIP375 output label"
+            self.sp_v0_label = unpack('<I', val)[0]
         else:
             self.unknown[key] = val
+
+    def validate_version(self, psbt_version):
+        if psbt_version == 0:
+            assert self.amount is None and self.output_script is None
+            assert self.sp_v0_info is None and self.sp_v0_label is None
+            return
+
+        assert self.amount is not None, "missing PSBTv2 output amount"
+        assert self.output_script is not None or self.sp_v0_info is not None, \
+            "missing PSBTv2 output script"
+        if self.sp_v0_label is not None:
+            assert self.sp_v0_info is not None, "silent payment label without info"
+
+    def get_output_script(self):
+        if self.computed_script is not None:
+            return self.computed_script
+        if self.output_script is None:
+            return None
+        return self.get(self.output_script)
+
+    def get_sp_v0_info(self):
+        if self.sp_v0_info is None:
+            return None
+        return self.get(self.sp_v0_info)
 
     def serialize(self, out_fd, my_idx):
 
@@ -381,6 +427,19 @@ class psbtOutputProxy(psbtProxy):
             for k in self.tap_subpaths:
                 wr(PSBT_OUT_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
+        if self.amount is not None:
+            wr(PSBT_OUT_AMOUNT, pack('<q', self.amount))
+
+        output_script = self.computed_script or self.output_script
+        if output_script:
+            wr(PSBT_OUT_SCRIPT, output_script)
+
+        if self.sp_v0_info:
+            wr(PSBT_OUT_SP_V0_INFO, self.sp_v0_info)
+
+        if self.sp_v0_label is not None:
+            wr(PSBT_OUT_SP_V0_LABEL, pack('<I', self.sp_v0_label))
+
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])
 
@@ -395,6 +454,12 @@ class psbtOutputProxy(psbtProxy):
         # - full key derivation and validation is done during signing, and critical.
         # - we raise fraud alarms, since these are not innocent errors
         #
+
+        if self.sp_v0_info is not None:
+            # Silent-payment change metadata needs BIP352 label derivation.
+            # Until that optional path is verified, show the output as a payment
+            # instead of trusting ordinary BIP32 metadata to hide it as change.
+            return
 
         num_ours = self.parse_subpaths(my_xfp)
 
@@ -523,20 +588,28 @@ class psbtOutputProxy(psbtProxy):
 class psbtInputProxy(psbtProxy):
 
     # just need to store a simple number for these
-    short_values = {PSBT_IN_SIGHASH_TYPE}
+    short_values = {PSBT_IN_SIGHASH_TYPE, PSBT_IN_PREVIOUS_TXID,
+                    PSBT_IN_OUTPUT_INDEX, PSBT_IN_SEQUENCE,
+                    PSBT_IN_REQUIRED_TIME_LOCKTIME,
+                    PSBT_IN_REQUIRED_HEIGHT_LOCKTIME}
 
     # only part-sigs have a key to be stored.
     no_keys = {PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO, PSBT_IN_SIGHASH_TYPE,
                PSBT_IN_REDEEM_SCRIPT, PSBT_IN_WITNESS_SCRIPT, PSBT_IN_FINAL_SCRIPTSIG,
                PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_INTERNAL_KEY,
-               PSBT_IN_TAP_MERKLE_ROOT}
+               PSBT_IN_TAP_MERKLE_ROOT, PSBT_IN_PREVIOUS_TXID,
+               PSBT_IN_OUTPUT_INDEX, PSBT_IN_SEQUENCE,
+               PSBT_IN_REQUIRED_TIME_LOCKTIME,
+               PSBT_IN_REQUIRED_HEIGHT_LOCKTIME}
 
     blank_flds = ('unknown',
                   'utxo', 'witness_utxo', 'sighash',
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
+                  'previous_txid', 'output_index', 'sequence',
+                  'required_time_locktime', 'required_height_locktime')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -549,6 +622,8 @@ class psbtInputProxy(psbtProxy):
         self.tap_subpaths = {}
         self.tap_script_sigs = {}
         self.tap_leaf_scripts = {}
+        self.sp_ecdh_shares = {}
+        self.sp_dleq_proofs = {}
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -881,9 +956,69 @@ class psbtInputProxy(psbtProxy):
             self.tap_internal_key = val
         elif kt == PSBT_IN_TAP_MERKLE_ROOT:
             self.tap_merkle_root = val
+        elif kt == PSBT_IN_PREVIOUS_TXID:
+            assert len(val) == 32, "invalid PSBTv2 previous txid"
+            self.previous_txid = val
+        elif kt == PSBT_IN_OUTPUT_INDEX:
+            assert len(val) == 4, "invalid PSBTv2 output index"
+            self.output_index = unpack('<I', val)[0]
+        elif kt == PSBT_IN_SEQUENCE:
+            assert len(val) == 4, "invalid PSBTv2 sequence"
+            self.sequence = unpack('<I', val)[0]
+        elif kt == PSBT_IN_REQUIRED_TIME_LOCKTIME:
+            assert len(val) == 4, "invalid PSBTv2 time locktime"
+            self.required_time_locktime = unpack('<I', val)[0]
+            assert self.required_time_locktime >= 500000000, \
+                "invalid PSBTv2 time locktime"
+        elif kt == PSBT_IN_REQUIRED_HEIGHT_LOCKTIME:
+            assert len(val) == 4, "invalid PSBTv2 height locktime"
+            self.required_height_locktime = unpack('<I', val)[0]
+            assert self.required_height_locktime < 500000000, \
+                "invalid PSBTv2 height locktime"
+        elif kt == PSBT_IN_SP_ECDH_SHARE:
+            assert len(key) == 34 and val[1] == 33, \
+                "invalid BIP375 input ECDH share"
+            self.sp_ecdh_shares[key[1:]] = val
+        elif kt == PSBT_IN_SP_DLEQ:
+            assert len(key) == 34 and val[1] == 64, \
+                "invalid BIP375 input DLEQ proof"
+            self.sp_dleq_proofs[key[1:]] = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
             self.unknown[key] = val
+
+    def validate_version(self, psbt_version):
+        has_v2 = any(value is not None for value in (
+            self.previous_txid, self.output_index, self.sequence,
+            self.required_time_locktime, self.required_height_locktime))
+        has_bip375 = bool(self.sp_ecdh_shares or self.sp_dleq_proofs)
+        if psbt_version == 0:
+            assert not has_v2 and not has_bip375, "PSBTv2 input field in PSBTv0"
+            return
+
+        assert self.previous_txid is not None, "missing PSBTv2 previous txid"
+        assert self.output_index is not None, "missing PSBTv2 output index"
+
+    def enforce_silent_payment_sighash(self):
+        if self.sighash is not None and self.sighash != SIGHASH_ALL:
+            raise FatalPSBTIssue("Silent payments require SIGHASH_ALL")
+        for signature in self.part_sig.values():
+            signature = self.get(signature)
+            if not signature or signature[-1] != SIGHASH_ALL:
+                raise FatalPSBTIssue("Silent payments require SIGHASH_ALL")
+        if self.tap_key_sig is not None:
+            signature = (self.get(self.tap_key_sig)
+                         if isinstance(self.tap_key_sig, tuple)
+                         else self.tap_key_sig)
+            if len(signature) != 65 or signature[-1] != SIGHASH_ALL:
+                raise FatalPSBTIssue("Silent payments require SIGHASH_ALL")
+        for signature in self.tap_script_sigs.values():
+            signature = (self.get(signature)
+                         if isinstance(signature, tuple)
+                         else signature)
+            if len(signature) != 65 or signature[-1] != SIGHASH_ALL:
+                raise FatalPSBTIssue("Silent payments require SIGHASH_ALL")
+        self.sighash = SIGHASH_ALL
 
     def serialize(self, out_fd, my_idx):
         # Output this input's values; might include signatures that weren't there before
@@ -925,6 +1060,24 @@ class psbtInputProxy(psbtProxy):
         if self.tap_internal_key:
             wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
 
+        if self.previous_txid is not None:
+            wr(PSBT_IN_PREVIOUS_TXID, self.previous_txid)
+        if self.output_index is not None:
+            wr(PSBT_IN_OUTPUT_INDEX, pack('<I', self.output_index))
+        if self.sequence is not None:
+            wr(PSBT_IN_SEQUENCE, pack('<I', self.sequence))
+        if self.required_time_locktime is not None:
+            wr(PSBT_IN_REQUIRED_TIME_LOCKTIME,
+               pack('<I', self.required_time_locktime))
+        if self.required_height_locktime is not None:
+            wr(PSBT_IN_REQUIRED_HEIGHT_LOCKTIME,
+               pack('<I', self.required_height_locktime))
+        for scan_key in self.sp_ecdh_shares:
+            wr(PSBT_IN_SP_ECDH_SHARE,
+               self.sp_ecdh_shares[scan_key], scan_key)
+        for scan_key in self.sp_dleq_proofs:
+            wr(PSBT_IN_SP_DLEQ, self.sp_dleq_proofs[scan_key], scan_key)
+
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])
 
@@ -932,7 +1085,13 @@ class psbtInputProxy(psbtProxy):
 class psbtObject(psbtProxy):
     "Just? parse and store"
 
-    no_keys = {PSBT_GLOBAL_UNSIGNED_TX}
+    short_values = {PSBT_GLOBAL_TX_VERSION, PSBT_GLOBAL_FALLBACK_LOCKTIME,
+                    PSBT_GLOBAL_INPUT_COUNT, PSBT_GLOBAL_OUTPUT_COUNT,
+                    PSBT_GLOBAL_TX_MODIFIABLE, PSBT_GLOBAL_VERSION}
+    no_keys = {PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_TX_VERSION,
+               PSBT_GLOBAL_FALLBACK_LOCKTIME, PSBT_GLOBAL_INPUT_COUNT,
+               PSBT_GLOBAL_OUTPUT_COUNT, PSBT_GLOBAL_TX_MODIFIABLE,
+               PSBT_GLOBAL_VERSION}
 
     def __init__(self):
         super().__init__()
@@ -940,6 +1099,11 @@ class psbtObject(psbtProxy):
         # global objects
         self.txn = None
         self.xpubs = []         # tuples(xfp_path, xpub)
+        self.psbt_version = 0
+        self.fallback_locktime = None
+        self.tx_modifiable = None
+        self.sp_ecdh_shares = {}
+        self.sp_dleq_proofs = {}
 
         from common import settings
         self.my_xfp = settings.get('xfp', 0)
@@ -988,11 +1152,55 @@ class psbtObject(psbtProxy):
             # list of tuples(xfp_path, xpub)
             self.xpubs.append((self.get(val), key[1:]))
             assert len(self.xpubs) <= MAX_SIGNERS
+        elif kt == PSBT_GLOBAL_VERSION:
+            assert len(val) == 4, "invalid PSBT version"
+            self.psbt_version = unpack('<I', val)[0]
+        elif kt == PSBT_GLOBAL_TX_VERSION:
+            assert len(val) == 4, "invalid PSBTv2 transaction version"
+            self.txn_version = unpack('<i', val)[0]
+        elif kt == PSBT_GLOBAL_FALLBACK_LOCKTIME:
+            assert len(val) == 4, "invalid PSBTv2 fallback locktime"
+            self.fallback_locktime = unpack('<I', val)[0]
+        elif kt in (PSBT_GLOBAL_INPUT_COUNT, PSBT_GLOBAL_OUTPUT_COUNT):
+            count, encoded_len = deser_compact_size_bytes(val)
+            assert encoded_len == len(val) and count > 0, "invalid PSBTv2 count"
+            if kt == PSBT_GLOBAL_INPUT_COUNT:
+                self.num_inputs = count
+            else:
+                self.num_outputs = count
+        elif kt == PSBT_GLOBAL_TX_MODIFIABLE:
+            assert len(val) == 1, "invalid PSBTv2 modifiable flags"
+            self.tx_modifiable = val[0]
+            assert self.tx_modifiable & ~7 == 0, "unsupported PSBTv2 modifiable flags"
+        elif kt == PSBT_GLOBAL_SP_ECDH_SHARE:
+            assert len(key) == 34 and val[1] == 33, \
+                "invalid BIP375 global ECDH share"
+            self.sp_ecdh_shares[key[1:]] = val
+        elif kt == PSBT_GLOBAL_SP_DLEQ:
+            assert len(key) == 34 and val[1] == 64, \
+                "invalid BIP375 global DLEQ proof"
+            self.sp_dleq_proofs[key[1:]] = val
         else:
-            self.unknowns[key] = val
+            self.unknown[key] = val
 
     def output_iter(self):
         # yield the txn's outputs: index, (CTxOut object) for each
+        if self.psbt_version == 2:
+            total_out = 0
+            for idx, output in enumerate(self.outputs):
+                script = output.get_output_script()
+                if script is None:
+                    raise FatalPSBTIssue(
+                        "Silent payment output #%d has not been computed" % idx)
+                tx_out = CTxOut(output.amount, script)
+                total_out += tx_out.nValue
+                yield idx, tx_out
+            if self.total_value_out is None:
+                self.total_value_out = total_out
+            else:
+                assert self.total_value_out == total_out
+            return
+
         assert self.vout_start is not None      # must call input_iter/validate first
 
         fd = self.fd
@@ -1015,6 +1223,54 @@ class psbtObject(psbtProxy):
             self.total_value_out = total_out
         else:
             assert self.total_value_out == total_out
+
+    def has_silent_payment_outputs(self):
+        return any(output.sp_v0_info is not None for output in self.outputs)
+
+    def validate_bip375_structure(self):
+        has_outputs = self.has_silent_payment_outputs()
+        has_data = bool(self.sp_ecdh_shares or self.sp_dleq_proofs or any(
+            item.sp_ecdh_shares or item.sp_dleq_proofs for item in self.inputs))
+        if not has_outputs:
+            assert not has_data, "BIP375 proof data without silent payment output"
+            return
+
+        assert self.psbt_version == 2, "silent payment output requires PSBTv2"
+        assert set(self.sp_ecdh_shares) == set(self.sp_dleq_proofs), \
+            "incomplete BIP375 global proof data"
+        for item in self.inputs:
+            assert set(item.sp_ecdh_shares) == set(item.sp_dleq_proofs), \
+                "incomplete BIP375 input proof data"
+        if any(output.output_script is not None for output in self.outputs
+               if output.sp_v0_info is not None):
+            assert not self.tx_modifiable, \
+                "computed silent payment output remains modifiable"
+
+    def prepare_silent_payment_outputs(self, sensitive_values):
+        if not self.has_silent_payment_outputs():
+            return
+
+        from silent_payments import create_bip375_data_from_psbt
+
+        output_info = [(index, output.get_sp_v0_info())
+                       for index, output in enumerate(self.outputs)
+                       if output.sp_v0_info is not None]
+        scripts, global_data = create_bip375_data_from_psbt(
+            self, output_info, sensitive_values)
+
+        for index, expected_script in scripts.items():
+            supplied_script = self.outputs[index].get_output_script()
+            if supplied_script is not None and supplied_script != expected_script:
+                raise FatalPSBTIssue(
+                    "Silent payment output #%d is incorrect" % index)
+
+        for index, expected_script in scripts.items():
+            self.outputs[index].computed_script = expected_script
+        self.sp_ecdh_shares = {
+            scan_key: data[0] for scan_key, data in global_data.items()}
+        self.sp_dleq_proofs = {
+            scan_key: data[1] for scan_key, data in global_data.items()}
+        self.tx_modifiable = 0
 
     def parse_txn(self):
         # Need to semi-parse in unsigned transaction.
@@ -1077,6 +1333,16 @@ class psbtObject(psbtProxy):
         # - we also capture much data about the txn on the first pass thru here
         #
         fd = self.fd
+
+        if self.psbt_version == 2:
+            for idx, psbt_input in enumerate(self.inputs):
+                prevout = COutPoint(
+                    uint256_from_bytes(psbt_input.previous_txid),
+                    psbt_input.output_index)
+                sequence = (psbt_input.sequence if psbt_input.sequence is not None
+                            else 0xffffffff)
+                yield idx, CTxIn(prevout, bytes(), sequence)
+            return
 
         assert self.vin_start       # call parse_txn() first!
 
@@ -1213,11 +1479,18 @@ class psbtObject(psbtProxy):
         # Do a first pass over the txn. Raise assertions, be terse tho because
         # these messages are rarely seen. These are syntax/fatal errors.
         #
-        assert self.txn[1] > 63, 'too short'
+        if self.psbt_version == 0:
+            assert self.txn[1] > 63, 'too short'
+        else:
+            assert self.txn is None, "PSBTv2 must not contain unsigned transaction"
+            assert self.txn_version in {1, 2}, "bad txn version"
 
         # this parses the input TXN in-place
+        has_silent_outputs = self.has_silent_payment_outputs()
         for idx, txin in self.input_iter():
             gc.collect()
+            if has_silent_outputs:
+                self.inputs[idx].enforce_silent_payment_sighash()
             self.inputs[idx].validate(idx, txin, self.my_xfp)
 
         gc.collect()
@@ -1524,10 +1797,20 @@ class psbtObject(psbtProxy):
 
         gc.collect()
 
-        assert rv.txn, 'missing reqd section'
-
-        # learn about the bitcoin transaction we are signing.
-        rv.parse_txn()
+        assert rv.psbt_version in (0, 2), "unsupported PSBT version"
+        if rv.psbt_version == 0:
+            assert rv.txn, 'missing reqd section'
+            assert rv.txn_version is None and rv.num_inputs is None \
+                and rv.num_outputs is None, "PSBTv2 global field in PSBTv0"
+            assert not rv.sp_ecdh_shares and not rv.sp_dleq_proofs, \
+                "BIP375 global field in PSBTv0"
+            rv.parse_txn()
+        else:
+            assert rv.txn is None, "PSBTv2 contains unsigned transaction"
+            assert rv.txn_version is not None, "missing PSBTv2 transaction version"
+            assert rv.num_inputs is not None, "missing PSBTv2 input count"
+            assert rv.num_outputs is not None, "missing PSBTv2 output count"
+            rv.had_witness = False
 
         gc.collect()
 
@@ -1536,7 +1819,34 @@ class psbtObject(psbtProxy):
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
         gc.collect()
 
+        for psbt_input in rv.inputs:
+            psbt_input.validate_version(rv.psbt_version)
+        for psbt_output in rv.outputs:
+            psbt_output.validate_version(rv.psbt_version)
+
+        rv.validate_bip375_structure()
+
+        if rv.psbt_version == 2:
+            rv.lock_time = rv.determine_v2_lock_time()
+
         return rv
+
+    def determine_v2_lock_time(self):
+        constrained = [item for item in self.inputs
+                       if item.required_time_locktime is not None or
+                       item.required_height_locktime is not None]
+        if not constrained:
+            return self.fallback_locktime or 0
+
+        use_height = all(
+            item.required_height_locktime is not None for item in constrained)
+        use_time = all(
+            item.required_time_locktime is not None for item in constrained)
+        if use_height:
+            return max(item.required_height_locktime for item in constrained)
+        if use_time:
+            return max(item.required_time_locktime for item in constrained)
+        raise FatalPSBTIssue("PSBTv2 inputs require incompatible lock times")
 
     def serialize(self, out_fd, upgrade_txn=False):
         # Ouput into a file.
@@ -1546,7 +1856,23 @@ class psbtObject(psbtProxy):
 
         out_fd.write(_MAGIC)
 
-        if upgrade_txn and self.is_complete():
+        if self.psbt_version == 2:
+            wr(PSBT_GLOBAL_TX_VERSION, pack('<i', self.txn_version))
+            if self.fallback_locktime is not None:
+                wr(PSBT_GLOBAL_FALLBACK_LOCKTIME,
+                   pack('<I', self.fallback_locktime))
+            wr(PSBT_GLOBAL_INPUT_COUNT, ser_compact_size(self.num_inputs))
+            wr(PSBT_GLOBAL_OUTPUT_COUNT, ser_compact_size(self.num_outputs))
+            if self.tx_modifiable is not None:
+                wr(PSBT_GLOBAL_TX_MODIFIABLE, bytes([self.tx_modifiable]))
+            for scan_key in self.sp_ecdh_shares:
+                wr(PSBT_GLOBAL_SP_ECDH_SHARE,
+                   self.sp_ecdh_shares[scan_key], scan_key)
+            for scan_key in self.sp_dleq_proofs:
+                wr(PSBT_GLOBAL_SP_DLEQ,
+                   self.sp_dleq_proofs[scan_key], scan_key)
+            wr(PSBT_GLOBAL_VERSION, pack('<I', 2))
+        elif upgrade_txn and self.is_complete():
             # write out the ready-to-transmit txn
             # - means we are also a PSBT combiner in this case
             # - hard tho, due to variable length data.
@@ -1699,7 +2025,7 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_DEFAULT
+        assert sighash_type in (SIGHASH_DEFAULT, SIGHASH_ALL)
 
         if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.

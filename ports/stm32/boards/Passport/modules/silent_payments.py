@@ -123,6 +123,24 @@ def decode_address(address, expected_hrp=None):
     return hrp, version, scan_public_key, spend_public_key
 
 
+def encode_address(scan_public_key, spend_public_key, hrp="sp", version=0):
+    """Encode scan and spend public keys as a BIP352 Bech32m address."""
+
+    if hrp not in ("sp", "tsp"):
+        raise ValueError("invalid silent payment address network")
+    if not isinstance(version, int) or version < 0 or version > 30:
+        raise ValueError("invalid silent payment address version")
+    _parse_public_key(scan_public_key)
+    _parse_public_key(spend_public_key)
+    payload = bytes([version]) + _convert_bits(
+        scan_public_key + spend_public_key, 8, 5, True)
+    polymod = _bech32_polymod(
+        _bech32_hrp_expand(hrp) + list(payload) + [0] * 6) ^ BECH32M_CONST
+    checksum = [(polymod >> (5 * (5 - index))) & 31 for index in range(6)]
+    return hrp + "1" + "".join(
+        _BECH32_CHARSET[value] for value in list(payload) + checksum)
+
+
 def create_output_scripts_from_psbt(psbt, addresses, sensitive_values,
                                     expected_hrp=None):
     """Derive BIP352 P2TR scripts for a validated, single-owner PSBT.
@@ -141,8 +159,25 @@ def create_output_scripts_from_psbt(psbt, addresses, sensitive_values,
         _, _, scan_key, spend_key = decode_address(address, expected_hrp)
         recipients.append((scan_key, spend_key))
 
+    input_private_keys, outpoints, _ = _collect_psbt_input_private_keys(
+        psbt, sensitive_values)
+    try:
+        output_keys = create_outputs(
+            input_private_keys, outpoints, recipients)
+        return [b"\x51\x20" + output_key for output_key in output_keys]
+    finally:
+        for private_key, _ in input_private_keys:
+            stash.blank_object(private_key)
+
+
+def _collect_psbt_input_private_keys(psbt, sensitive_values):
+    import stash
+    from taproot import taproot_tweak_seckey
+    from utils import keypath_to_str, swab32
+
     outpoints = []
     input_private_keys = []
+    eligible_input_indexes = []
     try:
         for input_index, txin in psbt.input_iter():
             outpoints.append(txin.prevout.serialize())
@@ -166,7 +201,6 @@ def create_output_scripts_from_psbt(psbt, addresses, sensitive_values,
             elif address_type == "p2tr":
                 is_eligible = True
             else:
-                # P2PK and multisig inputs are excluded by BIP352.
                 is_eligible = False
 
             if not is_eligible:
@@ -208,17 +242,90 @@ def create_output_scripts_from_psbt(psbt, addresses, sensitive_values,
                     raw_private_key = None
 
                 input_private_keys.append((output_private_key, is_taproot))
+                eligible_input_indexes.append(input_index)
             finally:
                 if raw_private_key is not None:
                     stash.blank_object(raw_private_key)
                 stash.blank_object(node)
 
-        output_keys = create_outputs(
-            input_private_keys, outpoints, recipients)
-        return [b"\x51\x20" + output_key for output_key in output_keys]
+        if not input_private_keys:
+            raise ValueError("no eligible silent payment inputs")
+        private_keys_by_input = {
+            input_index: input_private_keys[key_index]
+            for key_index, input_index in enumerate(eligible_input_indexes)}
+        return input_private_keys, outpoints, private_keys_by_input
+    except BaseException:
+        for private_key, _ in input_private_keys:
+            stash.blank_object(private_key)
+        raise
+
+
+def create_bip375_data_from_psbt(psbt, output_info, sensitive_values):
+    """Create indexed scripts and global share/proof pairs for a PSBTv2."""
+
+    import stash
+
+    input_private_keys, outpoints, private_keys_by_input = \
+        _collect_psbt_input_private_keys(
+            psbt, sensitive_values)
+    try:
+        _verify_existing_bip375_proofs(
+            psbt, output_info, private_keys_by_input, input_private_keys)
+        scripts = create_bip375_output_scripts(
+            input_private_keys, outpoints, output_info)
+        global_data = {}
+        for _, info in output_info:
+            scan_key = info[:33]
+            if scan_key not in global_data:
+                global_data[scan_key] = create_global_ecdh_share(
+                    input_private_keys, scan_key)
+        return scripts, global_data
     finally:
         for private_key, _ in input_private_keys:
             stash.blank_object(private_key)
+
+
+def _read_proxy_value(owner, value):
+    return owner.get(value) if isinstance(value, tuple) else value
+
+
+def _verify_existing_bip375_proofs(
+        psbt, output_info, private_keys_by_input, input_private_keys):
+    aggregate_key = _aggregate_input_key(input_private_keys)
+    aggregate_public_key = _compress_point(
+        _generator_multiply(aggregate_key))
+
+    for scan_key, share_value in psbt.sp_ecdh_shares.items():
+        share = _read_proxy_value(psbt, share_value)
+        proof = _read_proxy_value(psbt, psbt.sp_dleq_proofs[scan_key])
+        if not verify_dleq_proof(
+                aggregate_public_key, scan_key, share, proof):
+            raise ValueError("invalid BIP375 global DLEQ proof")
+
+    for input_index, (private_key, is_taproot) in private_keys_by_input.items():
+        psbt_input = psbt.inputs[input_index]
+        public_key = _compress_point(_generator_multiply(
+            _normalize_input_key(private_key, is_taproot)))
+        for scan_key, share_value in psbt_input.sp_ecdh_shares.items():
+            share = _read_proxy_value(psbt_input, share_value)
+            proof = _read_proxy_value(
+                psbt_input, psbt_input.sp_dleq_proofs[scan_key])
+            if not verify_dleq_proof(
+                    public_key, scan_key, share, proof):
+                raise ValueError("invalid BIP375 input DLEQ proof")
+
+    supplied_scripts = any(
+        psbt.outputs[index].output_script is not None
+        for index, _ in output_info)
+    if not supplied_scripts:
+        return
+
+    for scan_key in {info[:33] for _, info in output_info}:
+        if scan_key in psbt.sp_ecdh_shares:
+            continue
+        if not all(scan_key in psbt.inputs[index].sp_ecdh_shares
+                   for index in private_keys_by_input):
+            raise ValueError("incomplete BIP375 ECDH coverage")
 
 
 def _lift_x(x_coord):
