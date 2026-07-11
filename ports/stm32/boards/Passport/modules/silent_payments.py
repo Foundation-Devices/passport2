@@ -11,6 +11,10 @@ from trezorcrypto import ecdsa
 FIELD_PRIME = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 GROUP_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 K_MAX = 2323
+BECH32M_CONST = 0x2BC830A3
+_BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+_BECH32_GENERATORS = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA,
+                      0x3D4233DD, 0x2A1462B3)
 
 
 def _bytes32(value):
@@ -27,6 +31,94 @@ def _checked_scalar(value):
     if scalar == 0 or scalar >= GROUP_ORDER:
         raise ValueError("invalid secp256k1 scalar")
     return scalar
+
+
+def _bech32_polymod(values):
+    checksum = 1
+    for value in values:
+        top = checksum >> 25
+        checksum = ((checksum & 0x1FFFFFF) << 5) ^ value
+        for index, generator in enumerate(_BECH32_GENERATORS):
+            if (top >> index) & 1:
+                checksum ^= generator
+    return checksum
+
+
+def _bech32_hrp_expand(hrp):
+    return ([ord(char) >> 5 for char in hrp] + [0] +
+            [ord(char) & 31 for char in hrp])
+
+
+def _convert_bits(values, from_bits, to_bits, pad):
+    accumulator = 0
+    bit_count = 0
+    result = []
+    max_value = (1 << to_bits) - 1
+    max_accumulator = (1 << (from_bits + to_bits - 1)) - 1
+
+    for value in values:
+        if value < 0 or value >> from_bits:
+            raise ValueError("invalid bech32 data value")
+        accumulator = ((accumulator << from_bits) | value) & max_accumulator
+        bit_count += from_bits
+        while bit_count >= to_bits:
+            bit_count -= to_bits
+            result.append((accumulator >> bit_count) & max_value)
+
+    if pad:
+        if bit_count:
+            result.append((accumulator << (to_bits - bit_count)) & max_value)
+    elif bit_count >= from_bits or \
+            ((accumulator << (to_bits - bit_count)) & max_value):
+        raise ValueError("invalid bech32 padding")
+
+    return bytes(result)
+
+
+def decode_address(address, expected_hrp=None):
+    """Decode a BIP352 address into ``(hrp, version, scan_key, spend_key)``."""
+
+    if not isinstance(address, str) or not address or len(address) > 1023:
+        raise ValueError("invalid silent payment address length")
+    if address.lower() != address and address.upper() != address:
+        raise ValueError("mixed-case silent payment address")
+
+    address = address.lower()
+    separator = address.rfind("1")
+    if separator < 1 or separator + 7 > len(address):
+        raise ValueError("invalid silent payment address separator")
+
+    hrp = address[:separator]
+    if hrp not in ("sp", "tsp"):
+        raise ValueError("invalid silent payment address network")
+    if expected_hrp is not None and hrp != expected_hrp:
+        raise ValueError("silent payment address network mismatch")
+
+    try:
+        data = [_BECH32_CHARSET.index(char) for char in address[separator + 1:]]
+    except ValueError:
+        raise ValueError("invalid character in silent payment address")
+    if _bech32_polymod(_bech32_hrp_expand(hrp) + data) != BECH32M_CONST:
+        raise ValueError("invalid silent payment address checksum")
+
+    payload = data[:-6]
+    if not payload:
+        raise ValueError("missing silent payment address version")
+    version = payload[0]
+    if version == 31:
+        raise ValueError("unsupported silent payment address version")
+
+    key_data = _convert_bits(payload[1:], 5, 8, False)
+    if version == 0 and len(key_data) != 66:
+        raise ValueError("version 0 silent payment address must contain 66 key bytes")
+    if version > 0 and len(key_data) < 66:
+        raise ValueError("silent payment address key data is too short")
+
+    scan_public_key = key_data[:33]
+    spend_public_key = key_data[33:66]
+    _parse_public_key(scan_public_key)
+    _parse_public_key(spend_public_key)
+    return hrp, version, scan_public_key, spend_public_key
 
 
 def _lift_x(x_coord):

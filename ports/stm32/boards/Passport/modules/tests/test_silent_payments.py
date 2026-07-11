@@ -19,6 +19,9 @@ SCAN_KEY = bytes.fromhex(
     "0220bcfac5b99e04ad1a06ddfb016ee13582609d60b6291e98d01a9bc9a16c96d4")
 SPEND_KEY = bytes.fromhex(
     "025cc9856d6f8375350e123978daac200c260cb5b5ae83106cab90484dcd8fcf36")
+SILENT_PAYMENT_ADDRESS = (
+    "sp1qqgste7k9hx0qftg6qmwlkqtwuy6cycyavzmzj85c6qdfhjdpdjtdgqjuexzk6"
+    "murw56suy3e0rd2cgqvycxttddwsvgxe2usfpxumr70xc9pkqwv")
 
 
 def _point_add(left, right):
@@ -109,11 +112,63 @@ def _outpoint(txid, index):
     return bytes.fromhex(txid)[::-1] + index.to_bytes(4, "little")
 
 
+def _encode_address(silent_payments, hrp, version, key_data):
+    payload = [version] + list(
+        silent_payments._convert_bits(key_data, 8, 5, True))
+    values = silent_payments._bech32_hrp_expand(hrp) + payload + [0] * 6
+    polymod = (silent_payments._bech32_polymod(values) ^
+               silent_payments.BECH32M_CONST)
+    checksum = [(polymod >> (5 * (5 - index))) & 31 for index in range(6)]
+    return hrp + "1" + "".join(
+        silent_payments._BECH32_CHARSET[value] for value in payload + checksum)
+
+
 def _legacy_inputs():
     return [
         (bytes.fromhex("eadc78165ff1f8ea94ad7cfdc54990738a4c53f6e0507b42154201b8e5dff3b1"), False),
         (bytes.fromhex("93f5ed907ad5b2bdbbdcb5d9116ebc0a4e1f92f910d5260237fa45a9408aad16"), False),
     ]
+
+
+def test_decodes_official_v0_address(silent_payments):
+    assert silent_payments.decode_address(SILENT_PAYMENT_ADDRESS) == (
+        "sp", 0, SCAN_KEY, SPEND_KEY)
+    assert silent_payments.decode_address(
+        SILENT_PAYMENT_ADDRESS.upper(), expected_hrp="sp") == (
+            "sp", 0, SCAN_KEY, SPEND_KEY)
+
+
+def test_rejects_mixed_case_wrong_network_and_bad_checksum(silent_payments):
+    mixed_case = "S" + SILENT_PAYMENT_ADDRESS[1:]
+    with pytest.raises(ValueError, match="mixed-case"):
+        silent_payments.decode_address(mixed_case)
+    with pytest.raises(ValueError, match="network mismatch"):
+        silent_payments.decode_address(SILENT_PAYMENT_ADDRESS, expected_hrp="tsp")
+    with pytest.raises(ValueError, match="checksum"):
+        silent_payments.decode_address(SILENT_PAYMENT_ADDRESS[:-1] + "p")
+
+
+def test_enforces_version_length_and_forward_compatibility(silent_payments):
+    short_v0 = _encode_address(silent_payments, "sp", 0, SCAN_KEY)
+    with pytest.raises(ValueError, match="66 key bytes"):
+        silent_payments.decode_address(short_v0)
+
+    extended_v1 = _encode_address(
+        silent_payments, "tsp", 1, SCAN_KEY + SPEND_KEY + b"extension")
+    assert silent_payments.decode_address(extended_v1) == (
+        "tsp", 1, SCAN_KEY, SPEND_KEY)
+
+    reserved_v31 = _encode_address(
+        silent_payments, "sp", 31, SCAN_KEY + SPEND_KEY)
+    with pytest.raises(ValueError, match="unsupported"):
+        silent_payments.decode_address(reserved_v31)
+
+
+def test_rejects_invalid_public_keys_with_valid_checksum(silent_payments):
+    invalid_keys = bytes([4]) + SCAN_KEY[1:] + SPEND_KEY
+    address = _encode_address(silent_payments, "sp", 0, invalid_keys)
+    with pytest.raises(ValueError, match="compressed or uncompressed"):
+        silent_payments.decode_address(address)
 
 
 def test_official_simple_send_vector(silent_payments):
