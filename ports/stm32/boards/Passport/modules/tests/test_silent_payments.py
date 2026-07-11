@@ -513,6 +513,52 @@ def test_bip375_global_share_uses_taproot_normalization(silent_payments):
         public_a, scan_key, share, proof)
 
 
+def test_bip375_binds_sorted_codes_to_original_output_indexes(silent_payments):
+    scan_key = _uncompressed(_point_multiply(9, GENERATOR))
+    scan_key = bytes([2 | (scan_key[-1] & 1)]) + scan_key[1:33]
+    spend_a = _uncompressed(_point_multiply(10, GENERATOR))
+    spend_a = bytes([2 | (spend_a[-1] & 1)]) + spend_a[1:33]
+    spend_b = _uncompressed(_point_multiply(11, GENERATOR))
+    spend_b = bytes([2 | (spend_b[-1] & 1)]) + spend_b[1:33]
+    info_a = scan_key + spend_a
+    info_b = scan_key + spend_b
+    output_info = [(7, info_b), (3, info_a), (5, info_b)]
+    input_keys = [((12).to_bytes(32, "big"), False)]
+    outpoints = [_outpoint("10" * 32, 1)]
+
+    scripts = silent_payments.create_bip375_output_scripts(
+        input_keys, outpoints, output_info)
+    ordered = sorted(output_info, key=lambda item: (item[1], item[0]))
+    expected = silent_payments.create_outputs(
+        input_keys, outpoints,
+        [(info[:33], info[33:]) for _, info in ordered])
+
+    assert set(scripts) == {3, 5, 7}
+    assert [scripts[index] for index, _ in ordered] == [
+        b"\x51\x20" + output for output in expected]
+    assert silent_payments.verify_bip375_output_scripts(
+        input_keys, outpoints, output_info, scripts)
+    tampered = dict(scripts)
+    tampered[5] = tampered[5][:-1] + bytes([tampered[5][-1] ^ 1])
+    assert not silent_payments.verify_bip375_output_scripts(
+        input_keys, outpoints, output_info, tampered)
+
+
+def test_bip375_rejects_ambiguous_or_malformed_output_info(silent_payments):
+    valid_info = SCAN_KEY + SPEND_KEY
+    input_keys = [((1).to_bytes(32, "big"), False)]
+    outpoints = [_outpoint("11" * 32, 0)]
+
+    with pytest.raises(ValueError, match="duplicate"):
+        silent_payments.create_bip375_output_scripts(
+            input_keys, outpoints, [(0, valid_info), (0, valid_info)])
+    with pytest.raises(ValueError, match="66 bytes"):
+        silent_payments.create_bip375_output_scripts(
+            input_keys, outpoints, [(0, valid_info[:-1])])
+    assert not silent_payments.verify_bip375_output_scripts(
+        input_keys, outpoints, [(0, valid_info)], {})
+
+
 def test_rejects_oversized_recipient_group(silent_payments):
     with pytest.raises(ValueError, match="K_MAX"):
         silent_payments.create_outputs(

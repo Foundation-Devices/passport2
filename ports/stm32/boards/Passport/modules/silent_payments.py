@@ -412,6 +412,53 @@ def create_global_ecdh_share(input_private_keys, scan_public_key,
     return share, proof
 
 
+def create_bip375_output_scripts(input_private_keys, outpoints, output_info):
+    """Return BIP375 output scripts keyed by their original PSBT output index.
+
+    ``output_info`` contains ``(output_index, scan_key || spend_key)`` pairs.
+    BIP375 assigns ``k`` after sorting codes that share a scan key, with
+    duplicate codes ordered by their PSBT output index.
+    """
+
+    ordered = []
+    seen_indexes = set()
+    for output_index, info in output_info:
+        if not isinstance(output_index, int) or output_index < 0:
+            raise ValueError("invalid BIP375 output index")
+        if output_index in seen_indexes:
+            raise ValueError("duplicate BIP375 output index")
+        if len(info) != 66:
+            raise ValueError("BIP375 output info must contain 66 bytes")
+        scan_key = info[:33]
+        spend_key = info[33:]
+        _parse_public_key(scan_key)
+        _parse_public_key(spend_key)
+        ordered.append((scan_key, spend_key, output_index))
+        seen_indexes.add(output_index)
+
+    if not ordered:
+        raise ValueError("at least one BIP375 output is required")
+
+    ordered.sort(key=lambda item: (item[0], item[1], item[2]))
+    recipients = [(scan_key, spend_key)
+                  for scan_key, spend_key, _ in ordered]
+    scripts = create_outputs(input_private_keys, outpoints, recipients)
+    return {item[2]: b"\x51\x20" + script
+            for item, script in zip(ordered, scripts)}
+
+
+def verify_bip375_output_scripts(input_private_keys, outpoints, output_info,
+                                 output_scripts):
+    """Verify every silent-payment PSBT output script and reject extras."""
+
+    expected = create_bip375_output_scripts(
+        input_private_keys, outpoints, output_info)
+    if set(output_scripts) != set(expected):
+        return False
+    return all(output_scripts[index] == script
+               for index, script in expected.items())
+
+
 def create_outputs_with_shared_secrets(input_private_keys, outpoints, recipients):
     """Derive BIP352 x-only outputs and compressed ECDH shared secrets.
 
