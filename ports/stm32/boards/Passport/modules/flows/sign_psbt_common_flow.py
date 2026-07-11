@@ -37,8 +37,19 @@ class SignPsbtCommonFlow(Flow):
         if error is not None:
             await ErrorPage(error_msg).show()
             self.set_result(None)
+        elif self.psbt.silent_payment_shares_only:
+            self.goto(self.export_silent_payment_shares)
         else:
             self.goto(self.check_multisig_import)
+
+    async def export_silent_payment_shares(self):
+        from pages import QuestionPage
+
+        result = await QuestionPage(
+            text=('Silent payment share data was added. More signer shares '
+                  'are required before signing. Export the updated PSBT?'),
+            right_micron=microns.Checkmark).show()
+        self.set_result(self.psbt if result else None)
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow

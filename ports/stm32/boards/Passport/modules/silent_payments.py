@@ -356,7 +356,7 @@ def create_bip375_data_from_psbt(psbt, output_info, sensitive_values):
 
             if not all(scan_key in psbt.inputs[index].sp_ecdh_shares
                        for index in eligible_input_indexes):
-                raise ValueError("incomplete BIP375 ECDH coverage")
+                return None, global_data
 
         input_shares = {
             input_index: {

@@ -660,9 +660,11 @@ def test_bip375_combines_owned_and_external_input_shares(
 
     inputs[1].sp_ecdh_shares = {}
     inputs[1].sp_dleq_proofs = {}
-    with pytest.raises(ValueError, match="coverage"):
-        silent_payments.create_bip375_data_from_psbt(
-            psbt, [(0, info)], sensitive_values)
+    scripts, global_data = silent_payments.create_bip375_data_from_psbt(
+        psbt, [(0, info)], sensitive_values)
+    assert scripts is None
+    assert global_data == {}
+    assert SCAN_KEY in inputs[0].sp_ecdh_shares
 
     inputs[1].sp_ecdh_shares[SCAN_KEY] = external_share
     inputs[1].sp_dleq_proofs[SCAN_KEY] = (

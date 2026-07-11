@@ -624,6 +624,7 @@ class psbtInputProxy(psbtProxy):
         self.tap_leaf_scripts = {}
         self.sp_ecdh_shares = {}
         self.sp_dleq_proofs = {}
+        self.silent_payment_shares_only = False
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -1250,6 +1251,7 @@ class psbtObject(psbtProxy):
         if not self.has_silent_payment_outputs():
             return
 
+        self.silent_payment_shares_only = False
         from silent_payments import create_bip375_data_from_psbt
 
         output_info = [(index, output.get_sp_v0_info())
@@ -1257,6 +1259,10 @@ class psbtObject(psbtProxy):
                        if output.sp_v0_info is not None]
         scripts, global_data = create_bip375_data_from_psbt(
             self, output_info, sensitive_values)
+
+        if scripts is None:
+            self.silent_payment_shares_only = True
+            return False
 
         for index, expected_script in scripts.items():
             supplied_script = self.outputs[index].get_output_script()
@@ -1271,6 +1277,7 @@ class psbtObject(psbtProxy):
         self.sp_dleq_proofs = {
             scan_key: data[1] for scan_key, data in global_data.items()}
         self.tx_modifiable = 0
+        return True
 
     def parse_txn(self):
         # Need to semi-parse in unsigned transaction.

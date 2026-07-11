@@ -327,6 +327,39 @@ def test_prepares_and_locks_uncomputed_silent_output(firmware, monkeypatch):
         parsed.prepare_silent_payment_outputs(object())
 
 
+def test_marks_incomplete_silent_payment_as_share_only(firmware, monkeypatch):
+    psbt, constants, _, _ = firmware
+    sp_info = b"\x02" + b"\x44" * 32 + b"\x03" + b"\x55" * 32
+    payload = _psbt_v2(
+        constants,
+        [_input_map(constants, 1)],
+        [_output_map(constants, 1000, sp_info=sp_info)],
+        modifiable=3)
+    parsed = psbt.psbtObject.read_psbt(io.BytesIO(payload))
+    silent_payments = types.ModuleType("silent_payments")
+    silent_payments.create_bip375_data_from_psbt = (
+        lambda psbt_obj, output_info, sensitive_values: (None, {}))
+    monkeypatch.setitem(sys.modules, "silent_payments", silent_payments)
+
+    outputs_ready = parsed.prepare_silent_payment_outputs(object())
+
+    assert outputs_ready is False
+    assert parsed.silent_payment_shares_only is True
+    assert parsed.outputs[0].computed_script is None
+    assert parsed.tx_modifiable == 3
+
+    expected_script = b"\x51\x20" + b"\x66" * 32
+    silent_payments.create_bip375_data_from_psbt = (
+        lambda psbt_obj, output_info, sensitive_values:
+        ({0: expected_script}, {
+            sp_info[:33]: (b"\x02" + b"\x77" * 32, b"\x88" * 64)}))
+    outputs_ready = parsed.prepare_silent_payment_outputs(object())
+    assert outputs_ready is True
+    assert parsed.silent_payment_shares_only is False
+    assert parsed.outputs[0].computed_script == expected_script
+    assert parsed.tx_modifiable == 0
+
+
 def test_silent_payment_validation_requires_sighash_all(firmware):
     psbt, constants, _, exceptions = firmware
     sp_info = b"\x02" + b"\x44" * 32 + b"\x03" + b"\x55" * 32
