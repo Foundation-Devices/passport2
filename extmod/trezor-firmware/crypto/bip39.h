@@ -29,6 +29,13 @@
 
 #define BIP39_WORDS 2048
 #define BIP39_PBKDF2_ROUNDS 2048
+// Maximum byte width of a BIP-39 word entry (8-char word + null terminator).
+// Used for fixed-width wordlist storage so ct_word_eq() can read exactly this
+// many bytes from every entry without invoking UB on short words.
+#define BIP39_MAX_WORD_LEN 9
+// Maximum number of words in a valid BIP-39 mnemonic (256-bit entropy).
+// Used to size the padded parsing buffer in mnemonic_to_bits().
+#define BIP39_MNEMONIC_MAX_WORDS 24
 
 const char *mnemonic_generate(int strength);  // strength in bits
 const char *mnemonic_from_data(const uint8_t *data, int len);
