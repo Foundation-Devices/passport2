@@ -20,7 +20,7 @@ from errors import Error
 from constants import MAX_BACKUP_FILE_SIZE
 from pincodes import SE_SECRET_LEN
 
-DERIVED_BACKUP_SETTINGS = ('xfp', 'xpub', 'root_xfp')
+NON_RESTORABLE_BACKUP_SETTINGS = ('bip39_passphrase', 'root_xfp', 'xfp', 'xpub')
 
 
 def restore_settings_from_backup(vals, settings):
@@ -29,7 +29,7 @@ def restore_settings_from_backup(vals, settings):
             continue
 
         setting_key = k[8:]
-        if setting_key in DERIVED_BACKUP_SETTINGS:
+        if setting_key in NON_RESTORABLE_BACKUP_SETTINGS:
             continue
 
         settings.set(setting_key, vals[k])

@@ -21,6 +21,7 @@ vals = {
     'setting.xfp': 0x11111111,
     'setting.xpub': 'attacker-xpub',
     'setting.root_xfp': 0x22222222,
+    'setting.bip39_passphrase': 'runtime-only',
     'setting.units': 'sats',
     'setting.backup_quiz': True,
 }
