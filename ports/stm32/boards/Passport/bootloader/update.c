@@ -338,8 +338,8 @@ void update_firmware(void) {
         }
     }
 
-    bool is_spi_fw_user_signed     = spihdr.signature.pubkey1 == FW_USER_KEY;
-    bool is_current_firmware_valid = false;
+    bool      is_spi_fw_user_signed = spihdr.signature.pubkey1 == FW_USER_KEY;
+    secresult current_firmware_result;
 
     // Handle the firmware hash update
     get_current_board_hash(current_board_hash);
@@ -356,8 +356,8 @@ void update_firmware(void) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
     printf("Verifying current firmware before update\r\n");
 #endif
-    is_current_firmware_valid = verify_current_firmware(true) == SEC_TRUE;
-    if (is_current_firmware_valid) {
+    current_firmware_result = verify_current_firmware(true);
+    if (current_firmware_result == SEC_TRUE) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
         printf("  Current firmware is valid, so doing more checks.\r\n");
 #endif
@@ -424,7 +424,7 @@ void update_firmware(void) {
         }
     }
 
-    if (is_current_firmware_valid) {
+    if (current_firmware_result == SEC_TRUE) {
         /*
          * Calculate a new board hash based on the SPI firmware and then
          * reprogram the board hash in the SE. If the update fails it
