@@ -102,9 +102,9 @@ Passport comes with a set of `Justfile` command scripts.  Using these commands r
     
     cargo install just 
     
-Note that Python `Pillow` must be updated to `8.4.0` for all commands to work properly using the following command:
+Note that Python `Pillow` must be at least `12.3.0` for all commands to work properly using the following command:
 
-    pip install Pillow==8.4.0
+    pip install 'Pillow>=12.3.0'
 
 `ports/stm32/Justfile` contains all the `just` commands you can run to build firmware for Passport. You'll typically want to be in the `ports/stm32` folder to run these commands.
 

@@ -37,7 +37,7 @@ extras_require = {
     "hidapi": ["hidapi>=0.7.99.post20"],
     "ethereum": ["rlp>=1.1.0", "web3>=4.8"],
     "qt-widgets": ["PyQt5"],
-    "extra": ["Pillow"],
+    "extra": ["Pillow>=12.3.0"],
     "stellar": ["stellar-sdk>=4.0.0,<6.0.0"],
 }
 
