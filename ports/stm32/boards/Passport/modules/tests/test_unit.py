@@ -46,3 +46,7 @@ def test_multisig_xpub_validation(test):
 
 def test_psbt_fee(test):
     assert test('psbt_fee.py') == b'OK'
+
+
+def test_restore_backup(test):
+    assert test('restore_backup.py') == b'OK'
