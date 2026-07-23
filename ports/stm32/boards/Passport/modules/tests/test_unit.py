@@ -24,5 +24,9 @@ def test_ui(test):
     assert test('ui.py') == b'OK'
 
 
+def test_sign_psbt(test):
+    assert test('sign_psbt.py') == b'OK'
+
+
 def test_foundation(test):
     assert test('foundation.py') == b'OK'
