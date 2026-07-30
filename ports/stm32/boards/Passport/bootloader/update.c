@@ -338,6 +338,9 @@ void update_firmware(void) {
         }
     }
 
+    bool      is_spi_fw_user_signed = spihdr.signature.pubkey1 == FW_USER_KEY;
+    secresult current_firmware_result;
+
     // Handle the firmware hash update
     get_current_board_hash(current_board_hash);
 
@@ -353,12 +356,11 @@ void update_firmware(void) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
     printf("Verifying current firmware before update\r\n");
 #endif
-    if (verify_current_firmware(true) == SEC_TRUE) {
+    current_firmware_result = verify_current_firmware(true);
+    if (current_firmware_result == SEC_TRUE) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
         printf("  Current firmware is valid, so doing more checks.\r\n");
 #endif
-
-        bool is_spi_fw_user_signed = spihdr.signature.pubkey1 == FW_USER_KEY;
 
 #ifdef PRODUCTION_BUILD
         uint32_t current_firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
@@ -393,29 +395,36 @@ void update_firmware(void) {
             }
         }
 #endif
-
-        calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
+    }
 #ifdef DEBUG_PRINT_UPDATE_HASH
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
-        bytes_to_hex_str((void*)&spihdr, sizeof(spihdr), str_buf, 64, "\r\n");
-        printf("spihdr\r\n%s\r\n", str_buf);
-        bytes_to_hex_str((void*)spi_fw_hash, sizeof(spi_fw_hash), str_buf, 64, "\r\n");
-        printf("spi_fw_hash\r\n%s\r\n", str_buf);
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+    else {
+        printf("  Current firmware is INVALID - fall through to try the update.\r\n");
+    }
 #endif
-        // Verify the signature and bail if it fails
-        if (verify_signature(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) == SEC_FALSE) {
-        error4:
-            if (ui_show_error("PASSPORT", "Update Error",
-                              "The firmware update is not properly signed and will not be installed.", &ICON_SHUTDOWN,
-                              &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
-                goto out;
-            } else {
-                ui_ask_shutdown();
-                goto error4;
-            }
-        }
 
+    calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
+#ifdef DEBUG_PRINT_UPDATE_HASH
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+    bytes_to_hex_str((void*)&spihdr, sizeof(spihdr), str_buf, 64, "\r\n");
+    printf("spihdr\r\n%s\r\n", str_buf);
+    bytes_to_hex_str((void*)spi_fw_hash, sizeof(spi_fw_hash), str_buf, 64, "\r\n");
+    printf("spi_fw_hash\r\n%s\r\n", str_buf);
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+#endif
+    // Verify the incoming firmware signature before attempting to install it.
+    if (verify_signature(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) == SEC_FALSE) {
+    error4:
+        if (ui_show_error("PASSPORT", "Update Error",
+                          "The firmware update is not properly signed and will not be installed.", &ICON_SHUTDOWN,
+                          &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
+            goto out;
+        } else {
+            ui_ask_shutdown();
+            goto error4;
+        }
+    }
+
+    if (current_firmware_result == SEC_TRUE) {
         /*
          * Calculate a new board hash based on the SPI firmware and then
          * reprogram the board hash in the SE. If the update fails it
@@ -456,11 +465,6 @@ void update_firmware(void) {
             }
         }
     }
-#ifdef DEBUG_PRINT_UPDATE_HASH
-    else {
-        printf("  Current firmware is INVALID - fall through to try the update.\r\n");
-    }
-#endif
 
     rc = do_update(FW_HEADER_SIZE + spihdr.info.fwlength);
     if (rc < 0) {
