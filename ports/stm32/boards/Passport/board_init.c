@@ -11,7 +11,14 @@
 #include "camera-ovm7690.h"
 #include "frequency.h"
 #include "gpio.h"
+#include "pprng.h"
 #include "se.h"
+
+extern void __attribute__((noreturn)) __fatal_error(const char* msg);
+
+void rng_fatal_error(void) {
+    __fatal_error("Entropy source failure");
+}
 
 #ifndef PASSPORT_DEBUG_STACK
 #define PASSPORT_DEBUG_STACK 0
@@ -34,6 +41,7 @@ void Passport_board_init(void) {
 
     gpio_init();
     frequency_turbo(true);
+    rng_setup();
     display_init(false);
     camera_init();
     adc_init();

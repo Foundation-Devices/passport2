@@ -10,8 +10,11 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 void     rng_setup(void);
+bool     rng_try_sample(uint32_t* result);
 uint32_t rng_sample(void);
 void     rng_buffer(uint8_t* result, int len);
+void     rng_fatal_error(void) __attribute__((noreturn));

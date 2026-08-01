@@ -27,11 +27,20 @@
 #include "rtc.h"
 #include "rng.h"
 
+#if defined(MICROPY_PASSPORT)
+#include "pprng.h"
+#endif
+
 #if MICROPY_HW_ENABLE_RNG
 
 #define RNG_TIMEOUT_MS (10)
 
 uint32_t rng_get(void) {
+    #if defined(MICROPY_PASSPORT)
+    // Keep pyb.rng(), os.urandom(), and MicroPython's initial PRNG seed on the
+    // same status-checked hardware path as Passport's cryptographic consumers.
+    return rng_sample();
+    #else
     // Enable the RNG peripheral if it's not already enabled
     if (!(RNG->CR & RNG_CR_RNGEN)) {
         #if defined(STM32H7)
@@ -53,6 +62,7 @@ uint32_t rng_get(void) {
 
     // Get and return the new random number
     return RNG->DR;
+    #endif
 }
 
 // Return a 30-bit hardware generated random number.
