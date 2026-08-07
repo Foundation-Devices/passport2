@@ -316,6 +316,11 @@ class Settings:
         # Render as JSON, encrypt and write it
         self.curr_dict['_revision'] = self.curr_dict.get('_revision', 0) + 1
 
+        # Validate the encoded size before selecting or erasing a flash slot.
+        json_buf = ujson.dumps(self.curr_dict).encode('utf8')
+        if len(json_buf) > DATA_SIZE:
+            raise ValueError('JSON data is larger than {} bytes.'.format(DATA_SIZE))
+
         addr = self.next_addr()
 
         # print('===============================================================')
@@ -327,17 +332,6 @@ class Settings:
         aes = self.get_aes(flash_offset)
 
         chk = trezorcrypto.sha256()
-
-        # Create the JSON string as bytes
-        json_buf = ujson.dumps(self.curr_dict).encode('utf8')
-
-        # Ensure data is not too big
-        if len(json_buf) > DATA_SIZE:
-            # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-            # print(' JSON TOO BIG!')
-            # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-            assert false, 'JSON data is larger than {}.'.format(DATA_SIZE)
-            return
 
         # Create a zero-filled byte buf
         padded_buf = bytearray(DATA_SIZE)
