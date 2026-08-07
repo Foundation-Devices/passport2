@@ -422,11 +422,9 @@ class ExtSettings:
             raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
         return d
 
-    def save_impl(self, pos, erase_old_pos=True, data=None):
+    def save_impl(self, pos, data, erase_old_pos=True):
         aes = self.get_aes(pos)
 
-        if data is None:
-            data = self._serialize_current()
         pad_len = self.max_json_len - len(data)
 
         with SFFile(pos, pre_erased=True, max_size=self.slot_size) as fd:
@@ -440,7 +438,6 @@ class ExtSettings:
             # pad w/ zeros
             fd.write(aes.encrypt(data))
             chk.update(data)
-            del data
 
             # print('pad_len={}'.format(pad_len))
 
