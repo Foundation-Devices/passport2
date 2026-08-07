@@ -29,6 +29,10 @@ from passport import mem
 from public_constants import DEVICE_SETTINGS
 
 
+class SettingsOutOfSpace(RuntimeError):
+    pass
+
+
 class ExtSettings:
     """Settings stored in external flash, with a secondary backup"""
 
@@ -405,36 +409,40 @@ class ExtSettings:
         # print('do_save({})'.format(erase_old_pos))
         # render as JSON, encrypt and write it.
         self.current['_revision'] = self.current.get('_revision', 1) + 1
+        data = self._serialize_current()
 
         _, pos = self.find_spot(self.my_pos)
-        self.save_impl(pos, erase_old_pos=erase_old_pos)
+        self.save_impl(pos, data=data, erase_old_pos=erase_old_pos)
 
         # print('save(): sf={}, pos={}'.format(sf, pos))
 
-    def save_impl(self, pos, erase_old_pos=True):
+    def _serialize_current(self):
+        d = ujson.dumps(self.current).encode('utf8')
+        if len(d) > self.max_json_len:
+            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
+        return d
+
+    def save_impl(self, pos, erase_old_pos=True, data=None):
         aes = self.get_aes(pos)
+
+        if data is None:
+            data = self._serialize_current()
+        pad_len = self.max_json_len - len(data)
 
         with SFFile(pos, pre_erased=True, max_size=self.slot_size) as fd:
             chk = trezorcrypto.sha256()
 
             # first the json data
-            d = ujson.dumps(self.current)
             # print('pos: {}'.format(pos))
             # print('current: {}'.format(self.current))
-            # print('data: {}'.format(bytes_to_hex_str(d)))
+            # print('data: {}'.format(bytes_to_hex_str(data)))
 
             # pad w/ zeros
-            data_len = len(d)
-            pad_len = self.max_json_len - data_len
-            if pad_len < 0:
-                # print('ERROR: JSON data is too big!')
-                return
+            fd.write(aes.encrypt(data))
+            chk.update(data)
+            del data
 
-            fd.write(aes.encrypt(d))
-            chk.update(d)
-            del d
-
-            # print('data_len={} pad_len={}'.format(data_len, pad_len))
+            # print('pad_len={}'.format(pad_len))
 
             while pad_len > 0:
                 here = min(32, pad_len)
