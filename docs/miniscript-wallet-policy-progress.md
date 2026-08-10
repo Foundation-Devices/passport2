@@ -31,6 +31,8 @@ and Taproot paths that cannot be represented by one global M/N value.
 - Address derivation and address verification through the shared wallet-policy
   interface.
 - Exact P2WSH and Taproot PSBT matching with immutable per-input spend plans.
+- Policy-derived verification of P2WSH change when a coordinator supplies the
+  complete output derivations but omits `PSBT_OUT_WITNESS_SCRIPT`.
 - Fail-closed separation between legacy multisig and registered policy inputs.
 - Human-readable policy review derived only from the validated AST.
 - Bounded rendering for complex AND, OR, threshold, multisig, timelock,
@@ -82,6 +84,11 @@ and Taproot paths that cannot be represented by one global M/N value.
 - Policy registration succeeds and survives navigation/reboot.
 - Liana and Passport derive and verify matching receive addresses.
 - Human-readable immediate and delayed policy screens render on device.
+- A Liana signing PSBT was captured after Passport rejected its P2WSH change
+  output for a missing output witness script. Independent descriptor derivation
+  proved that output branch `1`, index `1` exactly matches the registered policy.
+  Passport now reconstructs that output script from the stored policy while
+  continuing to require witness scripts for inputs and legacy multisig outputs.
 - Firmware `v2.4.0b4` was built by GitHub Actions, signed with the throwaway
   developer key installed on the test device, independently signature-verified,
   and installed successfully.
@@ -94,6 +101,9 @@ The unsigned CI payload SHA-256 is
 ## Automated validation completed
 
 - 94 Passport wallet-policy host tests pass.
+- Regression coverage confirms a registered policy accepts an omitted output
+  witness script only when the complete derivation map and scriptPubKey still
+  match the independently derived policy output.
 - Changed firmware modules compile with `mpy-cross`.
 - Python formatting, REUSE, Rust formatting, Rust checks, and Rust tests pass.
 - GitHub Actions successfully builds Color and Mono firmware, both simulators,
@@ -115,6 +125,8 @@ The unsigned CI payload SHA-256 is
 
 - Finish the revised on-device wording review.
 - Build and install the next candidate only after the wording pass is complete.
+- Re-run the captured Liana PSBT on that candidate and confirm the change output
+  is recognized before completing an end-to-end Testnet signature.
 - Sign and finalize a real Liana Testnet PSBT; verify the policy authorization
   page appears immediately before final approval.
 - Exercise representative complex policies, including threshold multisig,
@@ -136,3 +148,8 @@ binaries, recovery firmware, and microSD contents are deliberately excluded from
 Git. Their local evidence directory is
 `/Users/admin/Documents/ChatGPT/passport-miniscript-signing.jDMtXv` on the test
 machine. Do not copy that directory into this repository.
+
+The captured Liana PSBT is also excluded from Git. Its local evidence copy is
+`/Users/admin/Documents/ChatGPT/passport-miniscript-psbt-evidence/liana-signing-failure.psbt`
+with SHA-256
+`3ebe771cd7d1e9bfce9d422e49d4d5ae6b345837301e18712c750b15778ee546`.
