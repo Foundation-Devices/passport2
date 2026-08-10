@@ -167,6 +167,7 @@ How would you like to proceed?"
         try:
             result = await ShowQRPage(qr_type=qr_type,
                                       qr_data=qr_data,
+                                      caption='Scan this signed PSBT with your wallet coordinator.',
                                       left_micron=microns.MicroSD,
                                       right_micron=microns.Checkmark).show()
         except MemoryError as e:
@@ -239,10 +240,12 @@ How would you like to proceed?"
         from lvgl import LARGE_ICON_SUCCESS
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
         from pages import LongTextPage
+        from psbt_display import format_signed_psbt_message
 
-        msg = "Updated PSBT is:\n\n%s" % self.filename
+        msg = format_signed_psbt_message(self.filename)
         result = await LongTextPage(text=msg,
                                     centered=True,
+                                    card_header={'title': 'Signature added'},
                                     left_micron=microns.ScanQR,
                                     right_micron=microns.Checkmark,
                                     icon=LARGE_ICON_SUCCESS,

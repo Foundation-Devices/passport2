@@ -29,18 +29,25 @@ class SignPsbtCommonFlow(Flow):
         self.header = 'Transaction Info'
 
     async def validate_psbt(self):
-        from pages import ErrorPage
-
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
         # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
         if error is not None:
-            await ErrorPage(error_msg).show()
+            await self.show_psbt_error(error_msg)
             self.set_result(None)
         else:
             if self.psbt.active_policy:
-                self.header = 'Policy: {}'.format(self.psbt.active_policy.name)
+                self.header = 'Policy transaction'
             self.goto(self.check_multisig_import)
+
+    async def show_psbt_error(self, error_msg):
+        from pages import ErrorPage
+        from psbt_display import format_psbt_error
+        friendly, technical = format_psbt_error(error_msg)
+        text = friendly
+        if technical:
+            text = [friendly, 'Technical details\n\n{}'.format(technical)]
+        await ErrorPage(text=text).show()
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
@@ -161,9 +168,8 @@ class SignPsbtCommonFlow(Flow):
 
         from flows import SeriesOfPagesFlow
         from pages import LongTextPage
-        from utils import escape_text
         page_args = [{
-            'card_header': {'title': escape_text(policy.name)},
+            'card_header': {'title': 'Policy transaction'},
             'text': text,
             'centered': True,
         } for text in policy.format_signing_pages()]
@@ -204,7 +210,7 @@ class SignPsbtCommonFlow(Flow):
 
             gc.collect()
             if error is not None:
-                await ErrorPage(error_msg).show()
+                await self.show_psbt_error(error_msg)
                 self.set_result(None)
                 return
 
@@ -212,7 +218,7 @@ class SignPsbtCommonFlow(Flow):
                                                     sign_psbt_task, args=[self.psbt])
             gc.collect()
             if error is not None:
-                await ErrorPage(error_msg).show()
+                await self.show_psbt_error(error_msg)
                 self.set_result(None)
                 return
 

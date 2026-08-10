@@ -45,23 +45,23 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
     review = '\n'.join(pages)
     assert 'Simple inheritance' in pages[0]
     assert '2 ways to spend' in pages[0]
-    assert 'PASSPORT SPENDING PATH' in review
-    assert 'This Passport can spend at any time' in review
-    assert 'No waiting period applies' in review
+    assert pages[0].startswith('Liana Test\n\nSimple inheritance')
+    assert 'Spend with Passport' in review
+    assert 'Passport can authorize spending by itself' in review
+    assert 'No recovery delay is required' in review
     assert '6738 736C' in review
-    assert 'AFTER THE RECOVERY DELAY' in review
-    assert 'recovery key activates about 1 year after that coin confirms' in review
-    assert 'Either key can then spend by itself' in review
-    assert 'PASSPORT KEY - remains available' in review
+    assert 'Spend with the recovery key' in review
+    assert 'Recovery key can spend by itself about 1 year after each coin confirms' in review
+    assert 'Passport can still spend by itself after the recovery key becomes available' in review
     assert '52,596 blocks' in review
     assert '6738 736D' in review
-    assert 'DELAY DETAILS' in review
-    assert 'matched to the seed currently loaded on this Passport' in review
-    assert 'remains available after the recovery key activates' in review
+    assert 'How the recovery delay works' in review
+    assert 'matches the seed currently loaded on Passport' in review
     assert 'restarts its timer' in review
-    assert pages[-1].startswith('BACK UP THIS WALLET POLICY')
+    assert pages[-1].startswith('Back up this wallet policy')
     assert 'cannot recreate this wallet policy' in pages[-1]
-    assert 'Recovery 6738 736D\nactivates after about 1 year' in policy.format_confirmation()
+    assert ('Recovery 6738 736D\ncan spend by itself about 1 year after each coin confirms'
+            in policy.format_confirmation())
 
 
 def test_local_signer_name_is_used_and_escaped_without_changing_policy_semantics():
@@ -71,7 +71,7 @@ def test_local_signer_name_is_used_and_escaped_without_changing_policy_semantics
         (key_info(0), key_info(1)), (0,), ('', 'Family ## Vault'))
 
     review = '\n'.join(policy.format_review_pages())
-    assert 'Family #### Vault - becomes available' in review
+    assert 'Family #### Vault can spend by itself' in review
     assert '6738 736D' in review
 
 
@@ -82,9 +82,11 @@ def test_simple_policy_signing_review_states_exact_passport_authority():
         (key_info(0), key_info(1)), (0,), ('', 'Recovery key'))
     signing = '\n'.join(policy.format_signing_pages())
     assert 'Signing path' in signing
-    assert "This transaction uses Passport's immediate spending path" in signing
+    assert 'Wallet\nLiana Test' in signing
+    assert 'Passport is authorizing this transaction with its own key' in signing
+    assert 'No recovery delay is required' in signing
     assert 'Passport key\n6738 736C' in signing
-    assert 'The recovery path is not used' in signing
+    assert 'The recovery key is not being used' in signing
 
 
 def test_canonical_full_descriptor_and_short_check_are_available_for_comparison():
@@ -95,7 +97,7 @@ def test_canonical_full_descriptor_and_short_check_are_available_for_comparison(
     assert policy.descriptor_check() == expected[-8:].upper()
     details = policy.format_details()
     assert expected in details
-    assert 'Internal Policy ID' in details
+    assert 'Internal policy ID' in details
 
 
 def test_threshold_tree_does_not_expand_combinations_and_flags_passport_bypass():
@@ -106,7 +108,7 @@ def test_threshold_tree_does_not_expand_combinations_and_flags_passport_bypass()
         tuple(key_info(index) for index in range(4)), (0,))
     review = '\n'.join(policy.format_review_pages())
     assert 'Custom wallet policy' in review
-    assert '2 OF 3 KEYS' in review
+    assert '2 of 3 keys' in review
     assert 'This Passport - 6738 736C' in review
     assert 'Key 2 - 6738 736D' in review
     assert 'Wait about 1 week' in review
@@ -127,7 +129,7 @@ def test_maximum_key_threshold_stays_linear_and_names_every_signer():
 
     pages = policy.format_review_pages()
     review = '\n'.join(pages)
-    assert '8 OF 15 KEYS' in review
+    assert '8 of 15 keys' in review
     for index in range(key_count):
         assert '{:04X} {:04X}'.format(
             (0x6738736c + index) >> 16,
@@ -143,7 +145,7 @@ def test_threshold_conditions_are_rendered_without_opaque_miniscript():
         'wsh(thresh(2,pk(@0/**),s:pk(@1/**),a:pk(@2/**)))',
         tuple(key_info(index) for index in range(3)), (0,))
     review = '\n'.join(policy.format_review_pages())
-    assert '2 OF 3 CONDITIONS' in review
+    assert '2 of 3 conditions' in review
     assert 'Advanced condition' not in review
 
 
@@ -153,10 +155,10 @@ def test_conditional_policy_is_rendered_structurally_without_false_simplificatio
         'wsh(andor(pk(@0/**),pk(@1/**),pk(@2/**)))',
         tuple(key_info(index) for index in range(3)), (0,))
     review = '\n'.join(policy.format_review_pages())
-    assert 'CONDITIONAL PATH' in review
-    assert '\n  IF\n' in review
-    assert '\n  THEN ALSO\n' in review
-    assert '\n  OTHERWISE\n' in review
+    assert 'Conditional path' in review
+    assert '\n  If\n' in review
+    assert '\n  Then also\n' in review
+    assert '\n  Otherwise\n' in review
     assert 'Review the conditional branches carefully' in review
     assert '1 conditional path requires detailed review' in review
 
@@ -168,7 +170,7 @@ def test_taproot_key_paths_are_first_class_spending_paths():
         (key_info(0, 86),), (0,))
     fixed_review = '\n'.join(fixed.format_review_pages())
     assert '2 ways to spend' in fixed_review
-    assert 'TAPROOT KEY PATH' in fixed_review
+    assert 'Taproot key path' in fixed_review
     assert 'can bypass every script condition' in fixed_review
     assert 'cannot verify that no one controls this key' in fixed_review
 
