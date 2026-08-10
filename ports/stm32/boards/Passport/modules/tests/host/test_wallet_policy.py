@@ -248,6 +248,20 @@ def test_psbt_derivations_produce_immutable_spend_plan():
     assert plan.timelocks == (('older', 65535),)
     assert plan.expected_pubkey in expected_paths
 
+    # A registered policy can safely reconstruct a change output's witness
+    # script when a coordinator omits PSBT_OUT_WITNESS_SCRIPT.  The complete
+    # derivation map and scriptPubKey must still match exactly.
+    matched, matched_paths, _ = policy.match_derivations(
+        expected_paths, derived.script_pubkey, None, chain,
+        int.from_bytes(bytes.fromhex('6738736c'), 'little'))
+    assert matched.witness_script == derived.witness_script
+    assert matched_paths == expected_paths
+
+    with pytest.raises(PolicyMismatchError, match='do not match'):
+        policy.match_derivations(
+            expected_paths, bytes(34), None, chain,
+            int.from_bytes(bytes.fromhex('6738736c'), 'little'))
+
     wrong_paths = dict(expected_paths)
     wrong_key = next(iter(wrong_paths))
     wrong_paths[wrong_key] = list(wrong_paths[wrong_key][:-1]) + [13]
@@ -255,6 +269,10 @@ def test_psbt_derivations_produce_immutable_spend_plan():
         policy.make_spend_plan(3, wrong_paths, derived.script_pubkey,
                                derived.witness_script, chain,
                                int.from_bytes(bytes.fromhex('6738736c'), 'little'), 1)
+    with pytest.raises(PolicyMismatchError, match='do not match'):
+        policy.match_derivations(
+            wrong_paths, derived.script_pubkey, None, chain,
+            int.from_bytes(bytes.fromhex('6738736c'), 'little'))
 
 
 def test_spend_plan_rejects_non_all_sighash():

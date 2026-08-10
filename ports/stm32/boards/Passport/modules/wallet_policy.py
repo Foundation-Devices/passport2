@@ -762,7 +762,8 @@ class MiniscriptPolicy:
                     branch, address_index, chain)
                 if derived.script_pubkey != bytes(utxo_script_pubkey):
                     continue
-                if derived.witness_script != bytes(witness_script):
+                if witness_script is not None and \
+                        derived.witness_script != bytes(witness_script):
                     continue
                 if set(expected_paths) != set(subpaths):
                     continue

@@ -75,6 +75,18 @@ async def run_test():
     assert parsed.outputs[1].policy_branch == 1
     assert parsed.outputs[1].policy_address_index == 6
 
+    # Liana includes complete output derivations but may omit the change
+    # output's witness script.  The registered policy must reconstruct and
+    # verify it rather than rejecting an otherwise complete PSBT.
+    omitted_output_script = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
+    await omitted_output_script.validate()
+    omitted_output_script.consider_inputs()
+    omitted_output_script.outputs[1].witness_script = None
+    omitted_output_script.consider_outputs()
+    assert omitted_output_script.outputs[1].is_change
+    assert omitted_output_script.outputs[1].policy_branch == 1
+    assert omitted_output_script.outputs[1].policy_address_index == 6
+
     # An altered input derivation must fail policy matching before signing.
     tampered_input = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
     await tampered_input.validate()
