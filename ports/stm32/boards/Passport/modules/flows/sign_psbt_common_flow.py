@@ -14,7 +14,7 @@ from flows import Flow
 import microns
 from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
-from tasks import sign_psbt_task, validate_psbt_task
+from tasks import validate_psbt_task
 import gc
 from utils import escape_text, spinner_task, recolor, stylize_address
 
@@ -38,6 +38,8 @@ class SignPsbtCommonFlow(Flow):
             await ErrorPage(error_msg).show()
             self.set_result(None)
         else:
+            if self.psbt.active_policy:
+                self.header = 'Policy: {}'.format(self.psbt.active_policy.name)
             self.goto(self.check_multisig_import)
 
     async def check_multisig_import(self):
@@ -162,6 +164,7 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
+        from tasks.sign_psbt_task import sign_psbt_task
         from utils import spinner_task
         from pages import ErrorPage, QuestionPage
 
