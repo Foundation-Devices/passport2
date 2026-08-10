@@ -92,6 +92,9 @@ and Taproot paths that cannot be represented by one global M/N value.
 - Firmware `v2.4.0b4` was built by GitHub Actions, signed with the throwaway
   developer key installed on the test device, independently signature-verified,
   and installed successfully.
+- Firmware `v2.4.0b5` was built from private commit `6c79b4c0`, signed with the
+  same throwaway developer key, independently verified, and copied to the test
+  microSD. Physical installation and Liana signing re-test are pending.
 
 The `v2.4.0b4` signed-file SHA-256 is
 `9042211f7205871ad00def4a9eee66c4f9f95ff523e2b764bbbd38bf87059145`.
@@ -111,6 +114,8 @@ The unsigned CI payload SHA-256 is
 - Successful CI runs:
   - Build: <https://github.com/Foundation-Devices/passport2/actions/runs/31396457979>
   - Lint/test: <https://github.com/Foundation-Devices/passport2/actions/runs/31396457903>
+  - Private `v2.4.0b5` build:
+    <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31403355734>
 
 ## Source checkpoints
 
@@ -118,13 +123,14 @@ The unsigned CI payload SHA-256 is
 - `0eba4aa4` — first semantic policy-review UI.
 - `b6a82959` — adaptive timelines, signer names, network diagnostics, and
   policy-aware signing review. This is the source used for `v2.4.0b4`.
-- The next private checkpoint contains wording improvements requested during
-  physical-device review and has intentionally not yet been built.
+- `c2f52e1f` — wording improvements requested during physical-device review.
+- `6c79b4c0` — policy-derived verification for Liana P2WSH change outputs that
+  omit `PSBT_OUT_WITNESS_SCRIPT`. This is the source used for `v2.4.0b5`.
 
 ## Pending physical and product validation
 
 - Finish the revised on-device wording review.
-- Build and install the next candidate only after the wording pass is complete.
+- Install the independently verified `v2.4.0b5` candidate from the test microSD.
 - Re-run the captured Liana PSBT on that candidate and confirm the change output
   is recognized before completing an end-to-end Testnet signature.
 - Sign and finalize a real Liana Testnet PSBT; verify the policy authorization
@@ -153,3 +159,8 @@ The captured Liana PSBT is also excluded from Git. Its local evidence copy is
 `/Users/admin/Documents/ChatGPT/passport-miniscript-psbt-evidence/liana-signing-failure.psbt`
 with SHA-256
 `3ebe771cd7d1e9bfce9d422e49d4d5ae6b345837301e18712c750b15778ee546`.
+
+The `v2.4.0b5` unsigned CI payload SHA-256 is
+`d1bee2d609ef1cd37827003146beabfe5689d9d1aeb9a136934d35b82924d6bc`.
+The signed-file SHA-256 is
+`7599c870415dfcc2c6975e496d9155fa35560f5a41e12ea39348ed8c26cd660d`.
