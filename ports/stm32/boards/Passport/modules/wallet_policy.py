@@ -617,8 +617,8 @@ class MiniscriptPolicy:
         return result
 
     def format_details(self):
-        lines = ['TECHNICAL DETAILS',
-                 'Full Descriptor\n' + self.full_descriptor()]
+        lines = ['Technical details',
+                 'Full descriptor\n' + self.full_descriptor()]
         for index, key in enumerate(self.keys):
             if index in self.owned_key_indexes:
                 role = 'This Passport'
@@ -629,7 +629,7 @@ class MiniscriptPolicy:
             lines.append('Key {} - {}\nFingerprint {}\nPath {}\n{}'.format(
                 index + 1, role, key.fingerprint.upper(),
                 self._format_origin_path(key.path), key.xpub))
-        lines.append('Internal Policy ID\n' + self.policy_id)
+        lines.append('Internal policy ID\n' + self.policy_id)
         return '\n\n'.join(lines)
 
     def full_descriptor(self, with_checksum=True):

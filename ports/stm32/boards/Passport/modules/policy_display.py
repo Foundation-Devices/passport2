@@ -238,12 +238,12 @@ def _format_condition(node, policy, depth=0, recovery=False):
         prefix = 'Wait ' if kind == 'older' else 'After '
         return [indent + prefix + short, child_indent + '(' + exact + ')']
     if kind in ('multi', 'multi_a'):
-        lines = [indent + '{} OF {} KEYS'.format(node.value, len(node.args))]
+        lines = [indent + '{} of {} keys'.format(node.value, len(node.args))]
         for key in node.args:
             lines.append(child_indent + '- ' + _key_line(policy, key.index, recovery))
         return lines
     if kind in _AND:
-        lines = [indent + 'ALL OF']
+        lines = [indent + 'All of']
         for child in node.args:
             child_lines = _format_condition(child, policy, depth + 1, recovery)
             if child_lines:
@@ -251,7 +251,7 @@ def _format_condition(node, policy, depth=0, recovery=False):
             lines.extend(child_lines)
         return lines
     if kind in _OR:
-        lines = [indent + 'ANY ONE OF']
+        lines = [indent + 'Any one of']
         for child in node.args:
             child_lines = _format_condition(child, policy, depth + 1, recovery)
             if child_lines:
@@ -259,7 +259,7 @@ def _format_condition(node, policy, depth=0, recovery=False):
             lines.extend(child_lines)
         return lines
     if kind == 'thresh':
-        lines = [indent + '{} OF {} CONDITIONS'.format(node.value, len(node.args))]
+        lines = [indent + '{} of {} conditions'.format(node.value, len(node.args))]
         for child in node.args:
             child_lines = _format_condition(child, policy, depth + 1, recovery)
             if child_lines:
@@ -267,11 +267,11 @@ def _format_condition(node, policy, depth=0, recovery=False):
             lines.extend(child_lines)
         return lines
     if kind == 'andor':
-        lines = [indent + 'CONDITIONAL PATH', child_indent + 'IF']
+        lines = [indent + 'Conditional path', child_indent + 'If']
         lines.extend(_format_condition(node.args[0], policy, depth + 2, recovery))
-        lines.append(child_indent + 'THEN ALSO')
+        lines.append(child_indent + 'Then also')
         lines.extend(_format_condition(node.args[1], policy, depth + 2, recovery))
-        lines.append(child_indent + 'OTHERWISE')
+        lines.append(child_indent + 'Otherwise')
         lines.extend(_format_condition(node.args[2], policy, depth + 2, recovery))
         return lines
     if kind == '1':
@@ -378,26 +378,24 @@ def _simple_path_pages(policy, simple):
     short, exact, detail = describe_timelock(lock_kind, lock_value)
     recovery_name = _escape(policy.key_names[recovery_index]) or 'Recovery key'
     primary_page = (
-        'PASSPORT SPENDING PATH\n\n'
-        'This Passport can spend at any time.\n'
-        'No waiting period applies.\n\n'
-        'PASSPORT KEY\n{}\n\n'
-        'This key was matched to the seed currently loaded on this Passport.\n\n'
-        'This spending path remains available after the recovery key activates.'
+        'Spend with Passport\n\n'
+        'Passport can authorize spending by itself.\n'
+        'No recovery delay is required.\n\n'
+        'Passport key\n{}\n\n'
+        'This key matches the seed currently loaded on Passport.'
     ).format(format_fingerprint(owned.fingerprint))
     recovery_page = (
-        'AFTER THE RECOVERY DELAY\n\n'
-        'For each coin, the recovery key activates {} after that coin confirms.\n\n'
-        'Either key can then spend by itself.\n\n'
-        'PASSPORT KEY - remains available\n{}\n\n'
-        '{} - becomes available\n{}'
-    ).format(short, format_fingerprint(owned.fingerprint),
-             recovery_name, format_fingerprint(recovery_key.fingerprint))
+        'Spend with the recovery key\n\n'
+        '{} can spend by itself {} after each coin confirms.\n\n'
+        'Exact delay\n{}\n\n'
+        'Passport can still spend by itself after the recovery key becomes available.\n\n'
+        'Recovery key\n{}'
+    ).format(recovery_name, short, exact, format_fingerprint(recovery_key.fingerprint))
     timing_page = (
-        'DELAY DETAILS\n\n'
-        'Exact delay\n{}\n\n{}\n\n'
+        'How the recovery delay works\n\n'
+        '{}\n\n'
         'Block timing varies. Spending and returning change creates a new coin and restarts its timer.'
-    ).format(exact, detail)
+    ).format(detail)
     return (primary_page, recovery_page, timing_page)
 
 
@@ -414,13 +412,13 @@ def _generic_path_page(policy, path, position, total):
     if path['key_path']:
         if path['fixed_key_path']:
             return (
-                'PATH {} OF {}\nTAPROOT KEY PATH\n\n'
+                'Path {} of {}\nTaproot key path\n\n'
                 'A fixed internal key can bypass every script condition if its private key exists.\n\n'
                 'Passport cannot verify that no one controls this key.'
             ).format(position, total)
         key_index = path['keys'][0]
         return (
-            'PATH {} OF {}\nTAPROOT KEY PATH\n\n'
+            'Path {} of {}\nTaproot key path\n\n'
             '{} can spend without using any script-path conditions.\n\n'
             'This path {} Passport.'
         ).format(position, total, _key_line(policy, key_index),
@@ -428,12 +426,12 @@ def _generic_path_page(policy, path, position, total):
 
     locks = path['locks']
     if locks:
-        heading = 'TIMELOCKED PATH'
+        heading = 'Timelocked path'
     elif requires is True:
-        heading = 'PASSPORT PATH'
+        heading = 'Passport path'
     else:
-        heading = 'ALTERNATE PATH'
-    lines = ['PATH {} OF {}'.format(position, total), heading, '']
+        heading = 'Alternate path'
+    lines = ['Path {} of {}'.format(position, total), heading, '']
     lines.extend(_format_condition(path['node'], policy))
     lines.append('')
     if requires is True:
@@ -450,8 +448,8 @@ def format_review_pages(policy):
     simple = _classify_simple_inheritance(policy, paths)
     kind = 'Simple inheritance' if simple else 'Custom wallet policy'
     overview = (
-        '{}\n\n{}\n{}\n\n{}'
-    ).format(kind, _network_name(policy), _script_type(policy),
+        '{}\n\n{}\n\n{}\n{}\n\n{}'
+    ).format(_escape(policy.name), kind, _network_name(policy), _script_type(policy),
              _plural(len(paths), 'way to spend', 'ways to spend'))
 
     pages = [overview]
@@ -470,7 +468,7 @@ def format_review_pages(policy):
         elif requires is None:
             unknown += 1
     if (bypass or unknown) and not simple:
-        lines = ['PASSPORT AUTHORITY']
+        lines = ['Passport authority']
         if bypass:
             lines.extend(['', _plural(bypass, 'path') + ' can spend without this Passport.'])
         if unknown:
@@ -479,7 +477,7 @@ def format_review_pages(policy):
         pages.append('\n'.join(lines))
 
     pages.append(
-        'BACK UP THIS WALLET POLICY\n\n'
+        'Back up this wallet policy\n\n'
         'Your Passport seed recovers its key, but it cannot recreate this wallet policy.\n\n'
         'Keep a copy of this wallet policy outside Passport.'
     )
@@ -494,8 +492,8 @@ def format_confirmation(policy):
         key = policy.keys[recovery['keys'][0]]
         short, _, _ = describe_timelock(*recovery['locks'][0])
         return (
-            'Passport spends immediately and never expires.\n\n'
-            '{} {}\nactivates after {}.'
+            'Passport can spend by itself with no recovery delay.\n\n'
+            '{} {}\ncan spend by itself {} after each coin confirms.'
         ).format(_escape(policy.key_names[recovery['keys'][0]]) or 'Recovery',
                  format_fingerprint(key.fingerprint), short)
     bypass = sum(1 for path in paths if _path_requires_passport(policy, path) is False)
@@ -512,10 +510,12 @@ def format_signing_pages(policy):
     if simple:
         return ((
             'Signing path\n\n'
-            "This transaction uses Passport's immediate spending path.\n\n"
+            'Wallet\n{}\n\n'
+            'Passport is authorizing this transaction with its own key.\n'
+            'No recovery delay is required.\n\n'
             'Passport key\n{}\n\n'
-            'The recovery path is not used.'
-        ).format(format_fingerprint(owned.fingerprint)),)
+            'The recovery key is not being used.'
+        ).format(_escape(policy.name), format_fingerprint(owned.fingerprint)),)
 
     owned_paths = []
     for position, path in enumerate(paths, 1):
@@ -523,7 +523,10 @@ def format_signing_pages(policy):
             owned_paths.append(position)
     return ((
         'Signing with this policy\n\n'
+        'Wallet\n{}\n\n'
         'This Passport key appears in {} of {} reviewed paths.\n\n'
         'Passport key\n{}\n\n'
-        'Passport adds its signature but cannot prove how the coordinator will finalize the transaction.'
-    ).format(len(owned_paths), len(paths), format_fingerprint(owned.fingerprint)),)
+        'Passport can verify its signature, but the wallet coordinator decides which valid path '
+        'will finalize the transaction.'
+    ).format(_escape(policy.name), len(owned_paths), len(paths),
+             format_fingerprint(owned.fingerprint)),)
