@@ -81,9 +81,10 @@ def test_simple_policy_signing_review_states_exact_passport_authority():
         'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
         (key_info(0), key_info(1)), (0,), ('', 'Recovery key'))
     signing = '\n'.join(policy.format_signing_pages())
-    assert 'WHAT YOUR SIGNATURE AUTHORIZES' in signing
-    assert 'Immediate spending with this Passport' in signing
-    assert 'The recovery path is not needed' in signing
+    assert 'Signing path' in signing
+    assert "This transaction uses Passport's immediate spending path" in signing
+    assert 'Passport key\n6738 736C' in signing
+    assert 'The recovery path is not used' in signing
 
 
 def test_canonical_full_descriptor_and_short_check_are_available_for_comparison():
