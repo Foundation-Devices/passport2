@@ -32,6 +32,12 @@ def format_fingerprint(fingerprint):
     return ' '.join(text[index:index + 4] for index in range(0, len(text), 4))
 
 
+def _escape(text):
+    # LVGL uses # as an inline recolor delimiter. Signer names are local and
+    # validated, but still need escaping before they enter a recolor-enabled label.
+    return text.replace('#', '##')
+
+
 def _plural(value, singular, plural=None):
     return '{} {}'.format(value, singular if value == 1 else (plural or singular + 's'))
 
@@ -47,11 +53,37 @@ def _about_duration(seconds):
         (3600, 'hour'),
         (60, 'minute'),
     )
-    for size, name in units:
+    for position, (size, name) in enumerate(units):
         if seconds >= size:
-            count = max(1, int((seconds + size // 2) // size))
-            return 'about ' + _plural(count, name)
+            count = seconds // size
+            parts = [_plural(count, name)]
+            if position + 1 < len(units):
+                next_size, next_name = units[position + 1]
+                remainder = seconds - count * size
+                next_count = int((remainder + next_size // 2) // next_size)
+                if next_count:
+                    # Carry a rounded sub-unit into the primary unit. This is
+                    # especially important for 11 months 29 days -> 1 year.
+                    ratio = int((size + next_size // 2) // next_size)
+                    if next_count >= ratio:
+                        count += 1
+                        parts = [_plural(count, name)]
+                    else:
+                        parts.append(_plural(next_count, next_name))
+            return 'about ' + ' '.join(parts)
     return _plural(seconds, 'second')
+
+
+def _utc_date(timestamp):
+    try:
+        try:
+            import utime as time
+        except ImportError:  # pragma: no cover - CPython host tests
+            import time
+        value = time.gmtime(timestamp)
+        return '{:04d}-{:02d}-{:02d} UTC'.format(value[0], value[1], value[2])
+    except BaseException:
+        return None
 
 
 def describe_timelock(kind, value):
@@ -60,7 +92,8 @@ def describe_timelock(kind, value):
         if value & (1 << 22):
             units = value & 0xffff
             seconds = units * 512
-            exact = '{} BIP68 time units'.format(_group_number(units))
+            exact = '{} seconds ({} x 512)'.format(
+                _group_number(seconds), _group_number(units))
             if value != ((1 << 22) | units):
                 exact += ' (encoded as older({}))'.format(value)
             return (
@@ -69,7 +102,8 @@ def describe_timelock(kind, value):
                 'The timer starts separately when each coin confirms.',
             )
         blocks = value & 0xffff
-        exact = '{} blocks'.format(_group_number(blocks))
+        exact = '{} {}'.format(_group_number(blocks),
+                               'block' if blocks == 1 else 'blocks')
         if value != blocks:
             exact += ' (encoded as older({}))'.format(value)
         return (
@@ -83,9 +117,10 @@ def describe_timelock(kind, value):
             'absolute block height',
             'This condition uses a blockchain height, not the age of each coin.',
         )
+    date = _utc_date(value)
     return (
-        'Unix time {}'.format(_group_number(value)),
-        'absolute timestamp',
+        date or 'Unix time {}'.format(_group_number(value)),
+        'Unix timestamp {}'.format(_group_number(value)),
         'This condition uses an absolute time, not the age of each coin.',
     )
 
@@ -181,6 +216,8 @@ def _key_line(policy, key_index, recovery=False):
     key = policy.keys[key_index]
     if key_index in policy.owned_key_indexes:
         role = 'This Passport'
+    elif policy.key_names[key_index]:
+        role = _escape(policy.key_names[key_index])
     elif recovery:
         role = 'Recovery key'
     else:
@@ -339,23 +376,34 @@ def _simple_path_pages(policy, simple):
     recovery_key = policy.keys[recovery_index]
     lock_kind, lock_value = recovery['locks'][0]
     short, exact, detail = describe_timelock(lock_kind, lock_value)
+    recovery_name = _escape(policy.key_names[recovery_index]) or 'Recovery key'
     primary_page = (
-        'SPEND ANYTIME\n\n'
-        'This Passport alone can spend.\n\n'
-        'Verified Passport key\n{}\n\n'
-        'Derivation\n{}'
-    ).format(format_fingerprint(owned.fingerprint), policy._format_origin_path(owned.path))
+        'RIGHT NOW\n\n'
+        'This Passport can spend alone.\n\n'
+        'VERIFIED ON THIS DEVICE\n{}\n\n'
+        'Passport access does not expire.'
+    ).format(format_fingerprint(owned.fingerprint))
     recovery_page = (
-        'RECOVER LATER\n\n'
-        'The recovery key alone can spend after each coin is {} old.\n\n'
-        'Exact delay\n{}\n\n'
-        'Recovery fingerprint\n{}'
-    ).format(short, exact, format_fingerprint(recovery_key.fingerprint))
+        'AFTER {}\n\n'
+        'EITHER KEY CAN SPEND ALONE\n\n'
+        'This Passport - still works\n{}\n\n'
+        '{} - becomes available\n{}'
+    ).format(short.upper(), format_fingerprint(owned.fingerprint),
+             recovery_name, format_fingerprint(recovery_key.fingerprint))
     timing_page = (
-        'THE DELAY IS PER COIN\n\n{}\n\n'
-        'Spending and returning change creates a new coin and restarts its timer.'
-    ).format(detail)
+        'DELAY DETAILS\n\n'
+        'Exact delay\n{}\n\n{}\n\n'
+        'Block timing varies. Spending and returning change creates a new coin and restarts its timer.'
+    ).format(exact, detail)
     return (primary_page, recovery_page, timing_page)
+
+
+def suggested_key_name(policy, key_index):
+    paths = policy_paths(policy)
+    simple = _classify_simple_inheritance(policy, paths)
+    if simple and key_index == simple[1]['keys'][0]:
+        return 'Recovery key'
+    return 'Key {}'.format(key_index + 1)
 
 
 def _generic_path_page(policy, path, position, total):
@@ -443,11 +491,36 @@ def format_confirmation(policy):
         key = policy.keys[recovery['keys'][0]]
         short, _, _ = describe_timelock(*recovery['locks'][0])
         return (
-            'Passport can spend now.\n\n'
-            'Recovery {}\nafter {}.'
-        ).format(format_fingerprint(key.fingerprint), short)
+            'Passport spends immediately and never expires.\n\n'
+            '{} {}\nactivates after {}.'
+        ).format(_escape(policy.key_names[recovery['keys'][0]]) or 'Recovery',
+                 format_fingerprint(key.fingerprint), short)
     bypass = sum(1 for path in paths if _path_requires_passport(policy, path) is False)
     text = _plural(len(paths), 'spending path')
     if bypass:
         text += '\n{} without Passport'.format(bypass)
     return text
+
+
+def format_signing_pages(policy):
+    paths = policy_paths(policy)
+    simple = _classify_simple_inheritance(policy, paths)
+    owned = policy.keys[policy.owned_key_indexes[0]]
+    if simple:
+        return ((
+            'WHAT YOUR SIGNATURE AUTHORIZES\n\n'
+            'Immediate spending with this Passport.\n\n'
+            'Verified key\n{}\n\n'
+            'The recovery path is not needed for this signature.'
+        ).format(format_fingerprint(owned.fingerprint)),)
+
+    owned_paths = []
+    for position, path in enumerate(paths, 1):
+        if policy.owned_key_indexes[0] in path['keys']:
+            owned_paths.append(position)
+    return ((
+        'WHAT YOUR SIGNATURE AUTHORIZES\n\n'
+        'This Passport key appears in {} of {} reviewed paths.\n\n'
+        'Verified key\n{}\n\n'
+        'Passport adds its signature but cannot prove how the coordinator will finalize the transaction.'
+    ).format(len(owned_paths), len(paths), format_fingerprint(owned.fingerprint)),)

@@ -6,6 +6,8 @@ import os
 import sys
 import types
 
+import pytest
+
 
 MODULES = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if MODULES not in sys.path:
@@ -43,17 +45,40 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
     review = '\n'.join(pages)
     assert 'Simple inheritance' in pages[0]
     assert '2 ways to spend' in pages[0]
-    assert 'SPEND ANYTIME' in review
-    assert 'This Passport alone can spend' in review
+    assert 'RIGHT NOW' in review
+    assert 'This Passport can spend alone' in review
     assert '6738 736C' in review
-    assert 'RECOVER LATER' in review
-    assert 'about 1 year' in review
+    assert 'EITHER KEY CAN SPEND ALONE' in review
+    assert 'ABOUT 1 YEAR' in review
     assert '52,596 blocks' in review
     assert '6738 736D' in review
-    assert 'THE DELAY IS PER COIN' in review
+    assert 'DELAY DETAILS' in review
+    assert 'Passport access does not expire' in review
     assert 'restarts its timer' in review
     assert pages[-1].startswith('BACKUP REQUIRED')
-    assert 'Recovery 6738 736D\nafter about 1 year' in policy.format_confirmation()
+    assert 'Recovery 6738 736D\nactivates after about 1 year' in policy.format_confirmation()
+
+
+def test_local_signer_name_is_used_and_escaped_without_changing_policy_semantics():
+    policy = MiniscriptPolicy(
+        'Liana Test', 'TBTC',
+        'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
+        (key_info(0), key_info(1)), (0,), ('', 'Family ## Vault'))
+
+    review = '\n'.join(policy.format_review_pages())
+    assert 'Family #### Vault - becomes available' in review
+    assert '6738 736D' in review
+
+
+def test_simple_policy_signing_review_states_exact_passport_authority():
+    policy = MiniscriptPolicy(
+        'Liana Test', 'TBTC',
+        'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
+        (key_info(0), key_info(1)), (0,), ('', 'Recovery key'))
+    signing = '\n'.join(policy.format_signing_pages())
+    assert 'WHAT YOUR SIGNATURE AUTHORIZES' in signing
+    assert 'Immediate spending with this Passport' in signing
+    assert 'The recovery path is not needed' in signing
 
 
 def test_canonical_full_descriptor_and_short_check_are_available_for_comparison():
@@ -158,12 +183,35 @@ def test_height_and_time_locks_get_human_and_exact_descriptions():
 
     short, exact, detail = describe_timelock('older', (1 << 22) | 1182)
     assert short == 'about 1 week'
-    assert exact == '1,182 BIP68 time units'
+    assert exact == '605,184 seconds (1,182 x 512)'
     assert 'each coin confirms' in detail
 
     assert describe_timelock('after', 840000)[:2] == (
         'block 840,000', 'absolute block height')
     assert describe_timelock('after', 1700000000)[:2] == (
-        'Unix time 1,700,000,000', 'absolute timestamp')
+        '2023-11-14 UTC', 'Unix timestamp 1,700,000,000')
 
     assert 'encoded as older(65537)' in describe_timelock('older', 65537)[1]
+
+
+@pytest.mark.parametrize(('blocks', 'short', 'exact'), (
+    (1, 'about 10 minutes', '1 block'),
+    (6, 'about 1 hour', '6 blocks'),
+    (144, 'about 1 day', '144 blocks'),
+    (1008, 'about 1 week', '1,008 blocks'),
+    (26298, 'about 6 months', '26,298 blocks'),
+    (52596, 'about 1 year', '52,596 blocks'),
+    (65535, 'about 1 year 3 months', '65,535 blocks'),
+))
+def test_relative_block_delays_scale_from_one_block_to_consensus_maximum(
+        blocks, short, exact):
+    assert describe_timelock('older', blocks)[:2] == (short, exact)
+
+
+def test_time_based_relative_delay_and_absolute_date_are_unambiguous():
+    assert describe_timelock('older', (1 << 22) | 1)[:2] == (
+        'about 8 minutes', '512 seconds (1 x 512)')
+    assert describe_timelock('older', (1 << 22) | 65535)[:2] == (
+        'about 1 year 1 month', '33,553,920 seconds (65,535 x 512)')
+    assert describe_timelock('after', 1798761600)[:2] == (
+        '2027-01-01 UTC', 'Unix timestamp 1,798,761,600')

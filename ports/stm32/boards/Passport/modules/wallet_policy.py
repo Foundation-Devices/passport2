@@ -23,6 +23,7 @@ from policy_errors import (PolicyMismatchError, PolicyParseError,
 POLICY_FORMAT_VERSION = 1
 POLICY_STORAGE_KEY = 'wallet_policies'
 MAX_POLICY_NAME_LENGTH = 20
+MAX_KEY_NAME_LENGTH = 20
 MAX_POLICY_RECORD_LENGTH = 3072
 SETTINGS_HEADROOM = 768
 BASE58_CHARS = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
@@ -382,9 +383,10 @@ class DerivedPolicyOutput:
 class MiniscriptPolicy:
     __slots__ = ('name', 'network', 'template', 'keys', 'owned_key_indexes',
                  'miniscript', 'script_tree', 'internal_key', 'context',
-                 'policy_id')
+                 'policy_id', 'key_names')
 
-    def __init__(self, name, network, template, keys, owned_key_indexes):
+    def __init__(self, name, network, template, keys, owned_key_indexes,
+                 key_names=None):
         if not isinstance(name, str) or not name or len(name) > MAX_POLICY_NAME_LENGTH:
             raise PolicyParseError('Policy name must contain 1 to {} characters'.format(MAX_POLICY_NAME_LENGTH))
         try:
@@ -476,6 +478,26 @@ class MiniscriptPolicy:
             raise PolicyParseError(
                 'Passport-owned Taproot keys must be in a script leaf, not the internal key')
 
+        if key_names is None:
+            names = ('',) * len(parsed_keys)
+        else:
+            names = tuple(key_names)
+            if len(names) != len(parsed_keys):
+                raise PolicyParseError('Policy key names do not match its key vector')
+            for key_name in names:
+                if not isinstance(key_name, str) or len(key_name) > MAX_KEY_NAME_LENGTH:
+                    raise PolicyParseError(
+                        'Key names may contain up to {} characters'.format(
+                            MAX_KEY_NAME_LENGTH))
+                try:
+                    key_name.encode('ascii')
+                except UnicodeError:
+                    raise PolicyParseError('Key names must contain ASCII only')
+                if key_name != key_name.strip() or any(
+                        ord(char) < 32 or ord(char) > 126 for char in key_name):
+                    raise PolicyParseError(
+                        'Key names must use printable ASCII without outer whitespace')
+
         self.name = name
         self.network = network
         self.template = template
@@ -485,6 +507,7 @@ class MiniscriptPolicy:
         self.script_tree = script_tree
         self.internal_key = internal_key
         self.context = context
+        self.key_names = names
         self.policy_id = self.calculate_id()
 
         record_len = len(json.dumps(self.serialize()))
@@ -550,7 +573,8 @@ class MiniscriptPolicy:
         if not isinstance(record, dict) or record.get('v') != POLICY_FORMAT_VERSION:
             raise PolicyParseError('Unsupported wallet-policy record version')
         policy = cls(record.get('n'), record.get('net'), record.get('t'),
-                     record.get('k', ()), record.get('o', ()))
+                     record.get('k', ()), record.get('o', ()),
+                     record.get('kn'))
         stored_id = record.get('id')
         if stored_id != policy.policy_id:
             raise PolicyParseError('Stored policy identity does not match its contents')
@@ -566,7 +590,7 @@ class MiniscriptPolicy:
         return hexlify(_sha256(payload)).decode('ascii')
 
     def serialize(self):
-        return {
+        record = {
             'v': POLICY_FORMAT_VERSION,
             'id': self.policy_id,
             'n': self.name,
@@ -575,6 +599,9 @@ class MiniscriptPolicy:
             'k': [key.canonical() for key in self.keys],
             'o': list(self.owned_key_indexes),
         }
+        if any(self.key_names):
+            record['kn'] = list(self.key_names)
+        return record
 
     def format_overview(self):
         # Kept as a compact compatibility entry point for callers that only
@@ -593,7 +620,12 @@ class MiniscriptPolicy:
         lines = ['TECHNICAL DETAILS',
                  'Full Descriptor\n' + self.full_descriptor()]
         for index, key in enumerate(self.keys):
-            role = 'This Passport' if index in self.owned_key_indexes else 'External key'
+            if index in self.owned_key_indexes:
+                role = 'This Passport'
+            elif self.key_names[index]:
+                role = self.key_names[index].replace('#', '##')
+            else:
+                role = 'External key'
             lines.append('Key {} - {}\nFingerprint {}\nPath {}\n{}'.format(
                 index + 1, role, key.fingerprint.upper(),
                 self._format_origin_path(key.path), key.xpub))
@@ -622,9 +654,25 @@ class MiniscriptPolicy:
         from policy_display import format_confirmation
         return format_confirmation(self)
 
+    def format_signing_pages(self):
+        from policy_display import format_signing_pages
+        return format_signing_pages(self)
+
     def rename(self, name):
         return MiniscriptPolicy(name, self.network, self.template, self.keys,
-                                self.owned_key_indexes)
+                                self.owned_key_indexes, self.key_names)
+
+    def name_key(self, key_index, name):
+        if key_index < 0 or key_index >= len(self.keys):
+            raise PolicyParseError('Policy key index is outside the key vector')
+        names = list(self.key_names)
+        names[key_index] = name
+        return MiniscriptPolicy(self.name, self.network, self.template, self.keys,
+                                self.owned_key_indexes, names)
+
+    def name_keys(self, names):
+        return MiniscriptPolicy(self.name, self.network, self.template, self.keys,
+                                self.owned_key_indexes, names)
 
     def _leaves(self):
         if self.context == 'wsh':
@@ -1068,6 +1116,28 @@ class WalletPolicyRegistry:
         for position, record in enumerate(records):
             if isinstance(record, dict) and record.get('id') == policy_id:
                 records[position] = MiniscriptPolicy.deserialize(record).rename(name).serialize()
+                self._preflight(records)
+                self.settings.set(POLICY_STORAGE_KEY, records)
+                return
+        raise PolicyParseError('Wallet policy was not found')
+
+    def rename_key(self, policy_id, key_index, name):
+        records = list(self._records())
+        for position, record in enumerate(records):
+            if isinstance(record, dict) and record.get('id') == policy_id:
+                policy = MiniscriptPolicy.deserialize(record).name_key(key_index, name)
+                records[position] = policy.serialize()
+                self._preflight(records)
+                self.settings.set(POLICY_STORAGE_KEY, records)
+                return
+        raise PolicyParseError('Wallet policy was not found')
+
+    def rename_keys(self, policy_id, names):
+        records = list(self._records())
+        for position, record in enumerate(records):
+            if isinstance(record, dict) and record.get('id') == policy_id:
+                policy = MiniscriptPolicy.deserialize(record).name_keys(names)
+                records[position] = policy.serialize()
                 self._preflight(records)
                 self.settings.set(POLICY_STORAGE_KEY, records)
                 return

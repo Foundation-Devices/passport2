@@ -24,6 +24,11 @@ class ImportWalletPolicyFlow(Flow):
     def __init__(self, policy):
         self.policy = policy
         self.error = None
+        self.key_names = list(policy.key_names)
+        self.external_key_indexes = tuple(
+            index for index in range(len(policy.keys))
+            if index not in policy.owned_key_indexes)
+        self.key_name_position = 0
         super().__init__(initial_state=self.choose_name, name='ImportWalletPolicyFlow')
 
     async def choose_name(self):
@@ -44,7 +49,44 @@ class ImportWalletPolicyFlow(Flow):
             self.error = str(exc)
             self.goto(self.show_error)
             return
-        self.goto(self.show_overview)
+        self.key_name_position = 0
+        self.goto(self.choose_key_name)
+
+    async def choose_key_name(self):
+        import microns
+        from pages import ErrorPage, TextInputPage
+        from policy_display import format_fingerprint, suggested_key_name
+        from wallet_policy import MAX_KEY_NAME_LENGTH
+
+        if self.key_name_position >= len(self.external_key_indexes):
+            try:
+                self.policy = self.policy.name_keys(self.key_names)
+            except BaseException as exc:
+                self.error = str(exc)
+                self.goto(self.show_error)
+                return
+            self.goto(self.show_overview)
+            return
+
+        key_index = self.external_key_indexes[self.key_name_position]
+        key = self.policy.keys[key_index]
+        initial = self.key_names[key_index] or suggested_key_name(self.policy, key_index)
+        result = await TextInputPage(
+            card_header={'title': 'Name Signer'},
+            title='Fingerprint\n{}'.format(format_fingerprint(key.fingerprint)),
+            initial_text=initial, max_length=MAX_KEY_NAME_LENGTH,
+            left_micron=microns.Back, right_micron=microns.Checkmark).show()
+        if result is None:
+            if self.key_name_position:
+                self.key_name_position -= 1
+            else:
+                self.back()
+            return
+        if not result:
+            await ErrorPage('Enter a name for this signer.').show()
+            return
+        self.key_names[key_index] = result
+        self.key_name_position += 1
 
     async def show_overview(self):
         from flows import SeriesOfPagesFlow
@@ -59,6 +101,8 @@ class ImportWalletPolicyFlow(Flow):
         if result:
             self.goto(self.choose_technical_details)
         else:
+            if self.external_key_indexes:
+                self.key_name_position = len(self.external_key_indexes) - 1
             self.back()
 
     async def choose_technical_details(self):
@@ -291,6 +335,75 @@ class RenameWalletPolicyFlow(Flow):
         from flows import AutoBackupFlow
         from pages import SuccessPage
         await SuccessPage('Wallet policy renamed').show()
+        await AutoBackupFlow().run()
+        self.set_result(True)
+
+
+class NameWalletPolicyKeysFlow(Flow):
+    def __init__(self, context=None):
+        from common import settings
+        from wallet_policy import WalletPolicyRegistry
+        self.policy = WalletPolicyRegistry(settings).get(context)
+        self.key_names = list(self.policy.key_names) if self.policy else []
+        self.external_key_indexes = tuple(
+            index for index in range(len(self.policy.keys))
+            if index not in self.policy.owned_key_indexes) if self.policy else ()
+        self.key_name_position = 0
+        super().__init__(initial_state=self.choose_key_name,
+                         name='NameWalletPolicyKeysFlow')
+
+    async def choose_key_name(self):
+        import microns
+        from pages import ErrorPage, TextInputPage
+        from policy_display import format_fingerprint, suggested_key_name
+        from wallet_policy import MAX_KEY_NAME_LENGTH
+
+        if self.policy is None:
+            await ErrorPage('Wallet policy was not found.').show()
+            self.set_result(False)
+            return
+        if not self.external_key_indexes:
+            await ErrorPage('This wallet policy has no external signers.').show()
+            self.set_result(False)
+            return
+        if self.key_name_position >= len(self.external_key_indexes):
+            self.goto(self.save_key_names)
+            return
+
+        key_index = self.external_key_indexes[self.key_name_position]
+        key = self.policy.keys[key_index]
+        initial = self.key_names[key_index] or suggested_key_name(self.policy, key_index)
+        result = await TextInputPage(
+            card_header={'title': 'Name Signer'},
+            title='Fingerprint\n{}'.format(format_fingerprint(key.fingerprint)),
+            initial_text=initial, max_length=MAX_KEY_NAME_LENGTH,
+            left_micron=microns.Back, right_micron=microns.Checkmark).show()
+        if result is None:
+            if self.key_name_position:
+                self.key_name_position -= 1
+            else:
+                self.set_result(False)
+            return
+        if not result:
+            await ErrorPage('Enter a name for this signer.').show()
+            return
+        self.key_names[key_index] = result
+        self.key_name_position += 1
+
+    async def save_key_names(self):
+        from flows import AutoBackupFlow
+        from pages import ErrorPage, SuccessPage
+        from tasks.wallet_policy_task import rename_wallet_policy_keys_task
+        from utils import spinner_task
+
+        error, = await spinner_task(
+            'Saving signer names', rename_wallet_policy_keys_task,
+            args=[self.policy.policy_id, self.key_names])
+        if error is not None:
+            await ErrorPage('Unable to save signer names.').show()
+            self.set_result(False)
+            return
+        await SuccessPage('Signer names saved').show()
         await AutoBackupFlow().run()
         self.set_result(True)
 

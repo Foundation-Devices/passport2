@@ -149,9 +149,29 @@ class SignPsbtCommonFlow(Flow):
             if not result:
                 self.back()
             else:
-                self.goto(self.sign_transaction)
+                self.goto(self.show_policy_authorization)
         else:
+            self.goto(self.show_policy_authorization)
+
+    async def show_policy_authorization(self):
+        policy = self.psbt.active_policy
+        if policy is None:
             self.goto(self.sign_transaction)
+            return
+
+        from flows import SeriesOfPagesFlow
+        from pages import LongTextPage
+        from utils import escape_text
+        page_args = [{
+            'card_header': {'title': escape_text(policy.name)},
+            'text': text,
+            'centered': True,
+        } for text in policy.format_signing_pages()]
+        result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
+        if result:
+            self.goto(self.sign_transaction)
+        else:
+            self.back()
 
     async def sign_transaction(self):
         from tasks import double_check_psbt_change_task
@@ -161,7 +181,13 @@ class SignPsbtCommonFlow(Flow):
 
         gc.collect()
 
-        result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
+        if self.psbt.active_policy:
+            from utils import escape_text
+            question = 'Sign with {}?'.format(
+                escape_text(self.psbt.active_policy.name))
+        else:
+            question = 'Sign transaction?'
+        result = await QuestionPage(text=question, right_micron=microns.Sign).show()
         if not result:
             options = [{'label': 'Cancel', 'value': True},
                        {'label': 'Review Details', 'value': False}]

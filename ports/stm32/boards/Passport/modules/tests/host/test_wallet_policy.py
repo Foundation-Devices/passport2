@@ -21,7 +21,7 @@ sys.modules.setdefault('public_constants', types.SimpleNamespace(
 
 from descriptor import append_checksum, split_checksum  # noqa: E402
 from policy_errors import (PolicyMismatchError, PolicyParseError,  # noqa: E402
-                           PolicyResourceError)
+                           PolicyResourceError, PolicyTypeError)
 from wallet_policy import (KeyInfo, MiniscriptPolicy,  # noqa: E402
                            WalletPolicyRegistry,
                            descriptor_to_policy_template)
@@ -103,6 +103,23 @@ def make_policy(name='Recovery'):
     )
 
 
+def convert_xpub_version(xpub, version):
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    number = 0
+    for char in xpub:
+        number = number * 58 + alphabet.index(char)
+    raw = number.to_bytes((number.bit_length() + 7) // 8, 'big')
+    raw = b'\0' * (len(xpub) - len(xpub.lstrip('1'))) + raw
+    payload = version + raw[4:-4]
+    checksum = hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
+    number = int.from_bytes(payload + checksum, 'big')
+    encoded = ''
+    while number:
+        number, remainder = divmod(number, 58)
+        encoded = alphabet[remainder] + encoded
+    return '1' * (len(payload + checksum) - len((payload + checksum).lstrip(b'\0'))) + encoded
+
+
 def test_descriptor_checksum_is_required_and_verified():
     body = 'wsh(pk(@0/**))'
     checksummed = append_checksum(body)
@@ -164,6 +181,22 @@ def test_policy_id_is_stable_across_rename_but_contents_are_validated():
     record['t'] = 'wsh(pk(@0/**))'
     with pytest.raises(PolicyParseError):
         MiniscriptPolicy.deserialize(record)
+
+
+def test_local_key_names_are_migration_safe_and_do_not_change_policy_identity():
+    policy = make_policy()
+    legacy_record = policy.serialize()
+    assert 'kn' not in legacy_record
+    migrated = MiniscriptPolicy.deserialize(legacy_record)
+    assert migrated.key_names == ('', '')
+
+    named = migrated.name_keys(('', 'Family Recovery'))
+    assert named.policy_id == policy.policy_id
+    assert named.serialize()['kn'] == ['', 'Family Recovery']
+    assert MiniscriptPolicy.deserialize(named.serialize()).key_names == (
+        '', 'Family Recovery')
+    with pytest.raises(PolicyParseError, match='printable ASCII'):
+        migrated.name_key(1, ' Bad label')
 
 
 def test_policy_requires_complete_placeholder_vector_in_first_use_order():
@@ -237,6 +270,14 @@ def test_network_mismatch_fails_closed():
         policy.derive(0, 0, StubChain(), lambda *_: PUBKEY)
 
 
+def test_relative_timelock_rejects_values_that_consensus_would_mask():
+    with pytest.raises(PolicyTypeError, match='BIP68 relative timelock limit'):
+        MiniscriptPolicy(
+            'Too Long', 'BTC',
+            'wsh(or_d(pk(@0/**),and_v(v:pk(@1/**),older(78894))))',
+            (KEY_INFO, KEY_INFO.replace(XPUB[-1], '1')), (0,))
+
+
 def test_registry_validates_records_and_quarantines_corruption():
     settings = FakeSettings()
     registry = WalletPolicyRegistry(settings)
@@ -252,6 +293,8 @@ def test_registry_validates_records_and_quarantines_corruption():
 
     registry.rename(policy.policy_id, 'New Name')
     assert registry.get(policy.policy_id).name == 'New Name'
+    registry.rename_keys(policy.policy_id, ('', 'Family Recovery'))
+    assert registry.get(policy.policy_id).key_names == ('', 'Family Recovery')
     registry.delete(policy.policy_id)
     assert registry.get(policy.policy_id) is None
 
@@ -282,3 +325,20 @@ def test_policy_transport_rejects_tampered_identity():
             encoded, DerivationChain(),
             int.from_bytes(bytes.fromhex('6738736c'), 'little'),
             lambda path: OwnedNode(XPUB))
+
+
+def test_raw_descriptor_reports_testnet_mismatch_before_key_ownership():
+    tpub = convert_xpub_version(XPUB, bytes.fromhex('043587cf'))
+    descriptor = append_checksum('wsh(pk({}/**))'.format(
+        KEY_INFO.replace(XPUB, tpub).replace("/84'/0'/0'", "/84'/1'/0'")))
+    with pytest.raises(PolicyMismatchError, match='Bitcoin Testnet.*Switch Passport'):
+        decode_policy_transport(
+            descriptor, DerivationChain(),
+            int.from_bytes(bytes.fromhex('6738736c'), 'little'),
+            lambda path: (_ for _ in ()).throw(AssertionError('ownership ran first')))
+
+
+def test_transport_does_not_treat_local_signer_names_as_coordinator_data():
+    policy = make_policy().name_keys(('', 'Family Recovery'))
+    encoded = encode_policy_transport(policy)
+    assert 'Family Recovery' not in encoded
