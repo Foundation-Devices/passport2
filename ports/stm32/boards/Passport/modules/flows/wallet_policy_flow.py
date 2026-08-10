@@ -91,11 +91,10 @@ class ImportWalletPolicyFlow(Flow):
     async def show_overview(self):
         from flows import SeriesOfPagesFlow
         from pages import LongTextPage
-        from utils import escape_text
         page_args = [{
-            'card_header': {'title': escape_text(self.policy.name)},
+            'card_header': {'title': 'Wallet policy'},
             'text': text,
-            'centered': not text.startswith('PATH '),
+            'centered': not text.startswith('Path '),
         } for text in self.policy.format_review_pages()]
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
@@ -121,9 +120,8 @@ class ImportWalletPolicyFlow(Flow):
 
     async def show_details(self):
         from pages import LongTextPage
-        from utils import escape_text
         result = await LongTextPage(
-            card_header={'title': escape_text(self.policy.name)},
+            card_header={'title': 'Technical details'},
             text=self.policy.format_details(), centered=False).show()
         if result:
             self.goto(self.confirm_import)
@@ -133,7 +131,7 @@ class ImportWalletPolicyFlow(Flow):
     async def confirm_import(self):
         from pages import QuestionPage
         from utils import escape_text
-        text = 'Register {}?\n\n{}\n\nDescriptor checksum\n{}'.format(
+        text = 'Register {}?\n\n{}\n\nPolicy checksum\n{}'.format(
             escape_text(self.policy.name), self.policy.format_confirmation(),
             self.policy.descriptor_check())
         result = await QuestionPage(text).show()
@@ -165,9 +163,83 @@ class ImportWalletPolicyFlow(Flow):
             self.set_result(False)
             return
         from flows import AutoBackupFlow
-        await SuccessPage('Wallet policy registered').show()
         await AutoBackupFlow().run()
-        self.set_result(True)
+        await SuccessPage(
+            'Wallet policy registered\n\nChoose what you would like to do next.').show()
+        self.goto(self.choose_next_action)
+
+    async def choose_next_action(self):
+        import microns
+        from pages import ChooserPage
+        options = [
+            {'label': 'Verify an address', 'value': 'verify'},
+            {'label': 'Back up wallet policy', 'value': 'backup'},
+        ]
+        if self.external_key_indexes:
+            options.append({'label': 'Label signer keys', 'value': 'name_keys'})
+        options.extend([
+            {'label': 'View technical details', 'value': 'details'},
+            {'label': 'Finish', 'value': 'finish'},
+        ])
+        result = await ChooserPage(
+            card_header={'title': 'Wallet registered'},
+            text='Recommended next steps', options=options,
+            initial_value='verify', scroll_fix=True,
+            left_micron=microns.Back).show()
+        if result is None or result == 'finish':
+            self.set_result(True)
+        elif result == 'verify':
+            self.goto(self.verify_first_address)
+        elif result == 'backup':
+            self.goto(self.choose_backup_method)
+        elif result == 'name_keys':
+            self.goto(self.label_signer_keys)
+        else:
+            self.goto(self.view_registered_details)
+
+    async def verify_first_address(self):
+        from flows import VerifyAddressFlow
+        await VerifyAddressFlow(sig_type='policy', wallet_policy=self.policy).run()
+        self.goto(self.choose_next_action, save_curr=False)
+
+    async def choose_backup_method(self):
+        import microns
+        from pages import YesNoChooserPage
+        result = await YesNoChooserPage(
+            text='How would you like to back up this wallet policy?',
+            yes_text='QR code', no_text='microSD',
+            initial_value=True, left_micron=microns.Back).show()
+        if result is None:
+            self.goto(self.choose_next_action, save_curr=False)
+        elif result:
+            self.goto(self.backup_via_qr)
+        else:
+            self.goto(self.backup_via_microsd)
+
+    async def backup_via_qr(self):
+        await ExportWalletPolicyQRFlow(context=self.policy.policy_id).run()
+        self.goto(self.choose_next_action, save_curr=False)
+
+    async def backup_via_microsd(self):
+        await ExportWalletPolicyMicroSDFlow(context=self.policy.policy_id).run()
+        self.goto(self.choose_next_action, save_curr=False)
+
+    async def label_signer_keys(self):
+        result = await NameWalletPolicyKeysFlow(context=self.policy.policy_id).run()
+        if result:
+            from common import settings
+            from wallet_policy import WalletPolicyRegistry
+            self.policy = WalletPolicyRegistry(settings).get(self.policy.policy_id)
+        self.goto(self.choose_next_action, save_curr=False)
+
+    async def view_registered_details(self):
+        import microns
+        from pages import LongTextPage
+        await LongTextPage(
+            card_header={'title': 'Technical details'},
+            text=self.policy.format_details(), centered=False,
+            right_micron=microns.Checkmark).show()
+        self.goto(self.choose_next_action, save_curr=False)
 
     async def show_error(self):
         from pages import ErrorPage
@@ -257,15 +329,14 @@ class ViewWalletPolicyFlow(Flow):
     async def show_overview(self):
         from flows import SeriesOfPagesFlow
         from pages import ErrorPage, LongTextPage
-        from utils import escape_text
         if self.policy is None:
             await ErrorPage('Wallet policy was not found.').show()
             self.set_result(False)
             return
         page_args = [{
-            'card_header': {'title': escape_text(self.policy.name)},
+            'card_header': {'title': 'Wallet policy'},
             'text': text,
-            'centered': not text.startswith('PATH '),
+            'centered': not text.startswith('Path '),
         } for text in self.policy.format_review_pages()]
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
@@ -290,9 +361,8 @@ class ViewWalletPolicyFlow(Flow):
     async def show_details(self):
         import microns
         from pages import LongTextPage
-        from utils import escape_text
         result = await LongTextPage(
-            card_header={'title': escape_text(self.policy.name)},
+            card_header={'title': 'Technical details'},
             text=self.policy.format_details(), centered=False,
             right_micron=microns.Checkmark).show()
         if result:

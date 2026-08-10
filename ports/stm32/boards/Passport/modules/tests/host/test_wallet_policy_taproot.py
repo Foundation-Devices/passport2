@@ -253,6 +253,6 @@ def test_dynamic_internal_key_is_recorded_as_key_path_only_metadata():
     assert hashes[internal_pubkey] == ()
     assert hashes[leaf_pubkey] == (derived.tap_leaves[0].leaf_hash,)
     review = '\n'.join(policy.format_review_pages())
-    assert 'TAPROOT KEY PATH' in review
+    assert 'Taproot key path' in review
     assert 'without using any script-path conditions' in review
     assert 'does not require Passport' in review
