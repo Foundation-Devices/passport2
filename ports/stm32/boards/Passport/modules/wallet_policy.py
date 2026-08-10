@@ -577,37 +577,9 @@ class MiniscriptPolicy:
         }
 
     def format_overview(self):
-        owned = self.keys[self.owned_key_indexes[0]]
-        from miniscript import policy_timelocks
-        locks = []
-        for leaf in self._leaves():
-            locks.extend(policy_timelocks(leaf))
-        lines = [
-            'Wallet Name\n{}'.format(self.name),
-            'Type\n{}'.format('Native SegWit Miniscript' if self.context == 'wsh'
-                              else 'Taproot Miniscript (script path)'),
-            'Network\n{}'.format('Bitcoin' if self.network == 'BTC' else 'Bitcoin Testnet'),
-            'Passport Key\n{} at {}'.format(
-                owned.fingerprint.upper(), self._format_origin_path(owned.path)),
-            'Keys\n{}'.format(len(self.keys)),
-        ]
-        if self.context == 'tr':
-            lines.append('Script Leaves\n{}'.format(len(tuple(self._leaves()))))
-            if isinstance(self.internal_key, bytes):
-                lines.append('Internal Key\nFixed x-only key (not controlled by Passport)')
-            else:
-                internal = self.keys[self.internal_key.index]
-                lines.append(
-                    'Internal Key Warning\nKey @{} ({}) can spend by key path without the script policy'.format(
-                        self.internal_key.index, internal.fingerprint.upper()))
-        if locks:
-            rendered = []
-            for kind, value in locks:
-                rendered.append('{} {}'.format(
-                    'Relative lock' if kind == 'older' else 'Absolute lock', value))
-            lines.append('Timelocks\n' + '\n'.join(rendered))
-        lines.append('Policy ID\n{}'.format(self.policy_id))
-        return '\n\n'.join(lines)
+        # Kept as a compact compatibility entry point for callers that only
+        # support one page. Import and view flows use all semantic review pages.
+        return self.format_review_pages()[0]
 
     @staticmethod
     def _format_origin_path(path):
@@ -618,11 +590,37 @@ class MiniscriptPolicy:
         return result
 
     def format_details(self):
-        lines = ['Descriptor Template\n' + self.template]
+        lines = ['TECHNICAL DETAILS',
+                 'Full Descriptor\n' + self.full_descriptor()]
         for index, key in enumerate(self.keys):
-            role = ' (Passport)' if index in self.owned_key_indexes else ''
-            lines.append('Key @{}{}\n{}'.format(index, role, key.canonical()))
+            role = 'This Passport' if index in self.owned_key_indexes else 'External key'
+            lines.append('Key {} - {}\nFingerprint {}\nPath {}\n{}'.format(
+                index + 1, role, key.fingerprint.upper(),
+                self._format_origin_path(key.path), key.xpub))
+        lines.append('Internal Policy ID\n' + self.policy_id)
         return '\n\n'.join(lines)
+
+    def full_descriptor(self, with_checksum=True):
+        descriptor = self.template
+        # Replace higher indexes first so @1 cannot match the start of @10.
+        for index in range(len(self.keys) - 1, -1, -1):
+            descriptor = descriptor.replace('@{}'.format(index),
+                                            self.keys[index].canonical())
+        if with_checksum:
+            from descriptor import append_checksum
+            return append_checksum(descriptor)
+        return descriptor
+
+    def descriptor_check(self):
+        return self.full_descriptor().rsplit('#', 1)[1].upper()
+
+    def format_review_pages(self):
+        from policy_display import format_review_pages
+        return format_review_pages(self)
+
+    def format_confirmation(self):
+        from policy_display import format_confirmation
+        return format_confirmation(self)
 
     def rename(self, name):
         return MiniscriptPolicy(name, self.network, self.template, self.keys,
