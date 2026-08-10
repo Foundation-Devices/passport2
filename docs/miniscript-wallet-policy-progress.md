@@ -105,6 +105,9 @@ and Taproot paths that cannot be represented by one global M/N value.
   same throwaway developer key, independently verified, and copied to the test
   microSD. It installed successfully and signed the captured Liana Testnet PSBT
   on physical hardware.
+- Firmware `v2.4.0b6` was built from private commit `422dd691`, signed with the
+  same throwaway developer key, independently verified, and copied to the test
+  microSD. Physical installation and the consolidated UX review are pending.
 
 The `v2.4.0b4` signed-file SHA-256 is
 `9042211f7205871ad00def4a9eee66c4f9f95ff523e2b764bbbd38bf87059145`.
@@ -126,6 +129,8 @@ The unsigned CI payload SHA-256 is
   - Lint/test: <https://github.com/Foundation-Devices/passport2/actions/runs/31396457903>
   - Private `v2.4.0b5` build:
     <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31403355734>
+  - Private `v2.4.0b6` full build:
+    <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31408823982>
 
 ## Source checkpoints
 
@@ -138,6 +143,8 @@ The unsigned CI payload SHA-256 is
   omit `PSBT_OUT_WITNESS_SCRIPT`. This is the source used for `v2.4.0b5`.
 - `55f209fe` — calmer, sentence-case signing authorization language after the
   successful physical signing test.
+- `422dd691` — consolidated wallet-policy registration, review, signing, error,
+  and coordinator-handoff UX. This is the source used for `v2.4.0b6`.
 
 ## Pending physical and product validation
 
@@ -174,3 +181,8 @@ The `v2.4.0b5` unsigned CI payload SHA-256 is
 `d1bee2d609ef1cd37827003146beabfe5689d9d1aeb9a136934d35b82924d6bc`.
 The signed-file SHA-256 is
 `7599c870415dfcc2c6975e496d9155fa35560f5a41e12ea39348ed8c26cd660d`.
+
+The `v2.4.0b6` unsigned CI payload SHA-256 is
+`2fc95d98d72b85408f34fb600cc5f9b91f2ff6be3a9bfd132cda9df8b0cdc695`.
+The signed-file SHA-256 is
+`136e98783333f19c5ec5234046db2c5d978adb6bcd7675cf7a6f7a4e3f3e4ed7`.
