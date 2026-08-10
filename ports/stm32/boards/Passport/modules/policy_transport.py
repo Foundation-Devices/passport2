@@ -50,6 +50,23 @@ def discover_owned_key(keys, chain, master_xfp, derive_node):
     return tuple(matches)
 
 
+def _infer_standard_xpub_network(keys):
+    networks = set()
+    for key in keys:
+        if key.xpub.startswith('xpub'):
+            networks.add('BTC')
+        elif key.xpub.startswith('tpub'):
+            networks.add('TBTC')
+    if len(networks) > 1:
+        raise PolicyParseError('Wallet policy mixes mainnet and testnet extended keys')
+    return next(iter(networks)) if networks else None
+
+
+def _network_mismatch_message(network):
+    name = 'Bitcoin mainnet' if network == 'BTC' else 'Bitcoin Testnet'
+    return 'This wallet is for {}. Switch Passport to that network before importing.'.format(name)
+
+
 def decode_policy_transport(data, chain, master_xfp, derive_node,
                             default_name='Wallet Policy'):
     if isinstance(data, bytes):
@@ -83,12 +100,12 @@ def decode_policy_transport(data, chain, master_xfp, derive_node,
         policy_id = envelope.get('policy_id')
     else:
         name = default_name
-        network = getattr(chain, 'ctype', None)
         template, raw_keys = descriptor_to_policy_template(data, require_checksum=True)
         keys = tuple(KeyInfo.parse(value) for value in raw_keys)
+        network = _infer_standard_xpub_network(keys) or getattr(chain, 'ctype', None)
 
     if network != getattr(chain, 'ctype', None):
-        raise PolicyMismatchError('Wallet policy network does not match the active network')
+        raise PolicyMismatchError(_network_mismatch_message(network))
     owned = discover_owned_key(keys, chain, master_xfp, derive_node)
     policy = MiniscriptPolicy(name, network, template, keys, owned)
     policy.validate_extended_keys(chain)

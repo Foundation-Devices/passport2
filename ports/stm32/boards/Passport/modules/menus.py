@@ -399,7 +399,7 @@ def multisig_menu():
 def wallet_policy_item_menu():
     from flows.wallet_policy_flow import (
         DeleteWalletPolicyFlow, ExportWalletPolicyMicroSDFlow,
-        ExportWalletPolicyQRFlow, RenameWalletPolicyFlow,
+        ExportWalletPolicyQRFlow, NameWalletPolicyKeysFlow, RenameWalletPolicyFlow,
         ViewWalletPolicyFlow)
 
     return [
@@ -410,6 +410,8 @@ def wallet_policy_item_menu():
          'flow': ExportWalletPolicyMicroSDFlow, 'statusbar': {'title': 'EXPORT'}},
         {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameWalletPolicyFlow,
          'exit_on_success': True},
+        {'icon': 'ICON_TWO_KEYS', 'label': 'Name Signers',
+         'flow': NameWalletPolicyKeysFlow, 'exit_on_success': True},
         {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteWalletPolicyFlow,
          'exit_on_success': True},
     ]

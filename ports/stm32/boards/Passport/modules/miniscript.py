@@ -362,6 +362,15 @@ def analyze(node, context='wsh'):
         return TypeInfo('K', n=True, d=True, u=True, s=True, e=True)
     if kind in ('older', 'after'):
         _require(1 <= node.value < 0x80000000, '{} value is outside BIP379 range'.format(kind))
+        if kind == 'older':
+            # BIP68 only assigns the low 16 bits and the type flag. Accepting
+            # reserved bits would make the number shown in a descriptor differ
+            # from the relative delay actually enforced by consensus.
+            allowed = 0xffff | (1 << 22)
+            _require(not (node.value & ~allowed),
+                     'older exceeds the BIP68 relative timelock limit or uses reserved bits')
+            _require(node.value & 0xffff,
+                     'older value must encode a non-zero relative delay')
         if kind == 'after':
             lock = 1 if node.value < 500000000 else 2
         else:
