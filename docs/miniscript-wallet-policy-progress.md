@@ -45,6 +45,15 @@ and Taproot paths that cannot be represented by one global M/N value.
 - Explicit rejection of reserved or misleading BIP68 encodings.
 - Clear mainnet/testnet mismatch diagnostics before ownership discovery.
 - Policy-specific authorization review immediately before transaction signing.
+- Sentence-case, progressive policy review that explains who can spend, when
+  each path becomes available, the exact lock value, and which key is Passport's.
+- Stable wallet-policy headers with the full user-supplied wallet name rendered
+  in wrapping page content instead of a scrolling, easily clipped title.
+- Post-registration actions for address verification, policy backup, signer
+  labels, and opt-in technical details.
+- Coordinator-oriented PSBT errors with raw parser diagnostics on a second page.
+- Explicit post-signing handoff instructions that distinguish Passport adding a
+  signature from the wallet coordinator finalizing and broadcasting.
 - Migration-safe loading of policy records created before signer names existed.
 
 ## Security invariants
@@ -94,7 +103,8 @@ and Taproot paths that cannot be represented by one global M/N value.
   and installed successfully.
 - Firmware `v2.4.0b5` was built from private commit `6c79b4c0`, signed with the
   same throwaway developer key, independently verified, and copied to the test
-  microSD. Physical installation and Liana signing re-test are pending.
+  microSD. It installed successfully and signed the captured Liana Testnet PSBT
+  on physical hardware.
 
 The `v2.4.0b4` signed-file SHA-256 is
 `9042211f7205871ad00def4a9eee66c4f9f95ff523e2b764bbbd38bf87059145`.
@@ -103,7 +113,7 @@ The unsigned CI payload SHA-256 is
 
 ## Automated validation completed
 
-- 94 Passport wallet-policy host tests pass.
+- 101 Passport wallet-policy host tests pass.
 - Regression coverage confirms a registered policy accepts an omitted output
   witness script only when the complete derivation map and scriptPubKey still
   match the independently derived policy output.
@@ -126,15 +136,15 @@ The unsigned CI payload SHA-256 is
 - `c2f52e1f` — wording improvements requested during physical-device review.
 - `6c79b4c0` — policy-derived verification for Liana P2WSH change outputs that
   omit `PSBT_OUT_WITNESS_SCRIPT`. This is the source used for `v2.4.0b5`.
+- `55f209fe` — calmer, sentence-case signing authorization language after the
+  successful physical signing test.
 
 ## Pending physical and product validation
 
-- Finish the revised on-device wording review.
-- Install the independently verified `v2.4.0b5` candidate from the test microSD.
-- Re-run the captured Liana PSBT on that candidate and confirm the change output
-  is recognized before completing an end-to-end Testnet signature.
-- Sign and finalize a real Liana Testnet PSBT; verify the policy authorization
-  page appears immediately before final approval.
+- Install and review the consolidated post-signing and registration UX candidate
+  after its source and automated checks are complete.
+- Return the device-signed PSBT to Liana, confirm Liana accepts and finalizes it,
+  and record the resulting Testnet transaction ID if it is broadcast.
 - Exercise representative complex policies, including threshold multisig,
   multiple alternate paths, time-based relative locks, absolute locks, and
   Taproot script paths.
