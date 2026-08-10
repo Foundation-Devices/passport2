@@ -25,9 +25,15 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'keys.py',
         'main.py',
         'menus.py',
+        'miniscript.py',
         'multisig_wallet.py',
         'opcodes.py',
         'pincodes.py',
+        'policy_errors.py',
+        'policy_multisig.py',
+        'policy_transport.py',
+        'spend_plan.py',
+        'wallet_policy.py',
         'predictive_utils.py',
         'psbt.py',
         'public_constants.py',
@@ -161,7 +167,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'flows/view_derived_key_details_flow.py',
         'flows/view_dev_pubkey_flow.py',
         'flows/view_multisig_details_flow.py',
-        'flows/view_seed_words_flow.py'))
+        'flows/view_seed_words_flow.py',
+        'flows/wallet_policy_flow.py'))
 
 # Microns
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
@@ -288,7 +295,8 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'tasks/validate_electrum_message_task.py',
         'tasks/validate_psbt_task.py',
         'tasks/verify_backup_task.py',
-        'tasks/verify_firmware_signature_task.py'))
+        'tasks/verify_firmware_signature_task.py',
+        'tasks/wallet_policy_task.py'))
 
 # Translations
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',

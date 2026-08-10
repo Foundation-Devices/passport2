@@ -50,6 +50,15 @@ jobs:
       - run: sudo apt-get install -y pycodestyle
       - run: pycodestyle --statistics --exclude translations ports/stm32/boards/Passport
 
+  wallet-policy-host-tests:
+    name: Wallet policy host tests pass?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 -m pip install pytest embit==0.8.0
+      - run: |
+          python3 -m pytest -q ports/stm32/boards/Passport/modules/tests/host
+
   is-foundation-header-up-to-date:
     name: Is foundation.h header file up to date?
     needs: [rust-code-compiles]

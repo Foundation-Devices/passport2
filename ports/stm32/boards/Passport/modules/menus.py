@@ -312,6 +312,8 @@ def bitcoin_menu():
     return [
         {'icon': 'ICON_BITCOIN', 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': 'ICON_TWO_KEYS', 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
+        {'icon': 'ICON_TWO_KEYS', 'label': 'Wallet Policies', 'submenu': wallet_policy_menu,
+         'is_visible': has_seed},
         {'icon': 'ICON_NETWORK', 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
     ]
@@ -391,6 +393,62 @@ def multisig_menu():
                   'flow': ImportMultisigWalletFromMicroSDFlow, 'statusbar': {'title': 'IMPORT'}})
     items.append({'icon': 'ICON_SETTINGS', 'label': 'Multisig Policy', 'page': MultisigPolicySettingPage})
 
+    return items
+
+
+def wallet_policy_item_menu():
+    from flows.wallet_policy_flow import (
+        DeleteWalletPolicyFlow, ExportWalletPolicyMicroSDFlow,
+        ExportWalletPolicyQRFlow, RenameWalletPolicyFlow,
+        ViewWalletPolicyFlow)
+
+    return [
+        {'icon': 'ICON_TWO_KEYS', 'label': 'View Details', 'flow': ViewWalletPolicyFlow},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Export via QR', 'flow': ExportWalletPolicyQRFlow,
+         'statusbar': {'title': 'EXPORT'}},
+        {'icon': 'ICON_MICROSD', 'label': 'Export via microSD',
+         'flow': ExportWalletPolicyMicroSDFlow, 'statusbar': {'title': 'EXPORT'}},
+        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameWalletPolicyFlow,
+         'exit_on_success': True},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteWalletPolicyFlow,
+         'exit_on_success': True},
+    ]
+
+
+def wallet_policy_menu():
+    from common import settings
+    from flows.wallet_policy_flow import (ImportWalletPolicyFromMicroSDFlow,
+                                          ImportWalletPolicyFromQRFlow)
+    from pages import ErrorPage
+    from utils import escape_text, xfp2str
+    from wallet_policy import WalletPolicyRegistry
+
+    fingerprint = xfp2str(settings.get('xfp')).lower()
+    policies = list(WalletPolicyRegistry(settings).iter_policies(fingerprint))
+    if policies:
+        items = []
+        for policy in policies:
+            items.append({
+                'icon': 'ICON_TWO_KEYS',
+                'label': escape_text(policy.name),
+                'submenu': wallet_policy_item_menu,
+                'args': {'context': policy.policy_id},
+            })
+    else:
+        items = [{
+            'icon': 'ICON_TWO_KEYS',
+            'label': '(None registered)',
+            'page': ErrorPage,
+            'args': {'text': "You haven't registered any wallet policies yet."},
+        }]
+    items.append({
+        'icon': 'ICON_SCAN_QR', 'label': 'Import from QR',
+        'flow': ImportWalletPolicyFromQRFlow, 'statusbar': {'title': 'IMPORT'},
+    })
+    items.append({
+        'icon': 'ICON_MICROSD', 'label': 'Import from microSD',
+        'flow': ImportWalletPolicyFromMicroSDFlow, 'statusbar': {'title': 'IMPORT'},
+    })
     return items
 
 

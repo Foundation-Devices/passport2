@@ -21,7 +21,7 @@ _NUM_TO_CHECK = const(50)
 
 
 class VerifyAddressFlow(Flow):
-    def __init__(self, sig_type=None, multisig_wallet=None):
+    def __init__(self, sig_type=None, multisig_wallet=None, wallet_policy=None):
         if sig_type is not None:
             initial_state = self.scan_address
         else:
@@ -31,7 +31,9 @@ class VerifyAddressFlow(Flow):
         self.account = ui.get_active_account()
         self.acct_num = self.account.get('acct_num')
         self.sig_type = sig_type
-        self.multisig_wallet = multisig_wallet
+        self.multisig_wallet = multisig_wallet if sig_type != 'policy' else None
+        self.wallet_policy = (wallet_policy if wallet_policy is not None else
+                              multisig_wallet if sig_type == 'policy' else None)
         self.is_multisig = False
         self.found_addr_idx = None
         self.found_is_change = False
@@ -49,22 +51,32 @@ class VerifyAddressFlow(Flow):
         from pages import SinglesigMultisigChooserPage
         from multisig_wallet import MultisigWallet
         from common import settings
+        from utils import xfp2str
+        from wallet_policy import WalletPolicyRegistry
 
         xfp = settings.get('xfp')
         multisigs = MultisigWallet.get_by_xfp(xfp)
+        policies = list(WalletPolicyRegistry(settings).iter_policies(xfp2str(xfp).lower()))
 
-        if len(multisigs) == 0:
+        if len(multisigs) == 0 and len(policies) == 0:
             self.sig_type = 'single-sig'
             self.goto(self.scan_address, save_curr=False)  # Don't save this since we're skipping this state
         else:
             result = await SinglesigMultisigChooserPage(
-                initial_value=self.sig_type, multisigs=multisigs).show()
+                initial_value=self.sig_type, multisigs=multisigs,
+                policies=policies).show()
             if result is None:
                 if not self.back():
                     self.set_result(False)
                 return
 
-            (self.sig_type, self.multisig_wallet) = result
+            (self.sig_type, selected_wallet) = result
+            if self.sig_type == 'policy':
+                self.wallet_policy = selected_wallet
+                self.multisig_wallet = None
+            else:
+                self.multisig_wallet = selected_wallet
+                self.wallet_policy = None
             # print('sig_type={}'.format(self.sig_type))
             # print('multisig_wallet={}'.format(self.multisig_wallet))
             self.goto(self.scan_address)
@@ -98,24 +110,28 @@ class VerifyAddressFlow(Flow):
             return
 
         # Get the address type from the address
-        self.is_multisig = self.sig_type == 'multisig'
+        self.is_multisig = self.sig_type in ('multisig', 'policy')
 
         # print('address={} acct_num={} is_multisig={}'.format(address, self.acct_num, is_multisig))
         self.addr_type = get_addr_type_from_address(self.address, self.is_multisig)
-        self.deriv_path = get_deriv_path_from_addr_type_and_acct(self.addr_type, self.acct_num, self.is_multisig)
+        self.deriv_path = None if self.wallet_policy else get_deriv_path_from_addr_type_and_acct(
+            self.addr_type, self.acct_num, self.is_multisig)
 
         # Setup initial ranges
         xfp = settings.get('xfp')
-        a = [get_next_addr(self.acct_num,
-                           self.addr_type,
-                           xfp,
-                           chain.b44_cointype,
-                           False),
-             get_next_addr(self.acct_num,
-                           self.addr_type,
-                           xfp,
-                           chain.b44_cointype,
-                           True)]
+        if self.wallet_policy:
+            a = [0, 0]
+        else:
+            a = [get_next_addr(self.acct_num,
+                               self.addr_type,
+                               xfp,
+                               chain.b44_cointype,
+                               False),
+                 get_next_addr(self.acct_num,
+                               self.addr_type,
+                               xfp,
+                               chain.b44_cointype,
+                               True)]
         self.low_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
         self.high_range = [(a[_RECEIVE_ADDR], a[_RECEIVE_ADDR]), (a[_CHANGE_ADDR], a[_CHANGE_ADDR])]
 
@@ -127,7 +143,7 @@ class VerifyAddressFlow(Flow):
         self.goto(self.found)
 
     async def search_for_address(self):
-        from tasks import search_for_address_task
+        from tasks.search_for_address_task import search_for_address_task
         from utils import get_prev_address_range, get_next_address_range, spinner_task
 
         # Try next batch of addresses
@@ -151,7 +167,8 @@ class VerifyAddressFlow(Flow):
                   self.multisig_wallet,
                   is_change,
                   1,
-                  True])
+                  True,
+                  self.wallet_policy])
 
         if addr_idx >= 0:
             self.finalize(addr_idx, is_change)
@@ -172,7 +189,8 @@ class VerifyAddressFlow(Flow):
                           self.multisig_wallet,
                           is_change,
                           self.low_size[is_change],
-                          True])
+                          True,
+                          self.wallet_policy])
 
             # Exit if already found
             if addr_idx >= 0:
@@ -191,7 +209,8 @@ class VerifyAddressFlow(Flow):
                       self.multisig_wallet,
                       is_change,
                       self.high_size[is_change],
-                      True])
+                      True,
+                      self.wallet_policy])
 
             if addr_idx >= 0:
                 break
@@ -235,12 +254,13 @@ class VerifyAddressFlow(Flow):
         from views import VerifiedIcon
 
         # Remember where to start from next time
-        save_next_addr(self.acct_num,
-                       self.addr_type,
-                       self.found_addr_idx,
-                       settings.get('xfp'),
-                       chains.current_chain().b44_cointype,
-                       self.found_is_change)
+        if not self.wallet_policy:
+            save_next_addr(self.acct_num,
+                           self.addr_type,
+                           self.found_addr_idx,
+                           settings.get('xfp'),
+                           chains.current_chain().b44_cointype,
+                           self.found_is_change)
         address = stylize_address(self.address)
 
         msg = '''{}

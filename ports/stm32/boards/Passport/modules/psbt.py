@@ -288,8 +288,12 @@ class psbtProxy:
                 # parse leaf hashes and path
                 v = self.get(self.tap_subpaths[pk])
                 (num_tap_hashes, compact_length) = deser_compact_size_bytes(v)
-                tap_hashes = [uint256_from_bytes(v[i * 32:(i + 1) * 32]) for i in range(0, num_tap_hashes)]
-                v = v[(num_tap_hashes * 32 + compact_length):]
+                hashes_start = compact_length
+                hashes_end = hashes_start + num_tap_hashes * 32
+                assert hashes_end <= len(v), 'corrupt taproot leaf hashes'
+                tap_hashes = [v[hashes_start + i * 32:hashes_start + (i + 1) * 32]
+                              for i in range(num_tap_hashes)]
+                v = v[hashes_end:]
                 vl = len(v)
 
                 # Master key can be used if there is no tapscript tree
@@ -317,10 +321,11 @@ class psbtProxy:
 # Track details of each output of PSBT
 #
 class psbtOutputProxy(psbtProxy):
-    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT}
+    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
+               PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE}
     blank_flds = ('unknown', 'subpaths', 'redeem_script', 'witness_script',
                   'is_change', 'num_our_keys', 'tap_internal_key', 'tap_tree',
-                  'tap_subpaths')
+                  'tap_subpaths', 'policy_branch', 'policy_address_index')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -384,7 +389,7 @@ class psbtOutputProxy(psbtProxy):
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])
 
-    def validate(self, out_idx, txo, my_xfp, active_multisig):
+    def validate(self, out_idx, txo, my_xfp, active_multisig, active_policy=None):
         # Do things make sense for this output?
 
         # NOTE: We might think it's a change output just because the PSBT
@@ -405,6 +410,24 @@ class psbtOutputProxy(psbtProxy):
 
         # - must match expected address for this output, coming from unsigned txn
         addr_type, addr_or_pubkey, is_segwit = txo.get_address()
+
+        if addr_type == 'p2tr' and active_policy and \
+                getattr(active_policy, 'context', None) == 'tr':
+            try:
+                import chains
+                internal_key = self.get(self.tap_internal_key) \
+                    if self.tap_internal_key else None
+                tap_tree = self.get(self.tap_tree) if self.tap_tree else None
+                derived = active_policy.match_taproot_change(
+                    self.tap_subpaths or {}, txo.scriptPubKey,
+                    internal_key, tap_tree, chains.current_chain(), my_xfp)
+            except BaseException as exc:
+                raise FraudulentChangeOutput(
+                    out_idx, 'Taproot wallet policy change output does not match: %s' % exc)
+            self.policy_branch = derived.branch
+            self.policy_address_index = derived.index
+            self.is_change = derived.branch == 1
+            return
 
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
@@ -439,6 +462,23 @@ class psbtOutputProxy(psbtProxy):
                 # Perhaps an omission, so let's not call fraud on it
                 # But definitely required, else we don't know what script we're sending to.
                 raise FatalPSBTIssue("Missing redeem/witness script for output #%d" % out_idx)
+
+            if is_segwit and active_policy:
+                # Registered wallet policies are authoritative.  Re-derive the
+                # complete script and every key path; PSBT output metadata is
+                # never sufficient by itself to classify change.
+                try:
+                    import chains
+                    derived, _, _ = active_policy.match_derivations(
+                        self.subpaths, txo.scriptPubKey, witness_script,
+                        chains.current_chain(), my_xfp)
+                except BaseException as exc:
+                    raise FraudulentChangeOutput(
+                        out_idx, "Wallet policy change output does not match: %s" % exc)
+                self.policy_branch = derived.branch
+                self.policy_address_index = derived.index
+                self.is_change = derived.branch == 1
+                return
 
             if not is_segwit and redeem_script and \
                     len(redeem_script) == 22 and \
@@ -536,7 +576,8 @@ class psbtInputProxy(psbtProxy):
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
+                  'policy_spend_plan', 'added_tap_script_sig')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -706,6 +747,7 @@ class psbtInputProxy(psbtProxy):
         self.is_multisig = False
         self.is_p2sh = False
         which_key = None
+        matched_policy = False
 
         addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
         if addr_is_segwit and not self.is_segwit:
@@ -779,20 +821,107 @@ class psbtInputProxy(psbtProxy):
 
         elif addr_type == 'p2tr':
             # input is an x-only public key or merkle tree root
-            # TODO: handle tapscript tree
             self.scriptSig = utxo.scriptPubKey
 
             if len(self.tap_subpaths) == 1:  # No script path
                 subpath = list(self.tap_subpaths.items())[0]
                 pubkey, (path, tap_hashes) = subpath
-                tweaked_pubkey = output_script(pubkey, None)[2:]
-                if path[0] == my_xfp and tweaked_pubkey == addr_or_pubkey:
+                tweaked_pubkey = output_script(pubkey, None)[2:] if not tap_hashes else None
+                if not self.tap_leaf_scripts and path and path[0] == my_xfp and \
+                        tweaked_pubkey == addr_or_pubkey:
                     which_key = pubkey
+
+            if self.tap_leaf_scripts or any(hashes for _, hashes in self.tap_subpaths.values()):
+                from common import settings
+                policy_records = settings.get('wallet_policies', [])
+                if policy_records:
+                    from wallet_policy import WalletPolicyRegistry
+                    import chains
+                    leaf_scripts = {control: self.get(value)
+                                    for control, value in self.tap_leaf_scripts.items()}
+                    internal_key = self.get(self.tap_internal_key) \
+                        if self.tap_internal_key else None
+                    merkle_root = self.get(self.tap_merkle_root) \
+                        if self.tap_merkle_root else None
+                    matches = []
+                    for policy in WalletPolicyRegistry(settings).iter_policies(
+                            xfp2str(my_xfp).lower()):
+                        try:
+                            plan = policy.make_taproot_spend_plan(
+                                my_idx, self.tap_subpaths, utxo.scriptPubKey,
+                                leaf_scripts, internal_key, merkle_root,
+                                chains.current_chain(), my_xfp, self.sighash)
+                            matches.append((policy, plan))
+                        except MemoryError:
+                            raise
+                        except Exception:
+                            pass
+                    if len(matches) > 1:
+                        raise FatalPSBTIssue(
+                            'Input #%d matches multiple wallet policies' % my_idx)
+                    if matches:
+                        policy, plan = matches[0]
+                        if psbt.active_multisig:
+                            raise FatalPSBTIssue(
+                                'Cannot mix registered wallet policy and legacy multisig inputs')
+                        if psbt.active_policy and \
+                                psbt.active_policy.policy_id != policy.policy_id:
+                            raise FatalPSBTIssue(
+                                'Cannot sign inputs from multiple wallet policies')
+                        psbt.active_policy = policy
+                        self.policy_spend_plan = plan
+                        signature_key = plan.expected_pubkey + plan.tapleaf_hash
+                        which_key = (None if signature_key in self.tap_script_sigs
+                                     else plan.expected_pubkey)
+                        self.is_multisig = True
+                        matched_policy = True
+                if not matched_policy:
+                    raise FatalPSBTIssue(
+                        'Unknown registered Taproot wallet policy for input #%d' % my_idx)
         else:
             # we don't know how to "solve" this type of input
             pass
 
-        if self.is_multisig and which_key:
+        if addr_is_segwit and self.witness_script and self.is_multisig and which_key:
+            # Native P2WSH registered policies are matched before the legacy
+            # CHECKMULTISIG disassembler.  Only an immutable SpendPlan crosses
+            # from policy parsing into the signing task.
+            from common import settings
+            policy_records = settings.get('wallet_policies', [])
+            if policy_records:
+                from wallet_policy import WalletPolicyRegistry
+                import chains
+                matches = []
+                for policy in WalletPolicyRegistry(settings).iter_policies(xfp2str(my_xfp).lower()):
+                    try:
+                        plan = policy.make_spend_plan(
+                            my_idx, self.subpaths, utxo.scriptPubKey,
+                            redeem_script, chains.current_chain(), my_xfp,
+                            self.sighash)
+                        matches.append((policy, plan))
+                    except MemoryError:
+                        raise
+                    except Exception:
+                        pass
+                if len(matches) > 1:
+                    raise FatalPSBTIssue('Input #%d matches multiple wallet policies' % my_idx)
+                if matches:
+                    policy, plan = matches[0]
+                    if psbt.active_multisig:
+                        raise FatalPSBTIssue('Cannot mix registered wallet policy and legacy multisig inputs')
+                    if psbt.active_policy and psbt.active_policy.policy_id != policy.policy_id:
+                        raise FatalPSBTIssue('Cannot sign inputs from multiple wallet policies')
+                    psbt.active_policy = policy
+                    self.policy_spend_plan = plan
+                    which_key = None if plan.expected_pubkey in self.part_sig else {plan.expected_pubkey}
+                    matched_policy = True
+
+            if not matched_policy:
+                from opcodes import OP_CHECKMULTISIG
+                if not redeem_script or redeem_script[-1] != OP_CHECKMULTISIG:
+                    raise FatalPSBTIssue('Unknown registered wallet policy for input #%d' % my_idx)
+
+        if self.is_multisig and which_key and not matched_policy:
             # We will be signing this input, so
             # - find which wallet it is or
             # - check it's the right M/N to match redeem script
@@ -802,6 +931,8 @@ class psbtInputProxy(psbtProxy):
             xfp_paths = sorted(self.subpaths.values())
 
             if not psbt.active_multisig:
+                if psbt.active_policy:
+                    raise FatalPSBTIssue('Cannot mix legacy multisig and registered wallet policy inputs')
                 # search for multisig wallet
                 wal = MultisigWallet.find_match(M, N, xfp_paths)
                 if not wal:
@@ -919,11 +1050,25 @@ class psbtInputProxy(psbtProxy):
         if self.tap_key_sig:
             wr(PSBT_IN_TAP_KEY_SIG, self.tap_key_sig)
 
+        for k in self.tap_script_sigs:
+            wr(PSBT_IN_TAP_SCRIPT_SIG, self.tap_script_sigs[k], k)
+
+        if self.added_tap_script_sig:
+            key, signature = self.added_tap_script_sig
+            wr(PSBT_IN_TAP_SCRIPT_SIG, signature, key)
+
+        for control_block in self.tap_leaf_scripts:
+            wr(PSBT_IN_TAP_LEAF_SCRIPT, self.tap_leaf_scripts[control_block],
+               control_block)
+
         for k in self.tap_subpaths:
             wr(PSBT_IN_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
         if self.tap_internal_key:
             wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
+
+        if self.tap_merkle_root:
+            wr(PSBT_IN_TAP_MERKLE_ROOT, self.tap_merkle_root)
 
         for k in self.unknown:
             wr(k[0], self.unknown[k], k[1:])
@@ -976,6 +1121,7 @@ class psbtObject(psbtProxy):
         # this points to a MS wallet, during operation
         # - we are only supporting a single multisig wallet during signing
         self.active_multisig = None
+        self.active_policy = None
 
         self.warnings = []
 
@@ -1152,6 +1298,16 @@ class psbtObject(psbtProxy):
         if not has_mine:
             raise FatalPSBTIssue('My XFP not involved')
 
+        # Global XPUB records are historically used to discover conventional
+        # multisig wallets.  They must not pre-empt registered policy matching
+        # for a non-CHECKMULTISIG witness script.
+        from opcodes import OP_CHECKMULTISIG
+        for psbt_input in self.inputs:
+            if psbt_input.witness_script:
+                candidate_script = psbt_input.get(psbt_input.witness_script)
+                if not candidate_script or candidate_script[-1] != OP_CHECKMULTISIG:
+                    return
+
         candidates = MultisigWallet.find_candidates(xfp_paths)
 
         if len(candidates) == 1:
@@ -1249,7 +1405,8 @@ class psbtObject(psbtProxy):
         total_change = 0
         # print('len(self.outputs)={}'.format(len(self.outputs)))
         for idx, txo in self.output_iter():
-            self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig)
+            self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig,
+                                       self.active_policy)
 
             if self.outputs[idx].is_change:
                 total_change += txo.nValue
@@ -1692,7 +1849,9 @@ class psbtObject(psbtProxy):
         # double SHA256
         return trezorcrypto.sha256(rv.digest()).digest()
 
-    def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None, ext_flag=0):
+    def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None,
+                                 ext_flag=0, tapleaf_hash=None,
+                                 key_version=0, codeseparator_pos=0xffffffff):
         # Implement BIP 341 hashing algo for signature of segwit programs.
         # see <https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules>
 
@@ -1700,6 +1859,10 @@ class psbtObject(psbtProxy):
         old_pos = fd.tell()
 
         assert sighash_type == SIGHASH_DEFAULT
+        assert ext_flag in (0, 1)
+        if ext_flag == 1:
+            assert isinstance(tapleaf_hash, bytes) and len(tapleaf_hash) == 32
+            assert key_version == 0
 
         if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1751,8 +1914,13 @@ class psbtObject(psbtProxy):
         if annex is not None:
             data += trezorcrypto.sha256(ser_string(annex)).digest()
 
-        # TODO: support bip342 script extensions:
-        # see <https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension>
+        if ext_flag == 1:
+            # BIP342 common signature-message extension.  The registered
+            # policy profile does not permit OP_CODESEPARATOR, so the last
+            # executed position is always 0xffffffff.
+            data += tapleaf_hash
+            data += bytes([key_version])
+            data += pack('<I', codeseparator_pos)
 
         fd.seek(old_pos)
         return tagged_hash('TapSighash', bytes([0]) + data)

@@ -3,6 +3,7 @@
 #
 
 import sys
+from passport import CONSTRAINED_STARTUP
 
 HOR_RES = 396
 VER_RES = 330
@@ -10,7 +11,9 @@ FRAMEBUFFER_SIZE = HOR_RES * VER_RES * 2
 
 cam_cmd_wx = open(int(sys.argv[4]), 'wb')
 cam_img_rx = open(int(sys.argv[5]), 'rb')
-_framebuffer = bytearray(FRAMEBUFFER_SIZE)
+# On hardware this buffer is statically allocated outside the MicroPython GC
+# heap. Avoid charging it to the heap in constrained startup simulations.
+_framebuffer = bytearray(1 if CONSTRAINED_STARTUP else FRAMEBUFFER_SIZE)
 is_enabled = False
 
 

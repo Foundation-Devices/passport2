@@ -80,6 +80,14 @@ def simulator_socket_task():
             socket.sendto(sender, 'excp', value.getvalue().encode('utf-8'))
 
 
+if '--constrained-startup' in sys.argv:
+    # A frozen simulator build contains the hardware sflash module, which has
+    # precedence over MICROPYPATH. Install the low-heap simulator model before
+    # importing the frozen application entry point.
+    import constrained_sflash
+    sys.modules['sflash'] = constrained_sflash
+
+
 if '--unit-test' in sys.argv:
     simulator_socket_task()
 else:
