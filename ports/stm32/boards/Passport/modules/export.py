@@ -34,6 +34,19 @@ def ms_has_master_xfp(xpubs):
     return False
 
 
+def policy_has_master_xfp(record):
+    from common import settings
+    from wallet_policy import MiniscriptPolicy
+    try:
+        policy = MiniscriptPolicy.deserialize(record)
+        owned = policy.keys[policy.owned_key_indexes[0]]
+        return owned.fingerprint == xfp2str(settings.get('xfp', None)).lower()
+    except BaseException:
+        # A malformed settings record must never be copied into a backup as if
+        # it were an approved wallet policy.
+        return False
+
+
 def render_backup_contents():
     # simple text format:
     #   key = value
@@ -113,6 +126,11 @@ def render_backup_contents():
             # "Passphrase wallets? I don't have any passphrase wallets!"
             # print('ms={}'.format(v))
             v = list(filter(lambda ms: ms_has_master_xfp(ms[2]), v))
+        elif k == 'wallet_policies':
+            # As with legacy multisig, exclude policies belonging to a
+            # passphrase wallet from the base wallet's plausible-deniability
+            # backup.
+            v = list(filter(policy_has_master_xfp, v))
 
         ADD('setting.' + k, v)
 

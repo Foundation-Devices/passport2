@@ -103,6 +103,40 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
                 await on_done(Error.CORRUPT_BACKUP_FILE)
                 return
 
+        # Wallet policies are security-critical and cannot be restored as
+        # opaque settings.  Validate their identity, xpub encodings, network,
+        # and declared Passport-owned key against the backup's root node before
+        # changing the Secure Element secret.
+        policy_records = vals.get('setting.wallet_policies', [])
+        if not isinstance(policy_records, list):
+            await on_done(Error.CORRUPT_BACKUP_FILE)
+            return
+        if policy_records:
+            from utils import xfp2str
+            from wallet_policy import MiniscriptPolicy
+            expected_fingerprint = xfp2str(node.my_fingerprint()).lower()
+            validated_records = []
+            policy_ids = set()
+
+            def derive_policy_node(path):
+                child = node.clone()
+                for element in path:
+                    child.derive(element)
+                return child
+
+            for record in policy_records:
+                policy = MiniscriptPolicy.deserialize(record)
+                policy.validate_extended_keys(chain)
+                owned_key = policy.keys[policy.owned_key_indexes[0]]
+                if owned_key.fingerprint != expected_fingerprint:
+                    raise ValueError('Wallet policy belongs to another seed')
+                policy.verify_owned_key(chain, derive_policy_node)
+                if policy.policy_id in policy_ids:
+                    raise ValueError('Duplicate wallet policy in backup')
+                policy_ids.add(policy.policy_id)
+                validated_records.append(policy.serialize())
+            vals['setting.wallet_policies'] = validated_records
+
     except Exception as e:
         await on_done(Error.CORRUPT_BACKUP_FILE)
         return
