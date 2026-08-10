@@ -435,7 +435,9 @@ class psbtOutputProxy(psbtProxy):
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
         else:
-            # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
+            # P2WSH/P2SH cases need the full set of pubkeys.  Registered wallet
+            # policies can reconstruct the output script from those exact
+            # derivations; legacy multisig still needs the PSBT script field.
             expect_pubkey = None
 
         if addr_type == 'p2pk':
@@ -458,15 +460,13 @@ class psbtOutputProxy(psbtProxy):
             redeem_script = self.get(self.redeem_script) if self.redeem_script else None
             witness_script = self.get(self.witness_script) if self.witness_script else None
 
-            if not redeem_script and not witness_script:
-                # Perhaps an omission, so let's not call fraud on it
-                # But definitely required, else we don't know what script we're sending to.
-                raise FatalPSBTIssue("Missing redeem/witness script for output #%d" % out_idx)
-
             if is_segwit and active_policy:
                 # Registered wallet policies are authoritative.  Re-derive the
-                # complete script and every key path; PSBT output metadata is
-                # never sufficient by itself to classify change.
+                # complete script and every key path.  A coordinator may omit
+                # PSBT_OUT_WITNESS_SCRIPT for change; the stored policy plus the
+                # complete derivation map is sufficient to verify the output.
+                # If a witness script is present, match_derivations also checks
+                # it exactly.
                 try:
                     import chains
                     derived, _, _ = active_policy.match_derivations(
@@ -479,6 +479,11 @@ class psbtOutputProxy(psbtProxy):
                 self.policy_address_index = derived.index
                 self.is_change = derived.branch == 1
                 return
+
+            if not redeem_script and not witness_script:
+                # Legacy P2SH/P2WSH validation cannot reconstruct an arbitrary
+                # script from derivations alone.
+                raise FatalPSBTIssue("Missing redeem/witness script for output #%d" % out_idx)
 
             if not is_segwit and redeem_script and \
                     len(redeem_script) == 22 and \
