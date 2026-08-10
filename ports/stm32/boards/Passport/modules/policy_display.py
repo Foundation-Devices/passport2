@@ -378,17 +378,20 @@ def _simple_path_pages(policy, simple):
     short, exact, detail = describe_timelock(lock_kind, lock_value)
     recovery_name = _escape(policy.key_names[recovery_index]) or 'Recovery key'
     primary_page = (
-        'RIGHT NOW\n\n'
-        'This Passport can spend alone.\n\n'
-        'VERIFIED ON THIS DEVICE\n{}\n\n'
-        'Passport access does not expire.'
+        'PASSPORT SPENDING PATH\n\n'
+        'This Passport can spend at any time.\n'
+        'No waiting period applies.\n\n'
+        'PASSPORT KEY\n{}\n\n'
+        'This key was matched to the seed currently loaded on this Passport.\n\n'
+        'This spending path remains available after the recovery key activates.'
     ).format(format_fingerprint(owned.fingerprint))
     recovery_page = (
-        'AFTER {}\n\n'
-        'EITHER KEY CAN SPEND ALONE\n\n'
-        'This Passport - still works\n{}\n\n'
+        'AFTER THE RECOVERY DELAY\n\n'
+        'For each coin, the recovery key activates {} after that coin confirms.\n\n'
+        'Either key can then spend by itself.\n\n'
+        'PASSPORT KEY - remains available\n{}\n\n'
         '{} - becomes available\n{}'
-    ).format(short.upper(), format_fingerprint(owned.fingerprint),
+    ).format(short, format_fingerprint(owned.fingerprint),
              recovery_name, format_fingerprint(recovery_key.fingerprint))
     timing_page = (
         'DELAY DETAILS\n\n'
@@ -476,9 +479,9 @@ def format_review_pages(policy):
         pages.append('\n'.join(lines))
 
     pages.append(
-        'BACKUP REQUIRED\n\n'
-        'Your Passport seed recovers its key, but not this wallet configuration.\n\n'
-        'Back up the wallet descriptor.'
+        'BACK UP THIS WALLET POLICY\n\n'
+        'Your Passport seed recovers its key, but it cannot recreate this wallet policy.\n\n'
+        'Keep a copy of this wallet policy outside Passport.'
     )
     return tuple(pages)
 
