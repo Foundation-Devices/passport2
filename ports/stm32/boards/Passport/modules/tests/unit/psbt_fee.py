@@ -10,17 +10,22 @@ import history
 from flows.sign_psbt_common_flow import SignPsbtCommonFlow
 from psbt import psbtInputProxy, psbtObject
 from public_constants import (
+    PSBT_IN_BIP32_DERIVATION,
     PSBT_IN_NON_WITNESS_UTXO,
     PSBT_IN_WITNESS_UTXO,
 )
-from serializations import CTxOut, ser_compact_size
+from serializations import CTxOut, hash160, ser_compact_size
 
 
 P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
+MY_XFP = 0x12345678
+OWNED_PUBKEY = b'\x02' + (b'\x55' * 32)
+OWNED_SCRIPT = b'\x00\x14' + hash160(OWNED_PUBKEY)
 
 
-def psbt_field(key_type, value):
-    return b'\x01' + bytes([key_type]) + ser_compact_size(len(value)) + value
+def psbt_field(key_type, value, key=b''):
+    full_key = bytes([key_type]) + key
+    return ser_compact_size(len(full_key)) + full_key + ser_compact_size(len(value)) + value
 
 
 def previous_tx(txout):
@@ -33,6 +38,13 @@ def make_input(witness_txout, non_witness_txout=None):
     if non_witness_txout:
         data += psbt_field(PSBT_IN_NON_WITNESS_UTXO, previous_tx(non_witness_txout))
     data += psbt_field(PSBT_IN_WITNESS_UTXO, witness_txout.serialize())
+    return psbtInputProxy(BytesIO(data + b'\x00'), 0)
+
+
+def make_owned_input():
+    txout = CTxOut(2000, OWNED_SCRIPT)
+    data = psbt_field(PSBT_IN_WITNESS_UTXO, txout.serialize())
+    data += psbt_field(PSBT_IN_BIP32_DERIVATION, pack('<II', MY_XFP, 0), OWNED_PUBKEY)
     return psbtInputProxy(BytesIO(data + b'\x00'), 0)
 
 
@@ -58,28 +70,6 @@ script_mismatch = make_input(CTxOut(1000, b'\x00\x14' + (b'\x33' * 20)), matchin
 assert_raises(AssertionError, lambda: script_mismatch.get_utxo(0))
 
 
-class FakeOwnedInput:
-    def __init__(self):
-        self.fully_signed = False
-        self.witness_utxo = True
-        self.utxo = None
-        self.required_key = None
-        self.num_our_keys = 1
-        self.is_segwit = True
-        self.subpaths = {}
-        self.tap_subpaths = {}
-
-    def has_utxo(self):
-        return True
-
-    def get_utxo(self, _idx):
-        return CTxOut(2000, P2WPKH_SCRIPT)
-
-    def determine_my_signing_key(self, _idx, utxo, _xfp, _psbt):
-        self.amount = utxo.nValue
-        self.required_key = b'key'
-
-
 class FakePrevout:
     n = 0
 
@@ -89,9 +79,9 @@ class FakeTxIn:
 
 
 class FakeInputPSBT:
-    def __init__(self, psbt_input):
+    def __init__(self, psbt_input, my_xfp=0):
         self.inputs = [psbt_input]
-        self.my_xfp = 0
+        self.my_xfp = my_xfp
         self.total_value_in = None
         self.fee_is_verified = True
         self.presigned_inputs = set()
@@ -110,9 +100,13 @@ try:
     psbtObject.consider_inputs(external_input_psbt)
     assert not external_input_psbt.fee_is_verified
 
-    owned_input_psbt = FakeInputPSBT(FakeOwnedInput())
+    owned_input = make_owned_input()
+    owned_input.validate(0, FakeTxIn(), MY_XFP)
+    owned_input_psbt = FakeInputPSBT(owned_input, MY_XFP)
     psbtObject.consider_inputs(owned_input_psbt)
     assert owned_input_psbt.fee_is_verified
+    assert owned_input.num_our_keys == 1
+    assert owned_input.required_key == OWNED_PUBKEY
 finally:
     history.verify_amount = original_verify_amount
 
