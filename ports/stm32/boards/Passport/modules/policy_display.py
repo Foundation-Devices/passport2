@@ -511,10 +511,10 @@ def format_signing_pages(policy):
     owned = policy.keys[policy.owned_key_indexes[0]]
     if simple:
         return ((
-            'WHAT YOUR SIGNATURE AUTHORIZES\n\n'
-            'Immediate spending with this Passport.\n\n'
-            'Verified key\n{}\n\n'
-            'The recovery path is not needed for this signature.'
+            'Signing path\n\n'
+            "This transaction uses Passport's immediate spending path.\n\n"
+            'Passport key\n{}\n\n'
+            'The recovery path is not used.'
         ).format(format_fingerprint(owned.fingerprint)),)
 
     owned_paths = []
@@ -522,8 +522,8 @@ def format_signing_pages(policy):
         if policy.owned_key_indexes[0] in path['keys']:
             owned_paths.append(position)
     return ((
-        'WHAT YOUR SIGNATURE AUTHORIZES\n\n'
+        'Signing with this policy\n\n'
         'This Passport key appears in {} of {} reviewed paths.\n\n'
-        'Verified key\n{}\n\n'
+        'Passport key\n{}\n\n'
         'Passport adds its signature but cannot prove how the coordinator will finalize the transaction.'
     ).format(len(owned_paths), len(paths), format_fingerprint(owned.fingerprint)),)
