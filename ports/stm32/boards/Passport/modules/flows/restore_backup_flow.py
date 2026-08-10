@@ -18,7 +18,7 @@ from pages import (
     YesNoChooserPage
 )
 from utils import spinner_task, get_backup_code_as_password, bind, show_card_missing
-from tasks import restore_backup_task, get_backup_code_task
+from tasks import get_backup_code_task
 from errors import Error
 import common
 from files import CardMissingError
@@ -126,6 +126,7 @@ class RestoreBackupFlow(Flow):
             self.back()
 
     async def do_restore(self):
+        from tasks.restore_backup_task import restore_backup_task
         from utils import start_task
         from flows import AutoBackupFlow, BackupFlow
         from pages import InfoPage
