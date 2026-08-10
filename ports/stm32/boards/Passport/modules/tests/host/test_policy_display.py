@@ -45,17 +45,22 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
     review = '\n'.join(pages)
     assert 'Simple inheritance' in pages[0]
     assert '2 ways to spend' in pages[0]
-    assert 'RIGHT NOW' in review
-    assert 'This Passport can spend alone' in review
+    assert 'PASSPORT SPENDING PATH' in review
+    assert 'This Passport can spend at any time' in review
+    assert 'No waiting period applies' in review
     assert '6738 736C' in review
-    assert 'EITHER KEY CAN SPEND ALONE' in review
-    assert 'ABOUT 1 YEAR' in review
+    assert 'AFTER THE RECOVERY DELAY' in review
+    assert 'recovery key activates about 1 year after that coin confirms' in review
+    assert 'Either key can then spend by itself' in review
+    assert 'PASSPORT KEY - remains available' in review
     assert '52,596 blocks' in review
     assert '6738 736D' in review
     assert 'DELAY DETAILS' in review
-    assert 'Passport access does not expire' in review
+    assert 'matched to the seed currently loaded on this Passport' in review
+    assert 'remains available after the recovery key activates' in review
     assert 'restarts its timer' in review
-    assert pages[-1].startswith('BACKUP REQUIRED')
+    assert pages[-1].startswith('BACK UP THIS WALLET POLICY')
+    assert 'cannot recreate this wallet policy' in pages[-1]
     assert 'Recovery 6738 736D\nactivates after about 1 year' in policy.format_confirmation()
 
 
