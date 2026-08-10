@@ -643,19 +643,18 @@ class psbtInputProxy(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
+        witness_utxo = None
         if self.witness_utxo:
-            # Going forward? Just what we will witness; no other junk
-            # - prefer this format, altho does that imply segwit txn must be generated?
-            # - I don't know why we wouldn't always use this
-            # - once we use this partial utxo data, we must create witness data out
-            self.is_segwit = True
+            # Load the compact output. If the full previous transaction is also
+            # present, its hash-bound output is loaded below and must match.
 
             fd.seek(self.witness_utxo[0])
-            utxo = CTxOut()
-            utxo.deserialize(fd)
-            fd.seek(old_pos)
+            witness_utxo = CTxOut()
+            witness_utxo.deserialize(fd)
 
-            return utxo
+            if not self.utxo:
+                fd.seek(old_pos)
+                return witness_utxo
 
         assert self.utxo, 'no utxo'
 
@@ -685,6 +684,11 @@ class psbtInputProxy(psbtProxy):
 
         fd.seek(old_pos)
 
+        if witness_utxo:
+            assert witness_utxo.nValue == utxo.nValue and \
+                witness_utxo.scriptPubKey == utxo.scriptPubKey, \
+                "witness/non-witness UTXO mismatch for input #%d" % idx
+
         return utxo
 
     def determine_my_signing_key(self, my_idx, utxo, my_xfp, psbt):
@@ -708,8 +712,18 @@ class psbtInputProxy(psbtProxy):
         which_key = None
 
         addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
-        if addr_is_segwit and not self.is_segwit:
-            self.is_segwit = True
+        self.is_segwit = addr_is_segwit
+
+        if self.witness_utxo and not self.is_segwit:
+            if addr_type == 'p2sh' and self.redeem_script:
+                redeem_script = self.get(self.redeem_script)
+                assert hash160(redeem_script) == addr_or_pubkey, \
+                    "redeem script mismatch for input #%d" % my_idx
+                self.is_segwit = len(redeem_script) in {22, 34} and \
+                    redeem_script[0] == 0 and redeem_script[1] in {20, 32}
+
+            if not self.is_segwit:
+                raise FatalPSBTIssue("Witness UTXO provided for non-SegWit input #%d" % my_idx)
 
         if addr_type == 'p2sh':
             # multisig input
@@ -957,6 +971,7 @@ class psbtObject(psbtProxy):
         self.lock_time = None
         self.total_value_out = None
         self.total_value_in = None
+        self.fee_is_verified = True
         self.presigned_inputs = set()
         self.multisig_import_needs_approval = False
         self.self_send = False
@@ -1269,15 +1284,21 @@ class psbtObject(psbtProxy):
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
         #       self.total_value_out, total_change))
         fee = self.calculate_fee()
+        per_fee = None
         if self.total_value_out == 0:
             per_fee = 100
         elif total_non_change_out == 0:
             self.self_send = True
-        else:
+        elif self.fee_is_verified:
             # Calculate fee based on non-change output value
             per_fee = (fee / total_non_change_out) * 100
 
-        if self.self_send:
+        if not self.fee_is_verified:
+            self.warnings.append(
+                ('Unverified Fee',
+                 'One or more input amounts were supplied by another wallet, '
+                 'so Passport cannot verify the network fee.'))
+        elif self.self_send:
             # self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
             per_fee = (fee / self.total_value_out) * 100
             if per_fee >= 5:
@@ -1426,6 +1447,10 @@ class psbtObject(psbtProxy):
             # - also validates redeem_script when present
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
+
+            if inp.witness_utxo and not inp.utxo and \
+                    not (inp.num_our_keys and inp.required_key):
+                self.fee_is_verified = False
 
             gc.collect()
 
