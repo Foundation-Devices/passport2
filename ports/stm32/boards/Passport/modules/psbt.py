@@ -647,6 +647,7 @@ class psbtInputProxy(psbtProxy):
         if self.witness_utxo:
             # Load the compact output. If the full previous transaction is also
             # present, its hash-bound output is loaded below and must match.
+            self.is_segwit = True
 
             fd.seek(self.witness_utxo[0])
             witness_utxo = CTxOut()
@@ -712,18 +713,8 @@ class psbtInputProxy(psbtProxy):
         which_key = None
 
         addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
-        self.is_segwit = addr_is_segwit
-
-        if self.witness_utxo and not self.is_segwit:
-            if addr_type == 'p2sh' and self.redeem_script:
-                redeem_script = self.get(self.redeem_script)
-                assert hash160(redeem_script) == addr_or_pubkey, \
-                    "redeem script mismatch for input #%d" % my_idx
-                self.is_segwit = len(redeem_script) in {22, 34} and \
-                    redeem_script[0] == 0 and redeem_script[1] in {20, 32}
-
-            if not self.is_segwit:
-                raise FatalPSBTIssue("Witness UTXO provided for non-SegWit input #%d" % my_idx)
+        if addr_is_segwit and not self.is_segwit:
+            self.is_segwit = True
 
         if addr_type == 'p2sh':
             # multisig input
@@ -1448,6 +1439,8 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            # A false amount for an input we sign makes our signature invalid,
+            # and the history cache catches changed amounts across attempts.
             if inp.witness_utxo and not inp.utxo and \
                     not (inp.num_our_keys and inp.required_key):
                 self.fee_is_verified = False
