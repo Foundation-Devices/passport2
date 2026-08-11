@@ -66,7 +66,13 @@ def test_wallet_policy_ui_is_loaded_only_when_its_menu_is_opened():
     assert 'flows.wallet_policy_flow' in _nested_imports('menus.py')
 
 
+def test_liana_exporter_is_loaded_only_when_selected():
+    assert 'liana' not in _top_level_imports('wallets/sw_wallets.py')
+    assert 'liana' in _nested_imports('wallets/sw_wallets.py')
+
+
 def test_lazily_imported_wallet_policy_helpers_are_frozen():
     manifest = MANIFEST.read_text()
     assert "'psbt_display.py'" in manifest
     assert "'tasks/search_for_address_task.py'" in manifest
+    assert "'wallets/liana.py'" in manifest
