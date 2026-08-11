@@ -32,6 +32,26 @@ MAX_TAPROOT_LEAVES = 8
 TAPSCRIPT_LEAF_VERSION = 0xc0
 
 
+def _max_key_uses_per_path(node, key_index):
+    """Conservatively count key uses in any one executable WSH path.
+
+    ``or_i`` selects exactly one child at execution time, so repeated key
+    expressions on opposite sides are mutually exclusive.  For every other
+    fragment, summing child occurrences is deliberately conservative: a
+    policy is rejected unless Passport can prove that no spending path needs
+    more than one signature from its owned xpub.
+    """
+    if node.kind in ('pk_k', 'pk_h'):
+        return 1 if node.value.index == key_index else 0
+    if node.kind in ('multi', 'multi_a'):
+        return sum(1 for key in node.args if key.index == key_index)
+    child_counts = [_max_key_uses_per_path(child, key_index)
+                    for child in node.args if hasattr(child, 'kind')]
+    if node.kind == 'or_i':
+        return max(child_counts) if child_counts else 0
+    return sum(child_counts)
+
+
 def _is_decimal(text):
     return bool(text) and all('0' <= ch <= '9' for ch in text)
 
@@ -471,8 +491,9 @@ class MiniscriptPolicy:
         owned = tuple(owned_key_indexes)
         if len(owned) != 1 or owned[0] not in expected:
             raise PolicyParseError('Policies require exactly one Passport-owned policy key')
-        if indexes.count(owned[0]) != 1:
-            raise PolicyParseError('Policies require exactly one Passport signing key per input')
+        if context == 'wsh' and _max_key_uses_per_path(miniscript, owned[0]) > 1:
+            raise PolicyParseError(
+                'A spending path cannot require more than one Passport signature')
         if context == 'tr' and not isinstance(internal_key, bytes) and \
                 internal_key.index == owned[0]:
             raise PolicyParseError(
@@ -956,17 +977,20 @@ class MiniscriptPolicy:
         owned_index = self.owned_key_indexes[0]
         owned_pubkeys = [public_key for public_key, key_index in expected_key_indexes.items()
                          if key_index == owned_index]
-        if len(owned_pubkeys) != 1:
-            raise PolicyMismatchError('Policy must derive exactly one Passport signing key')
-        owned_pubkey = owned_pubkeys[0]
+        if not owned_pubkeys:
+            raise PolicyMismatchError('Policy did not derive a Passport signing key')
+        owned_signing_keys = tuple(
+            (expected_paths[public_key], public_key) for public_key in owned_pubkeys)
+        owned_path, owned_pubkey = owned_signing_keys[0]
         from miniscript import policy_timelocks
         from spend_plan import SpendPlan
         return SpendPlan(
             self.policy_id, input_index, derived.branch, derived.index, 'p2wsh',
-            expected_paths[owned_pubkey], owned_pubkey, sighash_type,
+            owned_path, owned_pubkey, sighash_type,
             script_pubkey=derived.script_pubkey,
             witness_script=derived.witness_script,
-            timelocks=policy_timelocks(self.miniscript))
+            timelocks=policy_timelocks(self.miniscript),
+            owned_signing_keys=owned_signing_keys)
 
     def _compile_tap_tree(self, tree, resolver, branch, index, depth, records):
         if isinstance(tree, list):

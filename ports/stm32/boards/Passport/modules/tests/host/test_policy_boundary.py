@@ -96,3 +96,22 @@ def test_spend_plan_rechecks_complete_signing_scope():
     for mutation in mutations:
         with pytest.raises(ValueError):
             plan.assert_p2wsh_scope(*mutation)
+
+
+def test_spend_plan_binds_multiple_owned_signing_keys():
+    first = bytes.fromhex('02' + '11' * 32)
+    second = bytes.fromhex('03' + '22' * 32)
+    first_path = (0x12345678, 0x80000030, 0, 4)
+    second_path = (0x12345678, 0x80000030, 2, 4)
+    plan = SpendPlan(
+        'policy', 2, 0, 4, 'p2wsh', first_path, first, 1,
+        script_pubkey=b'output', witness_script=b'script',
+        owned_signing_keys=((first_path, first), (second_path, second)))
+    subpaths = {first: first_path, second: second_path}
+    assert plan.assert_p2wsh_scope(
+        2, subpaths, b'output', b'script', 1, {first, second})
+    assert plan.assert_p2wsh_scope(
+        2, subpaths, b'output', b'script', 1, {second}, {first})
+    with pytest.raises(ValueError, match='signing key'):
+        plan.assert_p2wsh_scope(
+            2, subpaths, b'output', b'script', 1, {first}, {first})

@@ -55,9 +55,8 @@ LianaWallet = {
     'skip_address_validation': True,
     'custom_text': {
         'pairing_microsd':
-            'Next, Passport will save a Liana key file to your microSD card. '
-            'Import this file when adding Passport as a key in Liana. The same '
-            'file works for single-key and multisig policies.',
+            'Passport will save a key file to microSD.\n\n'
+            'Import it when adding this Passport in Liana.',
         'connection_complete':
             'Liana key exported. After creating the wallet in Liana, export '
             'its descriptor and register it under Wallet Policies.',

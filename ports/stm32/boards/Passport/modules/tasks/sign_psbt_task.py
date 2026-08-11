@@ -104,7 +104,7 @@ async def sign_psbt_task(on_done, psbt):
                     inp.policy_spend_plan.assert_p2wsh_scope(
                         in_idx, inp.subpaths, utxo.scriptPubKey,
                         inp.get(inp.witness_script), inp.sighash,
-                        inp.required_key)
+                        inp.required_key, inp.part_sig)
                     del utxo
 
                 if not inp.is_segwit:
@@ -119,25 +119,13 @@ async def sign_psbt_task(on_done, psbt):
                                                           inp.amount, inp.scriptCode, inp.sighash)
 
                 if inp.is_multisig:
-                    # need to consider a set of possible keys, since xfp may not be unique
-                    for which_key in inp.required_key:
-                        # get node required
-                        skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=False)
-
-                        # expensive test, but works... and important
-                        pu = node.public_key()
-                        if pu == which_key:
-                            break
-                    else:
-                        raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % in_idx)
-
+                    signing_keys = tuple(sorted(inp.required_key))
                 else:
-                    # single pubkey <=> single key
-                    which_key = inp.required_key
+                    signing_keys = (inp.required_key,)
+                    assert not (inp.added_sig or inp.tap_key_sig), \
+                        "This transaction has already been signed"
 
-                    assert not (inp.added_sig or inp.tap_key_sig), "This transaction has already been signed"
-
+                for which_key in signing_keys:
                     if len(inp.subpaths) > 0 and \
                         (inp.subpaths[which_key][0] == psbt.my_xfp or
                          inp.subpaths[which_key][0] == swab32(psbt.my_xfp)):
@@ -162,39 +150,40 @@ async def sign_psbt_task(on_done, psbt):
                         pu = node.public_key()[1:]
 
                     if pu != which_key:
-                        raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
+                        raise AssertionError(
+                            "Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
 
-                # The precious private key we need
-                pk = node.private_key()
-
-                # print("privkey %s" % b2a_hex(pk).decode('ascii'))
-                # print(" pubkey %s" % b2a_hex(which_key).decode('ascii'))
-                # print(" digest %s" % b2a_hex(digest).decode('ascii'))
-
-                # Do the ACTUAL signature ... finally!!!
-                if len(inp.tap_subpaths) > 0:
-                    # Registered script paths were handled above; this is the
-                    # pre-existing Taproot key-path branch.
-                    inp.tap_key_sig = taproot_sign_key(None, pk, inp.sighash, digest)
-                else:
-                    result = secp256k1.sign_ecdsa(digest, pk)
-
-                    # convert signature to DER format
-                    if len(result) != 64:
-                        raise AssertionError('Incorrect signature length.')
-
-                    r = result[0:32]
-                    s = result[32:64]
-
-                    inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
-
-                    # Memory cleanup
-                    del result, r, s
-
-                # private key no longer required
-                stash.blank_object(pk)
-                stash.blank_object(node)
-                del pk, node, pu, skp
+                    # The precious private key we need
+                    pk = node.private_key()
+                    try:
+                        if len(inp.tap_subpaths) > 0:
+                            # Registered script paths were handled above; this is the
+                            # pre-existing Taproot key-path branch.
+                            inp.tap_key_sig = taproot_sign_key(
+                                None, pk, inp.sighash, digest)
+                        else:
+                            result = secp256k1.sign_ecdsa(digest, pk)
+                            try:
+                                if len(result) != 64:
+                                    raise AssertionError(
+                                        'Incorrect signature length.')
+                                der_sig = ser_sig_der(
+                                    result[0:32], result[32:64], inp.sighash)
+                                if inp.is_multisig:
+                                    if not inp.added_sigs:
+                                        inp.added_sigs = {}
+                                    if which_key in inp.added_sigs:
+                                        raise AssertionError(
+                                            'This multisig key has already been signed')
+                                    inp.added_sigs[which_key] = der_sig
+                                else:
+                                    inp.added_sig = (which_key, der_sig)
+                            finally:
+                                del result
+                    finally:
+                        stash.blank_object(pk)
+                        stash.blank_object(node)
+                    del pk, node, pu, skp
 
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
