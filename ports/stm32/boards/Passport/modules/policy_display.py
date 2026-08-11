@@ -213,7 +213,12 @@ def _simple_requirements(node):
 
 
 def _key_line(policy, key_index, recovery=False):
-    key = policy.keys[key_index]
+    return '{} - {}'.format(
+        _key_role(policy, key_index, recovery),
+        format_fingerprint(policy.keys[key_index].fingerprint))
+
+
+def _key_role(policy, key_index, recovery=False):
     if key_index in policy.owned_key_indexes:
         role = 'This Passport'
     elif policy.key_names[key_index]:
@@ -222,7 +227,7 @@ def _key_line(policy, key_index, recovery=False):
         role = 'Recovery key'
     else:
         role = 'Key {}'.format(key_index + 1)
-    return '{} - {}'.format(role, format_fingerprint(key.fingerprint))
+    return role
 
 
 def _format_condition(node, policy, depth=0, recovery=False):
@@ -318,7 +323,11 @@ def policy_paths(policy):
     for leaf_index, leaf in enumerate(policy._leaves()):
         for alternative in _split_alternatives(leaf):
             paths.append(_make_path(alternative, leaf_index if policy.context == 'tr' else None))
-    return tuple(paths)
+    # Descriptors preserve script order, not human priority. Coordinators such
+    # as Liana may serialize a delayed recovery branch before the immediately
+    # available branch. Keep each group stable, but review paths that can be
+    # used now before paths gated by a timelock.
+    return tuple(sorted(paths, key=lambda path: 1 if path['locks'] else 0))
 
 
 def _classify_simple_inheritance(policy, paths):
@@ -407,39 +416,196 @@ def suggested_key_name(policy, key_index):
     return 'Key {}'.format(key_index + 1)
 
 
-def _generic_path_page(policy, path, position, total):
+def _flatten_conjunction(node):
+    """Return top-level AND requirements without changing their meaning."""
+    node = _unwrap(node)
+    if node.kind not in _AND:
+        return [node]
+    result = []
+    for child in node.args:
+        result.extend(_flatten_conjunction(child))
+    return result
+
+
+def _key_threshold(node):
+    """Return (required, key indexes) for a keys-only threshold."""
+    node = _unwrap(node)
+    if node.kind in ('pk_k', 'pk_h'):
+        return 1, (node.value.index,)
+    if node.kind in ('multi', 'multi_a'):
+        return node.value, tuple(key.index for key in node.args)
+    if node.kind == 'thresh':
+        indexes = []
+        for child in node.args:
+            child = _unwrap(child)
+            if child.kind not in ('pk_k', 'pk_h'):
+                return None
+            indexes.append(child.value.index)
+        return node.value, tuple(indexes)
+    return None
+
+
+def _path_key_threshold(path):
+    """Return a simple threshold for the path, when it has one."""
+    requirements = _flatten_conjunction(path['node'])
+    key_groups = []
+    for requirement in requirements:
+        requirement = _unwrap(requirement)
+        if requirement.kind in ('older', 'after'):
+            continue
+        threshold = _key_threshold(requirement)
+        if threshold is None:
+            return None
+        key_groups.append(threshold)
+
+    if not key_groups:
+        return None
+
+    # Separate ANDed key checks are equivalent to requiring every listed key.
+    if len(key_groups) > 1:
+        if any(required != 1 or len(indexes) != 1
+               for required, indexes in key_groups):
+            return None
+        indexes = tuple(indexes[0] for _, indexes in key_groups)
+        required = len(indexes)
+    else:
+        required, indexes = key_groups[0]
+
+    return required, indexes
+
+
+def _friendly_key_path(policy, path):
+    """Summarize common key thresholds without parser-shaped indentation."""
+    threshold = _path_key_threshold(path)
+    if threshold is None:
+        return None
+    required, indexes = threshold
+
+    if required == len(indexes) == 2:
+        summary = 'Both keys must sign'
+    elif required == len(indexes):
+        summary = 'All {} keys must sign'.format(len(indexes))
+    elif required == 1:
+        summary = 'Any 1 of {} keys must sign'.format(len(indexes))
+    else:
+        summary = 'Any {} of {} keys must sign'.format(required, len(indexes))
+
+    lines = [summary]
+    for key_index in indexes:
+        lines.extend([
+            '',
+            _key_role(policy, key_index),
+            format_fingerprint(policy.keys[key_index].fingerprint),
+        ])
+    return lines
+
+
+def _path_name(path):
+    if path['key_path']:
+        name = 'Taproot key path'
+    elif len(path['locks']) == 1:
+        name = 'After {}'.format(describe_timelock(*path['locks'][0])[0])
+    elif path['locks']:
+        name = 'Delayed spending'
+    else:
+        name = 'Spend now'
+
+    if not path['key_path']:
+        threshold = _path_key_threshold(path)
+        if threshold is not None:
+            required, indexes = threshold
+            name += ' ({}-of-{})'.format(required, len(indexes))
+    return name
+
+
+def compatible_path_indexes(policy, tx_version, lock_time, sequence):
+    """Return paths whose timelocks are permitted by the transaction fields.
+
+    This does not claim that a timelock has matured. It only rules out paths
+    that the signed transaction itself cannot satisfy. Paths without locks
+    always remain possible until the final witness selects a branch.
+    """
+    compatible = []
+    for index, path in enumerate(policy_paths(policy)):
+        allowed = True
+        for kind, value in path['locks']:
+            if kind == 'older':
+                # BIP68/112: version 2, disable flag clear, matching time or
+                # height units, and a sequence value at least as large.
+                if tx_version < 2 or sequence & (1 << 31):
+                    allowed = False
+                    break
+                type_flag = 1 << 22
+                if sequence & type_flag != value & type_flag or \
+                        sequence & 0xffff < value & 0xffff:
+                    allowed = False
+                    break
+            elif kind == 'after':
+                # BIP65: a final sequence disables locktime, and height/time
+                # lock types cannot be mixed.
+                if sequence == 0xffffffff or \
+                        (lock_time < 500000000) != (value < 500000000) or \
+                        lock_time < value:
+                    allowed = False
+                    break
+        if allowed:
+            compatible.append(index)
+    return tuple(compatible)
+
+
+def _generic_path_page(policy, path):
     requires = _path_requires_passport(policy, path)
     if path['key_path']:
         if path['fixed_key_path']:
             return (
-                'Path {} of {}\nTaproot key path\n\n'
+                'Taproot key path\n\n'
                 'A fixed internal key can bypass every script condition if its private key exists.\n\n'
                 'Passport cannot verify that no one controls this key.'
-            ).format(position, total)
+            )
         key_index = path['keys'][0]
         return (
-            'Path {} of {}\nTaproot key path\n\n'
+            'Taproot key path\n\n'
             '{} can spend without using any script-path conditions.\n\n'
             'This path {} Passport.'
-        ).format(position, total, _key_line(policy, key_index),
+        ).format(_key_line(policy, key_index),
                  'requires' if requires else 'does not require')
 
     locks = path['locks']
     if locks:
-        heading = 'Timelocked path'
-    elif requires is True:
-        heading = 'Passport path'
+        heading = 'Delayed spending'
     else:
-        heading = 'Alternate path'
-    lines = ['Path {} of {}'.format(position, total), heading, '']
-    lines.extend(_format_condition(path['node'], policy))
-    lines.append('')
-    if requires is True:
-        lines.append('This path requires Passport.')
-    elif requires is False:
-        lines.append('This path does not require Passport.')
+        heading = 'Spend now'
+    lines = [heading, '']
+
+    if locks:
+        for lock_position, (kind, value) in enumerate(locks):
+            short, exact, _ = describe_timelock(kind, value)
+            if lock_position:
+                lines.append('')
+            lines.extend([
+                'Available after {}'.format(short),
+                '{}: {}'.format(
+                    'Exact delay' if kind == 'older' else 'Exact condition',
+                    exact),
+            ])
+    friendly = _friendly_key_path(policy, path)
+    if locks:
+        lines.append('')
+    if friendly is None:
+        lines.extend(_format_condition(path['node'], policy))
     else:
-        lines.append('Review the conditional branches carefully.')
+        lines.extend(friendly)
+    if requires is False:
+        lines.append('')
+        if any(key_index in policy.owned_key_indexes for key_index in path['keys']):
+            lines.append('This Passport is optional.')
+        else:
+            lines.append('This Passport is not used.')
+    elif requires is True and friendly is None:
+        lines.extend(['', 'This Passport must sign.'])
+    else:
+        if friendly is None:
+            lines.extend(['', 'Review the conditional branches carefully.'])
     return '\n'.join(lines)
 
 
@@ -456,30 +622,30 @@ def format_review_pages(policy):
     if simple:
         pages.extend(_simple_path_pages(policy, simple))
     else:
-        for position, path in enumerate(paths, 1):
-            pages.append(_generic_path_page(policy, path, position, len(paths)))
+        for path in paths:
+            pages.append(_generic_path_page(policy, path))
 
-    bypass = 0
-    unknown = 0
-    for path in paths:
-        requires = _path_requires_passport(policy, path)
-        if requires is False:
-            bypass += 1
-        elif requires is None:
-            unknown += 1
-    if (bypass or unknown) and not simple:
-        lines = ['Passport authority']
-        if bypass:
-            lines.extend(['', _plural(bypass, 'path') + ' can spend without this Passport.'])
-        if unknown:
-            lines.extend(['', _plural(unknown, 'conditional path') +
-                          ' requires detailed review.'])
+    if not simple and len(paths) > 1:
+        lines = ['This Passport']
+        for path in paths:
+            requires = _path_requires_passport(policy, path)
+            if requires is True:
+                role = 'must sign'
+            elif requires is False:
+                if any(key_index in policy.owned_key_indexes
+                       for key_index in path['keys']):
+                    role = 'optional'
+                else:
+                    role = 'not used'
+            else:
+                role = 'review details'
+            lines.extend(['', _path_name(path), role.capitalize()])
         pages.append('\n'.join(lines))
 
     pages.append(
-        'Back up this wallet policy\n\n'
-        'Your Passport seed recovers its key, but it cannot recreate this wallet policy.\n\n'
-        'Keep a copy of this wallet policy outside Passport.'
+        'Back up this policy\n\n'
+        'Your seed recovers this Passport key, not the policy.\n\n'
+        'Keep a separate copy.'
     )
     return tuple(pages)
 
@@ -503,8 +669,14 @@ def format_confirmation(policy):
     return text
 
 
-def format_signing_pages(policy):
-    paths = policy_paths(policy)
+def format_signing_pages(policy, compatible_indexes=None):
+    all_paths = policy_paths(policy)
+    paths = all_paths
+    if compatible_indexes is not None:
+        filtered = tuple(all_paths[index] for index in compatible_indexes
+                         if 0 <= index < len(all_paths))
+        if filtered:
+            paths = filtered
     simple = _classify_simple_inheritance(policy, paths)
     owned = policy.keys[policy.owned_key_indexes[0]]
     if simple:
@@ -517,16 +689,32 @@ def format_signing_pages(policy):
             'The recovery key is not being used.'
         ).format(_escape(policy.name), format_fingerprint(owned.fingerprint)),)
 
-    owned_paths = []
-    for position, path in enumerate(paths, 1):
+    if len(paths) == 1 and policy.owned_key_indexes[0] in paths[0]['keys']:
+        friendly = _friendly_key_path(policy, paths[0])
+        if friendly is not None:
+            return (('\n'.join([
+                'Wallet',
+                _escape(policy.name),
+                '',
+                _path_name(paths[0]),
+                '',
+            ] + friendly)),)
+
+    roles = []
+    for path in paths:
         if policy.owned_key_indexes[0] in path['keys']:
-            owned_paths.append(position)
+            requires = _path_requires_passport(policy, path)
+            if requires is True:
+                role = 'required'
+            elif requires is False:
+                role = 'optional'
+            else:
+                role = 'may be required'
+            roles.append('{}: {}'.format(_path_name(path), role))
     return ((
-        'Signing with this policy\n\n'
         'Wallet\n{}\n\n'
-        'This Passport key appears in {} of {} reviewed paths.\n\n'
-        'Passport key\n{}\n\n'
-        'Passport can verify its signature, but the wallet coordinator decides which valid path '
-        'will finalize the transaction.'
-    ).format(_escape(policy.name), len(owned_paths), len(paths),
+        'This Passport will sign:\n{}\n\n'
+        'Key: {}\n\n'
+        'Your wallet app chooses which valid option completes the transaction.'
+    ).format(_escape(policy.name), '\n'.join(roles),
              format_fingerprint(owned.fingerprint)),)
