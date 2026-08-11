@@ -29,7 +29,13 @@ class VerifyAddressFlow(Flow):
 
         super().__init__(initial_state=initial_state, name='VerifyAddressFlow')
         self.account = ui.get_active_account()
-        self.acct_num = self.account.get('acct_num')
+        # Wallet-policy addresses are derived from the registered descriptor,
+        # not from Passport's active singlesig account.  Policy registration
+        # can therefore launch this flow while no account card is active.
+        if self.account is None and sig_type == 'policy':
+            self.acct_num = 0
+        else:
+            self.acct_num = self.account.get('acct_num')
         self.sig_type = sig_type
         self.multisig_wallet = multisig_wallet if sig_type != 'policy' else None
         self.wallet_policy = (wallet_policy if wallet_policy is not None else
