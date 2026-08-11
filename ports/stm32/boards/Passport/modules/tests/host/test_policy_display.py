@@ -19,7 +19,7 @@ sys.modules.setdefault('public_constants', types.SimpleNamespace(
     AF_P2SH=8, AF_P2WSH=14, AF_P2WSH_P2SH=26))
 
 from descriptor import append_checksum  # noqa: E402
-from policy_display import describe_timelock  # noqa: E402
+from policy_display import compatible_path_indexes, describe_timelock  # noqa: E402
 from wallet_policy import MiniscriptPolicy  # noqa: E402
 
 
@@ -58,8 +58,9 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
     assert 'How the recovery delay works' in review
     assert 'matches the seed currently loaded on Passport' in review
     assert 'restarts its timer' in review
-    assert pages[-1].startswith('Back up this wallet policy')
-    assert 'cannot recreate this wallet policy' in pages[-1]
+    assert pages[-1].startswith('Back up this policy')
+    assert 'Your seed recovers this Passport key, not the policy' in pages[-1]
+    assert pages[-1].endswith('Keep a separate copy.')
     assert ('Recovery 6738 736D\ncan spend by itself about 1 year after each coin confirms'
             in policy.format_confirmation())
 
@@ -108,15 +109,17 @@ def test_threshold_tree_does_not_expand_combinations_and_flags_passport_bypass()
         tuple(key_info(index) for index in range(4)), (0,))
     review = '\n'.join(policy.format_review_pages())
     assert 'Custom wallet policy' in review
-    assert '2 of 3 keys' in review
-    assert 'This Passport - 6738 736C' in review
-    assert 'Key 2 - 6738 736D' in review
-    assert 'Wait about 1 week' in review
-    assert 'Key 4 - 6738 736F' in review
-    assert 'Recovery key - 6738 736F' not in review
+    assert 'Any 2 of 3 keys must sign' in review
+    assert 'This Passport\n6738 736C' in review
+    assert 'Key 2\n6738 736D' in review
+    assert 'Available after about 1 week' in review
+    assert 'Key 4\n6738 736F' in review
+    assert 'Recovery key\n6738 736F' not in review
     # The other two primary keys can satisfy the 2-of-3 without Passport.
-    assert review.count('This path does not require Passport.') == 2
-    assert '2 paths can spend without this Passport' in review
+    assert review.count('This Passport is optional.') == 1
+    assert review.count('This Passport is not used.') == 1
+    assert 'Spend now (2-of-3)\nOptional' in review
+    assert 'After about 1 week (1-of-1)\nNot used' in review
 
 
 def test_maximum_key_threshold_stays_linear_and_names_every_signer():
@@ -129,14 +132,14 @@ def test_maximum_key_threshold_stays_linear_and_names_every_signer():
 
     pages = policy.format_review_pages()
     review = '\n'.join(pages)
-    assert '8 of 15 keys' in review
+    assert 'Any 8 of 15 keys must sign' in review
     for index in range(key_count):
         assert '{:04X} {:04X}'.format(
             (0x6738736c + index) >> 16,
             (0x6738736c + index) & 0xffff) in review
     # The review lists each signer once; it never enumerates C(15, 8) paths.
     assert len(review) < 1600
-    assert 'This path does not require Passport' in review
+    assert 'This Passport is optional.' in review
 
 
 def test_threshold_conditions_are_rendered_without_opaque_miniscript():
@@ -145,8 +148,76 @@ def test_threshold_conditions_are_rendered_without_opaque_miniscript():
         'wsh(thresh(2,pk(@0/**),s:pk(@1/**),a:pk(@2/**)))',
         tuple(key_info(index) for index in range(3)), (0,))
     review = '\n'.join(policy.format_review_pages())
-    assert '2 of 3 conditions' in review
+    assert 'Any 2 of 3 keys must sign' in review
     assert 'Advanced condition' not in review
+
+
+def test_liana_multisig_shows_immediate_path_first_with_compact_key_blocks():
+    policy = MiniscriptPolicy(
+        'Liana Multisig', 'TBTC',
+        'wsh(or_i('
+        'and_v(v:thresh(2,pkh(@0/<2;3>/*),a:pkh(@1/<2;3>/*),'
+        'a:pkh(@2/<0;1>/*)),older(52596)),'
+        'and_v(v:pk(@0/<0;1>/*),pk(@1/<0;1>/*))))',
+        tuple(key_info(index) for index in range(3)), (0,),
+        ('', 'HOT KEY', 'BACKUP PASSPORT'))
+
+    pages = policy.format_review_pages()
+    immediate = pages[1]
+    delayed = pages[2]
+
+    assert immediate.startswith('Spend now')
+    assert 'Both keys must sign' in immediate
+    assert 'This Passport\n6738 736C' in immediate
+    assert 'HOT KEY\n6738 736D' in immediate
+
+    assert delayed.startswith('Delayed spending')
+    assert 'Available after about 1 year' in delayed
+    assert 'Exact delay: 52,596 blocks' in delayed
+    assert 'Any 2 of 3 keys must sign' in delayed
+    assert 'BACKUP PASSPORT\n6738 736E' in delayed
+    assert 'All of' not in delayed
+    assert 'conditions' not in delayed
+    assert '- This Passport -' not in delayed
+    assert '- HOT KEY -' not in delayed
+    assert '- BACKUP PASSPORT -' not in delayed
+    assert 'Wait about' not in delayed
+    assert 'This path does not require Passport' not in delayed
+    assert 'This Passport is optional.' in delayed
+
+    passport_role = pages[3]
+    assert passport_role == (
+        'This Passport\n\nSpend now (2-of-2)\nMust sign\n\n'
+        'After about 1 year (2-of-3)\nOptional')
+
+    signing = policy.format_signing_pages()[0]
+    assert signing.startswith('Wallet\nLiana Multisig')
+    assert ('This Passport will sign:\nSpend now (2-of-2): required\n'
+            'After about 1 year (2-of-3): optional') in signing
+    assert 'Key: 6738 736C' in signing
+    assert 'Your wallet app chooses which valid option completes the transaction.' in signing
+    assert 'reviewed paths' not in signing
+    assert 'wallet coordinator' not in signing
+
+    # The final sequence used by ordinary RBF transactions disables BIP68, so
+    # the 52,596-block recovery branch cannot finalize this transaction.
+    immediate_only = compatible_path_indexes(
+        policy, tx_version=2, lock_time=0, sequence=0xfffffffd)
+    assert immediate_only == (0,)
+    selected = policy.format_signing_pages(immediate_only)[0]
+    assert 'Spend now (2-of-2)' in selected
+    assert 'Both keys must sign' in selected
+    assert 'This Passport\n6738 736C' in selected
+    assert 'HOT KEY\n6738 736D' in selected
+    assert 'After about 1 year' not in selected
+    assert 'optional' not in selected
+
+    # A version-2 transaction with a matching height sequence leaves both the
+    # immediate and delayed branches available until witness finalization.
+    assert compatible_path_indexes(
+        policy, tx_version=2, lock_time=0, sequence=52596) == (0, 1)
+    assert compatible_path_indexes(
+        policy, tx_version=1, lock_time=0, sequence=52596) == (0,)
 
 
 def test_conditional_policy_is_rendered_structurally_without_false_simplification():
@@ -160,7 +231,6 @@ def test_conditional_policy_is_rendered_structurally_without_false_simplificatio
     assert '\n  Then also\n' in review
     assert '\n  Otherwise\n' in review
     assert 'Review the conditional branches carefully' in review
-    assert '1 conditional path requires detailed review' in review
 
 
 def test_taproot_key_paths_are_first_class_spending_paths():
@@ -223,3 +293,29 @@ def test_time_based_relative_delay_and_absolute_date_are_unambiguous():
         'about 1 year 1 month', '33,553,920 seconds (65,535 x 512)')
     assert describe_timelock('after', 1798761600)[:2] == (
         '2027-01-01 UTC', 'Unix timestamp 1,798,761,600')
+
+
+def test_absolute_path_compatibility_requires_matching_locktime_and_sequence():
+    policy = MiniscriptPolicy(
+        'Absolute Recovery', 'BTC',
+        'wsh(or_i(pk(@0/**),and_v(v:pk(@1/**),after(840000))))',
+        (key_info(0), key_info(1)), (0,))
+
+    # The immediate path remains possible in every case. The absolute path is
+    # excluded until nLockTime reaches its height and an input is non-final.
+    assert compatible_path_indexes(policy, 2, 839999, 0xfffffffe) == (0,)
+    assert compatible_path_indexes(policy, 2, 840000, 0xffffffff) == (0,)
+    assert compatible_path_indexes(policy, 2, 840000, 0xfffffffe) == (0, 1)
+    # A timestamp locktime cannot satisfy a block-height policy.
+    assert compatible_path_indexes(policy, 2, 1700000000, 0xfffffffe) == (0,)
+
+
+def test_relative_path_compatibility_rejects_unit_and_value_mismatches():
+    policy = MiniscriptPolicy(
+        'Relative Recovery', 'BTC',
+        'wsh(or_i(pk(@0/**),and_v(v:pk(@1/**),older(1008))))',
+        (key_info(0), key_info(1)), (0,))
+
+    assert compatible_path_indexes(policy, 2, 0, 1007) == (0,)
+    assert compatible_path_indexes(policy, 2, 0, 1008) == (0, 1)
+    assert compatible_path_indexes(policy, 2, 0, (1 << 22) | 1008) == (0,)

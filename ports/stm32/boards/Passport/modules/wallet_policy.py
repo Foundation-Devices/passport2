@@ -675,9 +675,9 @@ class MiniscriptPolicy:
         from policy_display import format_confirmation
         return format_confirmation(self)
 
-    def format_signing_pages(self):
+    def format_signing_pages(self, compatible_indexes=None):
         from policy_display import format_signing_pages
-        return format_signing_pages(self)
+        return format_signing_pages(self, compatible_indexes)
 
     def rename(self, name):
         return MiniscriptPolicy(name, self.network, self.template, self.keys,

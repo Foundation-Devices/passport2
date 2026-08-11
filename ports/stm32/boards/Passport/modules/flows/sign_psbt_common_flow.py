@@ -166,13 +166,26 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
             return
 
+        from policy_display import compatible_path_indexes
+        compatible_sets = []
+        for input_index, txin in self.psbt.input_iter():
+            plan = self.psbt.inputs[input_index].policy_spend_plan
+            if plan and plan.policy_id == policy.policy_id:
+                compatible_sets.append(compatible_path_indexes(
+                    policy, self.psbt.txn_version, self.psbt.lock_time,
+                    txin.nSequence))
+        compatible = None
+        if compatible_sets and compatible_sets[0] and \
+                all(paths == compatible_sets[0] for paths in compatible_sets):
+            compatible = compatible_sets[0]
+
         from flows import SeriesOfPagesFlow
         from pages import LongTextPage
         page_args = [{
             'card_header': {'title': 'Policy transaction'},
             'text': text,
             'centered': True,
-        } for text in policy.format_signing_pages()]
+        } for text in policy.format_signing_pages(compatible)]
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
             self.goto(self.sign_transaction)
