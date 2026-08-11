@@ -17,7 +17,7 @@ import history
 import sys
 from sffile import SizerFile
 from passport import mem
-from public_constants import MAX_SIGNERS
+from public_constants import MAX_MONEY, MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
@@ -1004,7 +1004,12 @@ class psbtObject(psbtProxy):
 
             tx_out.deserialize(fd)
 
+            if not 0 <= tx_out.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for output #%d' % idx)
+
             total_out += tx_out.nValue
+            if total_out > MAX_MONEY:
+                raise FatalPSBTIssue('Total output amount exceeds maximum')
 
             cont = fd.tell()
             yield idx, tx_out
