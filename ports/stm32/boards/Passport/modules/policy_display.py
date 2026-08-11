@@ -639,7 +639,11 @@ def format_review_pages(policy):
                     role = 'not used'
             else:
                 role = 'review details'
-            lines.extend(['', _path_name(path), role.capitalize()])
+            # MicroPython does not provide str.capitalize(). Keep this simple
+            # transformation within the subset shared by host Python and the
+            # firmware runtime.
+            display_role = role[0].upper() + role[1:]
+            lines.extend(['', _path_name(path), display_role])
         pages.append('\n'.join(lines))
 
     pages.append(

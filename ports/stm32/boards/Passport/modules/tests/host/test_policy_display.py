@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import ast
 import builtins
+import inspect
 import os
 import sys
 import types
@@ -19,6 +21,7 @@ sys.modules.setdefault('public_constants', types.SimpleNamespace(
     AF_P2SH=8, AF_P2WSH=14, AF_P2WSH_P2SH=26))
 
 from descriptor import append_checksum  # noqa: E402
+import policy_display  # noqa: E402
 from policy_display import compatible_path_indexes, describe_timelock  # noqa: E402
 from wallet_policy import MiniscriptPolicy  # noqa: E402
 
@@ -189,6 +192,12 @@ def test_liana_multisig_shows_immediate_path_first_with_compact_key_blocks():
     assert passport_role == (
         'This Passport\n\nSpend now (2-of-2)\nMust sign\n\n'
         'After about 1 year (2-of-3)\nOptional')
+    # These labels are built without CPython-only str.capitalize(), which is
+    # unavailable in Passport's MicroPython runtime.
+    tree = ast.parse(inspect.getsource(policy_display))
+    assert not any(isinstance(node, ast.Call) and
+                   isinstance(node.func, ast.Attribute) and
+                   node.func.attr == 'capitalize' for node in ast.walk(tree))
 
     signing = policy.format_signing_pages()[0]
     assert signing.startswith('Wallet\nLiana Multisig')
