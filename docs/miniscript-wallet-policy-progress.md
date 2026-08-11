@@ -51,6 +51,12 @@ and Taproot paths that cannot be represented by one global M/N value.
   in wrapping page content instead of a scrolling, easily clipped title.
 - Post-registration actions for address verification, policy backup, signer
   labels, and opt-in technical details.
+- Dedicated Connect Wallet export for Liana. It writes the minimal raw BIP48
+  native-SegWit descriptor key that Liana accepts directly from a file. The
+  same export works for single-key and multisig policy branches because the
+  signature threshold belongs to the completed policy, not to the xpub.
+- The Liana exporter is loaded only when selected, preserving the constrained
+  startup heap.
 - Coordinator-oriented PSBT errors with raw parser diagnostics on a second page.
 - Explicit post-signing handoff instructions that distinguish Passport adding a
   signature from the wallet coordinator finalizing and broadcasting.
@@ -116,7 +122,7 @@ The unsigned CI payload SHA-256 is
 
 ## Automated validation completed
 
-- 101 Passport wallet-policy host tests pass.
+- 106 Passport wallet-policy host tests pass.
 - Regression coverage confirms a registered policy accepts an omitted output
   witness script only when the complete derivation map and scriptPubKey still
   match the independently derived policy output.
@@ -131,6 +137,10 @@ The unsigned CI payload SHA-256 is
     <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31403355734>
   - Private `v2.4.0b6` full build:
     <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31408823982>
+  - Private `v2.4.0b7` full build:
+    <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31473377450>
+  - Private `v2.4.0b7` lint/test:
+    <https://github.com/Foundation-Devices/passport2-miniscript/actions/runs/31473377426>
 
 ## Source checkpoints
 
@@ -145,6 +155,9 @@ The unsigned CI payload SHA-256 is
   successful physical signing test.
 - `422dd691` — consolidated wallet-policy registration, review, signing, error,
   and coordinator-handoff UX. This is the source used for `v2.4.0b6`.
+- `1b483c5e` — fixes policy address verification without an active account,
+  freezes the post-signing display module, and top-aligns long registration
+  confirmations. This is the source used for `v2.4.0b7`.
 
 ## Pending physical and product validation
 
@@ -155,6 +168,8 @@ The unsigned CI payload SHA-256 is
 - Exercise representative complex policies, including threshold multisig,
   multiple alternate paths, time-based relative locks, absolute locks, and
   Taproot script paths.
+- Validate the dedicated Liana key file with both single-key and multisig setup
+  templates, then register and verify each completed policy on Passport.
 - Test policy export, backup, restore, rename, signer-label migration, deletion,
   and re-registration on physical hardware.
 - Test malformed, oversized, wrong-network, wrong-seed, duplicate-key, ambiguous,
