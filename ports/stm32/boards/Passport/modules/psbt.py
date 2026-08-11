@@ -1511,6 +1511,13 @@ class psbtObject(psbtProxy):
         for nout, out in enumerate(self.outputs):
             if not out.is_change:
                 continue
+            if self.active_policy is not None and out.policy_branch is not None:
+                # validate() has already reconstructed this output from the
+                # registered descriptor and compared its complete script and
+                # derivation map. That exact check is stronger than the legacy
+                # {0,1}/index-gap heuristic below and also supports multipath
+                # policies such as Liana's {0,1} and {2,3} branches.
+                continue
             # it's a change output, okay if a p2sh change; we're looking at paths
             paths = []
             if out.subpaths:
