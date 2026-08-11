@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 MODULES = Path(__file__).resolve().parents[2]
+MANIFEST = MODULES.parent / 'manifest.py'
 
 
 def _top_level_imports(relative_path):
@@ -63,3 +64,9 @@ def test_heavy_tasks_are_loaded_only_when_their_flows_need_them():
 def test_wallet_policy_ui_is_loaded_only_when_its_menu_is_opened():
     assert 'flows.wallet_policy_flow' not in _top_level_imports('menus.py')
     assert 'flows.wallet_policy_flow' in _nested_imports('menus.py')
+
+
+def test_lazily_imported_wallet_policy_helpers_are_frozen():
+    manifest = MANIFEST.read_text()
+    assert "'psbt_display.py'" in manifest
+    assert "'tasks/search_for_address_task.py'" in manifest
