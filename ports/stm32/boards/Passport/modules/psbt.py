@@ -1009,7 +1009,7 @@ class psbtObject(psbtProxy):
 
             total_out += tx_out.nValue
             if total_out > MAX_MONEY:
-                raise FatalPSBTIssue('Total output amount exceeds maximum')
+                raise FatalPSBTIssue('Total output amount exceeds maximum at output #%d' % idx)
 
             cont = fd.tell()
             yield idx, tx_out
@@ -1414,8 +1414,12 @@ class psbtObject(psbtProxy):
             # pull out just the CTXOut object (expensive)
             utxo = inp.get_utxo(txi.prevout.n)
 
-            assert utxo.nValue > 0
+            if not 0 < utxo.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for input #%d' % i)
+
             total_in += utxo.nValue
+            if total_in > MAX_MONEY:
+                raise FatalPSBTIssue('Total input amount exceeds maximum at input #%d' % i)
 
             # Look at what kind of input this will be, and therefore what
             # type of signing will be required, and which key we need.
