@@ -581,6 +581,7 @@ class psbtInputProxy(psbtProxy):
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
+                  'added_sigs',
                   'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
                   'policy_spend_plan', 'added_tap_script_sig')
 
@@ -923,7 +924,8 @@ class psbtInputProxy(psbtProxy):
                         raise FatalPSBTIssue('Cannot sign inputs from multiple wallet policies')
                     psbt.active_policy = policy
                     self.policy_spend_plan = plan
-                    which_key = None if plan.expected_pubkey in self.part_sig else {plan.expected_pubkey}
+                    unsigned_keys = set(plan.expected_pubkeys) - set(self.part_sig)
+                    which_key = unsigned_keys or None
                     matched_policy = True
 
             if not matched_policy:
@@ -1078,6 +1080,9 @@ class psbtInputProxy(psbtProxy):
         if self.added_sig:
             pubkey, sig = self.added_sig
             wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
+        if self.added_sigs:
+            for pubkey, sig in self.added_sigs.items():
+                wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
 
         if self.sighash is not None:
             wr(PSBT_IN_SIGHASH_TYPE, pack('<I', self.sighash))

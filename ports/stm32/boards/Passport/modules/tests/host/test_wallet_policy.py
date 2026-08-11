@@ -209,11 +209,56 @@ def test_policy_requires_complete_placeholder_vector_in_first_use_order():
 
 
 def test_phase_a_rejects_two_signing_keys_from_owned_xpub():
-    with pytest.raises(PolicyParseError, match='exactly one Passport signing key'):
+    with pytest.raises(PolicyParseError, match='more than one Passport signature'):
         MiniscriptPolicy(
             'Bad', 'BTC',
-            'wsh(multi(1,@0/<0;1>/*,@0/<2;3>/*,@1/**))',
-            (KEY_INFO, KEY_INFO.replace(XPUB[-1], '1')), (0,))
+            'wsh(and_v(v:pk(@0/<0;1>/*),pk(@0/<2;3>/*)))',
+            (KEY_INFO,), (0,))
+
+
+def test_liana_multisig_allows_owned_xpub_in_exclusive_paths():
+    fixture = os.path.join(os.path.dirname(__file__), 'fixtures',
+                           'liana-multisig-policy.txt')
+    with open(fixture, 'r', encoding='ascii') as source:
+        descriptor = source.read().strip()
+
+    class LianaChain(DerivationChain):
+        ctype = 'TBTC'
+
+        @staticmethod
+        def deserialize_node(xpub, address_format):
+            assert address_format == 8
+            return FakeNode(xpub, 4)
+
+    chain = LianaChain()
+    my_xfp = int.from_bytes(bytes.fromhex('9f141cf0'), 'little')
+    owned_xpub = descriptor.split(']', 1)[1].split('/', 1)[0]
+    policy = decode_policy_transport(
+        descriptor, chain, my_xfp, lambda path: OwnedNode(owned_xpub),
+        default_name='Liana Multisig')
+    review_pages = policy.format_review_pages()
+    assert review_pages
+    assert any('Passport' in page for page in review_pages)
+
+    derived, expected_paths, expected_indexes = policy._derive_with_paths(
+        0, 12, chain)
+    plan = policy.make_spend_plan(
+        3, expected_paths, derived.script_pubkey, derived.witness_script,
+        chain, my_xfp, 1)
+    owned_pubkeys = tuple(
+        pubkey for pubkey, key_index in expected_indexes.items()
+        if key_index == policy.owned_key_indexes[0])
+    assert set(plan.expected_pubkeys) == set(owned_pubkeys)
+    assert len(plan.expected_pubkeys) == 2
+    assert {path[-2] for path in plan.owned_key_paths} == {0, 2}
+    assert plan.assert_p2wsh_scope(
+        3, expected_paths, derived.script_pubkey, derived.witness_script, 1,
+        set(owned_pubkeys))
+
+    already_signed = {owned_pubkeys[0]}
+    assert plan.assert_p2wsh_scope(
+        3, expected_paths, derived.script_pubkey, derived.witness_script, 1,
+        set(owned_pubkeys) - already_signed, already_signed)
 
 
 def test_policy_derivation_and_exact_script_matching():
