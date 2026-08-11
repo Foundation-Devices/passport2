@@ -199,8 +199,14 @@ class ImportWalletPolicyFlow(Flow):
 
     async def verify_first_address(self):
         from flows import VerifyAddressFlow
-        await VerifyAddressFlow(sig_type='policy', wallet_policy=self.policy).run()
-        self.goto(self.choose_next_action, save_curr=False)
+        result = await VerifyAddressFlow(
+            sig_type='policy', wallet_policy=self.policy).run()
+        if result:
+            # Registration is complete and the receive address is verified.
+            # Exit the import flow so the parent Wallet Policies menu refreshes.
+            self.set_result(True)
+        else:
+            self.goto(self.choose_next_action, save_curr=False)
 
     async def choose_backup_method(self):
         import microns
