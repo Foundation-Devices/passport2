@@ -129,12 +129,12 @@ class ImportWalletPolicyFlow(Flow):
             self.back()
 
     async def confirm_import(self):
-        from pages import QuestionPage
+        from pages import LongQuestionPage
         from utils import escape_text
         text = 'Register {}?\n\n{}\n\nPolicy checksum\n{}'.format(
             escape_text(self.policy.name), self.policy.format_confirmation(),
             self.policy.descriptor_check())
-        result = await QuestionPage(text).show()
+        result = await LongQuestionPage(text=text).show()
         if result:
             self.goto(self.save_policy)
         else:
