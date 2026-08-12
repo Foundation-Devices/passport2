@@ -23,7 +23,6 @@ TRANSPORT_VERSION = 1
 MAX_TRANSPORT_LENGTH = 4096
 ADDRESS_FORMAT = 'passport-address-verification'
 ADDRESS_RESPONSE_FORMAT = 'passport-address-verification-response'
-REGISTRATION_FORMAT = 'passport-policy-registration'
 MAX_ADDRESS_INDEX = 0x7fffffff
 
 
@@ -143,17 +142,6 @@ def encode_policy_transport(policy):
         'template': policy.template,
         'keys': [key.canonical() for key in policy.keys],
         'policy_id': policy.policy_id,
-    })
-
-
-def encode_registration_ack(policy, fingerprint):
-    return json.dumps({
-        'format': REGISTRATION_FORMAT,
-        'version': TRANSPORT_VERSION,
-        'policy_id': policy.policy_id,
-        'descriptor_checksum': policy.descriptor_check().lower(),
-        'fingerprint': fingerprint.lower(),
-        'registered': True,
     })
 
 
