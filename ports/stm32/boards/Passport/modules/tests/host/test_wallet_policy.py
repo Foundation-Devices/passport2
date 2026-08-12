@@ -414,6 +414,16 @@ def test_policy_transport_round_trip_rediscovers_owned_key():
     assert decoded.owned_key_indexes == (0,)
 
 
+def test_policy_transport_accepts_ur_bytearray():
+    policy = make_policy()
+    encoded = bytearray(encode_policy_transport(policy), 'utf-8')
+    decoded = decode_policy_transport(
+        encoded, DerivationChain(),
+        int.from_bytes(bytes.fromhex('6738736c'), 'little'),
+        lambda path: OwnedNode(XPUB))
+    assert decoded.policy_id == policy.policy_id
+
+
 def test_policy_transport_rejects_tampered_identity():
     policy = make_policy()
     encoded = encode_policy_transport(policy).replace(policy.policy_id, '00' * 32)
@@ -470,7 +480,8 @@ def test_address_request_derives_independently_and_response_is_bound():
         'index': 7,
     }
     decoded, selected, address = decode_address_request(
-        json.dumps(request), DerivationChain(), registry, policy.policy_id)
+        bytearray(json.dumps(request), 'utf-8'), DerivationChain(), registry,
+        policy.policy_id)
     assert selected is policy
     assert address.startswith('test-address-')
     response = json.loads(encode_address_response(decoded, address, '6738736c'))

@@ -76,13 +76,23 @@ def _network_mismatch_message(network):
     return 'This wallet is for {}. Switch Passport to that network before importing.'.format(name)
 
 
-def decode_policy_transport(data, chain, master_xfp, derive_node,
-                            default_name='Wallet Policy'):
+def _transport_text(data, invalid_utf8_message):
+    # Foundation's UR `bytes` registry binding unwraps to a MicroPython
+    # bytearray backed by the decoded value. microSD reads return bytes. Treat
+    # both transports identically before applying the bounded text parser.
+    if isinstance(data, bytearray):
+        data = bytes(data)
     if isinstance(data, bytes):
         try:
-            data = data.decode('utf-8')
+            return data.decode('utf-8')
         except UnicodeError:
-            raise PolicyParseError('Wallet policy file is not UTF-8 text')
+            raise PolicyParseError(invalid_utf8_message)
+    return data
+
+
+def decode_policy_transport(data, chain, master_xfp, derive_node,
+                            default_name='Wallet Policy'):
+    data = _transport_text(data, 'Wallet policy file is not UTF-8 text')
     if not isinstance(data, str):
         raise PolicyParseError('Wallet policy transport must be text')
     data = data.strip()
@@ -148,11 +158,7 @@ def encode_registration_ack(policy, fingerprint):
 
 
 def decode_address_request(data, chain, registry, expected_policy_id=None):
-    if isinstance(data, bytes):
-        try:
-            data = data.decode('utf-8')
-        except UnicodeError:
-            raise PolicyParseError('Address verification request is not UTF-8 text')
+    data = _transport_text(data, 'Address verification request is not UTF-8 text')
     if not isinstance(data, str) or not data or len(data) > MAX_TRANSPORT_LENGTH:
         raise PolicyResourceError('Address verification request is empty or too large')
     try:
