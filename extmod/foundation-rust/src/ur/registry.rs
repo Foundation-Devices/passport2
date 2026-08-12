@@ -14,6 +14,7 @@ use foundation_urtypes::{
     value,
     value::Value,
 };
+use minicbor::{data::Tag, encode::Write, Encode, Encoder};
 
 use uuid::Uuid;
 
@@ -38,6 +39,8 @@ pub enum UR_Value {
     PassportRequest(UR_PassportRequest),
     /// Passport custom `x-passport-response`.
     PassportResponse(UR_PassportResponse),
+    /// Casa wallet-registration `crypto-account`.
+    CryptoAccount(UR_CryptoAccount),
 }
 
 impl UR_Value {
@@ -90,11 +93,107 @@ impl UR_Value {
                 Value::Psbt(buf)
             }
             UR_Value::HDKey(v) => Value::HDKey(v.into()),
+            UR_Value::CryptoAccount(_) => panic!(
+                "CryptoAccount is encoded directly. Should be unreachable"
+            ),
             UR_Value::PassportRequest(_) => panic!(
                 "Not implemented as it isn't needed. Should be unreachable"
             ),
             UR_Value::PassportResponse(v) => Value::PassportResponse(v.into()),
         }
+    }
+}
+
+/// A Casa `crypto-account` containing both supported registration keys.
+#[derive(Debug)]
+#[repr(C)]
+pub struct UR_CryptoAccount {
+    pub master_fingerprint: u32,
+    pub network: u64,
+    pub root_key_data: [u8; 33],
+    pub root_chain_code: [u8; 32],
+    pub casa_key_data: [u8; 33],
+    pub casa_chain_code: [u8; 32],
+}
+
+impl UR_CryptoAccount {
+    pub const UR_TYPE: &'static str = "crypto-account";
+
+    const TAG_CRYPTO_OUTPUT: Tag = Tag::new(308);
+    const TAG_SCRIPT_HASH: Tag = Tag::new(400);
+    const TAG_WITNESS_PUBLIC_KEY_HASH: Tag = Tag::new(404);
+    const TAG_HDKEY_LEGACY: Tag = Tag::new(303);
+    const TAG_KEYPATH_LEGACY: Tag = Tag::new(304);
+    const TAG_COIN_INFO_LEGACY: Tag = Tag::new(305);
+
+    fn encode_output<W: Write>(
+        &self,
+        e: &mut Encoder<W>,
+        key_data: &[u8; 33],
+        chain_code: &[u8; 32],
+        casa_key: bool,
+    ) -> Result<(), minicbor::encode::Error<W::Error>> {
+        e.tag(Self::TAG_CRYPTO_OUTPUT)?
+            .tag(Self::TAG_SCRIPT_HASH)?
+            .tag(Self::TAG_WITNESS_PUBLIC_KEY_HASH)?
+            .tag(Self::TAG_HDKEY_LEGACY)?
+            .map(if casa_key { 5 } else { 4 })?
+            .u8(3)?
+            .bytes(key_data)?
+            .u8(4)?
+            .bytes(chain_code)?
+            .u8(5)?
+            .tag(Self::TAG_COIN_INFO_LEGACY)?;
+
+        if self.network == UR_NETWORK_MAINNET as u64 {
+            e.map(0)?;
+        } else {
+            e.map(1)?.u8(2)?.u64(self.network)?;
+        }
+
+        e.u8(6)?.tag(Self::TAG_KEYPATH_LEGACY)?.map(3)?.u8(1)?;
+        if casa_key {
+            e.array(2)?.u32(45)?.bool(true)?;
+        } else {
+            e.array(0)?;
+        }
+        e.u8(2)?
+            .u32(self.master_fingerprint)?
+            .u8(3)?
+            .u8(u8::from(casa_key))?;
+
+        if casa_key {
+            e.u8(8)?.u32(self.master_fingerprint)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<C> Encode<C> for UR_CryptoAccount {
+    fn encode<W: Write>(
+        &self,
+        e: &mut Encoder<W>,
+        _ctx: &mut C,
+    ) -> Result<(), minicbor::encode::Error<W::Error>> {
+        e.map(2)?
+            .u8(1)?
+            .u32(self.master_fingerprint)?
+            .u8(2)?
+            .array(2)?;
+        self.encode_output(
+            e,
+            &self.root_key_data,
+            &self.root_chain_code,
+            false,
+        )?;
+        self.encode_output(
+            e,
+            &self.casa_key_data,
+            &self.casa_chain_code,
+            true,
+        )?;
+        Ok(())
     }
 }
 
@@ -445,6 +544,27 @@ pub extern "C" fn ur_registry_new_derived_key(
     }));
 }
 
+/// Create the Casa wallet-registration `crypto-account` UR.
+#[no_mangle]
+pub extern "C" fn ur_registry_new_crypto_account(
+    value: &mut UR_Value,
+    root_key_data: &[u8; 33],
+    root_chain_code: &[u8; 32],
+    casa_key_data: &[u8; 33],
+    casa_chain_code: &[u8; 32],
+    master_fingerprint: u32,
+    network: u64,
+) {
+    *value = UR_Value::CryptoAccount(UR_CryptoAccount {
+        master_fingerprint,
+        network,
+        root_key_data: *root_key_data,
+        root_chain_code: *root_chain_code,
+        casa_key_data: *casa_key_data,
+        casa_chain_code: *casa_chain_code,
+    });
+}
+
 /// Create a new `psbt` UR.
 #[no_mangle]
 pub extern "C" fn ur_registry_new_psbt(
@@ -475,4 +595,47 @@ pub extern "C" fn ur_registry_new_passport_response(
         passport_firmware_version_len,
         has_passport_firmware_version: true,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use minicbor::encode::write::Cursor;
+
+    #[test]
+    fn casa_crypto_account_wire_format_is_pinned() {
+        let account = UR_CryptoAccount {
+            master_fingerprint: 0x1234_5678,
+            network: UR_NETWORK_MAINNET as u64,
+            root_key_data: [2; 33],
+            root_chain_code: [3; 32],
+            casa_key_data: [4; 33],
+            casa_chain_code: [5; 32],
+        };
+        let mut output = Cursor::new([0u8; 256]);
+        account
+            .encode(&mut Encoder::new(&mut output), &mut ())
+            .unwrap();
+
+        let expected = concat!(
+            "a2011a123456780282d90134d90190d90194d9012fa40358210202020202020202020202020202020202020202",
+            "020202020202020202020202020202020458200303030303030303030303030303030303030303030303030303",
+            "03030303030305d90131a006d90130a30180021a123456780300d90134d90190d90194d9012fa5035821040404",
+            "040404040404040404040404040404040404040404040404040404040404040404045820050505050505050505",
+            "050505050505050505050505050505050505050505050505050505d90131a006d90130a30182182df5021a1234",
+            "56780301081a12345678",
+        );
+        let encoded = &output.get_ref()[..output.position()];
+        assert_eq!(encoded.len() * 2, expected.len());
+        for (actual, expected) in
+            encoded.iter().zip(expected.as_bytes().chunks_exact(2))
+        {
+            let nibble = |byte| match byte {
+                b'0'..=b'9' => byte - b'0',
+                b'a'..=b'f' => byte - b'a' + 10,
+                _ => unreachable!(),
+            };
+            assert_eq!(*actual, nibble(expected[0]) << 4 | nibble(expected[1]));
+        }
+    }
 }
