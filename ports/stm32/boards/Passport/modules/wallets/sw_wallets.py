@@ -25,6 +25,7 @@ from .sparrow import SparrowWallet
 from .specter import SpecterWallet
 from .theya import TheyaWallet
 from .zeus import ZeusWallet
+from data_codecs.qr_type import QRType
 
 
 def create_liana_export(*args, **kwargs):
@@ -45,15 +46,25 @@ LianaWallet = {
         'addr_type': None,
         'create_wallet': create_liana_export,
     }],
-    'export_modes': [{
-        'id': 'microsd',
-        'label': 'microSD',
-        'filename_pattern_multisig': '{xfp}-liana-account-{acct}.txt',
-        'ext_multisig': '.txt',
-    }],
+    'export_modes': [
+        {
+            'id': 'qr',
+            'label': 'QR Code',
+            'qr_type': QRType.UR2,
+        },
+        {
+            'id': 'microsd',
+            'label': 'microSD',
+            'filename_pattern_multisig': '{xfp}-liana-account-{acct}.txt',
+            'ext_multisig': '.txt',
+        },
+    ],
     'skip_multisig_import': True,
     'skip_address_validation': True,
     'custom_text': {
+        'pairing_qr':
+            'Passport will display an animated account QR.\n\n'
+            'Scan it when adding this Passport in Liana.',
         'pairing_microsd':
             'Passport will save a key file to microSD.\n\n'
             'Import it when adding this Passport in Liana.',

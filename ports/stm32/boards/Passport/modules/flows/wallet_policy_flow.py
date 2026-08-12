@@ -168,8 +168,22 @@ class ImportWalletPolicyFlow(Flow):
         from flows import AutoBackupFlow
         await AutoBackupFlow().run()
         await SuccessPage(
-            'Wallet policy registered\n\nChoose what you would like to do next.').show()
+            'Wallet policy registered\n\nNext, return a confirmation QR to Liana.').show()
+        await self.show_registration_ack()
         self.goto(self.choose_next_action)
+
+    async def show_registration_ack(self):
+        from common import settings
+        from data_codecs.qr_type import QRType
+        from foundation import ur
+        from pages import ShowQRPage
+        from policy_transport import encode_registration_ack
+        from utils import xfp2str
+        data = encode_registration_ack(
+            self.policy, xfp2str(settings.get('xfp')).lower()).encode('utf-8')
+        await ShowQRPage(
+            qr_type=QRType.UR2, qr_data=ur.new_bytes(data),
+            caption='Scan this confirmation in Liana').show()
 
     async def choose_next_action(self):
         import microns
@@ -560,3 +574,79 @@ class ExportWalletPolicyMicroSDFlow(SaveToMicroSDFlow):
             filename='{}-policy.json'.format(safe_name),
             path=get_folder_path(DIR_WALLET_CONFIGS),
             data=encode_policy_transport(policy), success_text='wallet policy')
+
+
+class VerifyWalletPolicyRequestFlow(Flow):
+    """Derive a bound Liana address request and return a confirmation QR."""
+    def __init__(self, context=None):
+        self.expected_policy_id = context
+        self.request = None
+        self.policy = None
+        self.address = None
+        self.error = None
+        super().__init__(initial_state=self.scan, name='VerifyWalletPolicyRequestFlow')
+
+    async def scan(self):
+        import chains
+        from common import settings
+        from data_codecs.qr_type import QRType
+        from flows import ScanQRFlow
+        from foundation import ur
+        from policy_transport import decode_address_request
+        from wallet_policy import WalletPolicyRegistry
+
+        result = await ScanQRFlow(
+            qr_types=[QRType.UR2], ur_types=[ur.Value.BYTES],
+            data_description='a Liana address request').run()
+        if result is None:
+            self.set_result(False)
+            return
+        try:
+            data = result.unwrap_bytes() if hasattr(result, 'unwrap_bytes') else result
+            self.request, self.policy, self.address = decode_address_request(
+                data, chains.current_chain(), WalletPolicyRegistry(settings),
+                self.expected_policy_id)
+        except BaseException as exc:
+            self.error = str(exc) or 'Address Verification Error'
+            self.goto(self.show_error)
+            return
+        self.goto(self.confirm)
+
+    async def confirm(self):
+        import microns
+        from pages import LongQuestionPage
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import recolor, stylize_address
+        branch = 'Receive' if self.request['branch'] == 0 else 'Change'
+        text = '{}\n\n{} address #{}\n\nPolicy checksum\n{}\n\n{}'.format(
+            self.policy.name, branch, self.request['index'],
+            recolor(HIGHLIGHT_TEXT_HEX, self.policy.descriptor_check()),
+            stylize_address(self.address))
+        result = await LongQuestionPage(
+            card_header={'title': 'Verify Liana Address'}, text=text,
+            left_micron=microns.Back).show()
+        if result:
+            self.goto(self.show_response)
+        else:
+            self.back()
+
+    async def show_response(self):
+        from common import settings
+        from data_codecs.qr_type import QRType
+        from foundation import ur
+        from pages import ShowQRPage
+        from policy_transport import encode_address_response
+        from utils import xfp2str
+        data = encode_address_response(
+            self.request, self.address,
+            xfp2str(settings.get('xfp')).lower()).encode('utf-8')
+        await ShowQRPage(
+            qr_type=QRType.UR2, qr_data=ur.new_bytes(data),
+            caption='Scan this verified address in Liana').show()
+        self.set_result(True)
+
+    async def show_error(self):
+        from pages import ErrorPage
+        await ErrorPage(self.error).show()
+        self.error = None
+        self.reset(self.scan)

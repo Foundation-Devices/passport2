@@ -3,7 +3,7 @@
 
 //! Encoder.
 
-use core::{ffi::c_char, fmt::Write, ptr};
+use core::{ffi::c_char, fmt::Write, ptr, slice};
 
 use foundation_ur::{max_fragment_len, HeaplessEncoder};
 use minicbor::{Encode, Encoder};
@@ -103,17 +103,29 @@ pub unsafe extern "C" fn ur_encoder_start(
     // accessed in order to convert it to a `ur::registry::BaseValue` which
     // is then encoded below, so the pointers lifetime only need to be valid
     // for the scope of this function.
-    let value = unsafe { value.to_value() };
-
     // SAFETY: This code assumes that runs on a single thread.
     let message = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_MESSAGE) };
 
     message.clear();
-    let mut e = Encoder::new(Writer(message));
-    value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
+    let ur_type = match value {
+        UR_Value::CryptoAccount { data, len } => {
+            message
+                .extend_from_slice(unsafe {
+                    slice::from_raw_parts(*data, *len)
+                })
+                .expect("crypto-account exceeds UR encoder limit");
+            "crypto-account"
+        }
+        _ => {
+            let value = unsafe { value.to_value() };
+            let mut e = Encoder::new(Writer(message));
+            value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
+            value.ur_type()
+        }
+    };
 
     encoder.inner.start(
-        value.ur_type(),
+        ur_type,
         message,
         max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );

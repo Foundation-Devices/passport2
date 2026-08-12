@@ -34,6 +34,8 @@ pub enum UR_Value {
     HDKey(UR_HDKey),
     /// `psbt`.
     Psbt { data: *const u8, len: usize },
+    /// `crypto-account` registry CBOR.
+    CryptoAccount { data: *const u8, len: usize },
     /// Passport custom `x-passport-request`.
     PassportRequest(UR_PassportRequest),
     /// Passport custom `x-passport-response`.
@@ -88,6 +90,9 @@ impl UR_Value {
             UR_Value::Psbt { data, len } => {
                 let buf = unsafe { slice::from_raw_parts(*data, *len) };
                 Value::Psbt(buf)
+            }
+            UR_Value::CryptoAccount { .. } => {
+                panic!("crypto-account is encoded as pre-built registry CBOR")
             }
             UR_Value::HDKey(v) => Value::HDKey(v.into()),
             UR_Value::PassportRequest(_) => panic!(
@@ -453,6 +458,16 @@ pub extern "C" fn ur_registry_new_psbt(
     len: usize,
 ) {
     *value = UR_Value::Psbt { data, len };
+}
+
+/// Create a new `crypto-account` UR from its complete registry CBOR.
+#[no_mangle]
+pub extern "C" fn ur_registry_new_crypto_account(
+    value: &mut UR_Value,
+    data: *mut u8,
+    len: usize,
+) {
+    *value = UR_Value::CryptoAccount { data, len };
 }
 
 /// Create a new Passport custom `x-passport-response` UR.

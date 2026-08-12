@@ -94,6 +94,9 @@ STATIC void mod_foundation_ur_Value_print(const mp_print_t *print,
         case Psbt:
             mp_print_str(print, "UR_Value::Psbt");
             break;
+        case CryptoAccount:
+            mp_print_str(print, "UR_Value::CryptoAccount");
+            break;
         case PassportRequest:
             mp_print_str(print, "UR_Value::PassportRequest");
             break;
@@ -162,6 +165,7 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_Value_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BYTES), MP_ROM_INT(Bytes) },
     { MP_ROM_QSTR(MP_QSTR_HDKEY), MP_ROM_INT(HDKey) },
     { MP_ROM_QSTR(MP_QSTR_PSBT), MP_ROM_INT(Psbt) },
+    { MP_ROM_QSTR(MP_QSTR_CRYPTO_ACCOUNT), MP_ROM_INT(CryptoAccount) },
     { MP_ROM_QSTR(MP_QSTR_PASSPORT_REQUEST), MP_ROM_INT(PassportRequest) },
 
     { MP_ROM_QSTR(MP_QSTR_ur_type), MP_ROM_PTR(&mod_foundation_ur_Value_ur_type_obj) },
@@ -442,6 +446,20 @@ STATIC mp_obj_t mod_foundation_ur_new_psbt(mp_obj_t data_in)
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_new_psbt_obj,
                                  mod_foundation_ur_new_psbt);
 
+/// def new_crypto_account(data: bytes) -> Value:
+///     """Create a crypto-account value from complete registry CBOR."""
+STATIC mp_obj_t mod_foundation_ur_new_crypto_account(mp_obj_t data_in)
+{
+    mp_buffer_info_t data = {0};
+    UR_Value value;
+
+    mp_get_buffer_raise(data_in, &data, MP_BUFFER_READ);
+    ur_registry_new_crypto_account(&value, data.buf, data.len);
+    return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_new_crypto_account_obj,
+                                 mod_foundation_ur_new_crypto_account);
+
 
 /// def new_passport_response(data: bytes) -> Value:
 ///     """
@@ -685,6 +703,7 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_new_bytes), MP_ROM_PTR(&mod_foundation_ur_new_bytes_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_derived_key), MP_ROM_PTR(&mod_foundation_ur_new_derived_key_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_psbt), MP_ROM_PTR(&mod_foundation_ur_new_psbt_obj)},
+    {MP_ROM_QSTR(MP_QSTR_new_crypto_account), MP_ROM_PTR(&mod_foundation_ur_new_crypto_account_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_passport_response), MP_ROM_PTR(&mod_foundation_ur_new_passport_response_obj)},
 
     // Encoder.

@@ -438,6 +438,10 @@ typedef enum {
    */
   Psbt,
   /**
+   * `crypto-account` registry CBOR.
+   */
+  CryptoAccount,
+  /**
    * Passport custom `x-passport-request`.
    */
   PassportRequest,
@@ -458,6 +462,11 @@ typedef struct {
 } Psbt_Body;
 
 typedef struct {
+  const uint8_t *data;
+  size_t len;
+} CryptoAccount_Body;
+
+typedef struct {
   UR_Value_Tag tag;
   union {
     Bytes_Body bytes;
@@ -465,6 +474,7 @@ typedef struct {
       UR_HDKey hd_key;
     };
     Psbt_Body psbt;
+    CryptoAccount_Body crypto_account;
     struct {
       UR_PassportRequest passport_request;
     };
@@ -653,6 +663,11 @@ void ur_registry_new_derived_key(UR_Value *value,
  * Create a new `psbt` UR.
  */
 void ur_registry_new_psbt(UR_Value *value, uint8_t *data, size_t len);
+
+/**
+ * Create a new `crypto-account` UR from its complete registry CBOR.
+ */
+void ur_registry_new_crypto_account(UR_Value *value, uint8_t *data, size_t len);
 
 /**
  * Create a new Passport custom `x-passport-response` UR.
