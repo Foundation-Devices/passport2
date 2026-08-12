@@ -24,7 +24,8 @@ from policy_errors import (PolicyMismatchError, PolicyParseError,  # noqa: E402
                            PolicyResourceError, PolicyTypeError)
 from wallet_policy import (KeyInfo, MiniscriptPolicy,  # noqa: E402
                            WalletPolicyRegistry,
-                           descriptor_to_policy_template)
+                           descriptor_to_policy_template,
+                           validate_backup_policy_records)
 from policy_transport import (decode_policy_transport,  # noqa: E402
                               encode_policy_transport)
 
@@ -367,6 +368,35 @@ def test_registry_preserves_settings_headroom():
     registry = WalletPolicyRegistry(settings)
     with pytest.raises(PolicyResourceError, match='space'):
         registry.save(make_policy())
+
+
+def test_backup_restore_validates_each_policy_on_its_declared_network():
+    tpub = convert_xpub_version(XPUB, bytes.fromhex('043587cf'))
+    mainnet = MiniscriptPolicy(
+        'Mainnet', 'BTC', 'wsh(pk(@0/**))', (KEY_INFO,), (0,))
+    testnet_key = "[6738736c/84'/1'/0']" + tpub
+    testnet = MiniscriptPolicy(
+        'Testnet', 'TBTC', 'wsh(pk(@0/**))', (testnet_key,), (0,))
+
+    class TestnetChain(DerivationChain):
+        ctype = 'TBTC'
+
+    selected_networks = []
+
+    def chain_lookup(network):
+        selected_networks.append(network)
+        return DerivationChain() if network == 'BTC' else TestnetChain()
+
+    def derive_node(path):
+        coin_type = path[1] & 0x7fffffff
+        return OwnedNode(XPUB if coin_type == 0 else tpub)
+
+    restored = validate_backup_policy_records(
+        [mainnet.serialize(), testnet.serialize()], '6738736c', derive_node,
+        chain_lookup)
+
+    assert selected_networks == ['BTC', 'TBTC']
+    assert [record['net'] for record in restored] == ['BTC', 'TBTC']
 
 
 def test_policy_transport_round_trip_rediscovers_owned_key():

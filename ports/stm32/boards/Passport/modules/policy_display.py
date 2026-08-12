@@ -17,6 +17,19 @@ _AND = ('and_v', 'and_b')
 _OR = ('or_b', 'or_c', 'or_d', 'or_i')
 
 
+def _highlight(text):
+    """Use Passport's standard teal emphasis, with a host-test fallback.
+
+    The monochrome palette maps HIGHLIGHT_TEXT_HEX to black, so these markers
+    preserve the existing readable hierarchy without adding a color-only cue.
+    """
+    try:
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+    except ImportError:  # pragma: no cover - CPython host tests have no LVGL
+        HIGHLIGHT_TEXT_HEX = 0x00bdcd
+    return '#{:06x} {}#'.format(HIGHLIGHT_TEXT_HEX, text)
+
+
 def _group_number(value):
     text = str(value)
     parts = []
@@ -241,7 +254,8 @@ def _format_condition(node, policy, depth=0, recovery=False):
     if kind in ('older', 'after'):
         short, exact, _ = describe_timelock(kind, node.value)
         prefix = 'Wait ' if kind == 'older' else 'After '
-        return [indent + prefix + short, child_indent + '(' + exact + ')']
+        return [indent + prefix + short,
+                child_indent + '(' + exact + ')']
     if kind in ('multi', 'multi_a'):
         lines = [indent + '{} of {} keys'.format(node.value, len(node.args))]
         for key in node.args:
@@ -264,7 +278,8 @@ def _format_condition(node, policy, depth=0, recovery=False):
             lines.extend(child_lines)
         return lines
     if kind == 'thresh':
-        lines = [indent + '{} of {} conditions'.format(node.value, len(node.args))]
+        lines = [indent + '{} of {} conditions'.format(
+            node.value, len(node.args))]
         for child in node.args:
             child_lines = _format_condition(child, policy, depth + 1, recovery)
             if child_lines:
@@ -387,24 +402,27 @@ def _simple_path_pages(policy, simple):
     short, exact, detail = describe_timelock(lock_kind, lock_value)
     recovery_name = _escape(policy.key_names[recovery_index]) or 'Recovery key'
     primary_page = (
-        'Spend with Passport\n\n'
+        '{}\n\n'
         'Passport can authorize spending by itself.\n'
         'No recovery delay is required.\n\n'
-        'Passport key\n{}\n\n'
+        '{}\n{}\n\n'
         'This key matches the seed currently loaded on Passport.'
-    ).format(format_fingerprint(owned.fingerprint))
+    ).format('Spend with Passport', 'Passport key',
+             format_fingerprint(owned.fingerprint))
     recovery_page = (
-        'Spend with the recovery key\n\n'
-        '{} can spend by itself {} after each coin confirms.\n\n'
-        'Exact delay\n{}\n\n'
+        '{}\n\n'
+        '{} can spend by itself\n{}\nafter each coin confirms.\n\n'
+        '{}\n{}\n\n'
         'Passport can still spend by itself after the recovery key becomes available.\n\n'
-        'Recovery key\n{}'
-    ).format(recovery_name, short, exact, format_fingerprint(recovery_key.fingerprint))
+        '{}\n{}'
+    ).format('Spend with the recovery key', recovery_name, _highlight(short),
+             _highlight('Exact delay'), exact, 'Recovery key',
+             format_fingerprint(recovery_key.fingerprint))
     timing_page = (
-        'How the recovery delay works\n\n'
+        '{}\n\n'
         '{}\n\n'
         'Block timing varies. Spending and returning change creates a new coin and restarts its timer.'
-    ).format(detail)
+    ).format('How the recovery delay works', detail)
     return (primary_page, recovery_page, timing_page)
 
 
@@ -575,7 +593,7 @@ def _generic_path_page(policy, path):
         heading = 'Delayed spending'
     else:
         heading = 'Spend now'
-    lines = [heading, '']
+    lines = [_highlight(heading) if not locks else heading, '']
 
     if locks:
         for lock_position, (kind, value) in enumerate(locks):
@@ -583,10 +601,12 @@ def _generic_path_page(policy, path):
             if lock_position:
                 lines.append('')
             lines.extend([
-                'Available after {}'.format(short),
-                '{}: {}'.format(
-                    'Exact delay' if kind == 'older' else 'Exact condition',
-                    exact),
+                'Available after',
+                _highlight(short),
+                '',
+                _highlight('Exact delay' if kind == 'older'
+                           else 'Exact condition'),
+                exact,
             ])
     friendly = _friendly_key_path(policy, path)
     if locks:
@@ -614,9 +634,11 @@ def format_review_pages(policy):
     simple = _classify_simple_inheritance(policy, paths)
     kind = 'Simple inheritance' if simple else 'Custom wallet policy'
     overview = (
-        '{}\n\n{}\n\n{}\n{}\n\n{}'
-    ).format(_escape(policy.name), kind, _network_name(policy), _script_type(policy),
-             _plural(len(paths), 'way to spend', 'ways to spend'))
+        '{}\n{}\n\n{}\n\n{}\n\n{}\n{}\n\n{} {}'
+    ).format(_highlight('Policy Name'), _escape(policy.name), kind,
+             _network_name(policy), _highlight('Script Type'),
+             _script_type(policy), _highlight(str(len(paths))),
+             'way to spend' if len(paths) == 1 else 'ways to spend')
 
     pages = [overview]
     if simple:
@@ -646,11 +668,11 @@ def format_review_pages(policy):
             lines.extend(['', _path_name(path), display_role])
         pages.append('\n'.join(lines))
 
-    pages.append(
-        'Back up this policy\n\n'
+    pages.append((
+        '{}\n\n'
         'Your seed recovers this Passport key, not the policy.\n\n'
         'Keep a separate copy.'
-    )
+    ).format('Back up this policy'))
     return tuple(pages)
 
 
