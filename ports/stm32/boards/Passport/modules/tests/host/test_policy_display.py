@@ -5,6 +5,7 @@ import ast
 import builtins
 import inspect
 import os
+import re
 import sys
 import types
 
@@ -31,6 +32,35 @@ XPUB = ('xpub6Br37sWxruYfT8ASpCjVHKGwgdnYFEn98DwiN76i2oyY6fgH1LAPmmDcF46x'
 INTERNAL_KEY = ('79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798')
 
 
+def without_recolor(text):
+    """Remove LVGL recolor delimiters while preserving escaped hashes."""
+    output = []
+    position = 0
+    colored = False
+    while position < len(text):
+        if not colored:
+            marker = re.match(r'#[0-9a-fA-F]{6} ', text[position:])
+            if marker:
+                position += len(marker.group(0))
+                colored = True
+                continue
+        elif text[position] == '#':
+            if position + 1 < len(text) and text[position + 1] == '#':
+                output.append('##')
+                position += 2
+                continue
+            position += 1
+            colored = False
+            continue
+        output.append(text[position])
+        position += 1
+    return ''.join(output)
+
+
+def plain_review_pages(policy):
+    return tuple(without_recolor(page) for page in policy.format_review_pages())
+
+
 def key_info(index, purpose=48):
     fingerprint = '{:08x}'.format(0x6738736c + index)
     suffix = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[index]
@@ -44,17 +74,19 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
         'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
         (key_info(0), key_info(1)), (0,))
 
-    pages = policy.format_review_pages()
+    pages = plain_review_pages(policy)
     review = '\n'.join(pages)
     assert 'Simple inheritance' in pages[0]
     assert '2 ways to spend' in pages[0]
-    assert pages[0].startswith('Liana Test\n\nSimple inheritance')
+    assert pages[0].startswith('Policy Name\nLiana Test\n\nSimple inheritance')
+    assert 'Script Type\nNative SegWit (P2WSH)' in pages[0]
     assert 'Spend with Passport' in review
     assert 'Passport can authorize spending by itself' in review
     assert 'No recovery delay is required' in review
     assert '6738 736C' in review
     assert 'Spend with the recovery key' in review
-    assert 'Recovery key can spend by itself about 1 year after each coin confirms' in review
+    assert ('Recovery key can spend by itself\nabout 1 year\n'
+            'after each coin confirms' in review)
     assert 'Passport can still spend by itself after the recovery key becomes available' in review
     assert '52,596 blocks' in review
     assert '6738 736D' in review
@@ -68,13 +100,42 @@ def test_liana_inheritance_is_explained_as_two_alternative_spend_paths():
             in policy.format_confirmation())
 
 
+def test_review_highlights_only_short_verification_fields():
+    policy = MiniscriptPolicy(
+        'Liana Test', 'TBTC',
+        'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
+        (key_info(0), key_info(1)), (0,))
+
+    pages = policy.format_review_pages()
+    overview, primary, recovery, timing = pages[:4]
+    backup = pages[-1]
+
+    assert overview.startswith('#00bdcd Policy Name#\nLiana Test')
+    assert '#00bdcd Script Type#\nNative SegWit (P2WSH)' in overview
+    assert '#00bdcd 2# ways to spend' in overview
+    assert '#00bdcd Simple inheritance#' not in overview
+    assert '#00bdcd Bitcoin Testnet#' not in overview
+    assert '#00bdcd Native SegWit (P2WSH)#' not in overview
+
+    assert '#00bdcd ' not in primary
+    assert '#00bdcd about 1 year#' in recovery
+    assert '#00bdcd Exact delay#\n52,596 blocks' in recovery
+    assert '#00bdcd 52,596 blocks#' not in recovery
+    assert '#00bdcd ' not in timing
+    assert '#00bdcd ' not in backup
+
+    review = '\n'.join(pages)
+    assert '#00bdcd Passport can authorize spending by itself.#' not in review
+    assert '#00bdcd Your seed recovers this Passport key, not the policy.#' not in review
+
+
 def test_local_signer_name_is_used_and_escaped_without_changing_policy_semantics():
     policy = MiniscriptPolicy(
         'Liana Test', 'TBTC',
         'wsh(or_d(pk(@0/**),and_v(v:pkh(@1/**),older(52596))))',
         (key_info(0), key_info(1)), (0,), ('', 'Family ## Vault'))
 
-    review = '\n'.join(policy.format_review_pages())
+    review = '\n'.join(plain_review_pages(policy))
     assert 'Family #### Vault can spend by itself' in review
     assert '6738 736D' in review
 
@@ -110,12 +171,12 @@ def test_threshold_tree_does_not_expand_combinations_and_flags_passport_bypass()
         'wsh(or_d(multi(2,@0/**,@1/**,@2/**),'
         'and_v(v:pk(@3/**),older(1008))))',
         tuple(key_info(index) for index in range(4)), (0,))
-    review = '\n'.join(policy.format_review_pages())
+    review = '\n'.join(plain_review_pages(policy))
     assert 'Custom wallet policy' in review
     assert 'Any 2 of 3 keys must sign' in review
     assert 'This Passport\n6738 736C' in review
     assert 'Key 2\n6738 736D' in review
-    assert 'Available after about 1 week' in review
+    assert 'Available after\nabout 1 week' in review
     assert 'Key 4\n6738 736F' in review
     assert 'Recovery key\n6738 736F' not in review
     # The other two primary keys can satisfy the 2-of-3 without Passport.
@@ -133,7 +194,7 @@ def test_maximum_key_threshold_stays_linear_and_names_every_signer():
         'Maximum Signers', 'BTC', template,
         tuple(key_info(index) for index in range(key_count)), (0,))
 
-    pages = policy.format_review_pages()
+    pages = plain_review_pages(policy)
     review = '\n'.join(pages)
     assert 'Any 8 of 15 keys must sign' in review
     for index in range(key_count):
@@ -150,7 +211,7 @@ def test_threshold_conditions_are_rendered_without_opaque_miniscript():
         'Condition Threshold', 'BTC',
         'wsh(thresh(2,pk(@0/**),s:pk(@1/**),a:pk(@2/**)))',
         tuple(key_info(index) for index in range(3)), (0,))
-    review = '\n'.join(policy.format_review_pages())
+    review = '\n'.join(plain_review_pages(policy))
     assert 'Any 2 of 3 keys must sign' in review
     assert 'Advanced condition' not in review
 
@@ -165,7 +226,7 @@ def test_liana_multisig_shows_immediate_path_first_with_compact_key_blocks():
         tuple(key_info(index) for index in range(3)), (0,),
         ('', 'HOT KEY', 'BACKUP PASSPORT'))
 
-    pages = policy.format_review_pages()
+    pages = plain_review_pages(policy)
     immediate = pages[1]
     delayed = pages[2]
 
@@ -175,8 +236,8 @@ def test_liana_multisig_shows_immediate_path_first_with_compact_key_blocks():
     assert 'HOT KEY\n6738 736D' in immediate
 
     assert delayed.startswith('Delayed spending')
-    assert 'Available after about 1 year' in delayed
-    assert 'Exact delay: 52,596 blocks' in delayed
+    assert 'Available after\nabout 1 year' in delayed
+    assert 'Exact delay\n52,596 blocks' in delayed
     assert 'Any 2 of 3 keys must sign' in delayed
     assert 'BACKUP PASSPORT\n6738 736E' in delayed
     assert 'All of' not in delayed
@@ -229,12 +290,42 @@ def test_liana_multisig_shows_immediate_path_first_with_compact_key_blocks():
         policy, tx_version=1, lock_time=0, sequence=52596) == (0,)
 
 
+def test_multisig_path_uses_teal_only_for_short_section_labels():
+    policy = MiniscriptPolicy(
+        'Liana Multisig', 'TBTC',
+        'wsh(or_i('
+        'and_v(v:thresh(2,pkh(@0/<2;3>/*),a:pkh(@1/<2;3>/*),'
+        'a:pkh(@2/<0;1>/*)),older(52596)),'
+        'and_v(v:pk(@0/<0;1>/*),pk(@1/<0;1>/*))))',
+        tuple(key_info(index) for index in range(3)), (0,),
+        ('', 'HOT KEY', 'BACKUP PASSPORT'))
+
+    pages = policy.format_review_pages()
+    immediate = pages[1]
+    delayed = pages[2]
+
+    assert immediate.startswith('#00bdcd Spend now#\n\nBoth keys must sign')
+    assert '#00bdcd Both keys must sign#' not in immediate
+    assert '#00bdcd This Passport#' not in immediate
+    assert '#00bdcd 6738 736C#' not in immediate
+    assert '#00bdcd HOT KEY#' not in immediate
+    assert '#00bdcd 6738 736D#' not in immediate
+
+    assert '#00bdcd Delayed spending#' not in delayed
+    assert 'Available after\n#00bdcd about 1 year#' in delayed
+    assert '#00bdcd Exact delay#' in delayed
+    assert '#00bdcd 52,596 blocks#' not in delayed
+    assert '#00bdcd Any 2 of 3 keys must sign#' not in delayed
+    assert '#00bdcd BACKUP PASSPORT#' not in delayed
+    assert delayed.count('#00bdcd ') == 2
+
+
 def test_conditional_policy_is_rendered_structurally_without_false_simplification():
     policy = MiniscriptPolicy(
         'Conditional', 'BTC',
         'wsh(andor(pk(@0/**),pk(@1/**),pk(@2/**)))',
         tuple(key_info(index) for index in range(3)), (0,))
-    review = '\n'.join(policy.format_review_pages())
+    review = '\n'.join(plain_review_pages(policy))
     assert 'Conditional path' in review
     assert '\n  If\n' in review
     assert '\n  Then also\n' in review
@@ -247,7 +338,7 @@ def test_taproot_key_paths_are_first_class_spending_paths():
         'Fixed Internal', 'BTC',
         'tr({},pk(@0/**))'.format(INTERNAL_KEY),
         (key_info(0, 86),), (0,))
-    fixed_review = '\n'.join(fixed.format_review_pages())
+    fixed_review = '\n'.join(plain_review_pages(fixed))
     assert '2 ways to spend' in fixed_review
     assert 'Taproot key path' in fixed_review
     assert 'can bypass every script condition' in fixed_review
@@ -256,7 +347,7 @@ def test_taproot_key_paths_are_first_class_spending_paths():
     dynamic = MiniscriptPolicy(
         'Dynamic Internal', 'BTC', 'tr(@0/**,pk(@1/**))',
         (key_info(0, 86), key_info(1, 86)), (1,))
-    dynamic_review = '\n'.join(dynamic.format_review_pages())
+    dynamic_review = '\n'.join(plain_review_pages(dynamic))
     assert 'Key 1 - 6738 736C can spend without using any script-path conditions' \
         in dynamic_review
     assert 'This path does not require Passport' in dynamic_review

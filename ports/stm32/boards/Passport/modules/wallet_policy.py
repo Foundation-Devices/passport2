@@ -32,6 +32,36 @@ MAX_TAPROOT_LEAVES = 8
 TAPSCRIPT_LEAF_VERSION = 0xc0
 
 
+def validate_backup_policy_records(records, expected_fingerprint, derive_node,
+                                   chain_lookup):
+    """Validate and canonicalize wallet policies restored from a backup.
+
+    A backup may contain policies for both Bitcoin mainnet and testnet,
+    regardless of the device's currently selected network.  Validate each
+    policy using the network declared by that policy instead of applying the
+    backup's active chain to every record.
+    """
+    if not isinstance(records, list):
+        raise PolicyParseError('Wallet-policy backup records must be a list')
+
+    expected_fingerprint = expected_fingerprint.lower()
+    validated_records = []
+    policy_ids = set()
+    for record in records:
+        policy = MiniscriptPolicy.deserialize(record)
+        policy_chain = chain_lookup(policy.network)
+        policy.validate_extended_keys(policy_chain)
+        owned_key = policy.keys[policy.owned_key_indexes[0]]
+        if owned_key.fingerprint != expected_fingerprint:
+            raise PolicyMismatchError('Wallet policy belongs to another seed')
+        policy.verify_owned_key(policy_chain, derive_node)
+        if policy.policy_id in policy_ids:
+            raise PolicyParseError('Duplicate wallet policy in backup')
+        policy_ids.add(policy.policy_id)
+        validated_records.append(policy.serialize())
+    return validated_records
+
+
 def _max_key_uses_per_path(node, key_index):
     """Conservatively count key uses in any one executable WSH path.
 

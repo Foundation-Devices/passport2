@@ -130,10 +130,13 @@ class ImportWalletPolicyFlow(Flow):
 
     async def confirm_import(self):
         from pages import LongQuestionPage
-        from utils import escape_text
-        text = 'Register {}?\n\n{}\n\nPolicy checksum\n{}'.format(
-            escape_text(self.policy.name), self.policy.format_confirmation(),
-            self.policy.descriptor_check())
+        from styles.colors import HIGHLIGHT_TEXT_HEX
+        from utils import escape_text, recolor
+        text = 'Register {}?\n\n{}\n\n{}\n{}'.format(
+            recolor(HIGHLIGHT_TEXT_HEX, escape_text(self.policy.name)),
+            self.policy.format_confirmation(),
+            recolor(HIGHLIGHT_TEXT_HEX, 'Policy checksum'),
+            recolor(HIGHLIGHT_TEXT_HEX, self.policy.descriptor_check()))
         result = await LongQuestionPage(text=text).show()
         if result:
             self.goto(self.save_policy)
