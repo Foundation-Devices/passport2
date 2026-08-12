@@ -27,7 +27,10 @@ from wallet_policy import (KeyInfo, MiniscriptPolicy,  # noqa: E402
                            descriptor_to_policy_template,
                            validate_backup_policy_records)
 from policy_transport import (decode_policy_transport,  # noqa: E402
-                              encode_policy_transport)
+                              decode_address_request,
+                              encode_address_response,
+                              encode_policy_transport,
+                              encode_registration_ack)
 
 
 XPUB = ('xpub6Br37sWxruYfT8ASpCjVHKGwgdnYFEn98DwiN76i2oyY6fgH1LAPmmDcF46x'
@@ -435,3 +438,47 @@ def test_transport_does_not_treat_local_signer_names_as_coordinator_data():
     policy = make_policy().name_keys(('', 'Family Recovery'))
     encoded = encode_policy_transport(policy)
     assert 'Family Recovery' not in encoded
+
+
+def test_registration_ack_is_bound_to_policy_checksum_and_fingerprint():
+    import json
+    policy = make_policy()
+    ack = json.loads(encode_registration_ack(policy, '6738736c'))
+    assert ack == {
+        'format': 'passport-policy-registration',
+        'version': 1,
+        'policy_id': policy.policy_id,
+        'descriptor_checksum': policy.descriptor_check().lower(),
+        'fingerprint': '6738736c',
+        'registered': True,
+    }
+
+
+def test_address_request_derives_independently_and_response_is_bound():
+    import json
+    policy = make_policy()
+    registry = types.SimpleNamespace(get=lambda policy_id:
+                                     policy if policy_id == policy.policy_id else None)
+    request = {
+        'format': 'passport-address-verification',
+        'version': 1,
+        'network': 'BTC',
+        'policy_id': policy.policy_id,
+        'descriptor_checksum': policy.descriptor_check().lower(),
+        'branch': 0,
+        'index': 7,
+    }
+    decoded, selected, address = decode_address_request(
+        json.dumps(request), DerivationChain(), registry, policy.policy_id)
+    assert selected is policy
+    assert address.startswith('test-address-')
+    response = json.loads(encode_address_response(decoded, address, '6738736c'))
+    assert response['address'] == address
+    assert response['branch'] == 0
+    assert response['index'] == 7
+    assert response['policy_id'] == policy.policy_id
+    assert response['fingerprint'] == '6738736c'
+
+    request['index'] = True
+    with pytest.raises(PolicyParseError, match='index'):
+        decode_address_request(json.dumps(request), DerivationChain(), registry)
