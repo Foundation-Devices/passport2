@@ -26,8 +26,9 @@ from wallet_policy import (KeyInfo, MiniscriptPolicy,  # noqa: E402
                            WalletPolicyRegistry,
                            descriptor_to_policy_template,
                            validate_backup_policy_records)
-from policy_transport import (decode_policy_transport,  # noqa: E402
+from policy_transport import (bounded_transport_read,  # noqa: E402
                               decode_address_request,
+                              decode_policy_transport,
                               encode_address_response,
                               encode_policy_transport,
                               encode_registration_ack)
@@ -482,3 +483,8 @@ def test_address_request_derives_independently_and_response_is_bound():
     request['index'] = True
     with pytest.raises(PolicyParseError, match='index'):
         decode_address_request(json.dumps(request), DerivationChain(), registry)
+
+
+def test_policy_microsd_read_is_bounded_before_json_decode():
+    import io
+    assert len(bounded_transport_read(io.BytesIO(b'x' * 8192))) == 4097
