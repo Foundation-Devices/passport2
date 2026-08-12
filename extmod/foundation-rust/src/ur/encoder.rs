@@ -99,21 +99,27 @@ pub unsafe extern "C" fn ur_encoder_start(
     value: &UR_Value,
     max_chars: usize,
 ) {
-    // SAFETY: The UR_Value can contain some raw pointers which need to be
-    // accessed in order to convert it to a `ur::registry::BaseValue` which
-    // is then encoded below, so the pointers lifetime only need to be valid
-    // for the scope of this function.
-    let value = unsafe { value.to_value() };
-
     // SAFETY: This code assumes that runs on a single thread.
     let message = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_MESSAGE) };
 
     message.clear();
     let mut e = Encoder::new(Writer(message));
-    value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
+    let ur_type = match value {
+        UR_Value::CryptoAccount(account) => {
+            account.encode(&mut e, &mut ()).expect("Couldn't encode UR");
+            crate::ur::registry::UR_CryptoAccount::UR_TYPE
+        }
+        _ => {
+            // SAFETY: Other UR values may contain pointers which remain valid
+            // for this call, as required by this function's contract.
+            let value = unsafe { value.to_value() };
+            value.encode(&mut e, &mut ()).expect("Couldn't encode UR");
+            value.ur_type()
+        }
+    };
 
     encoder.inner.start(
-        value.ur_type(),
+        ur_type,
         message,
         max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );

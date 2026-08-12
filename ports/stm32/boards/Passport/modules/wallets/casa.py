@@ -34,17 +34,16 @@ def create_casa_export(sw_wallet=None,
             is_mainnet = chain.ctype == 'BTC'
 
             network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
-            use_info = ur.CoinInfo(ur.CoinType.BTC, network)
-            origin = ur.Keypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
-                                depth=0)
+            casa_node = sv.derive_path("m/45'")
+            account = ur.new_crypto_account(
+                sv.node.public_key(),
+                sv.node.chain_code(),
+                casa_node.public_key(),
+                casa_node.chain_code(),
+                master_fingerprint=int(xfp2str(settings.get('xfp')), 16),
+                network=network)
 
-            hdkey = ur.new_derived_key(sv.node.public_key(),
-                                       is_private=False,
-                                       chain_code=sv.node.chain_code(),
-                                       use_info=use_info,
-                                       origin=origin)
-
-            return (hdkey, None)
+            return (account, None)
     else:
         with stash.SensitiveValues() as sv:
             s = '''\
