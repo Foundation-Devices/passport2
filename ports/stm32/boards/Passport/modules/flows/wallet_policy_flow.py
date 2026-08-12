@@ -180,23 +180,8 @@ class ImportWalletPolicyFlow(Flow):
             return
         from flows import AutoBackupFlow
         await AutoBackupFlow().run()
-        await SuccessPage(
-            'Wallet policy registered\n\nNext, return a confirmation QR to Liana.').show()
-        await self.show_registration_ack()
+        await SuccessPage('Wallet policy registered').show()
         self.goto(self.choose_next_action)
-
-    async def show_registration_ack(self):
-        from common import settings
-        from data_codecs.qr_type import QRType
-        from foundation import ur
-        from pages import ShowQRPage
-        from policy_transport import encode_registration_ack
-        from utils import xfp2str
-        data = encode_registration_ack(
-            self.policy, xfp2str(settings.get('xfp')).lower()).encode('utf-8')
-        await ShowQRPage(
-            qr_type=QRType.UR2, qr_data=ur.new_bytes(data),
-            caption='Scan this confirmation in Liana').show()
 
     async def choose_next_action(self):
         import microns
