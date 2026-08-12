@@ -90,3 +90,41 @@ def test_liana_export_is_a_raw_descriptor_key(
         'acct': acct_num,
         'xfp': 'a1b2c3d4',
     }]
+
+
+def test_liana_crypto_account_matches_cross_implementation_vector(monkeypatch):
+    stash = types.ModuleType('stash')
+    common = types.ModuleType('common')
+    common.settings = types.SimpleNamespace(get=lambda key: 0xA1B2C3D4)
+    public_constants = types.ModuleType('public_constants')
+    public_constants.AF_CLASSIC = 1
+    public_constants.AF_P2WSH = 2
+    utils = types.ModuleType('utils')
+    utils.xfp2str = lambda value: 'A1B2C3D4'
+
+    monkeypatch.setitem(sys.modules, 'stash', stash)
+    monkeypatch.setitem(sys.modules, 'common', common)
+    monkeypatch.setitem(sys.modules, 'public_constants', public_constants)
+    monkeypatch.setitem(sys.modules, 'utils', utils)
+
+    namespace = runpy.run_path(str(MODULES / 'wallets/liana.py'))
+
+    class PublicNode:
+        def public_key(self):
+            return bytes.fromhex(
+                '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798')
+
+        def chain_code(self):
+            return bytes(range(32))
+
+        def fingerprint(self):
+            return 0x11223344
+
+    encoded = namespace['create_liana_crypto_account'](
+        0xA1B2C3D4, PublicNode(), 0, 7)
+    assert encoded.hex() == (
+        'a2011aa1b2c3d40281d90134d90191d9019ad9012fa602f40358210279be667e'
+        'f9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179804582000'
+        '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f05'
+        'd99d71a20100020006d99d70a301881830f500f507f502f5021aa1b2c3d40304'
+        '081a11223344')
