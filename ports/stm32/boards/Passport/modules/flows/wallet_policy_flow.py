@@ -20,6 +20,19 @@ def _decode_policy(data):
         return decode_policy_transport(data, chain, sv.get_xfp(), derive_node)
 
 
+def _verify_current_seed(policy, chain):
+    """Re-prove the complete registered xpub before an address response."""
+    import stash
+    with stash.SensitiveValues() as sv:
+        def derive_node(path):
+            node = sv.node.clone()
+            for element in path:
+                node.derive(element)
+            return node
+
+        policy.verify_owned_key(chain, derive_node)
+
+
 class ImportWalletPolicyFlow(Flow):
     def __init__(self, policy):
         self.policy = policy
@@ -606,6 +619,7 @@ class VerifyWalletPolicyRequestFlow(Flow):
             self.request, self.policy, self.address = decode_address_request(
                 data, chains.current_chain(), WalletPolicyRegistry(settings),
                 self.expected_policy_id)
+            _verify_current_seed(self.policy, chains.current_chain())
         except BaseException as exc:
             self.error = str(exc) or 'Address Verification Error'
             self.goto(self.show_error)
@@ -686,6 +700,7 @@ class VerifyWalletPolicyRequestMicroSDFlow(VerifyWalletPolicyRequestFlow):
             self.request, self.policy, self.address = decode_address_request(
                 data, chains.current_chain(), WalletPolicyRegistry(settings),
                 self.expected_policy_id)
+            _verify_current_seed(self.policy, chains.current_chain())
         except BaseException as exc:
             self.error = str(exc) or 'Address Verification Error'
             self.goto(self.show_error)
