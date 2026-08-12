@@ -167,7 +167,6 @@ How would you like to proceed?"
         try:
             result = await ShowQRPage(qr_type=qr_type,
                                       qr_data=qr_data,
-                                      caption='Scan this signed PSBT with your wallet coordinator.',
                                       left_micron=microns.MicroSD,
                                       right_micron=microns.Checkmark).show()
         except MemoryError as e:
