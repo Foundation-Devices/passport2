@@ -650,3 +650,63 @@ class VerifyWalletPolicyRequestFlow(Flow):
         await ErrorPage(self.error).show()
         self.error = None
         self.reset(self.scan)
+
+
+class VerifyWalletPolicyRequestMicroSDFlow(VerifyWalletPolicyRequestFlow):
+    """Derive a bound Liana address request read and returned through microSD."""
+    def __init__(self, context=None):
+        self.expected_policy_id = context
+        self.request = None
+        self.policy = None
+        self.address = None
+        self.error = None
+        Flow.__init__(self, initial_state=self.choose_file,
+                      name='VerifyWalletPolicyRequestMicroSDFlow')
+
+    async def choose_file(self):
+        from flows import FilePickerFlow, ReadFileFlow
+        from policy_transport import bounded_transport_read, decode_address_request
+        import chains
+        from common import settings
+        from wallet_policy import WalletPolicyRegistry
+
+        result = await FilePickerFlow(show_folders=True, suffix='json').run()
+        if result is None:
+            self.set_result(False)
+            return
+        _, full_path, is_folder = result
+        if is_folder:
+            return
+        data = await ReadFileFlow(
+            full_path, binary=True, read_fn=bounded_transport_read).run()
+        if data is None:
+            self.set_result(False)
+            return
+        try:
+            self.request, self.policy, self.address = decode_address_request(
+                data, chains.current_chain(), WalletPolicyRegistry(settings),
+                self.expected_policy_id)
+        except BaseException as exc:
+            self.error = str(exc) or 'Address Verification Error'
+            self.goto(self.show_error)
+            return
+        self.goto(self.confirm)
+
+    async def show_response(self):
+        from common import settings
+        from flows import SaveToMicroSDFlow
+        from policy_transport import encode_address_response
+        from utils import xfp2str
+        data = encode_address_response(
+            self.request, self.address,
+            xfp2str(settings.get('xfp')).lower())
+        result = await SaveToMicroSDFlow(
+            filename='liana-address-response.json', data=data,
+            success_text='verified address response').run()
+        self.set_result(result is not None)
+
+    async def show_error(self):
+        from pages import ErrorPage
+        await ErrorPage(self.error).show()
+        self.error = None
+        self.reset(self.choose_file)
