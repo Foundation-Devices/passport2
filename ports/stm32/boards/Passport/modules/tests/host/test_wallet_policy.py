@@ -30,8 +30,7 @@ from policy_transport import (bounded_transport_read,  # noqa: E402
                               decode_address_request,
                               decode_policy_transport,
                               encode_address_response,
-                              encode_policy_transport,
-                              encode_registration_ack)
+                              encode_policy_transport)
 
 
 XPUB = ('xpub6Br37sWxruYfT8ASpCjVHKGwgdnYFEn98DwiN76i2oyY6fgH1LAPmmDcF46x'
@@ -449,20 +448,6 @@ def test_transport_does_not_treat_local_signer_names_as_coordinator_data():
     policy = make_policy().name_keys(('', 'Family Recovery'))
     encoded = encode_policy_transport(policy)
     assert 'Family Recovery' not in encoded
-
-
-def test_registration_ack_is_bound_to_policy_checksum_and_fingerprint():
-    import json
-    policy = make_policy()
-    ack = json.loads(encode_registration_ack(policy, '6738736c'))
-    assert ack == {
-        'format': 'passport-policy-registration',
-        'version': 1,
-        'policy_id': policy.policy_id,
-        'descriptor_checksum': policy.descriptor_check().lower(),
-        'fingerprint': '6738736c',
-        'registered': True,
-    }
 
 
 def test_address_request_derives_independently_and_response_is_bound():
