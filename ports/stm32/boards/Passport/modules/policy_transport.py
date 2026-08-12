@@ -27,6 +27,11 @@ REGISTRATION_FORMAT = 'passport-policy-registration'
 MAX_ADDRESS_INDEX = 0x7fffffff
 
 
+def bounded_transport_read(fd):
+    """Bound a policy/address microSD read before allocating its contents."""
+    return fd.read(MAX_TRANSPORT_LENGTH + 1)
+
+
 def _fingerprint_text(master_xfp):
     return hexlify(master_xfp.to_bytes(4, 'little')).decode('ascii')
 
