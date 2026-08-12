@@ -11,6 +11,8 @@ from utils import xfp2str
 from data_codecs.qr_type import QRType
 from foundation import ur
 
+CASA_PATH = "m/45'"
+
 
 def create_casa_export(sw_wallet=None,
                        addr_type=None,
@@ -34,7 +36,7 @@ def create_casa_export(sw_wallet=None,
             is_mainnet = chain.ctype == 'BTC'
 
             network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
-            casa_node = sv.derive_path("m/45'")
+            casa_node = sv.derive_path(CASA_PATH)
             account = ur.new_crypto_account(
                 sv.node.public_key(),
                 sv.node.chain_code(),
@@ -63,7 +65,12 @@ def create_casa_export(sw_wallet=None,
     # Top-level, 'master' extended public key ('m/'):
 
     {xpub}
+
+    # Casa extended public key ("m/45'"):
+
+    {casa_xpub}
     '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
+               casa_xpub=chain.serialize_public(sv.derive_path(CASA_PATH)),
                sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
 
             return (s, None)  # No 'acct_info'
