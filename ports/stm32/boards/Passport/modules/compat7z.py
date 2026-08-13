@@ -117,7 +117,7 @@ def check_file_headers(f):
     # assume f is seekable
     fh = FileHeader.read(f)
 
-    if not fh.has_good_magic:
+    if not fh.has_good_magic():
         raise ValueError("Bad magic bytes")
 
     # read only first header
@@ -137,14 +137,17 @@ def check_file_headers(f):
         f.seek(sh.offset, 1)
         th = f.read(sh.size)
         if len(th) != sh.size:
-            raise IndexError("Truncated file? %s" % e.message)
+            raise IndexError(
+                "Truncated file: got %d of %d bytes" % (len(th), sh.size))
 
         # Look for properties about compression. this could be
         # faked-out but good enough for now
         if b'\x24\x06\xf1\x07\x01' not in th:
             raise RuntimeError("Not marked as AES+SHA encrypted?")
+    except OSError:
+        raise
     except Exception as e:
-        raise ValueError("Confused file? %s" % e.message)
+        raise ValueError("Confused file? %s" % e)
 
     if masked_crc(th) != sh.crc:
         raise ValueError("Trailing header has wrong CRC")
@@ -279,20 +282,28 @@ class Builder(object):
             # figure out key to be used
             key = self.calculate_key(password, progress_fcn)
 
-            out = b''
+            out = bytearray(unpacked_size)
             # aes = tcc.AES(tcc.AES.CBC | tcc.AES.Decrypt, key, self.iv)
             aes = trezorcrypto.aes(trezorcrypto.aes.CBC, key, self.iv)
 
-            for blk in range(0, len(body), 16):
-                out += aes.decrypt(body[blk:blk + 16])
+            try:
+                for blk in range(0, len(body), 16):
+                    decrypted = aes.decrypt(body[blk:blk + 16])
+                    end = min(blk + 16, unpacked_size)
+                    if blk < end:
+                        out[blk:end] = decrypted[0:end - blk]
 
-            # trim padding, check CRC
-            out = out[0:unpacked_size]
-            if masked_crc(out) != expect_crc:
-                raise ValueError("Wrong password given, or damaged file.")
+                # Check the plaintext CRC after omitting block padding.
+                if masked_crc(out) != expect_crc:
+                    raise ValueError("Wrong password given, or damaged file.")
 
-            # done. return contents
-            return fname, out
+                # Return a mutable buffer so callers that do not retain the
+                # plaintext can explicitly clear it.
+                return fname, out
+            except BaseException:
+                for i in range(len(out)):
+                    out[i] = 0
+                raise
 
     def verify_file_crc(self, fd, max_size, expected_sections=3):
         # Read each section, and check CRC of headers, return list of files & sizes.
