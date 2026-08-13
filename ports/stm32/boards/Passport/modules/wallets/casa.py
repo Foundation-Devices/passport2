@@ -52,16 +52,6 @@ def create_casa_export(sw_wallet=None,
     # Passport Summary File
     # For wallet with master key fingerprint: {xfp}
 
-    Wallet operates on blockchain: {nb}
-
-    For BIP44, this is coin_type '{ct}', and internally we use
-    symbol {sym} for this blockchain.
-
-    # IMPORTANT WARNING
-
-    Do **not** deposit to any address in this file unless you have a working
-    wallet system that is ready to handle the funds at that address!
-
     # Top-level, 'master' extended public key ('m/'):
 
     {xpub}
@@ -69,9 +59,9 @@ def create_casa_export(sw_wallet=None,
     # Casa extended public key ("m/45'"):
 
     {casa_xpub}
-    '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
+    '''.format(xpub=chain.serialize_public(sv.node),
                casa_xpub=chain.serialize_public(sv.derive_path(CASA_PATH)),
-               sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
+               xfp=xfp2str(settings.get('xfp')))
 
             return (s, None)  # No 'acct_info'
 
