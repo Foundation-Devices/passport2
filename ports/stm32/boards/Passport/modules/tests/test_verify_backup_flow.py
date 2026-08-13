@@ -19,25 +19,32 @@ from errors import Error
 
 class Flow:
     def __init__(self, initial_state, name):
-        self.initial_state = initial_state
+        self.state = initial_state
+        self.prev_states = []
         self.name = name
-        self.next_state = None
         self.result = None
         self.went_back = False
 
     def goto(self, state):
-        self.next_state = state
+        self.prev_states.append(self.state)
+        self.state = state
 
     def back(self):
         self.went_back = True
+        self.state = self.prev_states.pop()
 
     def set_result(self, result):
         self.result = result
 
 
 class FilePickerFlow:
+    result = None
+
     def __init__(self, **_kwargs):
         pass
+
+    async def run(self):
+        return type(self).result
 
 
 class FakePage:
@@ -76,6 +83,7 @@ def load_flow(monkeypatch, is_color, spinner_error=None):
     for page in (BackupCodePage, ErrorPage, InsertMicroSDPage, LongSuccessPage, SuccessPage):
         page.shown = []
         page.result = None
+    FilePickerFlow.result = None
 
     constants = types.ModuleType('constants')
     constants.TOTAL_BACKUP_CODE_DIGITS = 20
@@ -130,16 +138,30 @@ def run(coroutine):
     asyncio.run(coroutine)
 
 
-def test_enters_backup_code_before_verification(monkeypatch):
+def test_selected_file_routes_through_backup_code_before_verification(monkeypatch):
     flow, _spinner_calls, _task = load_flow(monkeypatch, is_color=True)
     digits = list(range(10)) * 2
+    FilePickerFlow.result = ('backup.7z', '/backups/backup.7z', False)
     BackupCodePage.result = digits
 
-    run(flow.enter_backup_code())
+    run(flow.state())
+    assert flow.state == flow.enter_backup_code
+
+    run(flow.state())
 
     assert flow.backup_code == digits
     assert flow.decryption_password == ''.join(str(digit) for digit in digits)
-    assert flow.next_state == flow.do_verify
+    assert flow.state == flow.do_verify
+
+
+def test_selecting_folder_does_not_advance_to_code_entry(monkeypatch):
+    flow, _spinner_calls, _task = load_flow(monkeypatch, is_color=True)
+    FilePickerFlow.result = ('backups', '/backups', True)
+
+    run(flow.state())
+
+    assert flow.state == flow.choose_file
+    assert flow.result is None
 
 
 @pytest.mark.parametrize(
@@ -171,6 +193,8 @@ def test_integrity_failure_returns_to_code_entry_without_leaking_detail(monkeypa
     flow.backup_file_path = '/backups/backup.7z'
     flow.decryption_password = 'backup-code'
     flow.backup_code = [1] * 20
+    flow.state = flow.do_verify
+    flow.prev_states = [flow.choose_file, flow.enter_backup_code]
     ErrorPage.result = True
 
     run(flow.do_verify())
@@ -184,6 +208,7 @@ def test_integrity_failure_returns_to_code_entry_without_leaking_detail(monkeypa
     assert flow.decryption_password is None
     assert flow.backup_code == [1] * 20
     assert flow.went_back
+    assert flow.state == flow.enter_backup_code
     assert flow.result is None
 
 
@@ -197,6 +222,27 @@ def test_card_cancel_clears_backup_code_and_exits(monkeypatch):
 
     run(flow.do_verify())
 
+    assert flow.backup_code == [None] * 20
+    assert flow.decryption_password is None
+    assert flow.result is False
+
+
+@pytest.mark.parametrize(
+    ('error', 'message'),
+    (
+        (Error.OUT_OF_MEMORY_ERROR, 'Not enough memory to verify this backup.'),
+        (object(), 'Unable to verify backup.'),
+    ))
+def test_unexpected_and_out_of_memory_errors_are_terminal(monkeypatch, error, message):
+    flow, _spinner_calls, _task = load_flow(
+        monkeypatch, is_color=True, spinner_error=error)
+    flow.backup_file_path = '/backups/backup.7z'
+    flow.decryption_password = 'backup-code'
+    flow.backup_code = [1] * 20
+
+    run(flow.do_verify())
+
+    assert ErrorPage.shown == [{'text': message}]
     assert flow.backup_code == [None] * 20
     assert flow.decryption_password is None
     assert flow.result is False

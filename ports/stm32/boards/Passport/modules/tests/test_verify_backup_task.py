@@ -15,15 +15,15 @@ sys.path.insert(1, MODULES_DIR)
 from errors import Error
 
 
-def load_task(monkeypatch, contents=b'# Passport backup\n', error=None):
+def load_task(monkeypatch, error=None):
     calls = []
     backup_reader = types.ModuleType('backup_reader')
 
-    def read_backup_file(password, path):
+    def verify_backup_file(password, path):
         calls.append((password, path))
-        return contents, error
+        return error
 
-    backup_reader.read_backup_file = read_backup_file
+    backup_reader.verify_backup_file = verify_backup_file
     monkeypatch.setitem(sys.modules, 'backup_reader', backup_reader)
 
     spec = importlib.util.spec_from_file_location('verify_backup_task_under_test', TASK_PATH)
@@ -55,10 +55,11 @@ def test_each_reader_failure_reports_once(monkeypatch):
         Error.FILE_READ_ERROR,
         Error.INVALID_BACKUP_FILE_HEADER,
         Error.INVALID_BACKUP_CODE,
+        Error.OUT_OF_MEMORY_ERROR,
     )
 
     for error in errors:
-        task, _calls = load_task(monkeypatch, contents=None, error=error)
+        task, _calls = load_task(monkeypatch, error=error)
         assert run_task(task) == [error]
 
 

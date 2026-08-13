@@ -81,9 +81,15 @@ class VerifyBackupFlow(Flow):
             self.clear_backup_code()
             await ErrorPage(text='Unable to read backup file header. The backup may have been modified.').show()
             self.set_result(False)
+        elif error is Error.OUT_OF_MEMORY_ERROR:
+            self.clear_backup_code()
+            await ErrorPage(text='Not enough memory to verify this backup.').show()
+            self.set_result(False)
+        else:
+            self.clear_backup_code()
+            await ErrorPage(text='Unable to verify backup.').show()
+            self.set_result(False)
 
     def clear_backup_code(self):
-        for index in range(len(self.backup_code)):
-            self.backup_code[index] = None
         self.backup_code = [None] * TOTAL_BACKUP_CODE_DIGITS
         self.decryption_password = None

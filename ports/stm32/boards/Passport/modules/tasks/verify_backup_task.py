@@ -10,17 +10,9 @@
 # verify_backup_task.py - Task for verifying a backup from microSD.
 
 
-import gc
-
-from backup_reader import read_backup_file
+from backup_reader import verify_backup_file
 
 
 async def verify_backup_task(on_done, decryption_password, backup_file_path):
-    contents, error = read_backup_file(decryption_password, backup_file_path)
-
-    # Verification only needs the successful integrity result. Do not retain
-    # decrypted backup contents after the reader has validated them.
-    contents = None
-    gc.collect()
-
+    error = verify_backup_file(decryption_password, backup_file_path)
     await on_done(error)

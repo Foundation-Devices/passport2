@@ -14,12 +14,16 @@ CONTENTS = b'#' + (b'a' * 30) + b'\n'
 MAX_SIZE = 1024
 
 
-def expect_failure(operation):
+def expect_failure(expected_type, operation, expected_message=None):
     try:
         operation()
-    except Exception:
+    except expected_type as error:
+        if expected_message is not None:
+            assert expected_message in str(error)
         return
-    assert False
+    except Exception as error:
+        assert False, 'expected {}, got {}'.format(expected_type, type(error))
+    assert False, 'operation unexpectedly succeeded'
 
 
 def validate(archive, password=PASSWORD, max_size=MAX_SIZE):
@@ -39,23 +43,30 @@ archive = prefix + builder.body + footer
 filename, plaintext = validate(archive)
 assert filename == 'passport-backup.txt'
 assert plaintext == CONTENTS
+assert isinstance(plaintext, bytearray)
 
-expect_failure(lambda: validate(archive, password='0000-0000-0000-0000-0000'))
+expect_failure(
+    ValueError,
+    lambda: validate(archive, password='0000-0000-0000-0000-0000'),
+    'Wrong password given, or damaged file.')
 
 damaged_body = bytearray(archive)
 damaged_body[len(prefix) + 5] ^= 1
-expect_failure(lambda: validate(damaged_body))
+expect_failure(
+    ValueError,
+    lambda: validate(damaged_body),
+    'Wrong password given, or damaged file.')
 
 damaged_magic = bytearray(archive)
 damaged_magic[0] ^= 1
-expect_failure(lambda: validate(damaged_magic))
+expect_failure(ValueError, lambda: validate(damaged_magic), 'Bad magic bytes')
 
 aes_marker = b'\x24\x06\xf1\x07\x01'
 marker_offset = archive.find(aes_marker)
 assert marker_offset > len(prefix) + len(builder.body)
 damaged_metadata = bytearray(archive)
 damaged_metadata[marker_offset] ^= 1
-expect_failure(lambda: validate(damaged_metadata))
+expect_failure(ValueError, lambda: validate(damaged_metadata), 'Not marked as AES+SHA encrypted')
 
 for truncate_at in (
         0,
@@ -63,9 +74,16 @@ for truncate_at in (
         len(prefix) - 1,
         len(prefix) + len(builder.body) - 1,
         len(archive) - 1):
-    expect_failure(lambda: validate(archive[:truncate_at]))
+    expect_failure(ValueError, lambda: validate(archive[:truncate_at]))
 
-expect_failure(lambda: validate(archive, max_size=len(CONTENTS) - 1))
+expect_failure(
+    ValueError,
+    lambda: validate(archive[:-1]),
+    'Truncated file: got')
 
-if 'return_value' in globals():
-    return_value.write(b'OK')
+expect_failure(
+    AssertionError,
+    lambda: validate(archive, max_size=len(CONTENTS) - 1),
+    'too big')
+
+return_value.write(b'OK')
