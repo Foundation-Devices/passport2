@@ -9,7 +9,7 @@ SOURCES := test_grid_bounds.c \
 	$(QUIRC_DIR)/quirc.c \
 	$(QUIRC_DIR)/version_db.c
 
-CFLAGS += -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
+CFLAGS += -g -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
 CFLAGS += -fsanitize=address,undefined -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=address,undefined -lm
 

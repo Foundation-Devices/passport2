@@ -728,9 +728,9 @@ static int measure_timing_pattern(struct quirc *q, int index)
 	/* Choose the nearest allowable grid size */
 	size = scan * 2 + 13;
 	ver = (size - 15) / 4;
-	qr->grid_size = ver * 4 + 17;
-	if (qr->grid_size > QUIRC_MAX_GRID_SIZE)
+	if (ver < 1 || ver > QUIRC_MAX_VERSION)
 		return -1;
+	qr->grid_size = ver * 4 + 17;
 
 	return 0;
 }
@@ -1237,6 +1237,10 @@ void quirc_extract(const struct quirc *q, int index,
 	perspective_map(qr->c, 0.0, qr->grid_size, &code->corners[3]);
 
 	code->size = qr->grid_size;
+
+	/* Skip out early so as not to overrun the buffer. quirc_decode
+	 * will return an error on interpreting the code.
+	 */
 	if (code->size > QUIRC_MAX_GRID_SIZE)
 		return;
 
