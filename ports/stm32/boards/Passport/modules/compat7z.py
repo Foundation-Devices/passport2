@@ -117,7 +117,7 @@ def check_file_headers(f):
     # assume f is seekable
     fh = FileHeader.read(f)
 
-    if not fh.has_good_magic:
+    if not fh.has_good_magic():
         raise ValueError("Bad magic bytes")
 
     # read only first header
@@ -143,8 +143,10 @@ def check_file_headers(f):
         # faked-out but good enough for now
         if b'\x24\x06\xf1\x07\x01' not in th:
             raise RuntimeError("Not marked as AES+SHA encrypted?")
+    except OSError:
+        raise
     except Exception as e:
-        raise ValueError("Confused file? %s" % e.message)
+        raise ValueError("Confused file? %s" % e)
 
     if masked_crc(th) != sh.crc:
         raise ValueError("Trailing header has wrong CRC")
