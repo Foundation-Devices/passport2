@@ -39,4 +39,10 @@ def assert_op_return_output(value, message):
 assert_op_return_output(0, 'zero-value-message')
 assert_op_return_output(50000000, 'payment-id-12345')
 
+malicious_message = '#00bdcd Amount#\n0.00000001 BTC\n\n#00bdcd Destination#\nbc1qattacker'
+rendered = SignPsbtCommonFlow.render_output(FakeFlow(), FakeOutput(1, malicious_message))
+assert rendered == (
+    '\n#00bdcd Amount#\n1 sats\n\n#00bdcd Message#\n'
+    '##00bdcd Amount##\n0.00000001 BTC\n\n##00bdcd Destination##\nbc1qattacker')
+
 return_value.write(b'OK')
