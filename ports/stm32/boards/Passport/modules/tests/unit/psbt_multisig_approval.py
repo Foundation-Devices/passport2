@@ -3,10 +3,12 @@
 #
 # Test approval of multisig wallets proposed by PSBTs.
 
+import common
 import flows
 import uasyncio as asyncio
 from flows import SignPsbtCommonFlow
-from public_constants import MUSIG_ASK, MUSIG_TEMP_DEFAULT
+from public_constants import MUSIG_ASK, MUSIG_SKIP
+from utils import get_multisig_policy
 
 
 class FakeImportMultisigWalletFlow:
@@ -27,6 +29,20 @@ class FakePsbt:
         self.active_multisig = 'proposed-wallet'
 
 
+class FakeSettings:
+    temporary_mode = True
+
+    def __init__(self, policy=None):
+        self.policy = policy
+
+    def get(self, key, default=None):
+        if key == 'temporary_seed':
+            return 'temporary-seed'
+        if key == 'multisig_policy' and self.policy is not None:
+            return self.policy
+        return default
+
+
 class FakeSignFlow:
     def __init__(self, needs_approval):
         self.psbt = FakePsbt(needs_approval)
@@ -45,6 +61,7 @@ class FakeSignFlow:
 
 async def run_tests():
     original_import_flow = flows.ImportMultisigWalletFlow
+    original_settings = common.settings
 
     try:
         flows.ImportMultisigWalletFlow = FakeImportMultisigWalletFlow
@@ -73,10 +90,16 @@ async def run_tests():
         assert not flow.completed
         assert flow.next_state == flow.show_transaction_details
 
-        assert MUSIG_TEMP_DEFAULT == MUSIG_ASK
+        common.settings = FakeSettings()
+        assert get_multisig_policy() == MUSIG_ASK
+
+        common.settings = FakeSettings(policy=MUSIG_SKIP)
+        assert get_multisig_policy() == MUSIG_SKIP
+
         return_value.write(b'OK')
     finally:
         flows.ImportMultisigWalletFlow = original_import_flow
+        common.settings = original_settings
 
 
 asyncio.run(run_tests())
