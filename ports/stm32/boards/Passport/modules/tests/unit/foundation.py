@@ -39,6 +39,13 @@ digest = bytearray(32)
 foundation.sha256('this is the message', digest)
 assert digest == bytearray(b'\x131qZ\x1f\xfd\x04\xe6`\x04\x93\x1a\x8d\xbc6U\xebJR>\xd5\xece\xecm\x1c\xed\x93x+\xd3\xbd')  # nopep8
 
+raw_ur = foundation.ur.new_raw('crypto-hdkey', b'\xa0')
+foundation.ur.encoder_start(raw_ur, 535)
+assert foundation.ur.encoder_next_part().startswith('ur:crypto-hdkey/')
+
+bad_raw_ur = foundation.ur.new_raw('CRYPTO-HDKEY', b'\xa0')
+should_fail(lambda: foundation.ur.encoder_start(bad_raw_ur, 535))
+
 SAMPLE_HOR_RES = 10
 SAMPLE_VER_RES = 10
 SAMPLE_IMG = [0x04, 0x28, 0x40, 0x01, 0xfb, 0x05, 0xfa, 0x05, 0xfb, 0x05, 0xfa, 0x05,

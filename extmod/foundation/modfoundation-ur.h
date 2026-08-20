@@ -10,6 +10,7 @@
 /// package: foundation.ur
 
 STATIC const mp_obj_type_t mod_foundation_ur_Value_type;
+STATIC const mp_obj_type_t mod_foundation_ur_RawValue_type;
 STATIC const mp_obj_type_t mod_foundation_ur_CoinType_type;
 STATIC const mp_obj_type_t mod_foundation_ur_CoinInfo_type;
 STATIC const mp_obj_type_t mod_foundation_ur_Keypath_type;
@@ -176,6 +177,30 @@ STATIC const mp_obj_type_t mod_foundation_ur_Value_type = {
     .name = MP_QSTR_Value,
     .print = mod_foundation_ur_Value_print,
     .locals_dict = (mp_obj_dict_t *)&mod_foundation_ur_Value_locals_dict,
+};
+
+/// class RawValue:
+///     """
+///     A Uniform Resource whose payload is already CBOR encoded.
+///     """
+typedef struct _mp_obj_RawValue_t {
+    mp_obj_base_t base;
+    mp_obj_t ur_type;
+    mp_obj_t cbor;
+} mp_obj_RawValue_t;
+
+STATIC void mod_foundation_ur_RawValue_print(const mp_print_t *print,
+                                             mp_obj_t o_in,
+                                             mp_print_kind_t kind) {
+    (void)o_in;
+    (void)kind;
+    mp_print_str(print, "UR_RawValue");
+}
+
+STATIC const mp_obj_type_t mod_foundation_ur_RawValue_type = {
+    { &mp_type_type },
+    .name = MP_QSTR_RawValue,
+    .print = mod_foundation_ur_RawValue_print,
 };
 
 /// class CoinType:
@@ -346,6 +371,30 @@ STATIC mp_obj_t mod_foundation_ur_new_bytes(mp_obj_t data_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_new_bytes_obj,
                                  mod_foundation_ur_new_bytes);
+
+/// def new_raw(ur_type: str, cbor: bytes) -> RawValue:
+///     """
+///     Create a Uniform Resource from an already CBOR-encoded payload.
+///     """
+STATIC mp_obj_t mod_foundation_ur_new_raw(mp_obj_t ur_type_in,
+                                         mp_obj_t cbor_in)
+{
+    if (!mp_obj_is_str(ur_type_in)) {
+        mp_raise_msg(&mp_type_ValueError,
+                     MP_ERROR_TEXT("ur_type should be a string"));
+    }
+
+    mp_buffer_info_t cbor = {0};
+    mp_get_buffer_raise(cbor_in, &cbor, MP_BUFFER_READ);
+
+    mp_obj_RawValue_t *o = m_new_obj(mp_obj_RawValue_t);
+    o->base.type = &mod_foundation_ur_RawValue_type;
+    o->ur_type = ur_type_in;
+    o->cbor = cbor_in;
+    return MP_OBJ_FROM_PTR(o);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_foundation_ur_new_raw_obj,
+                                 mod_foundation_ur_new_raw);
 
 /// def new_derived_key(key_data=None,
 ///                     is_private=False,
@@ -519,14 +568,29 @@ STATIC mp_obj_t mod_foundation_ur_encoder_start(mp_obj_t value_in,
     mp_obj_Value_t *value = NULL;
     mp_int_t max_fragment_len = 0;
 
-    if (!mp_obj_is_type(value_in, &mod_foundation_ur_Value_type)) {
-        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("invalid type for value"));
-        return mp_const_none;
-    }
-
-    value = MP_OBJ_TO_PTR(value_in);
     max_fragment_len = mp_obj_int_get_uint_checked(max_fragment_len_in);
-    ur_encoder_start(&UR_ENCODER, &value->value, max_fragment_len);
+
+    if (mp_obj_is_type(value_in, &mod_foundation_ur_Value_type)) {
+        value = MP_OBJ_TO_PTR(value_in);
+        ur_encoder_start(&UR_ENCODER, &value->value, max_fragment_len);
+    } else if (mp_obj_is_type(value_in, &mod_foundation_ur_RawValue_type)) {
+        mp_obj_RawValue_t *raw = MP_OBJ_TO_PTR(value_in);
+        mp_buffer_info_t cbor = {0};
+        GET_STR_DATA_LEN(raw->ur_type, ur_type, ur_type_len);
+        mp_get_buffer_raise(raw->cbor, &cbor, MP_BUFFER_READ);
+
+        if (!ur_encoder_start_raw(&UR_ENCODER,
+                                  ur_type,
+                                  ur_type_len,
+                                  cbor.buf,
+                                  cbor.len,
+                                  max_fragment_len)) {
+            mp_raise_msg(&mp_type_ValueError,
+                         MP_ERROR_TEXT("invalid raw Uniform Resource"));
+        }
+    } else {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("invalid type for value"));
+    }
 
     return mp_const_none;
 }
@@ -683,6 +747,7 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_Keypath), MP_ROM_PTR(&mod_foundation_ur_Keypath_type)},
     {MP_ROM_QSTR(MP_QSTR_PassportRequest), MP_ROM_PTR(&mod_foundation_ur_PassportRequest_type)},
     {MP_ROM_QSTR(MP_QSTR_new_bytes), MP_ROM_PTR(&mod_foundation_ur_new_bytes_obj)},
+    {MP_ROM_QSTR(MP_QSTR_new_raw), MP_ROM_PTR(&mod_foundation_ur_new_raw_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_derived_key), MP_ROM_PTR(&mod_foundation_ur_new_derived_key_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_psbt), MP_ROM_PTR(&mod_foundation_ur_new_psbt_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_passport_response), MP_ROM_PTR(&mod_foundation_ur_new_passport_response_obj)},

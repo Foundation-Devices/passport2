@@ -3,7 +3,7 @@
 
 //! Encoder.
 
-use core::{ffi::c_char, fmt::Write, ptr};
+use core::{ffi::c_char, fmt::Write, ptr, slice, str};
 
 use foundation_ur::{max_fragment_len, HeaplessEncoder};
 use minicbor::{Encode, Encoder};
@@ -69,6 +69,12 @@ static mut UR_ENCODER_STRING: heapless::Vec<u8, UR_ENCODER_MAX_STRING> =
 static mut UR_ENCODER_MESSAGE: heapless::Vec<u8, UR_ENCODER_MAX_MESSAGE_LEN> =
     heapless::Vec::new();
 
+/// cbindgen:ignore
+#[used]
+#[cfg_attr(sram4, link_section = ".sram4")]
+static mut UR_ENCODER_TYPE: heapless::String<{ UR_MAX_TYPE.len() }> =
+    heapless::String::new();
+
 /// Uniform Resource encoder.
 pub struct UR_Encoder {
     inner: HeaplessEncoder<
@@ -119,6 +125,57 @@ pub unsafe extern "C" fn ur_encoder_start(
     );
 }
 
+/// Start the encoder with an already CBOR-encoded Uniform Resource.
+///
+/// # Safety
+///
+/// `ur_type` and `message` must be valid for reads of their respective
+/// lengths for the duration of this call.
+#[no_mangle]
+pub unsafe extern "C" fn ur_encoder_start_raw(
+    encoder: &mut UR_Encoder,
+    ur_type: *const u8,
+    ur_type_len: usize,
+    message: *const u8,
+    message_len: usize,
+    max_chars: usize,
+) -> bool {
+    let ur_type = unsafe { slice::from_raw_parts(ur_type, ur_type_len) };
+    let message = unsafe { slice::from_raw_parts(message, message_len) };
+
+    let Ok(ur_type) = str::from_utf8(ur_type) else {
+        return false;
+    };
+    if ur_type.is_empty()
+        || ur_type.len() > UR_MAX_TYPE.len()
+        || !ur_type
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+    {
+        return false;
+    }
+
+    let encoder_type = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_TYPE) };
+    encoder_type.clear();
+    if encoder_type.push_str(ur_type).is_err() {
+        return false;
+    }
+
+    let encoder_message =
+        unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_MESSAGE) };
+    encoder_message.clear();
+    if encoder_message.extend_from_slice(message).is_err() {
+        return false;
+    }
+
+    encoder.inner.start(
+        encoder_type.as_str(),
+        encoder_message,
+        max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
+    );
+    true
+}
+
 /// Returns the UR corresponding to the next fountain encoded part.
 ///
 /// # Safety
@@ -163,3 +220,33 @@ impl<'a, const N: usize> minicbor::encode::Write for Writer<'a, N> {
 
 #[derive(Debug)]
 struct EndOfSlice;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_encoder_preserves_the_ur_type() {
+        let ur_type = b"crypto-hdkey";
+        let message = b"\xa0";
+
+        unsafe {
+            let encoder = &mut *ptr::addr_of_mut!(UR_ENCODER);
+            assert!(ur_encoder_start_raw(
+                encoder,
+                ur_type.as_ptr(),
+                ur_type.len(),
+                message.as_ptr(),
+                message.len(),
+                UR_ENCODER_MAX_STRING,
+            ));
+
+            let mut encoded = ptr::null();
+            let mut encoded_len = 0;
+            ur_encoder_next_part(encoder, &mut encoded, &mut encoded_len);
+            let encoded =
+                slice::from_raw_parts(encoded as *const u8, encoded_len);
+            assert!(encoded.starts_with(b"ur:crypto-hdkey/"));
+        }
+    }
+}
