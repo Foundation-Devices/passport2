@@ -620,7 +620,8 @@ void ur_encoder_start(UR_Encoder *encoder,
  * # Safety
  *
  * `ur_type` and `message` must be valid for reads of their respective
- * lengths for the duration of this call.
+ * lengths for the duration of this call. The caller is responsible for
+ * ensuring that `message` contains well-formed CBOR.
  */
 bool ur_encoder_start_raw(UR_Encoder *encoder,
                           const uint8_t *ur_type,
@@ -634,8 +635,8 @@ bool ur_encoder_start_raw(UR_Encoder *encoder,
  *
  * # Safety
  *
- * This function must not be called if `ur_encoder_start` was not called to
- * start the encoder. Or if the data used to start the encoder is freed.
+ * `ur` and `ur_len` must be valid for writes. If the encoder has not been
+ * started successfully, this function returns an empty string.
  *
  * # Return Value
  *

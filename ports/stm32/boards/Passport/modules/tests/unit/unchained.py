@@ -29,6 +29,7 @@ expected = unhexlify(
     '021af23f9fd2'
     '0301'
     '081af23f9fd2')
+# This pins the required field order and canonical CBOR encodings.
 assert cbor == expected
 
 testnet_cbor = create_unchained_hdkey_cbor(public_key, chain_code, 0, 0, True)
