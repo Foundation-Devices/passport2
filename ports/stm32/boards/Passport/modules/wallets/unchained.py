@@ -93,7 +93,7 @@ def create_unchained_export(sw_wallet=None,
     chain = chains.current_chain()
     with stash.SensitiveValues() as sv:
         node = sv.derive_path("m/45'")
-        source_fingerprint = swab32(settings.get('xfp', 0))
+        source_fingerprint = swab32(settings.get('xfp'))
         cbor = create_unchained_hdkey_cbor(node.public_key(),
                                            node.chain_code(),
                                            source_fingerprint,
