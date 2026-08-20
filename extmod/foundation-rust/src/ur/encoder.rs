@@ -55,6 +55,7 @@ pub const UR_ENCODER_MAX_MESSAGE_LEN: usize = UR_DECODER_MAX_MESSAGE_LEN;
 #[cfg_attr(dtcm, link_section = ".dtcm")]
 pub static mut UR_ENCODER: UR_Encoder = UR_Encoder {
     inner: HeaplessEncoder::new(),
+    started: false,
 };
 
 /// cbindgen:ignore
@@ -83,6 +84,7 @@ pub struct UR_Encoder {
         UR_ENCODER_MAX_FRAGMENT_LEN,
         UR_ENCODER_MAX_SEQUENCE_COUNT,
     >,
+    started: bool,
 }
 
 /// Start the encoder.
@@ -123,6 +125,7 @@ pub unsafe extern "C" fn ur_encoder_start(
         message,
         max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );
+    encoder.started = true;
 }
 
 /// Start the encoder with an already CBOR-encoded Uniform Resource.
@@ -130,7 +133,8 @@ pub unsafe extern "C" fn ur_encoder_start(
 /// # Safety
 ///
 /// `ur_type` and `message` must be valid for reads of their respective
-/// lengths for the duration of this call.
+/// lengths for the duration of this call. The caller is responsible for
+/// ensuring that `message` contains well-formed CBOR.
 #[no_mangle]
 pub unsafe extern "C" fn ur_encoder_start_raw(
     encoder: &mut UR_Encoder,
@@ -140,6 +144,9 @@ pub unsafe extern "C" fn ur_encoder_start_raw(
     message_len: usize,
     max_chars: usize,
 ) -> bool {
+    // A rejected value must not leave the previously encoded UR available.
+    encoder.started = false;
+
     let ur_type = unsafe { slice::from_raw_parts(ur_type, ur_type_len) };
     let message = unsafe { slice::from_raw_parts(message, message_len) };
 
@@ -173,6 +180,7 @@ pub unsafe extern "C" fn ur_encoder_start_raw(
         encoder_message,
         max_fragment_len(UR_MAX_TYPE, usize::MAX, max_chars),
     );
+    encoder.started = true;
     true
 }
 
@@ -180,8 +188,8 @@ pub unsafe extern "C" fn ur_encoder_start_raw(
 ///
 /// # Safety
 ///
-/// This function must not be called if `ur_encoder_start` was not called to
-/// start the encoder. Or if the data used to start the encoder is freed.
+/// `ur` and `ur_len` must be valid for writes. If the encoder has not been
+/// started successfully, this function returns an empty string.
 ///
 /// # Return Value
 ///
@@ -197,6 +205,13 @@ pub unsafe extern "C" fn ur_encoder_next_part(
     ur: *mut *const c_char,
     ur_len: *mut usize,
 ) {
+    if !encoder.started {
+        static EMPTY: &[u8] = b"\0";
+        *ur = EMPTY.as_ptr() as *const c_char;
+        *ur_len = 0;
+        return;
+    }
+
     let part = encoder.inner.next_part();
 
     let buf = unsafe { &mut *ptr::addr_of_mut!(UR_ENCODER_STRING) };
@@ -224,9 +239,11 @@ struct EndOfSlice;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use foundation_ur::{HeaplessDecoder, UR};
 
     #[test]
     fn raw_encoder_preserves_the_ur_type() {
+        // Encoder FFI storage is process-global, so keep its lifecycle in one test.
         let ur_type = b"crypto-hdkey";
         let message = b"\xa0";
 
@@ -247,6 +264,28 @@ mod tests {
             let encoded =
                 slice::from_raw_parts(encoded as *const u8, encoded_len);
             assert!(encoded.starts_with(b"ur:crypto-hdkey/"));
+
+            let encoded = str::from_utf8(encoded).unwrap();
+            let ur = UR::parse(encoded).unwrap();
+            let mut decoder: HeaplessDecoder<16, 2, 32, 8, 8, 16> =
+                HeaplessDecoder::new();
+            decoder.receive(ur).unwrap();
+            assert!(decoder.is_complete());
+            assert_eq!(decoder.message().unwrap().unwrap(), message);
+
+            assert!(!ur_encoder_start_raw(
+                encoder,
+                b"CRYPTO-HDKEY".as_ptr(),
+                b"CRYPTO-HDKEY".len(),
+                message.as_ptr(),
+                message.len(),
+                UR_ENCODER_MAX_STRING,
+            ));
+
+            let mut encoded = ptr::null();
+            let mut encoded_len = usize::MAX;
+            ur_encoder_next_part(encoder, &mut encoded, &mut encoded_len);
+            assert_eq!(encoded_len, 0);
         }
     }
 }

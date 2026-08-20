@@ -10,7 +10,7 @@ from common import settings
 from data_codecs.qr_type import QRType
 from foundation import ur
 from public_constants import AF_P2SH
-from utils import xfp2str
+from utils import swab32
 
 from .multisig_import import read_multisig_config_from_microsd, read_multisig_config_from_qr
 from .multisig_json import create_multisig_json_wallet
@@ -43,6 +43,7 @@ def create_unchained_hdkey_cbor(public_key,
     assert len(chain_code) == 32
 
     result = bytearray()
+    # Keys 3, 4, 5, and 6 are required; key 8 is optional.
     result.append(0xa4 + int(parent_fingerprint != 0))
     result.extend(b'\x03\x58\x21')
     result.extend(public_key)
@@ -54,6 +55,7 @@ def create_unchained_hdkey_cbor(public_key,
     result.extend(b'\xa1\x02\x01' if is_testnet else b'\xa0')
 
     result.extend(b'\x06\xd9\x01\x30')  # crypto-keypath, tag 304
+    # Keys 1 and 3 are required; key 2 is optional.
     result.append(0xa2 + int(source_fingerprint != 0))
     result.extend(b'\x01\x82\x18\x2d\xf5')  # m/45'
     if source_fingerprint:
@@ -77,6 +79,8 @@ def create_unchained_export(sw_wallet=None,
                             qr_type=QRType.UR2):
     assert multisig
 
+    # Unchained's QR registration is BIP45-only. The Sparrow-style microSD
+    # export includes BIP45 plus nested and native BIP48 keys.
     if export_mode != 'qr':
         return create_multisig_json_wallet(sw_wallet=sw_wallet,
                                            addr_type=addr_type,
@@ -89,7 +93,7 @@ def create_unchained_export(sw_wallet=None,
     chain = chains.current_chain()
     with stash.SensitiveValues() as sv:
         node = sv.derive_path("m/45'")
-        source_fingerprint = int(xfp2str(settings.get('xfp')), 16)
+        source_fingerprint = swab32(settings.get('xfp', 0))
         cbor = create_unchained_hdkey_cbor(node.public_key(),
                                            node.chain_code(),
                                            source_fingerprint,
@@ -111,7 +115,6 @@ UnchainedWallet = {
     'export_modes': [
         {'id': 'qr', 'label': 'QR Code', 'qr_type': QRType.UR2},
         {'id': 'microsd', 'label': 'microSD',
-         'filename_pattern': '{xfp}-unchained.json',
          'filename_pattern_multisig': '{xfp}-unchained-multisig.json'}
     ]
 }
