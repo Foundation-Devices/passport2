@@ -306,9 +306,9 @@ def test_registry_preserves_settings_headroom():
         registry.save(make_policy())
 
 
-def test_policy_transport_round_trip_rediscovers_owned_key():
+def test_policy_transport_qr_bytes_round_trip_rediscovers_owned_key():
     policy = make_policy()
-    encoded = encode_policy_transport(policy)
+    encoded = bytearray(encode_policy_transport(policy).encode('utf-8'))
     decoded = decode_policy_transport(
         encoded, DerivationChain(),
         int.from_bytes(bytes.fromhex('6738736c'), 'little'),

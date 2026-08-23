@@ -69,7 +69,7 @@ def _network_mismatch_message(network):
 
 def decode_policy_transport(data, chain, master_xfp, derive_node,
                             default_name='Wallet Policy'):
-    if isinstance(data, bytes):
+    if isinstance(data, (bytes, bytearray)):
         try:
             data = data.decode('utf-8')
         except UnicodeError:
