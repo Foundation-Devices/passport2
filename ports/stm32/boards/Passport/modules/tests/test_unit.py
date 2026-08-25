@@ -26,3 +26,7 @@ def test_ui(test):
 
 def test_foundation(test):
     assert test('foundation.py') == b'OK'
+
+
+def test_unchained(test):
+    assert test('unchained.py') == b'OK'
