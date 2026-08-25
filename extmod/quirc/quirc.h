@@ -90,9 +90,16 @@ typedef enum {
 /* Return a string error message for an error code. */
 const char *quirc_strerror(quirc_decode_error_t err);
 
-/* Limits on the maximum size of QR-codes and their content. */
+/* Limits on the maximum size of QR-codes and their content.
+ *
+ * ISO/IEC 18004:2024, 5.1, defines QR Code versions 1 through 40. Version 1
+ * is 21 modules per side and each version adds four modules per side, so the
+ * Version 40 limit is 4 * 40 + 17 = 177 modules.
+ * https://www.qrcode.com/en/about/version.html/index.html
+ */
 #define QUIRC_MAX_VERSION	40
 #define QUIRC_MAX_GRID_SIZE	(QUIRC_MAX_VERSION * 4 + 17)
+/* One bit per module, rounded up to whole bytes: ceil(177 * 177 / 8) = 3917. */
 #define QUIRC_MAX_BITMAP	(((QUIRC_MAX_GRID_SIZE * QUIRC_MAX_GRID_SIZE) + 7) / 8)
 #define QUIRC_MAX_PAYLOAD	8896
 
