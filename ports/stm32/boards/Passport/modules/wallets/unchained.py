@@ -22,15 +22,15 @@ def _append_cbor_uint(result, value):
     if value < 24:
         result.append(value)
     elif value <= 0xff:
-        result.extend((0x18, value))
+        result.extend(bytes([0x18, value]))
     elif value <= 0xffff:
-        result.extend((0x19, value >> 8, value & 0xff))
+        result.extend(bytes([0x19, value >> 8, value & 0xff]))
     else:
-        result.extend((0x1a,
-                       (value >> 24) & 0xff,
-                       (value >> 16) & 0xff,
-                       (value >> 8) & 0xff,
-                       value & 0xff))
+        result.extend(bytes([0x1a,
+                             (value >> 24) & 0xff,
+                             (value >> 16) & 0xff,
+                             (value >> 8) & 0xff,
+                             value & 0xff]))
 
 
 def create_unchained_hdkey_cbor(public_key,
