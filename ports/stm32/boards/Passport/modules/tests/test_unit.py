@@ -34,3 +34,7 @@ def test_foundation(test):
 
 def test_psbt_amounts(test):
     assert test('psbt_amounts.py') == b'OK'
+
+
+def test_multisig_xpub_validation(test):
+    assert test('multisig_xpub_validation.py') == b'OK'
