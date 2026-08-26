@@ -46,6 +46,10 @@ async def sign_psbt_task(on_done, psbt):
                     # but in other cases, no more signatures are possible
                     continue
 
+                if not inp.is_multisig:
+                    assert not (inp.added_sig or inp.tap_key_sig), \
+                        "This transaction has already been signed"
+
                 txi.scriptSig = inp.scriptSig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
@@ -62,10 +66,6 @@ async def sign_psbt_task(on_done, psbt):
                                                           inp.amount, inp.scriptCode, inp.sighash)
 
                 node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
-
-                if not inp.is_multisig:
-                    assert not (inp.added_sig or inp.tap_key_sig), \
-                        "This transaction has already been signed"
 
                 # The precious private key we need
                 pk = node.private_key()

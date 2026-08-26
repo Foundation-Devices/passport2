@@ -22,6 +22,11 @@ P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
 MY_XFP = 0x12345678
 OWNED_PUBKEY = b'\x02' + (b'\x55' * 32)
 FORGED_PUBKEY = b'\x03' + (b'\x66' * 32)
+TAPROOT_PUBKEY = b'\x77' * 32
+DERIVED_PUBKEYS = {
+    'm/0': OWNED_PUBKEY,
+    'm/1': b'\x02' + TAPROOT_PUBKEY,
+}
 
 
 def psbt_field(key_type, value, key=b''):
@@ -80,9 +85,11 @@ class FakeTxIn:
 
 
 class FakeNode:
-    @staticmethod
-    def public_key():
-        return OWNED_PUBKEY
+    def __init__(self, public_key):
+        self._public_key = public_key
+
+    def public_key(self):
+        return self._public_key
 
 
 class FakeSensitiveValues:
@@ -93,10 +100,13 @@ class FakeSensitiveValues:
         pass
 
     @staticmethod
-    def derive_path(path, register=False):
-        assert path == 'm/0'
-        assert not register
-        return FakeNode()
+    def derive_path(path, register=True):
+        assert register
+        return FakeNode(DERIVED_PUBKEYS[path])
+
+
+class FakeSigningInput:
+    pass
 
 
 class FakeInputPSBT:
@@ -140,6 +150,36 @@ finally:
     stash.SensitiveValues = original_sensitive_values
 
 assert verified_amounts == [(2000, 0), (2000, 0)]
+
+multisig_input = FakeSigningInput()
+multisig_input.is_multisig = True
+multisig_input.required_key = {OWNED_PUBKEY}
+multisig_input.subpaths = {OWNED_PUBKEY: [MY_XFP, 0]}
+node, which_key = psbtInputProxy.get_signing_node(
+    multisig_input, FakeSensitiveValues(), MY_XFP, 0)
+assert node.public_key() == OWNED_PUBKEY
+assert which_key == OWNED_PUBKEY
+
+taproot_input = FakeSigningInput()
+taproot_input.is_multisig = False
+taproot_input.required_key = TAPROOT_PUBKEY
+taproot_input.subpaths = {}
+taproot_input.tap_subpaths = {TAPROOT_PUBKEY: ([MY_XFP, 1], [])}
+node, which_key = psbtInputProxy.get_signing_node(
+    taproot_input, FakeSensitiveValues(), MY_XFP, 0)
+assert node.public_key()[1:] == TAPROOT_PUBKEY
+assert which_key == TAPROOT_PUBKEY
+
+missing_path_input = FakeSigningInput()
+missing_path_input.is_multisig = False
+missing_path_input.required_key = OWNED_PUBKEY
+missing_path_input.subpaths = {}
+missing_path_input.tap_subpaths = {}
+assert_raises(
+    AssertionError,
+    lambda: psbtInputProxy.get_signing_node(
+        missing_path_input, FakeSensitiveValues(), MY_XFP, 0),
+)
 
 
 class FakeOutputProxy:

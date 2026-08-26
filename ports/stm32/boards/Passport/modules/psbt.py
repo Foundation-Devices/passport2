@@ -863,7 +863,7 @@ class psbtInputProxy(psbtProxy):
             # that Passport owns one of the public keys required by the script.
             for which_key in self.required_key:
                 skp = keypath_to_str(self.subpaths[which_key])
-                node = sv.derive_path(skp, register=False)
+                node = sv.derive_path(skp, register=True)
                 if node.public_key() == which_key:
                     return node, which_key
 
@@ -875,13 +875,13 @@ class psbtInputProxy(psbtProxy):
                 (self.subpaths[which_key][0] == my_xfp or
                  self.subpaths[which_key][0] == swab32(my_xfp)):
             skp = keypath_to_str(self.subpaths[which_key])
-            node = sv.derive_path(skp, register=False)
+            node = sv.derive_path(skp, register=True)
             pubkey = node.public_key()
         elif self.tap_subpaths and \
                 (self.tap_subpaths[which_key][0][0] == my_xfp or
                  self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
             skp = keypath_to_str(self.tap_subpaths[which_key][0])
-            node = sv.derive_path(skp, register=False)
+            node = sv.derive_path(skp, register=True)
             pubkey = node.public_key()[1:]
         else:
             raise AssertionError("Input #%d has no Passport signing path." % my_idx)
@@ -1445,6 +1445,7 @@ class psbtObject(psbtProxy):
         # Important: parse incoming UTXO to build total input value
         missing = 0
         total_in = 0
+        witness_inputs_to_verify = []
 
         for i, txi in self.input_iter():
             gc.collect()
@@ -1474,22 +1475,32 @@ class psbtObject(psbtProxy):
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
             if inp.witness_utxo and not inp.utxo:
+                # A false amount for an input we prove we sign makes our
+                # signature invalid, and the history cache catches changed
+                # amounts across attempts. Derivation proves the PSBT's
+                # ownership metadata before that argument is applied.
                 if inp.num_our_keys and inp.required_key:
-                    import stash
-                    with stash.SensitiveValues() as sv:
-                        inp.get_signing_node(sv, self.my_xfp, i)
+                    witness_inputs_to_verify.append(i)
                 else:
                     self.fee_is_verified = False
 
             gc.collect()
 
-            # iff to UTXO is segwit, then check it's value, and also
-            # capture that value, since it's supposed to be immutable
+            del utxo
+
+        if witness_inputs_to_verify:
+            import stash
+            with stash.SensitiveValues() as sv:
+                for i in witness_inputs_to_verify:
+                    self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+
+        # Only update the amount cache after all claimed owned inputs have
+        # proved their signing keys, so rejected metadata cannot be recorded.
+        for i, txi in self.input_iter():
+            inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
                 gc.collect()
-
-            del utxo
 
         gc.collect()
 
