@@ -11,6 +11,13 @@ jobs:
       - uses: actions/checkout@v6
       - uses: fsfe/reuse-action@v6
 
+  quirc-tests-pass:
+    name: quirc tests pass?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: make -C extmod/quirc/tests test
+
   rust-code-compiles:
     name: Rust code compiles?
     runs-on: ubuntu-latest

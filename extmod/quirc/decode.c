@@ -891,6 +891,9 @@ quirc_decode_error_t quirc_decode(const struct quirc_code *code,
 {
 	quirc_decode_error_t err;
 
+	if (code->size > QUIRC_MAX_GRID_SIZE)
+		return QUIRC_ERROR_INVALID_GRID_SIZE;
+
 	if ((code->size - 17) % 4)
 		return QUIRC_ERROR_INVALID_GRID_SIZE;
 

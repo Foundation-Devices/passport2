@@ -100,7 +100,6 @@ struct quirc {
  * QR-code version information database
  */
 
-#define QUIRC_MAX_VERSION     40
 #define QUIRC_MAX_ALIGNMENT   7
 
 struct quirc_rs_params {
