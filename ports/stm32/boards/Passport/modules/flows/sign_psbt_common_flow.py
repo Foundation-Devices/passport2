@@ -42,17 +42,14 @@ class SignPsbtCommonFlow(Flow):
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
-        from pages import ErrorPage
 
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
         if self.psbt.multisig_import_needs_approval:
             result = await ImportMultisigWalletFlow(self.psbt.active_multisig).run()
             if not result:
-                text = 'The transaction can still be signed, but this multisig config will not be saved.'
-                result2 = await ErrorPage(text=text, left_micron=microns.Back).show()
-                if not result2:
-                    return
+                self.set_result(None)
+                return
 
         self.goto(self.show_transaction_details)
 

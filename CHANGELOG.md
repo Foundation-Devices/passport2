@@ -5,6 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Require confirmation before using PSBT-proposed multisig wallets with temporary seeds,
+  and cancel signing if import is declined
 - Added Coconut Wallet as a single-sig Connect Wallet option
 - Improved self-send transaction information formatting (PASS1-638)
 - Added the key manager extension, compatible with BIP85 and Nostr (PASS1-24)
