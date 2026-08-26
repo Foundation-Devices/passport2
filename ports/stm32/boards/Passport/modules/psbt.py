@@ -17,7 +17,7 @@ import history
 import sys
 from sffile import SizerFile
 from passport import mem
-from public_constants import MAX_SIGNERS
+from public_constants import MAX_MONEY, MAX_SIGNERS
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
@@ -1004,7 +1004,12 @@ class psbtObject(psbtProxy):
 
             tx_out.deserialize(fd)
 
+            if not 0 <= tx_out.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for output #%d' % idx)
+
             total_out += tx_out.nValue
+            if total_out > MAX_MONEY:
+                raise FatalPSBTIssue('Total output amount exceeds maximum at output #%d' % idx)
 
             cont = fd.tell()
             yield idx, tx_out
@@ -1409,8 +1414,12 @@ class psbtObject(psbtProxy):
             # pull out just the CTXOut object (expensive)
             utxo = inp.get_utxo(txi.prevout.n)
 
-            assert utxo.nValue > 0
+            if not 0 < utxo.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for input #%d' % i)
+
             total_in += utxo.nValue
+            if total_in > MAX_MONEY:
+                raise FatalPSBTIssue('Total input amount exceeds maximum at input #%d' % i)
 
             # Look at what kind of input this will be, and therefore what
             # type of signing will be required, and which key we need.

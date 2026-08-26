@@ -13,6 +13,9 @@ except ImportError:
 
 from constants import PSBT_MAX_SIZE
 
+# Maximum number of satoshis permitted by Bitcoin consensus.
+MAX_MONEY = const(2100000000000000)
+
 # Seed phrase lengths accepted
 SEED_LENGTHS = [12, 24]
 SEED_WORD_LIST_LENGTH = const(2048)
