@@ -857,6 +857,40 @@ class psbtInputProxy(psbtProxy):
         # Could probably free self.subpaths and self.redeem_script now, but only if we didn't
         # need to re-serialize as a PSBT.
 
+    def get_signing_node(self, sv, my_xfp, my_idx):
+        if self.is_multisig:
+            # The fingerprint is only a hint. Derive each candidate to prove
+            # that Passport owns one of the public keys required by the script.
+            for which_key in self.required_key:
+                skp = keypath_to_str(self.subpaths[which_key])
+                node = sv.derive_path(skp, register=False)
+                if node.public_key() == which_key:
+                    return node, which_key
+
+            raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
+
+        which_key = self.required_key
+
+        if self.subpaths and \
+                (self.subpaths[which_key][0] == my_xfp or
+                 self.subpaths[which_key][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.subpaths[which_key])
+            node = sv.derive_path(skp, register=False)
+            pubkey = node.public_key()
+        elif self.tap_subpaths and \
+                (self.tap_subpaths[which_key][0][0] == my_xfp or
+                 self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.tap_subpaths[which_key][0])
+            node = sv.derive_path(skp, register=False)
+            pubkey = node.public_key()[1:]
+        else:
+            raise AssertionError("Input #%d has no Passport signing path." % my_idx)
+
+        if pubkey != which_key:
+            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, my_idx))
+
+        return node, which_key
+
     def store(self, kt, key, val):
         # Capture what we are interested in.
 
@@ -1439,11 +1473,13 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
-            # A false amount for an input we sign makes our signature invalid,
-            # and the history cache catches changed amounts across attempts.
-            if inp.witness_utxo and not inp.utxo and \
-                    not (inp.num_our_keys and inp.required_key):
-                self.fee_is_verified = False
+            if inp.witness_utxo and not inp.utxo:
+                if inp.num_our_keys and inp.required_key:
+                    import stash
+                    with stash.SensitiveValues() as sv:
+                        inp.get_signing_node(sv, self.my_xfp, i)
+                else:
+                    self.fee_is_verified = False
 
             gc.collect()
 

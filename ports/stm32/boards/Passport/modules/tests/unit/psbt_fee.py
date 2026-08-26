@@ -7,6 +7,7 @@ from uio import BytesIO
 from ustruct import pack
 
 import history
+import stash
 from flows.sign_psbt_common_flow import SignPsbtCommonFlow
 from psbt import psbtInputProxy, psbtObject
 from public_constants import (
@@ -20,7 +21,7 @@ from serializations import CTxOut, hash160, ser_compact_size
 P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
 MY_XFP = 0x12345678
 OWNED_PUBKEY = b'\x02' + (b'\x55' * 32)
-OWNED_SCRIPT = b'\x00\x14' + hash160(OWNED_PUBKEY)
+FORGED_PUBKEY = b'\x03' + (b'\x66' * 32)
 
 
 def psbt_field(key_type, value, key=b''):
@@ -41,10 +42,10 @@ def make_input(witness_txout, non_witness_txout=None):
     return psbtInputProxy(BytesIO(data + b'\x00'), 0)
 
 
-def make_owned_input():
-    txout = CTxOut(2000, OWNED_SCRIPT)
+def make_owned_input(pubkey=OWNED_PUBKEY):
+    txout = CTxOut(2000, b'\x00\x14' + hash160(pubkey))
     data = psbt_field(PSBT_IN_WITNESS_UTXO, txout.serialize())
-    data += psbt_field(PSBT_IN_BIP32_DERIVATION, pack('<II', MY_XFP, 0), OWNED_PUBKEY)
+    data += psbt_field(PSBT_IN_BIP32_DERIVATION, pack('<II', MY_XFP, 0), pubkey)
     return psbtInputProxy(BytesIO(data + b'\x00'), 0)
 
 
@@ -78,6 +79,26 @@ class FakeTxIn:
     prevout = FakePrevout()
 
 
+class FakeNode:
+    @staticmethod
+    def public_key():
+        return OWNED_PUBKEY
+
+
+class FakeSensitiveValues:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _exc_type, _exc, _traceback):
+        pass
+
+    @staticmethod
+    def derive_path(path, register=False):
+        assert path == 'm/0'
+        assert not register
+        return FakeNode()
+
+
 class FakeInputPSBT:
     def __init__(self, psbt_input, my_xfp=0):
         self.inputs = [psbt_input]
@@ -94,7 +115,9 @@ class FakeInputPSBT:
 
 verified_amounts = []
 original_verify_amount = history.verify_amount
+original_sensitive_values = stash.SensitiveValues
 history.verify_amount = lambda _prevout, amount, idx: verified_amounts.append((amount, idx))
+stash.SensitiveValues = FakeSensitiveValues
 try:
     external_input_psbt = FakeInputPSBT(make_input(CTxOut(2000, P2WPKH_SCRIPT)))
     psbtObject.consider_inputs(external_input_psbt)
@@ -107,8 +130,14 @@ try:
     assert owned_input_psbt.fee_is_verified
     assert owned_input.num_our_keys == 1
     assert owned_input.required_key == OWNED_PUBKEY
+
+    forged_input = make_owned_input(FORGED_PUBKEY)
+    forged_input.validate(0, FakeTxIn(), MY_XFP)
+    forged_input_psbt = FakeInputPSBT(forged_input, MY_XFP)
+    assert_raises(AssertionError, lambda: psbtObject.consider_inputs(forged_input_psbt))
 finally:
     history.verify_amount = original_verify_amount
+    stash.SensitiveValues = original_sensitive_values
 
 assert verified_amounts == [(2000, 0), (2000, 0)]
 

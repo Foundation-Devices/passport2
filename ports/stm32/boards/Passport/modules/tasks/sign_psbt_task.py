@@ -13,7 +13,6 @@
 async def sign_psbt_task(on_done, psbt):
     from exceptions import FraudulentChangeOutput, FatalPSBTIssue
     from errors import Error
-    from utils import keypath_to_str, swab32
     from serializations import ser_sig_der
     import stash
     import gc
@@ -62,51 +61,11 @@ async def sign_psbt_task(on_done, psbt):
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
                                                           inp.amount, inp.scriptCode, inp.sighash)
 
-                if inp.is_multisig:
-                    # need to consider a set of possible keys, since xfp may not be unique
-                    for which_key in inp.required_key:
-                        # get node required
-                        skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=False)
+                node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
 
-                        # expensive test, but works... and important
-                        pu = node.public_key()
-                        if pu == which_key:
-                            break
-                    else:
-                        raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % in_idx)
-
-                else:
-                    # single pubkey <=> single key
-                    which_key = inp.required_key
-
-                    assert not (inp.added_sig or inp.tap_key_sig), "This transaction has already been signed"
-
-                    if len(inp.subpaths) > 0 and \
-                        (inp.subpaths[which_key][0] == psbt.my_xfp or
-                         inp.subpaths[which_key][0] == swab32(psbt.my_xfp)):
-
-                        # get node required
-                        skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=False)
-
-                        # expensive test, but works... and important
-                        pu = node.public_key()
-
-                    # tap_subpaths have type ([path_elements], [tap_hashes])
-                    elif len(inp.tap_subpaths) > 0 and \
-                        (inp.tap_subpaths[which_key][0][0] == psbt.my_xfp or
-                         inp.tap_subpaths[which_key][0][0] == swab32(psbt.my_xfp)):
-
-                        # get node required
-                        skp = keypath_to_str(inp.tap_subpaths[which_key][0])
-                        node = sv.derive_path(skp, register=False)
-
-                        # expensive test, but works... and important
-                        pu = node.public_key()[1:]
-
-                    if pu != which_key:
-                        raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
+                if not inp.is_multisig:
+                    assert not (inp.added_sig or inp.tap_key_sig), \
+                        "This transaction has already been signed"
 
                 # The precious private key we need
                 pk = node.private_key()
