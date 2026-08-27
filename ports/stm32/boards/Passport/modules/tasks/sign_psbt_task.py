@@ -96,7 +96,7 @@ async def sign_psbt_task(on_done, psbt):
                 # private key no longer required
                 stash.blank_object(pk)
                 stash.blank_object(node)
-                del pk, node, pu, skp
+                del pk, node
 
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
