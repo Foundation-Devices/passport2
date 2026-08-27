@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Validate the complete local xpub when importing multisig wallets
 - Require confirmation before using PSBT-proposed multisig wallets with temporary seeds,
   and cancel signing if import is declined
 - Added Coconut Wallet as a single-sig Connect Wallet option

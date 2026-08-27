@@ -798,8 +798,9 @@ configured derivation path length = (%d).' % (xfp2str(xfp), p_len, depth)
             #   and that's not supported
             with stash.SensitiveValues() as sv:
                 chk_node = sv.derive_path(deriv)
-                assert node.public_key() == chk_node.public_key(), \
-                    "(m=%s)/%s wrong pubkey" % (xfp2str(xfp), deriv[2:])
+                assert node.public_key() == chk_node.public_key() and \
+                    node.chain_code() == chk_node.chain_code(), \
+                    "(m=%s)/%s wrong xpub" % (xfp2str(xfp), deriv[2:])
 
         # serialize xpub w/ BIP32 standard now.
         # - this has effect of stripping SLIP-132 confusion away
