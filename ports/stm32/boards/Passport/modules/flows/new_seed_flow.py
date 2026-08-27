@@ -7,7 +7,6 @@ from flows import Flow
 from pages import ErrorPage, QuestionPage, SuccessPage, YesNoChooserPage
 from tasks import new_seed_task, save_seed_task
 from utils import has_secrets, spinner_task
-from translations import t, T
 import lvgl as lv
 import microns
 

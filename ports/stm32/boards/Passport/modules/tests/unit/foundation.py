@@ -22,8 +22,8 @@ def should_fail(f):
 
 
 should_fail(lambda: foundation.qr.init())
-should_fail(lambda: foundation.qr.init(None, None, None))
-foundation.qr.init(HOR_RES, VER_RES, bytearray(HOR_RES * VER_RES))
+should_fail(lambda: foundation.qr.init(None, None))
+foundation.qr.init(HOR_RES, VER_RES)
 
 should_fail(lambda: foundation.convert_rgb565_to_grayscale())
 should_fail(lambda: foundation.convert_rgb565_to_grayscale(None, None, None, None))

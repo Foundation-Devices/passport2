@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: sudo apt-get install -y pycodestyle
-      - run: pycodestyle --statistics --exclude translations ports/stm32/boards/Passport
+      - run: pycodestyle --statistics ports/stm32/boards/Passport
 
   is-foundation-header-up-to-date:
     name: Is foundation.h header file up to date?

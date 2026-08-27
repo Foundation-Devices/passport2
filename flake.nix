@@ -125,9 +125,15 @@
               openssl
               pkg-config
               python3
-              python3Packages.pip
-              python3Packages.virtualenv
               python3Packages.autopep8
+              python3Packages.imageio
+              python3Packages.opencv4
+              python3Packages.pip
+              python3Packages.pillow
+              python3Packages.pytest
+              python3Packages.pysdl2
+              python3Packages.virtualenv
+              SDL2
               reuse
               rust-cbindgen
               xterm
@@ -145,7 +151,6 @@
               fontmiscmisc
               minicom
               openocd
-              SDL2
             ]);
 
 

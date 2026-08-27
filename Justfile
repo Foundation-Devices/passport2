@@ -72,7 +72,7 @@ sim screen="mono" ext="":
 # Run unit tests.
 test:
   just simulator/build color
-  cd ports/stm32/boards/Passport/modules/tests; python3 -m pytest . --simulatordir=$(pwd)/simulator
+  cd ports/stm32/boards/Passport/modules/tests && python3 -m pytest . --simulatordir=$(pwd)/../../../../../../simulator
 
 # Lint the codebase.
 lint: (run-in-docker "just ports/stm32/lint") (run-in-docker "just extmod/foundation-rust/lint")

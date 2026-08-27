@@ -4,6 +4,8 @@
 
 import pytest
 import os
+import signal
+import time
 
 
 class SimulatorSocket:
@@ -26,12 +28,21 @@ class SimulatorSocket:
         import tempfile
 
         self.pipe = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        deadline = time.monotonic() + 10
         while True:
             try:
                 self.pipe.connect(self.UNIX_SOCKET_PATH)
                 break
-            except Exception:
-                continue
+            except OSError:
+                if self.process.poll() is not None:
+                    raise RuntimeError(
+                        'Simulator exited before opening its socket '
+                        f'(exit code {self.process.returncode})'
+                    )
+                if time.monotonic() >= deadline:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                    raise TimeoutError('Simulator did not open its socket within 10 seconds')
+                time.sleep(0.01)
 
         while True:
             try:
@@ -46,8 +57,6 @@ class SimulatorSocket:
 
     # Close the connection and kill the simulator process.
     def close(self):
-        import signal
-
         self.pipe.close()
         os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
 
