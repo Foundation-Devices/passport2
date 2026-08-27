@@ -1528,25 +1528,42 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
-        no_keys = set(n for n, inp in enumerate(self.inputs)
-                      if inp.required_key is None and not inp.fully_signed)
+        locally_signed_multisig_inputs = set(
+            n for n, inp in enumerate(self.inputs)
+            if inp.is_multisig and inp.num_our_keys and
+            inp.required_key is None and not inp.fully_signed)
+        external_inputs = set(
+            n for n, inp in enumerate(self.inputs)
+            if inp.required_key is None and not inp.fully_signed and
+            n not in locally_signed_multisig_inputs)
+        presigned_local_inputs = set(
+            n for n in self.presigned_inputs if self.inputs[n].num_our_keys)
+        presigned_external_inputs = self.presigned_inputs - presigned_local_inputs
 
         gc.collect()
 
-        if no_keys:
-            # This is seen when you re-sign same signed file by accident (multisig)
-            # - case of len(no_keys)==num_inputs is handled by consider_keys
+        if external_inputs:
+            # Fully signed inputs are tracked separately in presigned_inputs.
+            # These inputs have no local signing key and belong to another participant.
+            self.warnings.append(
+                ('External Inputs',
+                 'Passport will not sign input(s) controlled by another wallet: ' +
+                 seq_to_str(external_inputs)))
+
+            gc.collect()
+
+        if locally_signed_multisig_inputs or presigned_local_inputs:
             self.warnings.append(
                 ('Already Signed',
                  'Passport has already signed this transaction. Other signatures are still required.'))
 
             gc.collect()
 
-        if self.presigned_inputs:
+        if presigned_external_inputs:
             # this isn't really even an issue for some complex usage cases
-            self.warnings.append(('Partially Signed Already',
-                                  'Some input(s) provided were already signed by other parties: ' +
-                                  seq_to_str(self.presigned_inputs)))
+            self.warnings.append(('Partially Signed',
+                                  'Some inputs provided were already signed by other parties: ' +
+                                  seq_to_str(presigned_external_inputs)))
             gc.collect()
 
     def calculate_fee(self):
