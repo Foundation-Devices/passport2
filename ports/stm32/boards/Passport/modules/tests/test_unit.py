@@ -24,6 +24,10 @@ def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
 
+def test_seedqr_codec(test):
+    assert test('seedqr_codec.py') == b'OK'
+
+
 def test_ui(test):
     assert test('ui.py') == b'OK'
 
