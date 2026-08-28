@@ -37,6 +37,7 @@ class FakeInput:
         self.num_our_keys = 1
         self.required_key = b'key'
         self.is_segwit = False
+        self.witness_utxo = False
 
     def has_utxo(self):
         return True

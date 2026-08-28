@@ -260,7 +260,9 @@ class SignPsbtCommonFlow(Flow):
             # gc.collect()
 
             fee = self.psbt.calculate_fee()
-            if fee is not None:
+            if not self.psbt.fee_is_verified:
+                msg.write('\n{}\nUnverified '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee')))
+            elif fee is not None:
                 amount, units = self.chain.render_value(fee)
                 msg.write('\n{}\n{} {} '.format(recolor(HIGHLIGHT_TEXT_HEX, 'Network Fee'), amount, units))
 

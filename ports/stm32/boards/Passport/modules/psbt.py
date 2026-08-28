@@ -643,19 +643,19 @@ class psbtInputProxy(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
+        witness_utxo = None
         if self.witness_utxo:
-            # Going forward? Just what we will witness; no other junk
-            # - prefer this format, altho does that imply segwit txn must be generated?
-            # - I don't know why we wouldn't always use this
-            # - once we use this partial utxo data, we must create witness data out
+            # Load the compact output. If the full previous transaction is also
+            # present, its hash-bound output is loaded below and must match.
             self.is_segwit = True
 
             fd.seek(self.witness_utxo[0])
-            utxo = CTxOut()
-            utxo.deserialize(fd)
-            fd.seek(old_pos)
+            witness_utxo = CTxOut()
+            witness_utxo.deserialize(fd)
 
-            return utxo
+            if not self.utxo:
+                fd.seek(old_pos)
+                return witness_utxo
 
         assert self.utxo, 'no utxo'
 
@@ -684,6 +684,11 @@ class psbtInputProxy(psbtProxy):
         # ... followed by more outs, and maybe witness data, but we don't care ...
 
         fd.seek(old_pos)
+
+        if witness_utxo:
+            assert witness_utxo.nValue == utxo.nValue and \
+                witness_utxo.scriptPubKey == utxo.scriptPubKey, \
+                "witness/non-witness UTXO mismatch for input #%d" % idx
 
         return utxo
 
@@ -852,6 +857,40 @@ class psbtInputProxy(psbtProxy):
         # Could probably free self.subpaths and self.redeem_script now, but only if we didn't
         # need to re-serialize as a PSBT.
 
+    def get_signing_node(self, sv, my_xfp, my_idx):
+        if self.is_multisig:
+            # The fingerprint is only a hint. Derive each candidate to prove
+            # that Passport owns one of the public keys required by the script.
+            for which_key in self.required_key:
+                skp = keypath_to_str(self.subpaths[which_key])
+                node = sv.derive_path(skp, register=True)
+                if node.public_key() == which_key:
+                    return node, which_key
+
+            raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
+
+        which_key = self.required_key
+
+        if self.subpaths and \
+                (self.subpaths[which_key][0] == my_xfp or
+                 self.subpaths[which_key][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.subpaths[which_key])
+            node = sv.derive_path(skp, register=True)
+            pubkey = node.public_key()
+        elif self.tap_subpaths and \
+                (self.tap_subpaths[which_key][0][0] == my_xfp or
+                 self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.tap_subpaths[which_key][0])
+            node = sv.derive_path(skp, register=True)
+            pubkey = node.public_key()[1:]
+        else:
+            raise AssertionError("Input #%d has no Passport signing path." % my_idx)
+
+        if pubkey != which_key:
+            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, my_idx))
+
+        return node, which_key
+
     def store(self, kt, key, val):
         # Capture what we are interested in.
 
@@ -957,6 +996,7 @@ class psbtObject(psbtProxy):
         self.lock_time = None
         self.total_value_out = None
         self.total_value_in = None
+        self.fee_is_verified = True
         self.presigned_inputs = set()
         self.multisig_import_needs_approval = False
         self.self_send = False
@@ -1269,15 +1309,21 @@ class psbtObject(psbtProxy):
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
         #       self.total_value_out, total_change))
         fee = self.calculate_fee()
+        per_fee = None
         if self.total_value_out == 0:
             per_fee = 100
         elif total_non_change_out == 0:
             self.self_send = True
-        else:
+        elif self.fee_is_verified:
             # Calculate fee based on non-change output value
             per_fee = (fee / total_non_change_out) * 100
 
-        if self.self_send:
+        if not self.fee_is_verified:
+            self.warnings.append(
+                ('Unverified Fee',
+                 'One or more input amounts were supplied by another wallet, '
+                 'so Passport cannot verify the network fee.'))
+        elif self.self_send:
             # self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
             per_fee = (fee / self.total_value_out) * 100
             if per_fee >= 5:
@@ -1399,6 +1445,7 @@ class psbtObject(psbtProxy):
         # Important: parse incoming UTXO to build total input value
         missing = 0
         total_in = 0
+        witness_inputs_to_verify = []
 
         for i, txi in self.input_iter():
             gc.collect()
@@ -1427,15 +1474,33 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            if inp.witness_utxo and not inp.utxo:
+                # A false amount for an input we prove we sign makes our
+                # signature invalid, and the history cache catches changed
+                # amounts across attempts. Derivation proves the PSBT's
+                # ownership metadata before that argument is applied.
+                if inp.num_our_keys and inp.required_key:
+                    witness_inputs_to_verify.append(i)
+                else:
+                    self.fee_is_verified = False
+
             gc.collect()
 
-            # iff to UTXO is segwit, then check it's value, and also
-            # capture that value, since it's supposed to be immutable
+            del utxo
+
+        if witness_inputs_to_verify:
+            import stash
+            with stash.SensitiveValues() as sv:
+                for i in witness_inputs_to_verify:
+                    self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+
+        # Only update the amount cache after all claimed owned inputs have
+        # proved their signing keys, so rejected metadata cannot be recorded.
+        for i, txi in self.input_iter():
+            inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
                 gc.collect()
-
-            del utxo
 
         gc.collect()
 
