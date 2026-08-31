@@ -1528,14 +1528,14 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
-        locally_signed_multisig_inputs = set(
-            n for n, inp in enumerate(self.inputs)
-            if inp.is_multisig and inp.num_our_keys and
-            inp.required_key is None and not inp.fully_signed)
-        external_inputs = set(
-            n for n, inp in enumerate(self.inputs)
-            if inp.required_key is None and not inp.fully_signed and
-            n not in locally_signed_multisig_inputs)
+        no_keys = set(n for n, inp in enumerate(self.inputs)
+                      if inp.required_key is None and not inp.fully_signed)
+        # A local fingerprint comes from the PSBT and does not prove Passport
+        # made an existing signature, but it distinguishes our partially signed
+        # inputs from inputs controlled entirely by another wallet. The case
+        # where every input is external is rejected later by consider_keys().
+        local_inputs = set(n for n in no_keys if self.inputs[n].num_our_keys)
+        external_inputs = no_keys - local_inputs
         presigned_local_inputs = set(
             n for n in self.presigned_inputs if self.inputs[n].num_our_keys)
         presigned_external_inputs = self.presigned_inputs - presigned_local_inputs
@@ -1547,15 +1547,17 @@ class psbtObject(psbtProxy):
             # These inputs have no local signing key and belong to another participant.
             self.warnings.append(
                 ('External Inputs',
-                 'Passport will not sign input(s) controlled by another wallet: ' +
+                 'Passport will not sign inputs controlled by another wallet: ' +
                  seq_to_str(external_inputs)))
 
             gc.collect()
 
-        if locally_signed_multisig_inputs or presigned_local_inputs:
+        if local_inputs or presigned_local_inputs:
             self.warnings.append(
-                ('Already Signed',
-                 'Passport has already signed this transaction. Other signatures are still required.'))
+                ('Partially Signed',
+                 'Some inputs associated with Passport are already signed. '
+                 'Other signatures are still required: ' +
+                 seq_to_str(local_inputs | presigned_local_inputs)))
 
             gc.collect()
 

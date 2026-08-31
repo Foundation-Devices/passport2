@@ -63,23 +63,39 @@ def warnings_for(inputs):
 
 
 assert warnings_for([FakeInput(True, 1)]) == [
-    ('Already Signed',
-     'Passport has already signed this transaction. Other signatures are still required.')]
+    ('Partially Signed',
+     'Some inputs associated with Passport are already signed. Other signatures are still required: 0')]
 
-assert warnings_for([FakeInput(False, 0)]) == [
-    ('External Inputs', 'Passport will not sign input(s) controlled by another wallet: 0')]
+assert warnings_for([FakeInput(False, 0), FakeInput(False, 0)]) == [
+    ('External Inputs', 'Passport will not sign inputs controlled by another wallet: 0, 1')]
 
 assert warnings_for([
     FakeInput(False, 1, fully_signed=True),
     FakeInput(False, 1, required_key=b'key'),
 ]) == [
-    ('Already Signed',
-     'Passport has already signed this transaction. Other signatures are still required.')]
+    ('Partially Signed',
+     'Some inputs associated with Passport are already signed. Other signatures are still required: 0')]
 
 assert warnings_for([
     FakeInput(False, 0, fully_signed=True),
     FakeInput(False, 1, required_key=b'key'),
 ]) == [
     ('Partially Signed', 'Some inputs provided were already signed by other parties: 0')]
+
+# A taproot input can have Passport derivation data but no required key when
+# it uses an unsupported script path. It must not be described as external.
+assert warnings_for([FakeInput(False, 1)]) == [
+    ('Partially Signed',
+     'Some inputs associated with Passport are already signed. Other signatures are still required: 0')]
+
+assert warnings_for([
+    FakeInput(False, 0),
+    FakeInput(False, 1),
+    FakeInput(False, 0, fully_signed=True),
+]) == [
+    ('External Inputs', 'Passport will not sign inputs controlled by another wallet: 0'),
+    ('Partially Signed',
+     'Some inputs associated with Passport are already signed. Other signatures are still required: 1'),
+    ('Partially Signed', 'Some inputs provided were already signed by other parties: 2')]
 
 return_value.write(b'OK')
