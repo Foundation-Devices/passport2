@@ -8,7 +8,6 @@ from flows import Flow
 from pages import ErrorPage, SuccessPage, QuestionPage, ErrorPage
 from tasks import delete_account_task
 from utils import spinner_task
-from translations import t, T
 
 
 class DeleteAccountFlow(Flow):
