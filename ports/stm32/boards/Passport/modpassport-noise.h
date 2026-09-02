@@ -6,6 +6,7 @@
 
 #include "adc.h"
 #include "noise.h"
+#include "pprng.h"
 #include "stm32h7xx_hal.h"
 
 /// package: passport
@@ -38,7 +39,7 @@ STATIC mp_obj_t mod_passport_Noise_make_new(const mp_obj_type_t* type,
 ///     directly as a tuple of two ints.
 ///     """
 STATIC mp_obj_t mod_passport_Noise_read(mp_obj_t self) {
-    HAL_StatusTypeDef ret   = 0;
+    int      ret            = 0;
     uint32_t noise1         = 0;
     uint32_t noise2         = 0;
     mp_obj_t tuple[2]       = {0};
@@ -67,7 +68,7 @@ STATIC mp_obj_t mod_passport_Noise_random_bytes(mp_obj_t self,
     sources = mp_obj_get_int(sources_obj);
 
     if (!noise_get_random_bytes(sources, buf_info.buf, buf_info.len)) {
-        return mp_const_false;
+        rng_fatal_error();
     }
 
     return mp_const_true;

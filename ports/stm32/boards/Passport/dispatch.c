@@ -74,8 +74,9 @@ int se_dispatch(
     // printf("se_dispatch() method_num=%d\n", method_num);
 
     // Random small delay to make cold-boot stepping attacks harder: 0 - 10,000us
-    uint32_t us_to_delay = rng_sample() % 10000;
-    delay_us(us_to_delay);
+    uint32_t us_to_delay = 0;
+    (void)rng_try_sample(&us_to_delay);
+    delay_us(us_to_delay % 10000);
 
     switch (method_num) {
         case CMD_IS_BRICKED:
