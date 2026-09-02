@@ -275,7 +275,7 @@ class SignPsbtCommonFlow(Flow):
             if self.psbt.warnings and len(self.psbt.warnings) > 0:
                 msg.write('\n\n{}'.format(recolor(HIGHLIGHT_TEXT_HEX, 'Warnings')))
                 for label, m in self.psbt.warnings:
-                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, label), m))
+                    msg.write('\n{}\n{}\n'.format(recolor(BLACK_HEX, escape_text(label)), escape_text(m)))
                     gc.collect()
 
             return msg.getvalue()
