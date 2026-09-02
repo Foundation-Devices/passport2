@@ -37,8 +37,19 @@ class SignPsbtCommonFlow(Flow):
         if error is not None:
             await ErrorPage(error_msg).show()
             self.set_result(None)
+        elif self.psbt.silent_payment_shares_only:
+            self.goto(self.export_silent_payment_shares)
         else:
             self.goto(self.check_multisig_import)
+
+    async def export_silent_payment_shares(self):
+        from pages import QuestionPage
+
+        result = await QuestionPage(
+            text=('Silent payment share data was added. More signer shares '
+                  'are required before signing. Export the updated PSBT?'),
+            right_micron=microns.Checkmark).show()
+        self.set_result(self.psbt if result else None)
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
@@ -77,7 +88,7 @@ class SignPsbtCommonFlow(Flow):
                 else:
                     outputs.write('\n')
 
-                outputs.write(self.render_output(tx_out))
+                outputs.write(self.render_output(tx_out, idx))
 
             gc.collect()
 
@@ -188,14 +199,24 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(self.psbt)
             # or in error self.set_result(None)
 
-    def render_output(self, o):
+    def render_output(self, o, output_index=None):
         # Pretty-print a transactions output.
         # - expects CTxOut object
         # - gives user-visible string
         #
 
         val = ' '.join(self.chain.render_value(o.nValue))
-        dest = self.chain.render_address(o.scriptPubKey)
+        dest = None
+        if output_index is not None:
+            psbt_output = self.psbt.outputs[output_index]
+            if psbt_output.sp_v0_info is not None:
+                from silent_payments import encode_address
+                info = psbt_output.get_sp_v0_info()
+                dest = encode_address(
+                    info[:33], info[33:],
+                    "sp" if self.chain.ctype == "BTC" else "tsp")
+        if dest is None:
+            dest = self.chain.render_address(o.scriptPubKey)
 
         if dest.startswith("OP_RETURN"):
             return '\n{}\n{}\n\n{}\n{}'.format(

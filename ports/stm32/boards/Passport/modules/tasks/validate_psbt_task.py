@@ -35,6 +35,14 @@ async def validate_psbt_task(on_done, psbt_len):
         gc.collect()
         psbt.consider_keys()
         gc.collect()
+        if psbt.has_silent_payment_outputs():
+            import stash
+            with stash.SensitiveValues() as sv:
+                outputs_ready = psbt.prepare_silent_payment_outputs(sv)
+            gc.collect()
+            if not outputs_ready:
+                await on_done(psbt, None, None)
+                return
         psbt.consider_outputs()
 
         # All went well!
