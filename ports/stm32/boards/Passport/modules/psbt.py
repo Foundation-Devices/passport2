@@ -432,15 +432,23 @@ class psbtOutputProxy(psbtProxy):
             expected_addr_type = expected_single_sig_addr_type(next(iter(self.subpaths.values())))
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
-            expected_addr_type = 'p2tr'
+            tap_path, _ = next(iter(self.tap_subpaths.values()))
+            expected_addr_type = expected_single_sig_addr_type(tap_path)
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
             expected_addr_type = None
 
+        if expect_pubkey and not expected_addr_type:
+            raise FraudulentChangeOutput(out_idx,
+                                         "Single-sig change output has an unsupported derivation path")
+
         if addr_type == 'p2pk':
             # output is public key (not a hash, much less common)
             assert len(addr_or_pubkey) == 33
+
+            if expected_addr_type != 'p2pk':
+                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
 
             if addr_or_pubkey != expect_pubkey:
                 raise FraudulentChangeOutput(out_idx, "P2PK change output is fraudulent")
