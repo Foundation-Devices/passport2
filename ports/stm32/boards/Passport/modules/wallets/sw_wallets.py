@@ -5,6 +5,7 @@
 #
 
 from .bitcoin_core import BitcoinCoreWallet
+from .bitcoin_safe import BitcoinSafeWallet
 from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
@@ -31,6 +32,7 @@ from .zeus import ZeusWallet
 supported_software_wallets = [
     EnvoyWallet,
     BitcoinCoreWallet,
+    BitcoinSafeWallet,
     KeeperWallet,
     BlueWallet,
     BtcPayWallet,
