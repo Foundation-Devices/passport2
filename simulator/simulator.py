@@ -459,11 +459,16 @@ def start():
         + sys.argv[1:]
     print('cc_cmd: {}'.format(passport_cmd))
 
-    xterm = subprocess.Popen(['xterm', '-title', 'Passport Simulator REPL',
-                              '-geom', '132x72+0+0', '-e'] + passport_cmd,
-                             env=env,
-                             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                             pass_fds=pass_fds, shell=False)
+    xterm = subprocess.Popen([
+        'xterm', '-title', 'Passport Simulator REPL', '-geom', '132x72+0+0',
+        '-xrm', 'XTerm*selectToClipboard: true',
+        '-xrm', 'XTerm*VT100*translations: #override\n'
+                'Ctrl Shift <Key>C: copy-selection(CLIPBOARD)\n'
+                'Ctrl Shift <Key>V: insert-selection(CLIPBOARD)',
+        '-e'] + passport_cmd,
+        env=env,
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        pass_fds=pass_fds, shell=False)
 
     print("COMMAND: " + " ".join(passport_cmd))
 
