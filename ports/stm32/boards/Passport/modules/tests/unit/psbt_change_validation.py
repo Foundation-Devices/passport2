@@ -19,6 +19,7 @@ ACCOUNT_0 = 0x80000000
 PUBKEY = b'\x02' + (b'\x11' * 32)
 TAP_PUBKEY = b'\x33' * 32
 PUBKEY_HASH = hash160(PUBKEY)
+P2PK_SCRIPT = b'\x21' + PUBKEY + b'\xac'
 REDEEM_SCRIPT = b'\x00\x14' + PUBKEY_HASH
 GOOD_P2SH = b'\xa9\x14' + hash160(REDEEM_SCRIPT) + b'\x87'
 BAD_P2SH = b'\xa9\x14' + (b'\x22' * 20) + b'\x87'
@@ -29,6 +30,8 @@ BIP84_INPUT_SUBPATH = [MY_XFP, PURPOSE_84, COIN_0, ACCOUNT_0, 0, 3]
 BIP84_CHANGE_SUBPATH = [MY_XFP, PURPOSE_84, COIN_0, ACCOUNT_0, 1, 7]
 BIP86_INPUT_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 0, 9]
 BIP86_CHANGE_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 1, 8]
+BIP84_SHORT_SUBPATH = [MY_XFP, PURPOSE_84]
+BIP_UNKNOWN_SUBPATH = [MY_XFP, 0x80000000 | 123, COIN_0, ACCOUNT_0, 1, 7]
 
 
 class FakeOutput:
@@ -59,6 +62,15 @@ def must_fail(script_pubkey):
         return
 
     raise RuntimeError('expected FraudulentChangeOutput')
+
+
+def validate_must_fail(output, message='expected FraudulentChangeOutput'):
+    try:
+        output.validate(0, output._txo, MY_XFP, None)
+    except FraudulentChangeOutput:
+        return
+
+    raise RuntimeError(message)
 
 
 class FakeInput:
@@ -96,6 +108,17 @@ assert valid.is_change is True
 
 must_fail(BAD_P2SH)
 must_fail(NATIVE_P2WPKH)
+
+# A standard single-sig derivation must not be classified as raw P2PK change.
+validate_must_fail(FakeOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH}))
+
+# Taproot metadata is only valid for a BIP86-derived P2TR output.
+validate_must_fail(FakeOutput(TAPROOT_SCRIPT,
+                              tap_subpaths={TAP_PUBKEY: (BIP84_CHANGE_SUBPATH, [])}))
+
+# A single-sig path without a recognized full account derivation is not safe to classify.
+validate_must_fail(FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_SHORT_SUBPATH}))
+validate_must_fail(FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP_UNKNOWN_SUBPATH}))
 
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
