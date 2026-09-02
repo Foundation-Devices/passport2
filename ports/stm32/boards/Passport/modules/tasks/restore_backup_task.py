@@ -20,6 +20,20 @@ from errors import Error
 from constants import MAX_BACKUP_FILE_SIZE
 from pincodes import SE_SECRET_LEN
 
+NON_RESTORABLE_BACKUP_SETTINGS = ('bip39_passphrase', 'root_xfp', 'xfp', 'xpub')
+
+
+def restore_settings_from_backup(vals, settings):
+    for k in vals:
+        if not k.startswith('setting.'):
+            continue
+
+        setting_key = k[8:]
+        if setting_key in NON_RESTORABLE_BACKUP_SETTINGS:
+            continue
+
+        settings.set(setting_key, vals[k])
+
 
 async def restore_backup_task(on_done, decryption_password, backup_file_path):
     from common import pa, settings
@@ -114,17 +128,15 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
     await pa.new_main_secret(raw, chain)
 
     # Finally, restore the settings
-    for idx, k in enumerate(vals):
-        if not k.startswith('setting.'):
-            continue
-
-        if k == 'xfp' or k == 'xpub':
-            continue
-
-        settings.set(k[8:], vals[k])
+    restore_settings_from_backup(vals, settings)
 
     # This would be true in the old backup, but false for this new device
     settings.set('backup_quiz', False)
+
+    # Wallet identity metadata is derived from the restored secret, never trusted from the backup.
+    with stash.SensitiveValues(raw) as sv:
+        sv.chain = chain
+        sv.capture_xpub(save=True)
 
     # Success!
     await on_done(None)
