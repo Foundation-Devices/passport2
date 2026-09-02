@@ -91,6 +91,9 @@ STATIC void mod_foundation_ur_Value_print(const mp_print_t *print,
         case HDKey:
             mp_print_str(print, "UR_Value::HDKey");
             break;
+        case CryptoAccount:
+            mp_print_str(print, "UR_Value::CryptoAccount");
+            break;
         case Psbt:
             mp_print_str(print, "UR_Value::Psbt");
             break;
@@ -427,6 +430,67 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_foundation_ur_new_derived_key_obj,
                                   1,
                                   mod_foundation_ur_new_derived_key);
 
+/// def new_crypto_account(root_key_data,
+///                        root_chain_code,
+///                        casa_key_data,
+///                        casa_chain_code,
+///                        master_fingerprint,
+///                        network) -> Value:
+///     """
+///     Create Casa's two-key wallet-registration payload.
+///     """
+STATIC mp_obj_t mod_foundation_ur_new_crypto_account(size_t n_args,
+                                                     const mp_obj_t *pos_args,
+                                                     mp_map_t *kw_args)
+{
+    mp_buffer_info_t root_key_data = {0};
+    mp_buffer_info_t root_chain_code = {0};
+    mp_buffer_info_t casa_key_data = {0};
+    mp_buffer_info_t casa_chain_code = {0};
+    UR_Value value = {0};
+
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_root_key_data,      MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_root_chain_code,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_casa_key_data,      MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_casa_chain_code,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_master_fingerprint, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_network,            MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args,
+                     MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_get_buffer_raise(args[0].u_obj, &root_key_data, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[1].u_obj, &root_chain_code, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[2].u_obj, &casa_key_data, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[3].u_obj, &casa_chain_code, MP_BUFFER_READ);
+
+    if (root_key_data.len != 33 || casa_key_data.len != 33) {
+        mp_raise_msg(&mp_type_ValueError,
+                     MP_ERROR_TEXT("key data should be 33 bytes"));
+    }
+    if (root_chain_code.len != 32 || casa_chain_code.len != 32) {
+        mp_raise_msg(&mp_type_ValueError,
+                     MP_ERROR_TEXT("chain code should be 32 bytes"));
+    }
+
+    ur_registry_new_crypto_account(
+        &value,
+        root_key_data.buf,
+        root_chain_code.buf,
+        casa_key_data.buf,
+        casa_chain_code.buf,
+        mp_obj_int_get_uint_checked(args[4].u_obj),
+        mp_obj_int_get_uint_checked(args[5].u_obj));
+
+    return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_foundation_ur_new_crypto_account_obj,
+                                  4,
+                                  mod_foundation_ur_new_crypto_account);
+
 /// def new_psbt(data: bytes) -> Value:
 ///     """
 ///     """
@@ -684,6 +748,7 @@ STATIC const mp_rom_map_elem_t mod_foundation_ur_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_PassportRequest), MP_ROM_PTR(&mod_foundation_ur_PassportRequest_type)},
     {MP_ROM_QSTR(MP_QSTR_new_bytes), MP_ROM_PTR(&mod_foundation_ur_new_bytes_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_derived_key), MP_ROM_PTR(&mod_foundation_ur_new_derived_key_obj)},
+    {MP_ROM_QSTR(MP_QSTR_new_crypto_account), MP_ROM_PTR(&mod_foundation_ur_new_crypto_account_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_psbt), MP_ROM_PTR(&mod_foundation_ur_new_psbt_obj)},
     {MP_ROM_QSTR(MP_QSTR_new_passport_response), MP_ROM_PTR(&mod_foundation_ur_new_passport_response_obj)},
 
