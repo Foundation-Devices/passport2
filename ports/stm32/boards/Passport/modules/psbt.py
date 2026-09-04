@@ -17,8 +17,11 @@ import history
 import sys
 from sffile import SizerFile
 from passport import mem
-from public_constants import MAX_MONEY, MAX_SIGNERS
+from public_constants import (
+    MAX_MONEY, MAX_SIGNERS, AF_CLASSIC, AF_P2WPKH_P2SH, AF_P2WPKH, AF_P2TR
+)
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
+from wallets.utils import get_addr_type_from_bip_numbers
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
@@ -53,24 +56,14 @@ def purpose_mismatch_allowed(purpose):
     return (purpose & 0x7fffffff) in [84, 86]
 
 
-def expected_single_sig_addr_type(subpath):
-    # Map the derivation purpose in a single-sig BIP32 path to the script family
-    # the change output must use.
+def expected_single_sig_addr_format(subpath):
+    # Only standard full single-sig derivations have a script-family policy.
+    # Custom and incomplete paths remain visible outputs rather than aborting a
+    # signing operation merely because they cannot be classified as change.
     if not subpath or len(subpath) < 6:
         return None
 
-    purpose = subpath[1] & 0x7fffffff
-
-    if purpose == 44:
-        return 'p2pkh'
-    if purpose == 49:
-        return 'p2sh-p2wpkh'
-    if purpose == 84:
-        return 'p2wpkh'
-    if purpose == 86:
-        return 'p2tr'
-
-    return None
+    return get_addr_type_from_bip_numbers(subpath[1] & 0x7fffffff)
 
 
 def _skip_n_objs(fd, n, cls):
@@ -429,31 +422,25 @@ class psbtOutputProxy(psbtProxy):
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
-            expected_addr_type = expected_single_sig_addr_type(next(iter(self.subpaths.values())))
+            expected_addr_format = expected_single_sig_addr_format(next(iter(self.subpaths.values())))
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
             tap_path, _ = next(iter(self.tap_subpaths.values()))
-            expected_addr_type = expected_single_sig_addr_type(tap_path)
+            expected_addr_format = expected_single_sig_addr_format(tap_path)
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
-            expected_addr_type = None
+            expected_addr_format = None
 
-        if expect_pubkey and not expected_addr_type:
-            raise FraudulentChangeOutput(out_idx,
-                                         "Single-sig change output has an unsupported derivation path")
+        if expect_pubkey and not expected_addr_format:
+            # We cannot determine a script-family policy for this metadata.
+            # Do not hide the output as change, but preserve compatibility with
+            # custom derivation schemes by presenting it to the user.
+            return
 
         if addr_type == 'p2pk':
-            # output is public key (not a hash, much less common)
-            assert len(addr_or_pubkey) == 33
-
-            if expected_addr_type != 'p2pk':
-                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
-
-            if addr_or_pubkey != expect_pubkey:
-                raise FraudulentChangeOutput(out_idx, "P2PK change output is fraudulent")
-
-            self.is_change = True
+            # Raw P2PK does not have a supported single-sig derivation policy.
+            # Keep it visible instead of classifying it as change.
             return
 
         # Figure out what the hashed addr should be
@@ -476,7 +463,7 @@ class psbtOutputProxy(psbtProxy):
                     redeem_script[0] == 0 and redeem_script[1] == 20:
 
                 # it's actually segwit p2pkh inside p2sh
-                if expected_addr_type and expected_addr_type != 'p2sh-p2wpkh':
+                if expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH:
                     raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
 
                 expect_redeem_script = b'\x00\x14' + hash160(expect_pubkey)
@@ -543,13 +530,13 @@ class psbtOutputProxy(psbtProxy):
             # input is hash160 of a single public key
             assert len(addr_or_pubkey) == 20
 
-            actual_addr_type = 'p2wpkh' if is_segwit else 'p2pkh'
-            if expected_addr_type and actual_addr_type != expected_addr_type:
+            actual_addr_format = AF_P2WPKH if is_segwit else AF_CLASSIC
+            if expected_addr_format and actual_addr_format != expected_addr_format:
                 raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
 
             expect_pkh = hash160(expect_pubkey)
         elif addr_type == 'p2tr':
-            if expected_addr_type and expected_addr_type != 'p2tr':
+            if expected_addr_format and expected_addr_format != AF_P2TR:
                 raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
             expect_pkh = output_script(expect_pubkey, None)[2:]
         else:

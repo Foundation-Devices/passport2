@@ -109,16 +109,22 @@ assert valid.is_change is True
 must_fail(BAD_P2SH)
 must_fail(NATIVE_P2WPKH)
 
-# A standard single-sig derivation must not be classified as raw P2PK change.
-validate_must_fail(FakeOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH}))
+# Raw P2PK outputs and unknown derivations remain visible rather than being
+# treated as change or aborting a signing operation.
+raw_p2pk = FakeOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+raw_p2pk.validate(0, raw_p2pk._txo, MY_XFP, None)
+assert raw_p2pk.is_change is False
 
 # Taproot metadata is only valid for a BIP86-derived P2TR output.
 validate_must_fail(FakeOutput(TAPROOT_SCRIPT,
                               tap_subpaths={TAP_PUBKEY: (BIP84_CHANGE_SUBPATH, [])}))
 
-# A single-sig path without a recognized full account derivation is not safe to classify.
-validate_must_fail(FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_SHORT_SUBPATH}))
-validate_must_fail(FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP_UNKNOWN_SUBPATH}))
+# A single-sig path without a recognized full account derivation is not safe to
+# classify as change, but should not prevent signing.
+for path in (BIP84_SHORT_SUBPATH, BIP_UNKNOWN_SUBPATH):
+    unsupported_path = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: path})
+    unsupported_path.validate(0, unsupported_path._txo, MY_XFP, None)
+    assert unsupported_path.is_change is False
 
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
