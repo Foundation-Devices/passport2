@@ -8,6 +8,8 @@ from exceptions import FraudulentChangeOutput
 from psbt import psbtObject, psbtOutputProxy
 from serializations import CTxOut, hash160
 from taproot import output_script
+from ubinascii import a2b_base64
+from uio import BytesIO
 
 
 MY_XFP = 0x12345678
@@ -32,6 +34,44 @@ BIP86_INPUT_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 0, 9]
 BIP86_CHANGE_SUBPATH = [MY_XFP, PURPOSE_86, COIN_0, ACCOUNT_0, 1, 8]
 BIP84_SHORT_SUBPATH = [MY_XFP, PURPOSE_84]
 BIP_UNKNOWN_SUBPATH = [MY_XFP, 0x80000000 | 123, COIN_0, ACCOUNT_0, 1, 7]
+FIXTURE_XFP = 0xb869bcc3
+
+# Derived from Downloads/simple test.psbt. The change output has BIP49 metadata
+# and a redeem script for its supplied pubkey, but its transaction output uses
+# an unrelated P2SH hash. This is the serialized form of the original exploit.
+MALICIOUS_NESTED_P2SH_PSBT = (
+    b'cHNidP8BAH4CAAAAAcXykgEKm0x7fbEPBIjbsrMVsBEofOcYRx3GowB5MPCqA'
+    b'AAAAAAD9////AgQjaQgAAAAAF6kUIiIiIiIiIiIiIiIiIiIiIiIiIiKHECcAAAAA'
+    b'AAAAACJRIPFdIHVbwHNjET7D4EGuu9dPK7uj6nVGcp3R7uELUEL6XEcCAE8BBDW'
+    b'HzwR9QhRLgAAAApY2PuF86Li3yJI/vhLwk5RT+W1Ty8wXKDx5oooLtq76A6NIHq3'
+    b'hdZr9YEI4SAYHC+VeWZDtvps7IqhAbrP6NcjoFMO8abgwAACAAQAAgAAAAIACAAC'
+    b'AAAEBH2BKaQgAAAAAFgAU+XgaNYKLwIKFRUKWVhRJudara58BAwQBAAAAIgYDM4ay'
+    b'sG88IJkJFt/MiEOuNY4TSEQM/+7fAq6THXtElGcYw7xpuFQAAIABAACAAAAAgAEAA'
+    b'AAzAAAAAAEAFgAUbUQoa2KOGvP0RSxkIhJJHnPLK5oiAgP+2zYNOdR0oGJVANlG7'
+    b'9sbTVTXOEs5jnE5Jej4ubq5RhjDvGm4MQAAgAEAAIAAAACAAQAAADQAAAAAAA=='
+)
+
+# Copied from Downloads/multi test.psbt. It carries a two-key BIP48 P2WSH
+# change output and exercises parsing plus the multisig branch below.
+MULTISIG_P2WSH_PSBT = (
+    b'cHNidP8BAIkCAAAAAS/EqSBbfiU+7WIjuoOea/AkgaxM4s1b6s5gcTBsez7JAQAA'
+    b'AAD9////Ar2fBQAAAAAAIgAgVeWwnnwasyzcZ9OkPne1JCzunSCZqWIhKXvAHxtH'
+    b'qf4QJwAAAAAAACJRIPFdIHVbwHNjET7D4EGuu9dPK7uj6nVGcp3R7uELUEL6XEcC'
+    b'AE8BBDWHzwR9QhRLgAAAApY2PuF86Li3yJI/vhLwk5RT+W1Ty8wXKDx5oooLtq76A'
+    b'6NIHq3hdZr9YEI4SAYHC+VeWZDtvps7IqhAbrP6NcjoFMO8abgwAACAAQAAgAAAAI'
+    b'ACAACATwEENYfPBOwQMsiAAAAC8y5GCAkNO45rMKWtKqzQFO90Cq2TIab1psvSQqV'
+    b'UWx8CdpoLvP0no4RD5epSrL5sMutgWpAA1vsT2HvWkDv8YaUUnhicgDAAAIABAACA'
+    b'AAAAgAIAAIAAAQErLMcFAAAAAAAiACB3W9tVXqP3G/HJzv5+dSF7HMYOTfL2C2XgGi'
+    b'fqyvxVjwEDBAEAAAABBUdSIQIWA3WTnV674NNf3kcn5NzJQtNPiLwD6Xe3DvaF8u'
+    b'qPGiED/AWPb/HtLOS+lDKZC+FdR9HIHkIwowHBhivTE3s0uEpSriIGA/wFj2/x7S'
+    b'zkvpQymQvhXUfRyB5CMKMBwYYr0xN7NLhKHMO8abgwAACAAQAAgAAAAIACAACAAQ'
+    b'AAAAIAAAAiBgIWA3WTnV674NNf3kcn5NzJQtNPiLwD6Xe3DvaF8uqPGhyeGJyAMAA'
+    b'AgAEAAIAAAACAAgAAgAEAAAACAAAAAAEBR1IhA14ZHfXf3YgB81aOCoPxzCTKyXMm'
+    b'iOiVPOGVjJhYXJL4IQPcDvtfqsnpn2PLU+atZK+HZdaBIc+0YBRZ83U6z/WHklKuI'
+    b'gID3A77X6rJ6Z9jy1PmrWSvh2XWgSHPtGAUWfN1Os/1h5Icw7xpuDAAAIABAACAAA'
+    b'AAgAIAAIABAAAAAwAAACICA14ZHfXf3YgB81aOCoPxzCTKyXMmiOiVPOGVjJhYXJL4'
+    b'HJ4YnIAwAACAAQAAgAAAAIACAACAAQAAAAMAAAAAAA=='
+)
 
 
 class FakeOutput:
@@ -64,13 +104,22 @@ def must_fail(script_pubkey):
     raise RuntimeError('expected FraudulentChangeOutput')
 
 
-def validate_must_fail(output, message='expected FraudulentChangeOutput'):
+def validate_must_fail(output, message='expected FraudulentChangeOutput', txo=None, my_xfp=MY_XFP):
     try:
-        output.validate(0, output._txo, MY_XFP, None)
+        output.validate(0, txo or output._txo, my_xfp, None)
     except FraudulentChangeOutput:
         return
 
     raise RuntimeError(message)
+
+
+def fixture_output(encoded_psbt, output_idx=0):
+    psbt = psbtObject.read_psbt(BytesIO(a2b_base64(encoded_psbt)))
+    psbt.my_xfp = FIXTURE_XFP
+    for idx, txo in psbt.output_iter():
+        if idx == output_idx:
+            return psbt, psbt.outputs[idx], txo
+    raise RuntimeError('fixture does not have the expected output')
 
 
 class FakeInput:
@@ -109,6 +158,12 @@ assert valid.is_change is True
 must_fail(BAD_P2SH)
 must_fail(NATIVE_P2WPKH)
 
+# The serialized exploit must fail after normal PSBT parsing, not merely when
+# validate() is called against a hand-built output proxy.
+_, malicious_output, malicious_txo = fixture_output(MALICIOUS_NESTED_P2SH_PSBT)
+validate_must_fail(malicious_output, 'serialized nested-P2SH exploit was accepted', malicious_txo,
+                   FIXTURE_XFP)
+
 # Raw P2PK outputs and unknown derivations remain visible rather than being
 # treated as change or aborting a signing operation.
 raw_p2pk = FakeOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
@@ -125,6 +180,18 @@ for path in (BIP84_SHORT_SUBPATH, BIP_UNKNOWN_SUBPATH):
     unsupported_path = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: path})
     unsupported_path.validate(0, unsupported_path._txo, MY_XFP, None)
     assert unsupported_path.is_change is False
+
+
+class FixtureMultisig:
+    def validate_script(self, _script, subpaths):
+        assert len(subpaths) == 2
+
+
+# Parsing a real BIP48 P2WSH fixture must still reach the multisig validation
+# path and recognize matching change when the wallet policy accepts its script.
+fixture_psbt, multisig_output, multisig_txo = fixture_output(MULTISIG_P2WSH_PSBT)
+multisig_output.validate(0, multisig_txo, FIXTURE_XFP, FixtureMultisig())
+assert multisig_output.is_change is True
 
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
