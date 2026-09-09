@@ -10,8 +10,10 @@ import time
 
 class SimulatorSocket:
     UNIX_SOCKET_PATH = b'/tmp/passport-simulator.sock'
+    TEST_SPI_FLASH_PATH = 'work/test_spi_flash.bin'
 
     def __init__(self, simulator_dir):
+        self.simulator_dir = simulator_dir
         self.pipe = None
         self.process = None
         self.socket_path = None
@@ -26,6 +28,7 @@ class SimulatorSocket:
         import subprocess
 
         self._remove_server_socket()
+        self._remove_test_spi_flash(simulator_dir)
         simulator_cmd = simulator_dir + '/simulator.py'
         self.process = subprocess.Popen([simulator_cmd, 'color', '--unit-test'], cwd=simulator_dir,
                                         preexec_fn=os.setsid)
@@ -33,6 +36,12 @@ class SimulatorSocket:
     def _remove_server_socket(self):
         try:
             os.unlink(self.UNIX_SOCKET_PATH)
+        except FileNotFoundError:
+            pass
+
+    def _remove_test_spi_flash(self, simulator_dir):
+        try:
+            os.unlink(simulator_dir + '/' + self.TEST_SPI_FLASH_PATH)
         except FileNotFoundError:
             pass
 
@@ -91,6 +100,7 @@ class SimulatorSocket:
                     self.process.wait()
             self.process = None
         self._remove_server_socket()
+        self._remove_test_spi_flash(self.simulator_dir)
 
     # Run `exec()` in the Unix MP simulator.
     def exec(self, object):
