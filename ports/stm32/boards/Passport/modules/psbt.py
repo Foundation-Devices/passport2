@@ -60,6 +60,8 @@ def expected_single_sig_addr_format(subpath):
     # Only standard full single-sig derivations have a script-family policy.
     # Custom and incomplete paths remain visible outputs rather than aborting a
     # signing operation merely because they cannot be classified as change.
+    # BIP45/BIP48 intentionally return None: those paths are validated against
+    # the registered script wallet below.
     if not subpath or len(subpath) < 6:
         return None
 
@@ -405,7 +407,8 @@ class psbtOutputProxy(psbtProxy):
         # careful and fully validate all the details.
         # - no output info is needed, in general, so
         #   any output info provided better be right, or fail as "fraud"
-        # - full key derivation and validation is done during signing, and critical.
+        # - immediately before signing, double_check_psbt_change_task derives
+        #   every output classified as change and validates its public key.
         # - we raise fraud alarms, since these are not innocent errors
         #
 
@@ -422,21 +425,31 @@ class psbtOutputProxy(psbtProxy):
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
-            expected_addr_format = expected_single_sig_addr_format(next(iter(self.subpaths.values())))
+            single_key_path = next(iter(self.subpaths.values()))
+            expected_addr_format = expected_single_sig_addr_format(single_key_path)
+            is_script_wallet_path = len(single_key_path) >= 2 and \
+                (single_key_path[1] & 0x7fffffff) in (45, 48)
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
             tap_path, _ = next(iter(self.tap_subpaths.values()))
             expected_addr_format = expected_single_sig_addr_format(tap_path)
+            is_script_wallet_path = False
         else:
             # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
             expect_pubkey = None
             expected_addr_format = None
+            is_script_wallet_path = False
 
         if expect_pubkey and not expected_addr_format:
-            # We cannot determine a script-family policy for this metadata.
-            # Do not hide the output as change, but preserve compatibility with
-            # custom derivation schemes by presenting it to the user.
-            return
+            if active_multisig and addr_type == 'p2sh' and is_script_wallet_path:
+                # A registered 1-of-1 BIP45/BIP48 wallet can have only one of
+                # our derivation entries. Let its script validate below.
+                expect_pubkey = None
+            else:
+                # We cannot determine a script-family policy for this metadata.
+                # Do not hide the output as change, but preserve compatibility with
+                # custom derivation schemes by presenting it to the user.
+                return
 
         if addr_type == 'p2pk':
             # Raw P2PK does not have a supported single-sig derivation policy.
