@@ -25,9 +25,16 @@ class SimulatorSocket:
     def _open(self, simulator_dir):
         import subprocess
 
+        self._remove_server_socket()
         simulator_cmd = simulator_dir + '/simulator.py'
         self.process = subprocess.Popen([simulator_cmd, 'color', '--unit-test'], cwd=simulator_dir,
                                         preexec_fn=os.setsid)
+
+    def _remove_server_socket(self):
+        try:
+            os.unlink(self.UNIX_SOCKET_PATH)
+        except FileNotFoundError:
+            pass
 
     def _connect(self):
         import socket
@@ -74,8 +81,16 @@ class SimulatorSocket:
             except FileNotFoundError:
                 pass
             self.socket_path = None
-        if self.process is not None and self.process.poll() is None:
-            os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+        if self.process is not None:
+            if self.process.poll() is None:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                try:
+                    self.process.wait(timeout=5)
+                except TimeoutError:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                    self.process.wait()
+            self.process = None
+        self._remove_server_socket()
 
     # Run `exec()` in the Unix MP simulator.
     def exec(self, object):
