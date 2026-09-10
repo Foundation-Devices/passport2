@@ -14,10 +14,9 @@
 #include "pprng.h"
 #include "se.h"
 
-extern void __attribute__((noreturn)) __fatal_error(const char* msg);
-
 void rng_fatal_error(void) {
-    __fatal_error("Entropy source failure");
+    // Entropy checks can fail before the display is initialized.
+    passport_reset();
 }
 
 #ifndef PASSPORT_DEBUG_STACK
