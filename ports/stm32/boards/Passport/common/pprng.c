@@ -53,8 +53,7 @@ void rng_setup(void) {
 }
 
 bool rng_try_sample(uint32_t* result) {
-    static uint32_t last_rng_result;
-    static bool     have_last_rng_result;
+    static uint32_t last_rng_result = 0;
 
     if (result == NULL) {
         return false;
@@ -88,16 +87,17 @@ bool rng_try_sample(uint32_t* result) {
             return false;
         }
 
-        // Continuous test: never return the same value twice in succession.
-        if (!have_last_rng_result || rv != last_rng_result) {
+        // On STM32H753, zero from RNG_DR indicates invalid data and can signal
+        // a late seed error (RM0433 section 34.7.3). Reject it on every read,
+        // and never return the same value twice in succession.
+        if (rv != 0 && rv != last_rng_result) {
             last_rng_result = rv;
-            have_last_rng_result = true;
             *result = rv;
 
             return true;
         }
 
-        // A duplicate may be transient. Keep trying within the same bounded
+        // A zero or duplicate may be transient. Keep trying within the same bounded
         // interval; a stuck source will time out and fail closed.
     }
 
