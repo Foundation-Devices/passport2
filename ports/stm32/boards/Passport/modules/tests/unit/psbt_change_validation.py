@@ -74,9 +74,9 @@ def must_fail(script_pubkey):
     raise RuntimeError('expected FraudulentChangeOutput')
 
 
-def validate_must_fail(output, message='expected FraudulentChangeOutput', txo=None, my_xfp=MY_XFP):
+def validate_must_fail(output, message='expected FraudulentChangeOutput', active_multisig=None):
     try:
-        output.validate(0, txo or output._txo, my_xfp, None)
+        output.validate(0, output._txo, MY_XFP, active_multisig)
     except FraudulentChangeOutput:
         return
 
@@ -157,6 +157,17 @@ for script_pubkey, redeem_script, witness_script in (
     assert one_of_one_change.is_change is True
 
 
+# A script-wallet path must not use the single-sig nested-P2WPKH branch.
+# Reject it as fraud rather than hashing the absent single-sig public key.
+for purpose in (45, 48):
+    script_wallet_path = list(BIP48_SUBPATH)
+    script_wallet_path[1] = 0x80000000 | purpose
+    validate_must_fail(FakeOutput(GOOD_P2SH,
+                                  subpaths={PUBKEY: script_wallet_path},
+                                  redeem_script=REDEEM_SCRIPT),
+                       active_multisig=OneOfOneMultisig())
+
+
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
 assert valid_mixed_segwit_change.is_change is True
@@ -170,19 +181,11 @@ assert_no_mixed_change_warning([valid_mixed_taproot_change])
 
 wrong_tap_metadata_for_segwit = FakeOutput(NATIVE_P2WPKH,
                                            tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
-try:
-    wrong_tap_metadata_for_segwit.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
-except FraudulentChangeOutput:
-    pass
-else:
-    raise RuntimeError('expected FraudulentChangeOutput for segwit output with taproot metadata')
+validate_must_fail(wrong_tap_metadata_for_segwit,
+                   'expected FraudulentChangeOutput for segwit output with taproot metadata')
 
 wrong_segwit_metadata_for_taproot = FakeOutput(TAPROOT_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
-try:
-    wrong_segwit_metadata_for_taproot.validate(0, CTxOut(0, TAPROOT_SCRIPT), MY_XFP, None)
-except FraudulentChangeOutput:
-    pass
-else:
-    raise RuntimeError('expected FraudulentChangeOutput for taproot output with segwit metadata')
+validate_must_fail(wrong_segwit_metadata_for_taproot,
+                   'expected FraudulentChangeOutput for taproot output with segwit metadata')
 
 return_value.write(b'OK')

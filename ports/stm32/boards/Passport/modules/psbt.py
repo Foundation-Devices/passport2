@@ -476,7 +476,7 @@ class psbtOutputProxy(psbtProxy):
                     redeem_script[0] == 0 and redeem_script[1] == 20:
 
                 # it's actually segwit p2pkh inside p2sh
-                if expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH:
+                if expect_pubkey is None or (expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH):
                     raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
 
                 expect_redeem_script = b'\x00\x14' + hash160(expect_pubkey)
