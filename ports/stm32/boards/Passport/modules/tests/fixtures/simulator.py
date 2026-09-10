@@ -5,6 +5,7 @@
 import pytest
 import os
 import signal
+import subprocess
 import time
 
 
@@ -25,8 +26,6 @@ class SimulatorSocket:
             raise
 
     def _open(self, simulator_dir):
-        import subprocess
-
         self._remove_server_socket()
         self._remove_test_spi_flash(simulator_dir)
         simulator_cmd = simulator_dir + '/simulator.py'
@@ -95,7 +94,7 @@ class SimulatorSocket:
                 os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
                 try:
                     self.process.wait(timeout=5)
-                except TimeoutError:
+                except subprocess.TimeoutExpired:
                     os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
                     self.process.wait()
             self.process = None
