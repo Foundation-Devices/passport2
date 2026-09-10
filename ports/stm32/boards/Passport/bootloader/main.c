@@ -574,9 +574,8 @@ fail:
 
 void random_boot_delay() {
     // Random delay to make cold-boot stepping attacks harder: 0 - 50ms
-    uint32_t random_delay = 0;
-    (void)rng_try_sample(&random_delay);
-    delay_ms(random_delay % 50);
+    uint32_t ms_to_delay = rng_sample() % 50;
+    delay_ms(ms_to_delay);
 }
 
 void rng_fatal_error(void) {
