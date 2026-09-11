@@ -23,6 +23,28 @@
 // This is not a calibrated timeout; MMIO stalls, interrupts, and the longer
 // zero/duplicate retry path affect elapsed time.
 #define RNG_MAX_POLL_ATTEMPTS 480000U
+#define RNG_MAX_RECOVERY_ATTEMPTS 3U
+
+static bool rng_recover_seed_error(uint32_t* recovery_attempts) {
+    while (*recovery_attempts < RNG_MAX_RECOVERY_ATTEMPTS) {
+        (*recovery_attempts)++;
+
+        // ST's seed-error recovery sequence (RM0433 section 34.3.7): clear
+        // SEIS and flush 12 words. These are raw discard reads; do not wait
+        // for DRDY or consume any of the values.
+        RNG->SR &= ~RNG_SR_SEIS;
+        for (unsigned int i = 0; i < 12; i++) {
+            (void)RNG->DR;
+        }
+
+        // SEIS must remain clear after flushing. If it is set again, retry
+        // recovery within the remaining budget before reporting failure.
+        if (!(RNG->SR & RNG_SR_SEIS)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void rng_setup(void) {
     // Enable the peripheral clock even if an earlier boot stage left RNGEN set.
@@ -32,16 +54,11 @@ void rng_setup(void) {
     RNG->CR &= ~RNG_CR_RNGEN;
     RNG->CR |= RNG_CR_RNGEN;
 
-    // Clear latched errors and flush the pipeline using ST's seed-error
-    // recovery sequence (RM0433 section 34.3.7). These are raw discard reads,
-    // not samples: do not wait for DRDY or consume any of the values.
-    RNG->SR &= ~(RNG_SR_SEIS | RNG_SR_CEIS);
-    for (unsigned int i = 0; i < 12; i++) {
-        (void)RNG->DR;
-    }
-    // SEIS must remain clear after flushing the pipeline. If it is set again,
-    // recovery failed and the RNG output cannot be trusted; stop execution.
-    if (RNG->SR & RNG_SR_SEIS) {
+    RNG->SR &= ~RNG_SR_CEIS;
+    uint32_t recovery_attempts = 0;
+    // Persistent seed errors leave the RNG output untrustworthy. Stop if
+    // the startup recovery budget is exhausted.
+    if (!rng_recover_seed_error(&recovery_attempts)) {
         rng_fatal_error();
     }
 
@@ -59,14 +76,21 @@ bool rng_try_sample(uint32_t* result) {
     if (result == NULL) {
         return false;
     }
-    const uint32_t error_mask = RNG_SR_SECS | RNG_SR_CECS | RNG_SR_SEIS | RNG_SR_CEIS;
+    const uint32_t seed_error_mask = RNG_SR_SECS | RNG_SR_SEIS;
+    uint32_t recovery_attempts = 0;
 
     for (uint32_t attempt = 0; attempt < RNG_MAX_POLL_ATTEMPTS; attempt++) {
-        // Check both current error status and latched error flags. A flagged
-        // sample is a hard failure; callers must not silently degrade.
         uint32_t status = RNG->SR;
-        if (status & error_mask) {
-            return false;
+        // Clock errors do not invalidate available data (RM0433 section
+        // 34.3.7). Clear CEIS; CECS clears in hardware when the clock recovers.
+        if (status & RNG_SR_CEIS) {
+            RNG->SR &= ~RNG_SR_CEIS;
+        }
+        if (status & seed_error_mask) {
+            if (!rng_recover_seed_error(&recovery_attempts)) {
+                return false;
+            }
+            continue;
         }
 
         if (!(status & RNG_SR_DRDY)) {
@@ -76,23 +100,31 @@ bool rng_try_sample(uint32_t* result) {
         // Get the new number
         uint32_t rv = RNG->DR;
 
-        // Catch an error that arrived between the status check and the data
-        // read. The value must not be used in that case.
-        if (RNG->SR & error_mask) {
-            return false;
+        // Recheck status for errors that arrived during the data read.
+        status = RNG->SR;
+        if (status & RNG_SR_CEIS) {
+            RNG->SR &= ~RNG_SR_CEIS;
         }
 
         // On STM32H753, zero from RNG_DR indicates invalid data and can signal
-        // a late seed error (RM0433 section 34.7.3). Reject it on every read,
-        // and never return the same value twice in succession.
-        if (rv != 0 && rv != last_rng_result) {
+        // a late seed error (RM0433 section 34.7.3). Discard the sample and
+        // recover on either indication, sharing the same per-call budget.
+        if (rv == 0 || (status & seed_error_mask)) {
+            if (!rng_recover_seed_error(&recovery_attempts)) {
+                return false;
+            }
+            continue;
+        }
+
+        // Never return the same value twice in succession.
+        if (rv != last_rng_result) {
             last_rng_result = rv;
             *result = rv;
 
             return true;
         }
 
-        // A zero or duplicate may be transient. Keep trying within the same
+        // A duplicate may be transient. Keep trying within the same
         // polling limit; a stuck source will exhaust it and fail closed.
     }
 
