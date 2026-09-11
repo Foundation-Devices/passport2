@@ -54,14 +54,15 @@ class SignPsbtCommonFlow(Flow):
                 return
 
         # Review hides change destinations, so prove ownership before showing it.
-        gc.collect()
-        (error_msg, error) = await spinner_task('Validating transaction',
-                                                double_check_psbt_change_task, args=[self.psbt])
-        gc.collect()
-        if error is not None:
-            await ErrorPage(error_msg).show()
-            self.set_result(None)
-            return
+        if any(output.is_change for output in self.psbt.outputs):
+            gc.collect()
+            (error_msg, error) = await spinner_task('Verifying change',
+                                                    double_check_psbt_change_task, args=[self.psbt])
+            gc.collect()
+            if error is not None:
+                await ErrorPage(error_msg).show()
+                self.set_result(None)
+                return
 
         self.goto(self.show_transaction_details)
 

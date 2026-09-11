@@ -19,7 +19,7 @@ from utils import get_multisig_policy, str_to_keypath
 MY_XFP = 0x12345678
 OTHER_KEY = unhexlify('02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5')
 PATHS = ("m/84'/0'/0'/1/7", "m/86'/0'/0'/1/7", "m/48'/0'/0'/2'/1/7")
-# Public keys derived from the deterministic test seed bytes(range(32)).
+# Precomputed fixtures from test seed bytes(range(32)); this test does not derive keys.
 OWNED_KEYS = (
     unhexlify('02477e5978ac99be533333b444e635fdee1001992c01dec8c41327cdb9a7d7b2a1'),
     unhexlify('03bdb8d2c655d9d1fb6ff6533b43660033e5c23b2ca4b290223d813f08407d6bdb'),
@@ -135,12 +135,17 @@ class FakeSettings:
 
 class FakeSignFlow(SignPsbtCommonFlow):
     def __init__(self, needs_approval):
+        # Exercise state ordering without rendering pages or accessing device settings.
         Flow.__init__(self, initial_state=self.check_multisig_import)
         self.psbt = FakePsbt(needs_approval)
+        self.cancel_review = False
 
     async def show_transaction_details(self):
         events.append('review')
-        self.goto(self.sign_transaction)
+        if self.cancel_review:
+            self.set_result(None)
+        else:
+            self.goto(self.sign_transaction)
 
 
 async def run_tests():
@@ -172,9 +177,28 @@ async def run_tests():
         for needs_approval in (True, False):
             events.clear()
             flow = FakeSignFlow(needs_approval)
+            flow.psbt.outputs = [FakeOutput(PATHS[0], OWNED_KEYS[0])]
             assert await flow.run() is flow.psbt
             expected = ['import'] if needs_approval else []
-            assert events == expected + ['verify', 'clear', 'review', 'confirm', 'sign']
+            assert events == expected + ['verify', PATHS[0], 'clear', 'review', 'confirm', 'sign']
+
+        # Reviewing and cancelling a transaction without change must not open the key store.
+        payment = FakeOutput(PATHS[0], OTHER_KEY)
+        payment.is_change = False
+        for outputs in ([], [payment]):
+            events.clear()
+            flow = FakeSignFlow(needs_approval=False)
+            flow.psbt.outputs = outputs
+            flow.cancel_review = True
+            assert await flow.run() is None
+            assert events == ['review']
+
+        events.clear()
+        flow = FakeSignFlow(needs_approval=False)
+        flow.psbt.outputs = [FakeOutput(PATHS[0], OWNED_KEYS[0])]
+        flow.cancel_review = True
+        assert await flow.run() is None
+        assert events == ['verify', PATHS[0], 'clear', 'review']
 
         # Exercise the real ownership task and flow, with only the key store and UI replaced.
         # Its sensitive-value context must close before review, and run just once.
