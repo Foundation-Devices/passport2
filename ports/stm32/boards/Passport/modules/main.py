@@ -15,7 +15,6 @@ sys.path.append("..")
 
 import gc
 from utils import mem_info
-# from translations import T, t, set_active_language
 
 mem_info(label='Start main.py:')
 

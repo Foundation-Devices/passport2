@@ -5,7 +5,6 @@
 
 from flows import Flow
 import microns
-from translations import t, T
 
 
 class RenameMultisigFlow(Flow):

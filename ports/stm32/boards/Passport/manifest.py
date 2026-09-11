@@ -290,12 +290,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'tasks/verify_backup_task.py',
         'tasks/verify_firmware_signature_task.py'))
 
-# Translations
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('translations/__init__.py',
-        'translations/en.py',
-        'translations/tags.py'))
-
 # UI
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ui/__init__.py',

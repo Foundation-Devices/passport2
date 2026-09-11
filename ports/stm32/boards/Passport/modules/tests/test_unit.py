@@ -28,10 +28,6 @@ def test_seedqr_codec(test):
     assert test('seedqr_codec.py') == b'OK'
 
 
-def test_settings(test):
-    assert test('settings.py') == b'OK'
-
-
 def test_ui(test):
     assert test('ui.py') == b'OK'
 

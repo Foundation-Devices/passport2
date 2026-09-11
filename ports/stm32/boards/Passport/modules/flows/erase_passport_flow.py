@@ -9,7 +9,6 @@ from flows import Flow
 from pages import SuccessPage, QuestionPage, LongQuestionPage
 from tasks import erase_passport_task
 from utils import spinner_task
-from translations import t, T
 import microns
 import passport
 

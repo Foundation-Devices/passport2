@@ -4,7 +4,6 @@
 # delete_multisig_flow.py - Delete the specified multisig config
 
 from flows import Flow
-from translations import t, T
 
 
 class DeleteMultisigFlow(Flow):

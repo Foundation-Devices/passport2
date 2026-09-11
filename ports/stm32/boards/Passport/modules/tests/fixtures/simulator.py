@@ -4,52 +4,102 @@
 
 import pytest
 import os
+import signal
+import subprocess
+import time
 
 
 class SimulatorSocket:
     UNIX_SOCKET_PATH = b'/tmp/passport-simulator.sock'
+    TEST_SPI_FLASH_PATH = 'work/test_spi_flash.bin'
 
     def __init__(self, simulator_dir):
+        self.simulator_dir = simulator_dir
         self.pipe = None
-        self._open(simulator_dir)
-        self._connect()
+        self.process = None
+        self.socket_path = None
+        try:
+            self._open(simulator_dir)
+            self._connect()
+        except BaseException:
+            self.close()
+            raise
 
     def _open(self, simulator_dir):
-        import subprocess
-
+        self._remove_server_socket()
+        self._remove_test_spi_flash(simulator_dir)
         simulator_cmd = simulator_dir + '/simulator.py'
         self.process = subprocess.Popen([simulator_cmd, 'color', '--unit-test'], cwd=simulator_dir,
                                         preexec_fn=os.setsid)
+
+    def _remove_server_socket(self):
+        try:
+            os.unlink(self.UNIX_SOCKET_PATH)
+        except FileNotFoundError:
+            pass
+
+    def _remove_test_spi_flash(self, simulator_dir):
+        try:
+            os.unlink(simulator_dir + '/' + self.TEST_SPI_FLASH_PATH)
+        except FileNotFoundError:
+            pass
 
     def _connect(self):
         import socket
         import tempfile
 
         self.pipe = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        deadline = time.monotonic() + 10
         while True:
             try:
                 self.pipe.connect(self.UNIX_SOCKET_PATH)
                 break
-            except Exception:
-                continue
+            except OSError:
+                if self.process.poll() is not None:
+                    raise RuntimeError(
+                        'Simulator exited before opening its socket '
+                        f'(exit code {self.process.returncode})'
+                    )
+                if time.monotonic() >= deadline:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                    raise TimeoutError('Simulator did not open its socket within 10 seconds')
+                time.sleep(0.01)
 
         while True:
             try:
-                addr = ''
                 with tempfile.NamedTemporaryFile(suffix='.sock', prefix='passport-client.',
                                                  dir='/tmp', delete=True) as tmpfile:
                     addr = tmpfile.name
                 self.pipe.bind(addr)
+                self.socket_path = addr
                 break
-            except OSError:
-                continue
+            except OSError as error:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError('Could not bind the simulator client socket within 10 seconds') from error
+                time.sleep(0.01)
 
     # Close the connection and kill the simulator process.
     def close(self):
-        import signal
-
-        self.pipe.close()
-        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+        if self.pipe is not None:
+            self.pipe.close()
+            self.pipe = None
+        if self.socket_path is not None:
+            try:
+                os.unlink(self.socket_path)
+            except FileNotFoundError:
+                pass
+            self.socket_path = None
+        if self.process is not None:
+            if self.process.poll() is None:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                    self.process.wait()
+            self.process = None
+        self._remove_server_socket()
+        self._remove_test_spi_flash(self.simulator_dir)
 
     # Run `exec()` in the Unix MP simulator.
     def exec(self, object):
@@ -80,7 +130,11 @@ class SimulatorSocket:
 # Get a connection to the simulator.
 @pytest.fixture
 def simulator(simulatordir):
-    return SimulatorSocket(simulatordir)
+    connection = SimulatorSocket(simulatordir)
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 # Execute a file in the simulator using the Unix Micro-Python built-in `exec()` function.
@@ -89,7 +143,6 @@ def exec_file(simulator):
     def doit(filename):
         from pathlib import Path
         cmd, return_value = simulator.exec(Path(filename).read_text())
-        simulator.close()
         if cmd == 'excp':
             pytest.fail('Remote test failed with exception:\n{}'.format(return_value.decode('utf-8', 'strict')))
         elif cmd == 'resp':

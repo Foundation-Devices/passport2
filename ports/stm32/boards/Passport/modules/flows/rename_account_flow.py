@@ -9,7 +9,6 @@ import microns
 from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
 from tasks import rename_account_task
 from utils import get_account_by_name, spinner_task
-from translations import t, T
 
 
 class RenameAccountFlow(Flow):

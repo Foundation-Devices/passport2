@@ -48,7 +48,7 @@ init-openocd:
 
 # Lint only the python code of the project
 lint-py:
-    pycodestyle --exclude trezor-firmware,unused_modules,graphics.py,translations --statistics boards/Passport
+    pycodestyle --exclude trezor-firmware,unused_modules,graphics.py --statistics boards/Passport
 
 # Lint only the C code of the project
 lint-c:
