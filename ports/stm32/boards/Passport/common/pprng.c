@@ -36,13 +36,22 @@ void rng_setup(void) {
     // Enable the peripheral clock even if an earlier boot stage left RNGEN set.
     __HAL_RCC_RNG_CLK_ENABLE();
 
-    // Start each image from a known peripheral state. Clearing the latched
-    // interrupt flags and restarting the generator is the recovery sequence
-    // recommended by ST after a seed error. A persistent current error is
-    // still caught by rng_try_sample() below and fails closed.
-    RNG->SR &= ~(RNG_SR_SEIS | RNG_SR_CEIS);
+    // Restart the generator at image startup.
     RNG->CR &= ~RNG_CR_RNGEN;
     RNG->CR |= RNG_CR_RNGEN;
+
+    // Clear latched errors and flush the pipeline using ST's seed-error
+    // recovery sequence (RM0433 section 34.3.7). These are raw discard reads,
+    // not samples: do not wait for DRDY or consume any of the values.
+    RNG->SR &= ~(RNG_SR_SEIS | RNG_SR_CEIS);
+    for (unsigned int i = 0; i < 12; i++) {
+        (void)RNG->DR;
+    }
+    // SEIS must remain clear after flushing the pipeline. If it is set again,
+    // recovery failed and the RNG output cannot be trusted; stop execution.
+    if (RNG->SR & RNG_SR_SEIS) {
+        rng_fatal_error();
+    }
 
     // Always sample twice, even if an earlier boot stage enabled the
     // peripheral, so each image verifies the source before using it.
