@@ -54,9 +54,10 @@ STATIC mp_obj_t mod_passport_Noise_read(mp_obj_t self) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_Noise_read_obj, mod_passport_Noise_read);
 
-/// def random_bytes(self, buf: buffer, sources: int) -> (int, int):
+/// def random_bytes(self, buf: buffer, sources: int) -> None:
 ///     """
-///     Read random bytes from multiple noise sources.
+///     Fill buf with random bytes from the selected noise sources.
+///     Entropy failure invokes the fatal handler and does not return.
 ///     """
 STATIC mp_obj_t mod_passport_Noise_random_bytes(mp_obj_t self,
                                                 mp_obj_t buf_obj,
@@ -71,7 +72,7 @@ STATIC mp_obj_t mod_passport_Noise_random_bytes(mp_obj_t self,
         rng_fatal_error();
     }
 
-    return mp_const_true;
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_passport_Noise_random_bytes_obj, mod_passport_Noise_random_bytes);
 
