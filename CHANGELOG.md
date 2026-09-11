@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Complete change-address verification before transaction review
 - Identify network fees from unverifiable PSBT inputs as unverified
 - Validate the complete local xpub when importing multisig wallets
 - Require confirmation before using PSBT-proposed multisig wallets with temporary seeds,
