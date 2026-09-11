@@ -12,7 +12,6 @@ import microns
 from wallets.utils import get_addr_type_from_deriv
 from public_constants import AF_CLASSIC, MARGIN_FOR_ADDRESSES
 import stash
-from ubinascii import b2a_base64
 
 
 class SignElectrumMessageFlow(Flow):
@@ -92,9 +91,7 @@ class SignElectrumMessageFlow(Flow):
             return
 
     async def show_signed(self):
-        qr_data = b2a_base64(self.signature).strip().decode()
-
-        result = await ShowQRPage(qr_data=qr_data,
+        result = await ShowQRPage(qr_data=self.signature,
                                   right_micron=microns.Checkmark).show()
 
         self.set_result(result)

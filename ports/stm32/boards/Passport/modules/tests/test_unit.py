@@ -50,3 +50,7 @@ def test_multisig_xpub_validation(test):
 
 def test_psbt_fee(test):
     assert test('psbt_fee.py') == b'OK'
+
+
+def test_bip322(test):
+    assert test('bip322.py') == b'OK'

@@ -11,6 +11,8 @@
 
 import stash
 import chains
+from ubinascii import b2a_base64
+from public_constants import AF_P2TR
 from utils import sign_message_digest_recoverable
 
 
@@ -24,8 +26,18 @@ async def sign_text_file_task(on_done, text, subpath, addr_fmt, expected_address
         await on_done(None, None, 'Address mismatch: expected {}, got {}'.format(expected_address, address))
         return
 
-    digest = chains.current_chain().hash_message(text.encode())
-    # signature will be 65 bytes
-    signature = sign_message_digest_recoverable(digest, subpath)
+    message = text.encode()
+    if addr_fmt == AF_P2TR:
+        from bip322 import sign_taproot_simple
+
+        with stash.SensitiveValues() as sv:
+            node = sv.derive_path(subpath)
+            private_key = node.private_key()
+            sv.register(private_key)
+            signature = sign_taproot_simple(message, node.public_key()[1:], private_key)
+    else:
+        digest = chains.current_chain().hash_message(message)
+        raw_signature = sign_message_digest_recoverable(digest, subpath)
+        signature = b2a_base64(raw_signature).decode('ascii').strip()
 
     await on_done(signature, address, None)
