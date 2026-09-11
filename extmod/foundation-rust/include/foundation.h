@@ -422,6 +422,18 @@ typedef struct {
 } UR_PassportResponse;
 
 /**
+ * A Casa `crypto-account` containing both supported registration keys.
+ */
+typedef struct {
+  uint32_t master_fingerprint;
+  uint64_t network;
+  uint8_t root_key_data[33];
+  uint8_t root_chain_code[32];
+  uint8_t casa_key_data[33];
+  uint8_t casa_chain_code[32];
+} UR_CryptoAccount;
+
+/**
  * A uniform resource.
  */
 typedef enum {
@@ -445,6 +457,10 @@ typedef enum {
    * Passport custom `x-passport-response`.
    */
   PassportResponse,
+  /**
+   * Casa wallet-registration `crypto-account`.
+   */
+  CryptoAccount,
 } UR_Value_Tag;
 
 typedef struct {
@@ -470,6 +486,9 @@ typedef struct {
     };
     struct {
       UR_PassportResponse passport_response;
+    };
+    struct {
+      UR_CryptoAccount crypto_account;
     };
   };
 } UR_Value;
@@ -648,6 +667,17 @@ void ur_registry_new_derived_key(UR_Value *value,
                                  const UR_CoinInfo *use_info,
                                  const UR_Keypath *origin,
                                  uint32_t parent_fingerprint);
+
+/**
+ * Create the Casa wallet-registration `crypto-account` UR.
+ */
+void ur_registry_new_crypto_account(UR_Value *value,
+                                    const uint8_t (*root_key_data)[33],
+                                    const uint8_t (*root_chain_code)[32],
+                                    const uint8_t (*casa_key_data)[33],
+                                    const uint8_t (*casa_chain_code)[32],
+                                    uint32_t master_fingerprint,
+                                    uint64_t network);
 
 /**
  * Create a new `psbt` UR.
