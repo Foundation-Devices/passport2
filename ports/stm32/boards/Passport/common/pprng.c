@@ -17,20 +17,12 @@
 #include "pprng.h"
 #include "utils.h"
 
-#define RNG_TIMEOUT_MS 10U
-
-static bool rng_cycle_counter_setup(void) {
-    if (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) {
-        return true;
-    }
-
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->LAR = 0xc5acce55;
-    DWT->CYCCNT = 0;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-
-    return (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) != 0;
-}
+// Bound the number of polling attempts.
+// Firmware and bootloader configure a 480 MHz CPU. Target roughly 10 ms using
+// an unmeasured estimate of 10 CPU cycles per no-data poll: 480 MHz * 10 ms / 10.
+// This is not a calibrated timeout; MMIO stalls, interrupts, and the longer
+// zero/duplicate retry path affect elapsed time.
+#define RNG_MAX_POLL_ATTEMPTS 480000U
 
 void rng_setup(void) {
     // Enable the peripheral clock even if an earlier boot stage left RNGEN set.
@@ -67,15 +59,9 @@ bool rng_try_sample(uint32_t* result) {
     if (result == NULL) {
         return false;
     }
-    if (!rng_cycle_counter_setup()) {
-        return false;
-    }
-
     const uint32_t error_mask = RNG_SR_SECS | RNG_SR_CECS | RNG_SR_SEIS | RNG_SR_CEIS;
-    const uint32_t timeout_cycles = (SystemCoreClock / 1000U) * RNG_TIMEOUT_MS;
-    const uint32_t start_cycle = DWT->CYCCNT;
 
-    while ((DWT->CYCCNT - start_cycle) < timeout_cycles) {
+    for (uint32_t attempt = 0; attempt < RNG_MAX_POLL_ATTEMPTS; attempt++) {
         // Check both current error status and latched error flags. A flagged
         // sample is a hard failure; callers must not silently degrade.
         uint32_t status = RNG->SR;
@@ -106,8 +92,8 @@ bool rng_try_sample(uint32_t* result) {
             return true;
         }
 
-        // A zero or duplicate may be transient. Keep trying within the same bounded
-        // interval; a stuck source will time out and fail closed.
+        // A zero or duplicate may be transient. Keep trying within the same
+        // polling limit; a stuck source will exhaust it and fail closed.
     }
 
     return false;
