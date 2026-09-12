@@ -202,7 +202,7 @@ class SignPsbtCommonFlow(Flow):
                 recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
                 val,
                 recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
-                dest.split('\n', 1)[1])  # user-defined message starts after "OP_RETURN:\n"
+                escape_text(dest.split('\n', 1)[1]))  # user-defined message starts after "OP_RETURN:\n"
 
         dest = stylize_address(dest)
 
