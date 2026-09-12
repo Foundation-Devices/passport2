@@ -27,8 +27,7 @@ async def validate_electrum_message_task(on_done, message):
         (subpath, error) = validate_sign_text(message,
                                               header_elements[1],
                                               space_limit=False,
-                                              check_whitespace=False,
-                                              check_ascii=False)
+                                              check_whitespace=False)
 
         if error:
             await on_done(None, error)

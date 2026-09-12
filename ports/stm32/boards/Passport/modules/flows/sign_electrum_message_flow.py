@@ -6,7 +6,7 @@
 from flows import Flow, ScanQRFlow
 from pages import ErrorPage, LongTextPage, LongQuestionPage, ShowQRPage
 from tasks import sign_text_file_task, validate_electrum_message_task
-from utils import spinner_task, stylize_address
+from utils import escape_text, spinner_task, stylize_address
 from data_codecs.qr_type import QRType
 import microns
 from wallets.utils import get_addr_type_from_deriv
@@ -62,7 +62,7 @@ class SignElectrumMessageFlow(Flow):
         display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
-                                    text=('\n' + self.message),
+                                    text=('\n' + escape_text(self.message)),
                                     card_header={'title': 'Message'}).show()
 
         if not result:
