@@ -42,12 +42,25 @@ class SignPsbtCommonFlow(Flow):
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
+        from pages import ErrorPage
+        from tasks import double_check_psbt_change_task
 
         # Based on the import mode and whether this already exists, the validation step
         # will have set this flag.
         if self.psbt.multisig_import_needs_approval:
             result = await ImportMultisigWalletFlow(self.psbt.active_multisig).run()
             if not result:
+                self.set_result(None)
+                return
+
+        # Review hides change destinations, so prove ownership before showing it.
+        if any(output.is_change for output in self.psbt.outputs):
+            gc.collect()
+            (error_msg, error) = await spinner_task('Verifying change',
+                                                    double_check_psbt_change_task, args=[self.psbt])
+            gc.collect()
+            if error is not None:
+                await ErrorPage(error_msg).show()
                 self.set_result(None)
                 return
 
@@ -149,7 +162,6 @@ class SignPsbtCommonFlow(Flow):
             self.goto(self.sign_transaction)
 
     async def sign_transaction(self):
-        from tasks import double_check_psbt_change_task
         from utils import spinner_task
         from pages import ErrorPage, QuestionPage
 
@@ -166,16 +178,6 @@ class SignPsbtCommonFlow(Flow):
             else:
                 self.back()
         else:
-            # TODO: Why do this here instead of in validate?
-            (error_msg, error) = await spinner_task('Signing Transaction',
-                                                    double_check_psbt_change_task, args=[self.psbt])
-
-            gc.collect()
-            if error is not None:
-                await ErrorPage(error_msg).show()
-                self.set_result(None)
-                return
-
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     sign_psbt_task, args=[self.psbt])
             gc.collect()
