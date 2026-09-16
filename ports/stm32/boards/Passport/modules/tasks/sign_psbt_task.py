@@ -20,6 +20,10 @@ async def sign_psbt_task(on_done, psbt):
     from taproot import taproot_sign_key
 
     try:
+        if getattr(psbt, 'silent_payment_shares_only', False):
+            raise FatalPSBTIssue(
+                'Silent payment shares are incomplete. Refusing to sign.')
+
         with stash.SensitiveValues() as sv:
             error_msg = None
             error_code = None
