@@ -10,6 +10,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Validate the complete local xpub when importing multisig wallets
 - Require confirmation before using PSBT-proposed multisig wallets with temporary seeds,
   and cancel signing if import is declined
+- Added Unchained as a multisig Connect Wallet option
 - Added Coconut Wallet as a single-sig Connect Wallet option
 - Improved self-send transaction information formatting (PASS1-638)
 - Added the key manager extension, compatible with BIP85 and Nostr (PASS1-24)

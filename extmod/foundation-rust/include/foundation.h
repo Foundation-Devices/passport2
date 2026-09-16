@@ -615,12 +615,28 @@ void ur_encoder_start(UR_Encoder *encoder,
                       size_t max_chars);
 
 /**
+ * Start the encoder with an already CBOR-encoded Uniform Resource.
+ *
+ * # Safety
+ *
+ * `ur_type` and `message` must be valid for reads of their respective
+ * lengths for the duration of this call. The caller is responsible for
+ * ensuring that `message` contains well-formed CBOR.
+ */
+bool ur_encoder_start_raw(UR_Encoder *encoder,
+                          const uint8_t *ur_type,
+                          size_t ur_type_len,
+                          const uint8_t *message,
+                          size_t message_len,
+                          size_t max_chars);
+
+/**
  * Returns the UR corresponding to the next fountain encoded part.
  *
  * # Safety
  *
- * This function must not be called if `ur_encoder_start` was not called to
- * start the encoder. Or if the data used to start the encoder is freed.
+ * `ur` and `ur_len` must be valid for writes. If the encoder has not been
+ * started successfully, this function returns an empty string.
  *
  * # Return Value
  *

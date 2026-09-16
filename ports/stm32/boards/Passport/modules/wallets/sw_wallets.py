@@ -25,6 +25,7 @@ from .simple_bitcoin_wallet import SimpleBitcoinWallet
 from .sparrow import SparrowWallet
 from .specter import SpecterWallet
 from .theya import TheyaWallet
+from .unchained import UnchainedWallet
 from .zeus import ZeusWallet
 
 # Array of all supported software wallets and their attributes.
@@ -51,5 +52,6 @@ supported_software_wallets = [
     SparrowWallet,
     SpecterWallet,
     TheyaWallet,
+    UnchainedWallet,
     ZeusWallet,
 ]
