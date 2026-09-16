@@ -88,7 +88,8 @@ class FakeSensitiveValues:
 
 class FakeErrorPage:
     def __init__(self, text):
-        assert "BIP32 path doesn't match" in text
+        assert text == ('Transaction rejected. Passport could not verify that the change address '
+                        'belongs to this wallet.')
 
     async def show(self):
         events.append('error')
