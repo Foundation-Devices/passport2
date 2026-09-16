@@ -5,7 +5,8 @@
 # Keep lists below sorted for easier reference
 
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('callgate.py',
+       ('bip322.py',
+        'callgate.py',
         'chains.py',
         'common.py',
         'compat7z.py',
