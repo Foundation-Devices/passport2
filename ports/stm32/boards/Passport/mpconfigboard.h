@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 
+#include <stdint.h>
+
 #define MICROPY_HW_BOARD_NAME "Passport"
 #define MICROPY_HW_MCU_NAME "STM32H753"
 
@@ -48,6 +50,10 @@ void Passport_board_early_init(void);
 
 #define MICROPY_BOARD_INIT Passport_board_init
 void Passport_board_init(void);
+
+// Use Passport's checked RNG for MicroPython's random-number consumers.
+#define MICROPY_BOARD_RNG_GET rng_sample
+uint32_t rng_sample(void);
 
 /**
  * The following two macros disable interrupts preserving interrupt state

@@ -11,7 +11,13 @@
 #include "camera-ovm7690.h"
 #include "frequency.h"
 #include "gpio.h"
+#include "pprng.h"
 #include "se.h"
+
+void rng_fatal_error(void) {
+    // Entropy checks can fail before the display is initialized.
+    passport_reset();
+}
 
 #ifndef PASSPORT_DEBUG_STACK
 #define PASSPORT_DEBUG_STACK 0
@@ -34,6 +40,7 @@ void Passport_board_init(void) {
 
     gpio_init();
     frequency_turbo(true);
+    rng_setup();
     display_init(false);
     camera_init();
     adc_init();

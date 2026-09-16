@@ -10,6 +10,7 @@ from utils import b2a_hex
 
 async def new_seed_task(on_done, seed_length):
     seed = bytearray(32)
+    # Entropy failures invoke the fatal handler before this call can return.
     common.noise.random_bytes(seed, common.noise.ALL)
 
     # Hash to mitigate any potential bias in RNG sources
