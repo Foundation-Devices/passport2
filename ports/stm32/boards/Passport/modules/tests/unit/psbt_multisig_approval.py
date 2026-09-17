@@ -9,6 +9,7 @@ import pages
 import stash
 import utils
 import uasyncio as asyncio
+from exceptions import CHANGE_ADDRESS_NOT_OURS
 from flows import Flow, SignPsbtCommonFlow
 from flows import sign_psbt_common_flow
 from public_constants import MUSIG_ASK, MUSIG_SKIP
@@ -88,7 +89,7 @@ class FakeSensitiveValues:
 
 class FakeErrorPage:
     def __init__(self, text):
-        assert "BIP32 path doesn't match" in text
+        assert text == CHANGE_ADDRESS_NOT_OURS
 
     async def show(self):
         events.append('error')
