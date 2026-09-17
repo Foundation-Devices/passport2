@@ -22,7 +22,9 @@ from public_constants import (
 )
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
 from wallets.utils import get_addr_type_from_bip_numbers
-from exceptions import FatalPSBTIssue, FraudulentChangeOutput
+from exceptions import (FatalPSBTIssue, FraudulentChangeOutput,
+                        CHANGE_ADDRESS_NOT_OURS, CHANGE_MULTISIG_SETUP_MISMATCH,
+                        CHANGE_WRONG_ACCOUNT_TYPE)
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
 from serializations import ser_push_data, uint256_from_bytes
@@ -407,7 +409,7 @@ class psbtOutputProxy(psbtProxy):
         # careful and fully validate all the details.
         # - no output info is needed, in general, so
         #   any output info provided better be right, or fail as "fraud"
-        # - immediately before signing, double_check_psbt_change_task derives
+        # - before transaction review, double_check_psbt_change_task derives
         #   every output classified as change and validates its public key.
         # - we raise fraud alarms, since these are not innocent errors
         #
@@ -476,13 +478,13 @@ class psbtOutputProxy(psbtProxy):
                     redeem_script[0] == 0 and redeem_script[1] == 20:
 
                 # it's actually segwit p2pkh inside p2sh
-                if expect_pubkey is None or (expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH):
-                    raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
+                if expect_pubkey is None or \
+                        (expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH):
+                    raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
 
                 expect_redeem_script = b'\x00\x14' + hash160(expect_pubkey)
                 if redeem_script != expect_redeem_script:
-                    raise FraudulentChangeOutput(out_idx,
-                                                 "P2SH-P2WPKH redeem script provided, and doesn't match")
+                    raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
                 expect_pkh = hash160(expect_redeem_script)
 
@@ -509,9 +511,8 @@ class psbtOutputProxy(psbtProxy):
                 try:
                     active_multisig.validate_script(witness_script or redeem_script,
                                                     subpaths=self.subpaths)
-                except BaseException as exc:
-                    raise FraudulentChangeOutput(out_idx,
-                                                 "P2WSH or P2SH change output script: %s" % exc)
+                except BaseException:
+                    raise FraudulentChangeOutput(out_idx, CHANGE_MULTISIG_SETUP_MISMATCH)
 
                 if is_segwit:
                     # p2wsh case
@@ -519,7 +520,7 @@ class psbtOutputProxy(psbtProxy):
                     assert len(addr_or_pubkey) == 32
                     expect_wsh = trezorcrypto.sha256(witness_script).digest()
                     if expect_wsh != addr_or_pubkey:
-                        raise FraudulentChangeOutput(out_idx, "P2WSH witness script has wrong hash")
+                        raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
                     self.is_change = True
                     return
@@ -531,8 +532,7 @@ class psbtOutputProxy(psbtProxy):
                     if redeem_script and expect_rs != redeem_script:
                         # iff they provide a redeeem script, then it needs to match
                         # what we expect it to be
-                        raise FraudulentChangeOutput(out_idx,
-                                                     "P2SH-P2WSH redeem script provided, and doesn't match")
+                        raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
                     expect_pkh = hash160(expect_rs)
                 else:
@@ -545,19 +545,19 @@ class psbtOutputProxy(psbtProxy):
 
             actual_addr_format = AF_P2WPKH if is_segwit else AF_CLASSIC
             if expected_addr_format and actual_addr_format != expected_addr_format:
-                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
+                raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
 
             expect_pkh = hash160(expect_pubkey)
         elif addr_type == 'p2tr':
             if expected_addr_format and expected_addr_format != AF_P2TR:
-                raise FraudulentChangeOutput(out_idx, "Change output uses the wrong script type")
+                raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
             expect_pkh = output_script(expect_pubkey, None)[2:]
         else:
             # we don't know how to "solve" this type of input
             return
 
         if pkh != expect_pkh:
-            raise FraudulentChangeOutput(out_idx, "Change output is fraudulent")
+            raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
         # We will check pubkey value at the last second, during signing.
         self.is_change = True
