@@ -4,7 +4,8 @@
 #
 # Regression tests for PSBT change classification edge-cases.
 
-from exceptions import FraudulentChangeOutput
+from exceptions import (FraudulentChangeOutput, CHANGE_ADDRESS_NOT_OURS,
+                        CHANGE_MULTISIG_SETUP_MISMATCH, CHANGE_WRONG_ACCOUNT_TYPE)
 from psbt import psbtObject, psbtOutputProxy
 from serializations import CTxOut, hash160
 from taproot import output_script
@@ -63,24 +64,26 @@ class FakeOutput:
         return value
 
 
-def must_fail(script_pubkey):
+def must_fail(script_pubkey, expected_message):
     try:
         FakeOutput(script_pubkey,
                    subpaths={PUBKEY: BIP49_SUBPATH},
                    redeem_script=REDEEM_SCRIPT).validate(0, CTxOut(0, script_pubkey), MY_XFP, None)
-    except FraudulentChangeOutput:
+    except FraudulentChangeOutput as exc:
+        assert exc.args[0] == expected_message
         return
 
     raise RuntimeError('expected FraudulentChangeOutput')
 
 
-def validate_must_fail(output, message='expected FraudulentChangeOutput', active_multisig=None):
+def validate_must_fail(output, expected_message, active_multisig=None):
     try:
         output.validate(0, output._txo, MY_XFP, active_multisig)
-    except FraudulentChangeOutput:
+    except FraudulentChangeOutput as exc:
+        assert exc.args[0] == expected_message
         return
 
-    raise RuntimeError(message)
+    raise RuntimeError('expected FraudulentChangeOutput')
 
 
 class FakeInput:
@@ -106,6 +109,11 @@ class OneOfOneMultisig:
         assert subpaths == {PUBKEY: BIP48_SUBPATH}
 
 
+class MismatchedMultisig:
+    def validate_script(self, script, subpaths):
+        raise ValueError('wrong M/N')
+
+
 def assert_no_mixed_change_warning(outputs):
     mixed_inputs = [
         FakeInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY),
@@ -122,8 +130,8 @@ valid = FakeOutput(GOOD_P2SH,
 valid.validate(0, CTxOut(0, GOOD_P2SH), MY_XFP, None)
 assert valid.is_change is True
 
-must_fail(BAD_P2SH)
-must_fail(NATIVE_P2WPKH)
+must_fail(BAD_P2SH, CHANGE_ADDRESS_NOT_OURS)
+must_fail(NATIVE_P2WPKH, CHANGE_WRONG_ACCOUNT_TYPE)
 
 # Raw P2PK outputs and unknown derivations remain visible rather than being
 # treated as change or aborting a signing operation.
@@ -133,7 +141,8 @@ assert raw_p2pk.is_change is False
 
 # Taproot metadata is only valid for a BIP86-derived P2TR output.
 validate_must_fail(FakeOutput(TAPROOT_SCRIPT,
-                              tap_subpaths={TAP_PUBKEY: (BIP84_CHANGE_SUBPATH, [])}))
+                              tap_subpaths={TAP_PUBKEY: (BIP84_CHANGE_SUBPATH, [])}),
+                   CHANGE_WRONG_ACCOUNT_TYPE)
 
 # A single-sig path without a recognized full account derivation is not safe to
 # classify as change, but should not prevent signing.
@@ -165,7 +174,15 @@ for purpose in (45, 48):
     validate_must_fail(FakeOutput(GOOD_P2SH,
                                   subpaths={PUBKEY: script_wallet_path},
                                   redeem_script=REDEEM_SCRIPT),
+                       CHANGE_WRONG_ACCOUNT_TYPE,
                        active_multisig=OneOfOneMultisig())
+
+
+validate_must_fail(FakeOutput(LEGACY_P2SH,
+                              subpaths={PUBKEY: BIP48_SUBPATH},
+                              redeem_script=MULTISIG_SCRIPT),
+                   CHANGE_MULTISIG_SETUP_MISMATCH,
+                   active_multisig=MismatchedMultisig())
 
 
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
@@ -182,10 +199,10 @@ assert_no_mixed_change_warning([valid_mixed_taproot_change])
 wrong_tap_metadata_for_segwit = FakeOutput(NATIVE_P2WPKH,
                                            tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
 validate_must_fail(wrong_tap_metadata_for_segwit,
-                   'expected FraudulentChangeOutput for segwit output with taproot metadata')
+                   CHANGE_WRONG_ACCOUNT_TYPE)
 
 wrong_segwit_metadata_for_taproot = FakeOutput(TAPROOT_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 validate_must_fail(wrong_segwit_metadata_for_taproot,
-                   'expected FraudulentChangeOutput for taproot output with segwit metadata')
+                   CHANGE_WRONG_ACCOUNT_TYPE)
 
 return_value.write(b'OK')
