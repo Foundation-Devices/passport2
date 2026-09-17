@@ -114,14 +114,16 @@ class MismatchedMultisig:
         raise ValueError('wrong M/N')
 
 
-def assert_no_mixed_change_warning(outputs):
-    mixed_inputs = [
-        FakeInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY),
-        FakeInput(tap_subpaths={TAP_PUBKEY: (BIP86_INPUT_SUBPATH, [])}, required_key=TAP_PUBKEY),
-    ]
-    fake_psbt = FakePsbt(mixed_inputs, outputs)
+def assert_no_change_warning(inputs, outputs):
+    fake_psbt = FakePsbt(inputs, outputs)
     fake_psbt.consider_dangerous_change(MY_XFP)
     assert fake_psbt.warnings == []
+
+
+segwit_inputs = [FakeInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY)]
+taproot_inputs = [FakeInput(tap_subpaths={TAP_PUBKEY: (BIP86_INPUT_SUBPATH, [])},
+                            required_key=TAP_PUBKEY)]
+mixed_inputs = segwit_inputs + taproot_inputs
 
 
 valid = FakeOutput(GOOD_P2SH,
@@ -188,13 +190,15 @@ validate_must_fail(FakeOutput(LEGACY_P2SH,
 valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
 assert valid_mixed_segwit_change.is_change is True
-assert_no_mixed_change_warning([valid_mixed_segwit_change])
+for inputs in (segwit_inputs, taproot_inputs, mixed_inputs):
+    assert_no_change_warning(inputs, [valid_mixed_segwit_change])
 
 valid_mixed_taproot_change = FakeOutput(TAPROOT_SCRIPT,
                                         tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
 valid_mixed_taproot_change.validate(0, CTxOut(0, TAPROOT_SCRIPT), MY_XFP, None)
 assert valid_mixed_taproot_change.is_change is True
-assert_no_mixed_change_warning([valid_mixed_taproot_change])
+for inputs in (segwit_inputs, taproot_inputs, mixed_inputs):
+    assert_no_change_warning(inputs, [valid_mixed_taproot_change])
 
 wrong_tap_metadata_for_segwit = FakeOutput(NATIVE_P2WPKH,
                                            tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
