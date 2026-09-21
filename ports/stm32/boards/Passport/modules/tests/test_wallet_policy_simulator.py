@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-from fixtures.simulator import exec_file  # noqa: F401
+from fixtures.simulator import exec_file, simulator  # noqa: F401
 
 
 def test_registered_policy_psbt_matches_in_micropython(exec_file):
