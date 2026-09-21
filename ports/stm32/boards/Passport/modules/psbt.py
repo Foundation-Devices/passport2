@@ -429,6 +429,13 @@ class psbtOutputProxy(psbtProxy):
             self.is_change = derived.branch == 1
             return
 
+        if active_policy and not (active_policy.context == 'wsh' and
+                                  addr_type == 'p2sh' and is_segwit):
+            # Owning a destination key does not preserve the policy's spending
+            # conditions. Only an exact policy match may be hidden as change.
+            self.is_change = False
+            return
+
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
