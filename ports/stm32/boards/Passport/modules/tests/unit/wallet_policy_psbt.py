@@ -9,6 +9,7 @@ from uio import BytesIO
 
 import common
 import history
+import stash
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from psbt import psbtObject
 from wallet_policy import MiniscriptPolicy
@@ -27,6 +28,30 @@ class MemorySettings:
 
 if common.settings is None:
     common.settings = MemorySettings()
+
+
+class FixturePublicValues:
+    """Stand in for the keystore using the fixture's owned account xpub."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def derive_path(self, path, register=True):
+        import chains
+        from public_constants import AF_CLASSIC
+        from utils import str_to_keypath
+
+        policy = MiniscriptPolicy.deserialize(common.settings.get('wallet_policies')[0])
+        key = policy.keys[policy.owned_key_indexes[0]]
+        numeric_path = str_to_keypath(0, path)[1:]
+        assert tuple(numeric_path[:len(key.path)]) == key.path
+        node = chains.current_chain().deserialize_node(key.xpub, AF_CLASSIC)
+        for index in numeric_path[len(key.path):]:
+            node.derive(index, True)
+        return node
 
 
 OWNED_KEY = (
@@ -116,7 +141,15 @@ async def run_test():
 
 
 LIANA_DESCRIPTOR = (
-
+    "wsh(or_i(and_v(v:thresh(2,pkh([9f141cf0/48'/1'/0'/2']tpubDFnReAwXvYd6RA46X55HuFpmvZsLanD"
+    "rwHAUsdYEGEpNGTRnCdbDRXJGLTwDeqKURCPZUDgdkuuu9dYkuBNQHmSNBUu7V2CdLKwpJjx2JuC/<2;3>/*),a:pkh([daba2d5"
+    "f/48'/1'/0'/2']tpubDDwKEc4i4k8rBgVLGxytHrP13VVYucUGmL2cadux7AfMwMnRHKcw1YZKt9SMB4fWut7ZAiZqPefzm3BBC"
+    "NXLZMxDrWJ4Q6VA1AFB6b8GzbT/<2;3>/*),a:pkh([141cfdf4/48'/1'/0'/2']tpubDEnYysximqdZkZnW5W9gYc7N3sxizKy"
+    "qfdJfZ2qRfwNvSv6E11yDgyLTAnWQqDmVJ7oQ3h3ui59RQm1qmGxMm4jinq5wvSzyueKgrLJj5Cy/<0;1>/*)),older(52596))"
+    ",and_v(v:pk([9f141cf0/48'/1'/0'/2']tpubDFnReAwXvYd6RA46X55HuFpmvZsLanDrwHAUsdYEGEpNGTRnCdbDRXJGLTwDe"
+    "qKURCPZUDgdkuuu9dYkuBNQHmSNBUu7V2CdLKwpJjx2JuC/<0;1>/*),pk([daba2d5f/48'/1'/0'/2']tpubDDwKEc4i4k8rBg"
+    "VLGxytHrP13VVYucUGmL2cadux7AfMwMnRHKcw1YZKt9SMB4fWut7ZAiZqPefzm3BBCNXLZMxDrWJ4Q6VA1AFB6b8GzbT/<0;1>/"
+    "*))))#u768v50p"
 )
 
 LIANA_PSBT_BASE64 = (
@@ -147,15 +180,7 @@ LIANA_PSBT_BASE64 = (
     "sSA2GwSOhfVmhXscnxQc8DAAAIABAACAAAAAgAIAAIADAAAAAQAAACICAvYxxE7nPGwcict0xAjs6mJQPBVkP7EpNYvXfdv6kgbV"
     "HBQc/fQwAACAAQAAgAAAAIACAACAAQAAAAEAAAAiAgMCQx8P+16DiDUMSkg+XtmNMVbIiUO3AnpbaVgAxYABHxzaui1fMAAAgAEA"
     "AIAAAACAAgAAgAEAAAABAAAAIgIDvIxNjkHn4rPllL9D4uF8SPvfDJITwxu/UIOkF/ltIfEcnxQc8DAAAIABAACAAAAAgAIAAIAB"
-    "AAAAAQAAAAA=wsh(or_i(and_v(v:thresh(2,pkh([9f141cf0/48'/1'/0'/2']tpubDFnReAwXvYd6RA46X55HuFpmvZsLanD"
-    "rwHAUsdYEGEpNGTRnCdbDRXJGLTwDeqKURCPZUDgdkuuu9dYkuBNQHmSNBUu7V2CdLKwpJjx2JuC/<2;3>/*),a:pkh([daba2d5"
-    "f/48'/1'/0'/2']tpubDDwKEc4i4k8rBgVLGxytHrP13VVYucUGmL2cadux7AfMwMnRHKcw1YZKt9SMB4fWut7ZAiZqPefzm3BBC"
-    "NXLZMxDrWJ4Q6VA1AFB6b8GzbT/<2;3>/*),a:pkh([141cfdf4/48'/1'/0'/2']tpubDEnYysximqdZkZnW5W9gYc7N3sxizKy"
-    "qfdJfZ2qRfwNvSv6E11yDgyLTAnWQqDmVJ7oQ3h3ui59RQm1qmGxMm4jinq5wvSzyueKgrLJj5Cy/<0;1>/*)),older(52596))"
-    ",and_v(v:pk([9f141cf0/48'/1'/0'/2']tpubDFnReAwXvYd6RA46X55HuFpmvZsLanDrwHAUsdYEGEpNGTRnCdbDRXJGLTwDe"
-    "qKURCPZUDgdkuuu9dYkuBNQHmSNBUu7V2CdLKwpJjx2JuC/<0;1>/*),pk([daba2d5f/48'/1'/0'/2']tpubDDwKEc4i4k8rBg"
-    "VLGxytHrP13VVYucUGmL2cadux7AfMwMnRHKcw1YZKt9SMB4fWut7ZAiZqPefzm3BBCNXLZMxDrWJ4Q6VA1AFB6b8GzbT/<0;1>/"
-    "*))))#u768v50p"
+    "AAAAAQAAAAA="
 )
 
 
@@ -188,4 +213,9 @@ async def run_all():
     await run_liana_multipath_change_test()
 
 
-uasyncio.run(run_all())
+original_sensitive_values = stash.SensitiveValues
+stash.SensitiveValues = FixturePublicValues
+try:
+    uasyncio.run(run_all())
+finally:
+    stash.SensitiveValues = original_sensitive_values

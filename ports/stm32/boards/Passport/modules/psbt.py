@@ -996,7 +996,10 @@ class psbtInputProxy(psbtProxy):
         # need to re-serialize as a PSBT.
 
     def get_signing_node(self, sv, my_xfp, my_idx):
-        if self.is_multisig:
+        # A registered Taproot script path has one x-only signing key, even
+        # though policy inputs share the multisig validation machinery.
+        tapscript = self.policy_spend_plan and self.policy_spend_plan.script_context == 'tapscript'
+        if self.is_multisig and not tapscript:
             # The fingerprint is only a hint. Derive each candidate to prove
             # that Passport owns one of the public keys required by the script.
             for which_key in self.required_key:

@@ -31,6 +31,30 @@ if common.settings is None:
     common.settings = MemorySettings()
 
 
+class FixturePublicValues:
+    """Stand in for the keystore using the fixture's owned account xpub."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def derive_path(self, path, register=True):
+        import chains
+        from public_constants import AF_CLASSIC
+        from utils import str_to_keypath
+
+        policy = MiniscriptPolicy.deserialize(common.settings.get('wallet_policies')[0])
+        key = policy.keys[policy.owned_key_indexes[0]]
+        numeric_path = str_to_keypath(0, path)[1:]
+        assert tuple(numeric_path[:len(key.path)]) == key.path
+        node = chains.current_chain().deserialize_node(key.xpub, AF_CLASSIC)
+        for index in numeric_path[len(key.path):]:
+            node.derive(index, True)
+        return node
+
+
 OWNED_KEY = (
     "[5a3469b6/86'/0'/0']"
     'xpub6Cx47kkB7dkMy515HJa3WH2iRSqqScxnsstoSqF1NEyjXKC7N2vTBqVjx1LZ'
@@ -242,4 +266,9 @@ async def run_test():
     assert key_input.added_tap_script_sig is None
 
 
-uasyncio.run(run_test())
+original_sensitive_values = stash.SensitiveValues
+stash.SensitiveValues = FixturePublicValues
+try:
+    uasyncio.run(run_test())
+finally:
+    stash.SensitiveValues = original_sensitive_values
