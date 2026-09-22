@@ -953,20 +953,23 @@ class psbtInputProxy(psbtProxy):
 
             # print("redeem: %s" % b2a_hex(redeem_script))
             M, N = disassemble_multisig_mn(redeem_script)
+            assert 1 <= M <= N <= MAX_SIGNERS, 'M/N range'
             xfp_paths = sorted(self.subpaths.values())
 
             if not psbt.active_multisig:
                 if psbt.active_policy:
                     raise FatalPSBTIssue('Cannot mix legacy multisig and registered wallet policy inputs')
-                # search for multisig wallet
-                wal = MultisigWallet.find_match(M, N, xfp_paths)
-                if not wal:
+                # Only activate/import a legacy wallet after exact registered
+                # policy matching has declined this input.
+                if psbt.xpubs:
+                    psbt.handle_xpubs(M, N)
+                if not psbt.active_multisig:
+                    psbt.active_multisig = MultisigWallet.find_match(M, N, xfp_paths)
+                if not psbt.active_multisig:
                     raise FatalPSBTIssue('Unknown multisig wallet')
 
-                psbt.active_multisig = wal
-            else:
-                # check consistent w/ already selected wallet
-                psbt.active_multisig.assert_matching(M, N, xfp_paths)
+            # Check the actual input even when global XPUBs selected the wallet.
+            psbt.active_multisig.assert_matching(M, N, xfp_paths)
 
             # validate redeem script, by disassembling it and checking all pubkeys
             try:
@@ -1328,33 +1331,11 @@ class psbtObject(psbtProxy):
 
             fd.seek(cont)
 
-    def guess_M_of_N(self):
-        # Peek at the inputs to see if we can guess M/N value. Just takes
-        # first one it finds.
-        #
-        from opcodes import OP_CHECKMULTISIG
-        for i in self.inputs:
-            ks = i.witness_script or i.redeem_script
-            if not ks:
-                continue
-
-            rs = i.get(ks)
-            if rs[-1] != OP_CHECKMULTISIG:
-                continue
-
-            M, N = disassemble_multisig_mn(rs)
-            assert 1 <= M <= N <= MAX_SIGNERS
-
-            return (M, N)
-
-        # not multisig, probably
-        return None, None
-
-    async def handle_xpubs(self):
-        # Lookup correct wallet based on xpubs in globals
-        # - only happens if they volunteered this 'extra' data
-        # - do not assume multisig
+    def handle_xpubs(self, M, N):
+        # Discover a legacy wallet for an input that did not match a registered
+        # policy. Global metadata alone must never activate a legacy wallet.
         assert not self.active_multisig
+        assert not self.active_policy
 
         xfp_paths = []
         has_mine = 0
@@ -1369,31 +1350,12 @@ class psbtObject(psbtProxy):
         if not has_mine:
             raise FatalPSBTIssue('My XFP not involved')
 
-        # Global XPUB records are historically used to discover conventional
-        # multisig wallets.  They must not pre-empt registered policy matching
-        # for a non-CHECKMULTISIG witness script.
-        from opcodes import OP_CHECKMULTISIG
-        for psbt_input in self.inputs:
-            if psbt_input.witness_script:
-                candidate_script = psbt_input.get(psbt_input.witness_script)
-                if not candidate_script or candidate_script[-1] != OP_CHECKMULTISIG:
-                    return
-
         candidates = MultisigWallet.find_candidates(xfp_paths)
 
         if len(candidates) == 1:
             # exact match (by xfp+deriv set) .. normal case
             self.active_multisig = candidates[0]
         else:
-            # don't want to guess M if not needed, but we need it
-            M, N = self.guess_M_of_N()
-
-            if not N:
-                # not multisig, but we can still verify:
-                # - XFP should be one of ours (checked above).
-                # - too slow to re-derive it here, so nothing more to validate at this point
-                return
-
             assert N == len(xfp_paths)
 
             for c in candidates:
@@ -1450,12 +1412,6 @@ class psbtObject(psbtProxy):
         gc.collect()
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
-
-        # if multisig xpub details provided, they better be right and/or offer import
-        # print('self.xpubs={}'.format(self.xpubs))
-        if self.xpubs:
-            # print('calling self.handle_xpubs()')
-            await self.handle_xpubs()
 
         gc.collect()
 
