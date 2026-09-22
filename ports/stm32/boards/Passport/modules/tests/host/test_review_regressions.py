@@ -144,9 +144,8 @@ def test_nested_optional_timelock_does_not_hide_immediate_authorization():
         repr(policy.format_signing_pages(compatible)))
 
 
-@pytest.mark.parametrize('include_global_xpubs', [False, True])
-def test_registered_multi_policy_is_not_preempted_by_global_xpubs(
-        monkeypatch, psbt_module, include_global_xpubs):
+@pytest.fixture
+def multi_policy_input(monkeypatch, psbt_module):
     from wallet_policy import MiniscriptPolicy
 
     class Node:
@@ -172,28 +171,112 @@ def test_registered_multi_policy_is_not_preempted_by_global_xpubs(
     settings = {'wallet_policies': [policy.serialize()]}
     monkeypatch.setitem(sys.modules, 'common', types.SimpleNamespace(settings=settings))
     xfp = int.from_bytes(bytes.fromhex(policy.keys[0].fingerprint), 'little')
-    inp = psbt_module.psbtInputProxy(io.BytesIO(b'\x00'), 0)
-    inp.fd = io.BytesIO(derived.witness_script)
-    inp.witness_script = (0, len(derived.witness_script))
-    inp.subpaths = paths
-    inp.sighash = 1
-    psbt = object.__new__(psbt_module.psbtObject)
-    psbt.inputs = [inp]
-    psbt.my_xfp = xfp
-    psbt.active_policy = None
-    psbt.active_multisig = None
-    if include_global_xpubs:
-        legacy = types.SimpleNamespace(validate_psbt_xpubs=lambda value: None)
-        psbt_module.psbtObject.handle_xpubs.__globals__['MultisigWallet'] = types.SimpleNamespace(
-            find_candidates=lambda paths: [legacy])
+
+    def make_input(registered=True, include_global_xpubs=True):
+        settings['wallet_policies'] = [policy.serialize()] if registered else []
+        inp = psbt_module.psbtInputProxy(io.BytesIO(b'\x00'), 0)
+        inp.fd = io.BytesIO(derived.witness_script)
+        inp.witness_script = (0, len(derived.witness_script))
+        inp.subpaths = paths
+        inp.sighash = 1
+        psbt = object.__new__(psbt_module.psbtObject)
+        psbt.inputs = [inp]
+        psbt.my_xfp = xfp
+        psbt.active_policy = None
+        psbt.active_multisig = None
+        psbt.multisig_import_needs_approval = False
         psbt.xpubs = {(struct.pack('<5I', int.from_bytes(bytes.fromhex(key.fingerprint), 'little'),
                                    *key.path), bytes([index])): None
-                      for index, key in enumerate(policy.keys)}
-        asyncio.run(psbt.handle_xpubs())
-    txo = sys.modules['serializations'].CTxOut(10000, derived.script_pubkey)
-    inp.determine_my_signing_key(0, txo, xfp, psbt)
+                      for index, key in enumerate(policy.keys)} if include_global_xpubs else {}
+        txo = sys.modules['serializations'].CTxOut(10000, derived.script_pubkey)
+        return psbt, inp, txo
+
+    return policy, make_input
+
+
+@pytest.mark.parametrize('include_global_xpubs', [False, True])
+def test_registered_multi_policy_is_not_preempted_by_global_xpubs(
+        monkeypatch, psbt_module, multi_policy_input, include_global_xpubs):
+    policy, make_input = multi_policy_input
+    psbt, inp, txo = make_input(include_global_xpubs=include_global_xpubs)
+
+    def forbidden_discovery(*args):
+        pytest.fail('Registered policy triggered legacy discovery/import')
+
+    monkeypatch.setitem(psbt_module.psbtObject.handle_xpubs.__globals__, 'MultisigWallet',
+                        types.SimpleNamespace(find_candidates=forbidden_discovery,
+                                              import_from_psbt=forbidden_discovery))
+    # Exercise initial validation too: it must not activate a wallet from
+    # global metadata before the real per-input policy matcher gets a turn.
+    psbt.txn = (0, 64)
+    psbt.num_inputs = 1
+    psbt.num_outputs = 1
+    monkeypatch.setattr(psbt_module.psbtObject, 'input_iter', lambda self: iter([(0, None)]))
+    monkeypatch.setattr(psbt_module.psbtInputProxy, 'validate', lambda *args: None)
+    asyncio.run(psbt.validate())
+    inp.determine_my_signing_key(0, txo, psbt.my_xfp, psbt)
     assert psbt.active_policy.policy_id == policy.policy_id
     assert inp.policy_spend_plan is not None
+    assert psbt.active_multisig is None
+    assert not psbt.multisig_import_needs_approval
+
+
+@pytest.mark.parametrize('discovery', ['stored', 'import', 'no_global_xpubs'])
+def test_legacy_multisig_discovery_still_validates_and_requests_approval(
+        monkeypatch, psbt_module, multi_policy_input, discovery):
+    _, make_input = multi_policy_input
+    psbt, inp, txo = make_input(registered=False, include_global_xpubs=discovery != 'no_global_xpubs')
+    calls = []
+
+    def assert_matching(m, n, paths):
+        assert (m, n) == (2, 2)
+        assert paths == sorted(inp.subpaths.values())
+        calls.append('match')
+
+    def validate_script(witness, subpaths):
+        assert witness == inp.get(inp.witness_script)
+        assert subpaths == inp.subpaths
+        calls.append('script')
+
+    legacy = types.SimpleNamespace(
+        M=2, N=2, assert_matching=assert_matching, validate_script=validate_script,
+        validate_psbt_xpubs=lambda value: calls.append('xpubs'))
+
+    def import_wallet(m, n, xpubs):
+        assert (m, n) == (2, 2)
+        assert xpubs == psbt.xpubs
+        calls.append('import')
+        return legacy, True
+
+    namespace = psbt_module.psbtObject.handle_xpubs.__globals__
+    monkeypatch.setitem(namespace, 'disassemble_multisig_mn', lambda _: (2, 2))
+    monkeypatch.setitem(namespace, 'MultisigWallet', types.SimpleNamespace(
+        find_candidates=lambda paths: [legacy] if discovery == 'stored' else [],
+        import_from_psbt=import_wallet, find_match=lambda *args: legacy))
+    inp.determine_my_signing_key(0, txo, psbt.my_xfp, psbt)
+    assert psbt.active_multisig is legacy
+    assert psbt.active_policy is None
+    assert inp.policy_spend_plan is None
+    assert inp.required_key
+    assert psbt.multisig_import_needs_approval == (discovery == 'import')
+    assert calls == ({'stored': ['xpubs', 'match', 'script'],
+                      'import': ['import', 'match', 'script'],
+                      'no_global_xpubs': ['match', 'script']}[discovery])
+
+
+@pytest.mark.parametrize('policy_first', [False, True])
+def test_actual_mixed_policy_and_legacy_inputs_still_fail(
+        monkeypatch, psbt_module, multi_policy_input, policy_first):
+    policy, make_input = multi_policy_input
+    psbt, inp, txo = make_input(registered=not policy_first)
+    if policy_first:
+        psbt.active_policy = policy
+    else:
+        psbt.active_multisig = object()
+    namespace = psbt_module.psbtObject.handle_xpubs.__globals__
+    monkeypatch.setitem(namespace, 'disassemble_multisig_mn', lambda _: (2, 2))
+    with pytest.raises(sys.modules['exceptions'].FatalPSBTIssue, match='Cannot mix'):
+        inp.determine_my_signing_key(1, txo, psbt.my_xfp, psbt)
 
 
 @pytest.mark.parametrize('collision', [False, True])
