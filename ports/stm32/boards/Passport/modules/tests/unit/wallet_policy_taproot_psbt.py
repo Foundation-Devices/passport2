@@ -13,7 +13,7 @@ import stash
 from exceptions import FatalPSBTIssue, FraudulentChangeOutput
 from psbt import psbtObject
 from tasks.sign_psbt_task import sign_psbt_task
-from wallet_policy import MiniscriptPolicy
+from wallet_policy import KeyInfo, MiniscriptPolicy
 
 
 class MemorySettings:
@@ -45,8 +45,7 @@ class FixturePublicValues:
         from public_constants import AF_CLASSIC
         from utils import str_to_keypath
 
-        policy = MiniscriptPolicy.deserialize(common.settings.get('wallet_policies')[0])
-        key = policy.keys[policy.owned_key_indexes[0]]
+        key = KeyInfo.parse(OWNED_KEY)
         numeric_path = str_to_keypath(0, path)[1:]
         assert tuple(numeric_path[:len(key.path)]) == key.path
         node = chains.current_chain().deserialize_node(key.xpub, AF_CLASSIC)
@@ -103,6 +102,9 @@ async def parse_policy_psbt(policy):
 
 
 async def run_test():
+    import wallet_policy
+    assert not wallet_policy.ENABLE_TAPROOT_POLICIES
+    wallet_policy.ENABLE_TAPROOT_POLICIES = True
     policy = MiniscriptPolicy(
         'Tap Recovery', 'BTC',
         'tr({},pk(@0/**))'.format(INTERNAL_KEY), (OWNED_KEY,), (0,))
@@ -225,6 +227,33 @@ async def run_test():
     except FraudulentChangeOutput:
         pass
 
+    # The release gate rejects both new discovery and an already validated
+    # plan, before opening the private-key context.
+    cached = await parse_policy_psbt(policy)
+    wallet_policy.ENABLE_TAPROOT_POLICIES = False
+    try:
+        await parse_policy_psbt(policy)
+        assert False, 'Release accepted a Taproot wallet policy input'
+    except FatalPSBTIssue as exc:
+        assert 'not enabled in this release' in str(exc)
+
+    def forbidden_private_access():
+        assert False, 'Disabled policy reached private keys'
+
+    rejected = []
+
+    async def disabled_done(error_msg, error_code):
+        rejected.append((error_msg, error_code))
+
+    stash.SensitiveValues = forbidden_private_access
+    try:
+        await sign_psbt_task(disabled_done, cached)
+    finally:
+        stash.SensitiveValues = original_sensitive_values
+    assert len(rejected) == 1
+    assert 'not enabled in this release' in rejected[0][0]
+    assert cached.inputs[0].added_tap_script_sig is None
+
     # Regression: registered script-path support must not alter Passport's
     # pre-existing BIP86 key-path detection, sighash, or signing branch.
     key_path = psbtObject.read_psbt(BytesIO(a2b_base64(KEY_PATH_PSBT_BASE64)))
@@ -271,4 +300,6 @@ stash.SensitiveValues = FixturePublicValues
 try:
     uasyncio.run(run_test())
 finally:
+    import wallet_policy
+    wallet_policy.ENABLE_TAPROOT_POLICIES = False
     stash.SensitiveValues = original_sensitive_values
