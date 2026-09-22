@@ -17,7 +17,17 @@ from descriptor import split_checksum
 from miniscript import (MAX_KEYS, MAX_TEMPLATE_LENGTH, Parser,
                         compile_miniscript, iter_policy_keys, validate)
 from policy_errors import (PolicyMismatchError, PolicyParseError,
-                           PolicyResourceError, WalletPolicyError)
+                           PolicyResourceError, UnsupportedPolicyError, WalletPolicyError)
+
+
+# Experimental coverage opts in explicitly; release firmware keeps this disabled.
+# Taproot wallet policies are tracked separately in SFT-8032.
+ENABLE_TAPROOT_POLICIES = False
+
+
+def require_taproot_policy_support():
+    if not ENABLE_TAPROOT_POLICIES:
+        raise UnsupportedPolicyError('Taproot wallet policies are not enabled in this release')
 
 
 POLICY_FORMAT_VERSION = 1
@@ -462,6 +472,7 @@ class MiniscriptPolicy:
             validate(miniscript, context)
             key_expressions = list(iter_policy_keys(miniscript))
         elif template.startswith('tr(') and template.endswith(')'):
+            require_taproot_policy_support()
             context = 'tr'
             internal_text, tree_text = _split_descriptor_pair(template[3:-1])
             if len(internal_text) == 64 and all(
@@ -641,6 +652,8 @@ class MiniscriptPolicy:
         return hexlify(_sha256(payload)).decode('ascii')
 
     def serialize(self):
+        if self.context == 'tr':
+            require_taproot_policy_support()
         record = {
             'v': POLICY_FORMAT_VERSION,
             'id': self.policy_id,
@@ -854,6 +867,7 @@ class MiniscriptPolicy:
                                   tap_leaf_scripts, tap_internal_key,
                                   tap_merkle_root, chain, my_xfp):
         """Resolve and exactly bind a BIP371 script-path input to this policy."""
+        require_taproot_policy_support()
         if self.context != 'tr':
             raise PolicyMismatchError('Taproot derivations require a tr policy')
         owned_index = self.owned_key_indexes[0]
@@ -955,6 +969,7 @@ class MiniscriptPolicy:
     def match_taproot_change(self, tap_subpaths, script_pubkey,
                              tap_internal_key, tap_tree, chain, my_xfp):
         """Classify change only when every BIP371 output field is exact."""
+        require_taproot_policy_support()
         if self.context != 'tr':
             raise PolicyMismatchError('Taproot change requires a tr policy')
         owned_key = self.keys[self.owned_key_indexes[0]]
@@ -1033,6 +1048,8 @@ class MiniscriptPolicy:
         return TAPSCRIPT_LEAF_VERSION, script
 
     def derive(self, branch, index, chain, key_resolver=None):
+        if self.context == 'tr':
+            require_taproot_policy_support()
         if getattr(chain, 'ctype', None) != self.network:
             raise PolicyMismatchError('Policy network does not match the active network')
         resolver = key_resolver or self._resolver(chain)
