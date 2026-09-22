@@ -73,6 +73,11 @@ class DerivationChain(StubChain):
         return FakeNode(xpub, 3)
 
 
+@pytest.fixture(autouse=True)
+def experimental_taproot_policies(monkeypatch):
+    monkeypatch.setattr('wallet_policy.ENABLE_TAPROOT_POLICIES', True)
+
+
 def make_policy(template=None):
     template = template or 'tr({},pk(@0/**))'.format(INTERNAL_KEY.hex())
     return MiniscriptPolicy('Tap Recovery', 'BTC', template, (KEY_INFO,), (0,))
