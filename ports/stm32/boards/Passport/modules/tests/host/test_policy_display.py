@@ -419,3 +419,49 @@ def test_relative_path_compatibility_rejects_unit_and_value_mismatches():
     assert compatible_path_indexes(policy, 2, 0, 1007) == (0,)
     assert compatible_path_indexes(policy, 2, 0, 1008) == (0, 1)
     assert compatible_path_indexes(policy, 2, 0, (1 << 22) | 1008) == (0,)
+
+
+@pytest.mark.parametrize('lock', ['older(10)', 'after(840000)'])
+@pytest.mark.parametrize(('template', 'structure'), [
+    ('wsh(and_v(v:pk(@0/**),or_i(pk(@1/**),and_v(v:pk(@2/**),{lock}))))',
+     'Any one of'),
+    ('wsh(andor(pk(@0/**),and_v(v:pk(@1/**),{lock}),pk(@2/**)))',
+     'Conditional path'),
+    ('wsh(thresh(2,pk(@0/**),s:pk(@1/**),sjn:and_v(v:pk(@2/**),{lock})))',
+     '2 of 3 conditions'),
+])
+def test_nested_timing_remains_structural_in_registration_and_signing(template, structure, lock):
+    policy = MiniscriptPolicy(
+        'Conditional timing', 'BTC', template.format(lock=lock),
+        tuple(key_info(index) for index in range(3)), (0,))
+
+    # A valid authorization remains available without executing the optional lock.
+    compatible = compatible_path_indexes(policy, 2, 0, 0xffffffff)
+    assert compatible == (0,)
+    review = '\n'.join(plain_review_pages(policy))
+    signing = '\n'.join(without_recolor(page) for page in policy.format_signing_pages(compatible))
+    for text in (review, signing):
+        assert 'Conditional timing' in text
+        assert 'Timing depends on the branch used.' in text
+        assert structure in text
+        assert ('10 blocks' if lock.startswith('older') else '840,000') in text
+        assert 'Available after' not in text
+        assert 'Delayed spending' not in text
+        assert 'Spend now' not in text
+    assert 'This Passport will sign:\nConditional timing:' in signing
+
+
+def test_unconditional_lock_still_filters_a_path_with_nested_optional_timing():
+    policy = MiniscriptPolicy(
+        'Mixed timing', 'BTC',
+        'wsh(and_v(v:older(5),and_v(v:pk(@0/**),'
+        'or_i(pk(@1/**),and_v(v:pk(@2/**),older(10))))))',
+        tuple(key_info(index) for index in range(3)), (0,))
+
+    assert compatible_path_indexes(policy, 2, 0, 4) == ()
+    assert compatible_path_indexes(policy, 2, 0, 5) == (0,)
+    assert compatible_path_indexes(policy, 2, 0, 10) == (0,)
+    review = '\n'.join(plain_review_pages(policy))
+    assert '5 blocks' in review
+    assert '10 blocks' in review
+    assert 'Available after' not in review

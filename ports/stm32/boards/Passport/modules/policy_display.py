@@ -304,11 +304,17 @@ def _format_condition(node, policy, depth=0, recovery=False):
 
 
 def _make_path(node, leaf_index=None):
+    # Only locks in the outer conjunction are unconditionally required.
+    # Nested alternatives and thresholds stay structural; enumerating all
+    # satisfactions could grow exponentially with the policy size.
+    locks = tuple((item.kind, item.value) for item in _flatten_conjunction(node)
+                  if item.kind in ('older', 'after'))
     return {
         'node': node,
         'leaf_index': leaf_index,
         'keys': _key_indexes(node),
-        'locks': tuple(policy_timelocks(node)),
+        'locks': locks,
+        'conditional_locks': locks != tuple(policy_timelocks(node)),
         'key_path': False,
         'fixed_key_path': False,
     }
@@ -340,8 +346,8 @@ def policy_paths(policy):
             paths.append(_make_path(alternative, leaf_index if policy.context == 'tr' else None))
     # Descriptors preserve script order, not human priority. Coordinators such
     # as Liana may serialize a delayed recovery branch before the immediately
-    # available branch. Keep each group stable, but review paths that can be
-    # used now before paths gated by a timelock.
+    # available branch. Keep each group stable, but review paths without
+    # unconditional locks before paths gated by a timelock.
     return tuple(sorted(paths, key=lambda path: 1 if path['locks'] else 0))
 
 
@@ -521,6 +527,8 @@ def _friendly_key_path(policy, path):
 def _path_name(path):
     if path['key_path']:
         name = 'Taproot key path'
+    elif path['conditional_locks']:
+        name = 'Conditional timing'
     elif len(path['locks']) == 1:
         name = 'After {}'.format(describe_timelock(*path['locks'][0])[0])
     elif path['locks']:
@@ -540,8 +548,8 @@ def compatible_path_indexes(policy, tx_version, lock_time, sequence):
     """Return paths whose timelocks are permitted by the transaction fields.
 
     This does not claim that a timelock has matured. It only rules out paths
-    that the signed transaction itself cannot satisfy. Paths without locks
-    always remain possible until the final witness selects a branch.
+    whose unconditional locks the signed transaction cannot satisfy. Nested
+    conditional locks are shown structurally and do not exclude the whole path.
     """
     compatible = []
     for index, path in enumerate(policy_paths(policy)):
@@ -589,13 +597,19 @@ def _generic_path_page(policy, path):
                  'requires' if requires else 'does not require')
 
     locks = path['locks']
-    if locks:
+    conditional = path['conditional_locks']
+    if conditional:
+        heading = 'Conditional timing'
+    elif locks:
         heading = 'Delayed spending'
     else:
         heading = 'Spend now'
-    lines = [_highlight(heading) if not locks else heading, '']
+    lines = [_highlight(heading) if not locks and not conditional else heading, '']
 
-    if locks:
+    if conditional:
+        lines.extend(['Timing depends on the branch used.',
+                      'Review all conditions below.', ''])
+    elif locks:
         for lock_position, (kind, value) in enumerate(locks):
             short, exact, _ = describe_timelock(kind, value)
             if lock_position:
@@ -737,10 +751,14 @@ def format_signing_pages(policy, compatible_indexes=None):
             else:
                 role = 'may be required'
             roles.append('{}: {}'.format(_path_name(path), role))
-    return ((
+    summary = (
         'Wallet\n{}\n\n'
         'This Passport will sign:\n{}\n\n'
         'Key: {}\n\n'
         'Your wallet app chooses which valid option completes the transaction.'
     ).format(_escape(policy.name), '\n'.join(roles),
-             format_fingerprint(owned.fingerprint)),)
+             format_fingerprint(owned.fingerprint))
+    conditional_pages = tuple(_generic_path_page(policy, path) for path in paths
+                              if not path['key_path'] and path['conditional_locks'] and
+                              policy.owned_key_indexes[0] in path['keys'])
+    return (summary,) + conditional_pages
