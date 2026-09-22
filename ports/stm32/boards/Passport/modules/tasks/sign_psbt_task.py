@@ -21,6 +21,15 @@ async def sign_psbt_task(on_done, psbt):
     from taproot import taproot_sign_key
 
     try:
+        # Reject cached experimental plans before accessing private keys.
+        for inp in psbt.inputs:
+            if inp.policy_spend_plan and inp.policy_spend_plan.script_context == 'tapscript':
+                from wallet_policy import require_taproot_policy_support
+                from policy_errors import UnsupportedPolicyError
+                try:
+                    require_taproot_policy_support()
+                except UnsupportedPolicyError as exc:
+                    raise FatalPSBTIssue(str(exc))
         with stash.SensitiveValues() as sv:
             error_msg = None
             error_code = None

@@ -333,7 +333,8 @@ def test_conditional_policy_is_rendered_structurally_without_false_simplificatio
     assert 'Review the conditional branches carefully' in review
 
 
-def test_taproot_key_paths_are_first_class_spending_paths():
+def test_taproot_key_paths_are_first_class_spending_paths(monkeypatch):
+    monkeypatch.setattr('wallet_policy.ENABLE_TAPROOT_POLICIES', True)
     fixed = MiniscriptPolicy(
         'Fixed Internal', 'BTC',
         'tr({},pk(@0/**))'.format(INTERNAL_KEY),

@@ -850,6 +850,12 @@ class psbtInputProxy(psbtProxy):
                     which_key = pubkey
 
             if self.tap_leaf_scripts or any(hashes for _, hashes in self.tap_subpaths.values()):
+                from wallet_policy import require_taproot_policy_support
+                from policy_errors import UnsupportedPolicyError
+                try:
+                    require_taproot_policy_support()
+                except UnsupportedPolicyError as exc:
+                    raise FatalPSBTIssue(str(exc))
                 from common import settings
                 policy_records = settings.get('wallet_policies', [])
                 if policy_records:
