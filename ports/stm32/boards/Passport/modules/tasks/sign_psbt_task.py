@@ -21,15 +21,6 @@ async def sign_psbt_task(on_done, psbt):
     from taproot import taproot_sign_key
 
     try:
-        # Reject cached experimental plans before accessing private keys.
-        for inp in psbt.inputs:
-            if inp.policy_spend_plan and inp.policy_spend_plan.script_context == 'tapscript':
-                from wallet_policy import require_taproot_policy_support
-                from policy_errors import UnsupportedPolicyError
-                try:
-                    require_taproot_policy_support()
-                except UnsupportedPolicyError as exc:
-                    raise FatalPSBTIssue(str(exc))
         with stash.SensitiveValues() as sv:
             error_msg = None
             error_code = None
@@ -63,54 +54,6 @@ async def sign_psbt_task(on_done, psbt):
                 txi.scriptSig = inp.scriptSig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
-
-                if inp.policy_spend_plan and \
-                        inp.policy_spend_plan.script_context == 'tapscript':
-                    plan = inp.policy_spend_plan
-                    utxo = inp.get_utxo(txi.prevout.n)
-                    leaf_scripts = {control: inp.get(value)
-                                    for control, value in inp.tap_leaf_scripts.items()}
-                    internal_key = inp.get(inp.tap_internal_key) \
-                        if inp.tap_internal_key else None
-                    merkle_root = inp.get(inp.tap_merkle_root) \
-                        if inp.tap_merkle_root else None
-                    plan.assert_tapscript_scope(
-                        in_idx, inp.tap_subpaths, utxo.scriptPubKey,
-                        leaf_scripts, internal_key, merkle_root, inp.sighash,
-                        inp.required_key)
-                    del utxo, leaf_scripts, internal_key, merkle_root
-
-                    # Script-path signatures use the untweaked leaf key and
-                    # the BIP342 signature-message extension.  This is kept
-                    # separate from the pre-existing key-path signing branch.
-                    skp = keypath_to_str(plan.owned_key_path)
-                    node = sv.derive_path(skp, register=False)
-                    try:
-                        pu = bytes(node.public_key()[1:])
-                        if pu != plan.expected_pubkey:
-                            raise AssertionError(
-                                'Path (%s) led to wrong Taproot pubkey for input #%d' %
-                                (skp, in_idx))
-                        pk = node.private_key()
-                        try:
-                            digest = psbt.make_txn_taproot_sighash(
-                                in_idx, inp.sighash, ext_flag=1,
-                                tapleaf_hash=plan.tapleaf_hash)
-                            signature = secp256k1.sign_schnorr(digest, pk)
-                            if len(signature) != 64:
-                                raise AssertionError('Incorrect Schnorr signature length.')
-                            signature_key = pu + plan.tapleaf_hash
-                            if signature_key in inp.tap_script_sigs or \
-                                    inp.added_tap_script_sig:
-                                raise AssertionError(
-                                    'This Taproot script path has already been signed')
-                            inp.added_tap_script_sig = (signature_key, signature)
-                        finally:
-                            stash.blank_object(pk)
-                    finally:
-                        stash.blank_object(node)
-                    success.add(in_idx)
-                    continue
 
                 if inp.policy_spend_plan:
                     utxo = inp.get_utxo(txi.prevout.n)
@@ -154,8 +97,7 @@ async def sign_psbt_task(on_done, psbt):
                         pk = node.private_key()
                         try:
                             if len(inp.tap_subpaths) > 0:
-                                # Registered script paths were handled above; this is the
-                                # pre-existing Taproot key-path branch.
+                                # BIP86 Taproot key-path signature.
                                 inp.tap_key_sig = taproot_sign_key(
                                     None, pk, inp.sighash, digest)
                             else:
