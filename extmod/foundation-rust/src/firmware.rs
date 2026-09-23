@@ -270,7 +270,7 @@ mod tests {
     }
 
     fn check_header(header: &[u8]) -> FirmwareResult {
-        let mut result = FirmwareResult::InvalidHeader;
+        let mut result = FirmwareResult::SignaturesOk;
         verify_update_header(header.as_ptr(), header.len(), 0, &mut result);
         result
     }
@@ -280,7 +280,7 @@ mod tests {
         hash: &[u8; 32],
         key: &[u8; 64],
     ) -> FirmwareResult {
-        let mut result = FirmwareResult::InvalidHeader;
+        let mut result = FirmwareResult::SignaturesOk;
         verify_update_signatures(
             header.as_ptr(),
             header.len(),
