@@ -176,7 +176,7 @@ def _can_satisfy_without_key(node, key_index):
         return True
     if kind == '0':
         return False
-    if kind in ('multi', 'multi_a'):
+    if kind == 'multi':
         available = sum(1 for key in node.args if key.index != key_index)
         return available >= node.value
     if kind in _AND:
@@ -256,7 +256,7 @@ def _format_condition(node, policy, depth=0, recovery=False):
         prefix = 'Wait ' if kind == 'older' else 'After '
         return [indent + prefix + short,
                 child_indent + '(' + exact + ')']
-    if kind in ('multi', 'multi_a'):
+    if kind == 'multi':
         lines = [indent + '{} of {} keys'.format(node.value, len(node.args))]
         for key in node.args:
             lines.append(child_indent + '- ' + _key_line(policy, key.index, recovery))
@@ -303,7 +303,7 @@ def _format_condition(node, policy, depth=0, recovery=False):
     return [indent + 'Advanced condition: ' + kind]
 
 
-def _make_path(node, leaf_index=None):
+def _make_path(node):
     # Only locks in the outer conjunction are unconditionally required.
     # Nested alternatives and thresholds stay structural; enumerating all
     # satisfactions could grow exponentially with the policy size.
@@ -311,39 +311,14 @@ def _make_path(node, leaf_index=None):
                   if item.kind in ('older', 'after'))
     return {
         'node': node,
-        'leaf_index': leaf_index,
         'keys': _key_indexes(node),
         'locks': locks,
         'conditional_locks': locks != tuple(policy_timelocks(node)),
-        'key_path': False,
-        'fixed_key_path': False,
     }
 
 
 def policy_paths(policy):
-    paths = []
-    if policy.context == 'tr':
-        if isinstance(policy.internal_key, bytes):
-            paths.append({
-                'node': None,
-                'leaf_index': None,
-                'keys': (),
-                'locks': (),
-                'key_path': True,
-                'fixed_key_path': True,
-            })
-        else:
-            paths.append({
-                'node': None,
-                'leaf_index': None,
-                'keys': (policy.internal_key.index,),
-                'locks': (),
-                'key_path': True,
-                'fixed_key_path': False,
-            })
-    for leaf_index, leaf in enumerate(policy._leaves()):
-        for alternative in _split_alternatives(leaf):
-            paths.append(_make_path(alternative, leaf_index if policy.context == 'tr' else None))
+    paths = [_make_path(node) for node in _split_alternatives(policy.miniscript)]
     # Descriptors preserve script order, not human priority. Coordinators such
     # as Liana may serialize a delayed recovery branch before the immediately
     # available branch. Keep each group stable, but review paths without
@@ -352,12 +327,7 @@ def policy_paths(policy):
 
 
 def _classify_simple_inheritance(policy, paths):
-    # Taproot always has a key path in addition to its script tree. Keep those
-    # policies in the generic renderer so the bypass path cannot be visually
-    # reduced to a footnote, even when the script leaves resemble inheritance.
-    if any(path['key_path'] for path in paths):
-        return None
-    script_paths = [path for path in paths if not path['key_path']]
+    script_paths = paths
     if len(script_paths) != 2:
         return None
     owned = policy.owned_key_indexes[0]
@@ -381,7 +351,7 @@ def _classify_simple_inheritance(policy, paths):
 
 
 def _script_type(policy):
-    return 'Native SegWit (P2WSH)' if policy.context == 'wsh' else 'Taproot (P2TR)'
+    return 'Native SegWit (P2WSH)'
 
 
 def _network_name(policy):
@@ -389,10 +359,6 @@ def _network_name(policy):
 
 
 def _path_requires_passport(policy, path):
-    if path['key_path']:
-        if path['fixed_key_path']:
-            return False
-        return path['keys'][0] in policy.owned_key_indexes
     result = _can_satisfy_without_key(path['node'], policy.owned_key_indexes[0])
     if result is None:
         return None
@@ -456,7 +422,7 @@ def _key_threshold(node):
     node = _unwrap(node)
     if node.kind in ('pk_k', 'pk_h'):
         return 1, (node.value.index,)
-    if node.kind in ('multi', 'multi_a'):
+    if node.kind == 'multi':
         return node.value, tuple(key.index for key in node.args)
     if node.kind == 'thresh':
         indexes = []
@@ -525,9 +491,7 @@ def _friendly_key_path(policy, path):
 
 
 def _path_name(path):
-    if path['key_path']:
-        name = 'Taproot key path'
-    elif path['conditional_locks']:
+    if path['conditional_locks']:
         name = 'Conditional timing'
     elif len(path['locks']) == 1:
         name = 'After {}'.format(describe_timelock(*path['locks'][0])[0])
@@ -536,11 +500,10 @@ def _path_name(path):
     else:
         name = 'Spend now'
 
-    if not path['key_path']:
-        threshold = _path_key_threshold(path)
-        if threshold is not None:
-            required, indexes = threshold
-            name += ' ({}-of-{})'.format(required, len(indexes))
+    threshold = _path_key_threshold(path)
+    if threshold is not None:
+        required, indexes = threshold
+        name += ' ({}-of-{})'.format(required, len(indexes))
     return name
 
 
@@ -581,21 +544,6 @@ def compatible_path_indexes(policy, tx_version, lock_time, sequence):
 
 def _generic_path_page(policy, path):
     requires = _path_requires_passport(policy, path)
-    if path['key_path']:
-        if path['fixed_key_path']:
-            return (
-                'Taproot key path\n\n'
-                'A fixed internal key can bypass every script condition if its private key exists.\n\n'
-                'Passport cannot verify that no one controls this key.'
-            )
-        key_index = path['keys'][0]
-        return (
-            'Taproot key path\n\n'
-            '{} can spend without using any script-path conditions.\n\n'
-            'This path {} Passport.'
-        ).format(_key_line(policy, key_index),
-                 'requires' if requires else 'does not require')
-
     locks = path['locks']
     conditional = path['conditional_locks']
     if conditional:
@@ -759,6 +707,6 @@ def format_signing_pages(policy, compatible_indexes=None):
     ).format(_escape(policy.name), '\n'.join(roles),
              format_fingerprint(owned.fingerprint))
     conditional_pages = tuple(_generic_path_page(policy, path) for path in paths
-                              if not path['key_path'] and path['conditional_locks'] and
+                              if path['conditional_locks'] and
                               policy.owned_key_indexes[0] in path['keys'])
     return (summary,) + conditional_pages

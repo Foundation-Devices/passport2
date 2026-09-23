@@ -172,3 +172,9 @@ def test_compile_matches_cross_implementation_vectors(
     script = compile_miniscript(Parser(expression).parse(), resolve, 0, 0)
     assert len(script) == expected_length
     assert hashlib.sha256(script).hexdigest() == expected_hash
+
+
+@pytest.mark.parametrize('expression', ['pk(@0/**)', 'multi_a(1,@0/**)'])
+def test_tapscript_context_is_unsupported(expression):
+    with pytest.raises((PolicyParseError, PolicyTypeError)):
+        compile_miniscript(Parser(expression).parse(), resolve, 0, 0, context='tr')

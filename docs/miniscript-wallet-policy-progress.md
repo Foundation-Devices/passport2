@@ -4,6 +4,34 @@ Tracking issue: [SFT-974](https://linear.app/foundation-devices/issue/SFT-974/fe
 
 Private development repository: <https://github.com/Foundation-Devices/passport2-miniscript>
 
+## Release scope after engineering review
+
+SFT-8159 removes the experimental Taproot wallet-policy implementation from
+this release. Registered policies support native SegWit `wsh(...)` only;
+`tr(...)` imports and restored records are rejected, and Taproot script-path
+PSBT signing is unsupported. Existing BIP86 Taproot singlesig remains supported.
+
+The experimental code and tests remain available in Git at `ff2eab4c`, the
+parent checkpoint on `SFT-974-miniscript`. Future implementation and validation
+belong to [SFT-8032](https://linear.app/foundation-devices/issue/SFT-8032/support-taproot-miniscript-wallet-policies).
+The historical hardware/CI evidence below predates this removal and does not
+replace validation of the final release candidate.
+
+Local removal validation (2026-09-23): `nix develop -c just test` passes all
+162 tests; changed-source style and diff checks pass. Experimental positive
+Taproot policy tests were removed; rejection and BIP86 signing coverage remains.
+Production Color and Mono builds succeed. Both checkpoints were built using
+the current Nix devshell and separate output directories, with no `DEV_BUILD`.
+Sizes below are unsigned firmware payloads, excluding bootloader/signing headers.
+
+| Model | Parent `ff2eab4c` | After removal | Saved |
+|---|---:|---:|---:|
+| Color | 1,661,132 bytes | 1,647,676 bytes | 13,456 bytes |
+| Mono | 1,640,676 bytes | 1,627,220 bytes | 13,456 bytes |
+
+Static data and BSS are unchanged. Physical-device QA and official CI on the
+final committed candidate remain pending.
+
 ## Objective
 
 Add descriptor-backed Miniscript wallet policies to Passport Core so a user can
@@ -14,13 +42,13 @@ policy exactly.
 This is implemented as core wallet-policy functionality, not as an extension.
 The existing `MultisigWallet` implementation remains the compatibility path for
 conventional M-of-N wallets. Miniscript policies may contain multisig fragments,
-but may also contain timelocks, alternatives, thresholds, conditional branches,
-and Taproot paths that cannot be represented by one global M/N value.
+but may also contain timelocks, alternatives, thresholds, and conditional branches
+that cannot be represented by one global M/N value.
 
 ## Implemented
 
 - Bounded, original Miniscript parser, type analysis, validation, and compiler
-  for the accepted P2WSH and Taproot profiles.
+  for the accepted P2WSH profile.
 - Checksummed descriptor and BIP388-style policy-template import.
 - QR and microSD policy transport.
 - Exact ownership proof by comparing the descriptor xpub with the xpub derived
@@ -30,13 +58,13 @@ and Taproot paths that cannot be represented by one global M/N value.
 - Registered policy storage with corruption quarantine and settings headroom.
 - Address derivation and address verification through the shared wallet-policy
   interface.
-- Exact P2WSH and Taproot PSBT matching with immutable per-input spend plans.
+- Exact P2WSH PSBT matching with immutable per-input spend plans.
 - Policy-derived verification of P2WSH change when a coordinator supplies the
   complete output derivations but omits `PSBT_OUT_WITNESS_SCRIPT`.
 - Fail-closed separation between legacy multisig and registered policy inputs.
 - Human-readable policy review derived only from the validated AST.
 - Bounded rendering for complex AND, OR, threshold, multisig, timelock,
-  conditional, and Taproot policies.
+  and conditional policies.
 - Liana-style inheritance explanation with immediate and delayed spending states.
 - Locally confirmed signer names that do not alter the descriptor or policy ID
   and are never accepted as coordinator-supplied semantic descriptions.
@@ -74,8 +102,7 @@ and Taproot paths that cannot be represented by one global M/N value.
   network, branch, address index, and supported sighash rules.
 - Unknown policy scripts, ambiguous matches, mixed policies, and mixed legacy
   multisig/policy inputs fail closed.
-- Taproot key-path bypasses and paths that do not require Passport are surfaced
-  explicitly in the review UI.
+- Paths that do not require Passport are surfaced explicitly in the review UI.
 - Relative timelocks cannot exceed the BIP68 encoding limits. A per-coin delay of
   1.5 years cannot be represented by one `older()` condition; longer calendar
   schedules require a different construction such as an absolute `after()`.
@@ -166,8 +193,7 @@ The unsigned CI payload SHA-256 is
 - Return the device-signed PSBT to Liana, confirm Liana accepts and finalizes it,
   and record the resulting Testnet transaction ID if it is broadcast.
 - Exercise representative complex policies, including threshold multisig,
-  multiple alternate paths, time-based relative locks, absolute locks, and
-  Taproot script paths.
+  multiple alternate paths, time-based relative locks, and absolute locks.
 - Validate the dedicated Liana key file with both single-key and multisig setup
   templates, then register and verify each completed policy on Passport.
 - Test policy export, backup, restore, rename, signer-label migration, deletion,

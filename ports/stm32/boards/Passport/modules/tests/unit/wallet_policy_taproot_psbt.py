@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""MicroPython integration test for registered Taproot script-path policies."""
+"""Reject Taproot script-path policies and preserve BIP86 signing."""
 
 import uasyncio
 from ubinascii import a2b_base64, unhexlify
@@ -10,10 +10,10 @@ from uio import BytesIO
 import common
 import history
 import stash
-from exceptions import FatalPSBTIssue, FraudulentChangeOutput
+from exceptions import FatalPSBTIssue
 from psbt import psbtObject
 from tasks.sign_psbt_task import sign_psbt_task
-from wallet_policy import KeyInfo, MiniscriptPolicy
+from wallet_policy import KeyInfo
 
 
 class MemorySettings:
@@ -59,13 +59,6 @@ OWNED_KEY = (
     'xpub6Cx47kkB7dkMy515HJa3WH2iRSqqScxnsstoSqF1NEyjXKC7N2vTBqVjx1LZ'
     'Ab6hVhEdunJYTxNShqgo9rZ4DEV7rWGazkkzck7vjxjKdLu'
 )
-INTERNAL_KEY = (
-    '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798'
-)
-PRIVATE_KEY = unhexlify(
-    'b12edd4a0724a4110f0a85bd8be7e29ccdc017a006b677986e3e5218e2b5c763')
-EXPECTED_DIGEST = unhexlify(
-    'e69c21b9239c96576a816674518215489d4ea8e0c7d48e375f0dda07e0a78cff')
 KEY_PATH_PRIVATE_KEY = unhexlify(
     '523dcb3ce6a2802987e5df1e6beb14057b311c0eaa9779355817bcc593a45a57')
 KEY_PATH_PUBKEY = unhexlify(
@@ -91,171 +84,25 @@ KEY_PATH_PSBT_BASE64 = (
 )
 
 
-async def parse_policy_psbt(policy):
-    parsed = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
-    await parsed.validate()
-    history.verify_amount = lambda *args: None
-    parsed.consider_inputs()
-    parsed.consider_keys()
-    parsed.consider_outputs()
-    return parsed
-
-
 async def run_test():
-    import wallet_policy
-    assert not wallet_policy.ENABLE_TAPROOT_POLICIES
-    wallet_policy.ENABLE_TAPROOT_POLICIES = True
-    policy = MiniscriptPolicy(
-        'Tap Recovery', 'BTC',
-        'tr({},pk(@0/**))'.format(INTERNAL_KEY), (OWNED_KEY,), (0,))
     common.settings.set('chain', 'BTC')
     common.settings.set('xfp', 3060347994)
-    common.settings.set('wallet_policies', [policy.serialize()])
+    common.settings.set('wallet_policies', [])
+    history.verify_amount = lambda *args: None
 
-    parsed = await parse_policy_psbt(policy)
-    assert parsed.active_policy.policy_id == policy.policy_id
-    plan = parsed.inputs[0].policy_spend_plan
-    assert plan.script_context == 'tapscript'
-    assert plan.branch == 0 and plan.address_index == 5
-    assert parsed.inputs[0].required_key == plan.expected_pubkey
-    assert parsed.outputs[1].is_change
-    assert parsed.outputs[1].policy_branch == 1
-    assert parsed.outputs[1].policy_address_index == 6
-
-    digest = parsed.make_txn_taproot_sighash(
-        0, 0, ext_flag=1, tapleaf_hash=plan.tapleaf_hash)
-    assert digest == EXPECTED_DIGEST
-
-    class SigningNode:
-        def public_key(self):
-            return b'\x02' + plan.expected_pubkey
-
-        def private_key(self):
-            return bytearray(PRIVATE_KEY)
-
-    class SigningValues:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            return False
-
-        def derive_path(self, path, register=False):
-            return SigningNode()
-
-    result = []
-
-    async def on_done(error_msg, error_code):
-        result.append((error_msg, error_code))
+    # Script-path PSBTs remain unsupported even with valid scripts/derivations.
+    parsed = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
+    await parsed.validate()
+    try:
+        parsed.consider_inputs()
+        assert False, 'Taproot script-path input was accepted'
+    except FatalPSBTIssue as exc:
+        assert 'script-path signing is not supported' in str(exc)
 
     original_sensitive_values = stash.SensitiveValues
     original_blank_object = stash.blank_object
-    stash.SensitiveValues = SigningValues
-    stash.blank_object = lambda value: None
-    try:
-        await sign_psbt_task(on_done, parsed)
 
-        # Mutating a validated scope before the private-key boundary must be
-        # detected by the immutable SpendPlan recheck in the signing task.
-        changed_after_validation = await parse_policy_psbt(policy)
-        changed_input = changed_after_validation.inputs[0]
-        owned_pubkey = changed_input.policy_spend_plan.expected_pubkey
-        path, _ = changed_input.tap_subpaths[owned_pubkey]
-        changed_input.tap_subpaths[owned_pubkey] = (path, (bytes(32),))
-        rejected = []
-
-        async def rejected_done(error_msg, error_code):
-            rejected.append((error_msg, error_code))
-
-        await sign_psbt_task(rejected_done, changed_after_validation)
-        assert rejected and rejected[0][0] is not None
-        assert changed_input.added_tap_script_sig is None
-    finally:
-        stash.SensitiveValues = original_sensitive_values
-        stash.blank_object = original_blank_object
-    assert result == [(None, None)]
-    signature_key, signature = parsed.inputs[0].added_tap_script_sig
-    assert len(signature) == 64
-
-    # Ensure script-path fields survive serialization and the new signature
-    # is emitted under x-only-pubkey || tapleaf-hash, as required by BIP371.
-    assert signature_key == plan.expected_pubkey + plan.tapleaf_hash
-    output = BytesIO()
-    parsed.serialize(output)
-    reparsed = psbtObject.read_psbt(BytesIO(output.getvalue()))
-    assert signature_key in reparsed.inputs[0].tap_script_sigs
-    assert len(reparsed.inputs[0].tap_leaf_scripts) == 1
-    assert reparsed.inputs[0].tap_internal_key is not None
-    assert reparsed.inputs[0].tap_merkle_root is not None
-    reparsed.inputs[0].parse_subpaths(3060347994)
-    assert reparsed.inputs[0].tap_subpaths[plan.expected_pubkey][1] == \
-        [plan.tapleaf_hash]
-
-    tampered_input = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
-    await tampered_input.validate()
-    for path, _ in tampered_input.inputs[0].tap_subpaths.values():
-        if path[0] == 3060347994:
-            path[-1] = 7
-    try:
-        tampered_input.consider_inputs()
-        assert False, 'Tampered Taproot input was accepted'
-    except FatalPSBTIssue:
-        pass
-
-    tampered_control = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
-    await tampered_control.validate()
-    control, value = next(iter(tampered_control.inputs[0].tap_leaf_scripts.items()))
-    del tampered_control.inputs[0].tap_leaf_scripts[control]
-    tampered_control.inputs[0].tap_leaf_scripts[
-        control[:-1] + bytes([control[-1] ^ 1])] = value
-    try:
-        tampered_control.consider_inputs()
-        assert False, 'Tampered Taproot control block was accepted'
-    except FatalPSBTIssue:
-        pass
-
-    tampered_change = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
-    await tampered_change.validate()
-    tampered_change.consider_inputs()
-    tampered_change.outputs[1].parse_subpaths(3060347994)
-    for path, _ in tampered_change.outputs[1].tap_subpaths.values():
-        if path[0] == 3060347994:
-            path[-1] = 8
-    try:
-        tampered_change.consider_outputs()
-        assert False, 'Tampered Taproot change was accepted'
-    except FraudulentChangeOutput:
-        pass
-
-    # The release gate rejects both new discovery and an already validated
-    # plan, before opening the private-key context.
-    cached = await parse_policy_psbt(policy)
-    wallet_policy.ENABLE_TAPROOT_POLICIES = False
-    try:
-        await parse_policy_psbt(policy)
-        assert False, 'Release accepted a Taproot wallet policy input'
-    except FatalPSBTIssue as exc:
-        assert 'not enabled in this release' in str(exc)
-
-    def forbidden_private_access():
-        assert False, 'Disabled policy reached private keys'
-
-    rejected = []
-
-    async def disabled_done(error_msg, error_code):
-        rejected.append((error_msg, error_code))
-
-    stash.SensitiveValues = forbidden_private_access
-    try:
-        await sign_psbt_task(disabled_done, cached)
-    finally:
-        stash.SensitiveValues = original_sensitive_values
-    assert len(rejected) == 1
-    assert 'not enabled in this release' in rejected[0][0]
-    assert cached.inputs[0].added_tap_script_sig is None
-
-    # Regression: registered script-path support must not alter Passport's
-    # pre-existing BIP86 key-path detection, sighash, or signing branch.
+    # Existing BIP86 key-path detection, sighash, and signing remain supported.
     key_path = psbtObject.read_psbt(BytesIO(a2b_base64(KEY_PATH_PSBT_BASE64)))
     await key_path.validate()
     key_path.consider_inputs()
@@ -274,7 +121,7 @@ async def run_test():
         def private_key(self):
             return bytearray(KEY_PATH_PRIVATE_KEY)
 
-    class KeyPathValues(SigningValues):
+    class KeyPathValues(FixturePublicValues):
         def derive_path(self, path, register=False):
             return KeyPathNode()
 
@@ -292,7 +139,6 @@ async def run_test():
         stash.blank_object = original_blank_object
     assert key_path_result == [(None, None)]
     assert len(key_input.tap_key_sig) == 64
-    assert key_input.added_tap_script_sig is None
 
 
 original_sensitive_values = stash.SensitiveValues
@@ -300,6 +146,4 @@ stash.SensitiveValues = FixturePublicValues
 try:
     uasyncio.run(run_test())
 finally:
-    import wallet_policy
-    wallet_policy.ENABLE_TAPROOT_POLICIES = False
     stash.SensitiveValues = original_sensitive_values

@@ -411,24 +411,6 @@ class psbtOutputProxy(psbtProxy):
         # - must match expected address for this output, coming from unsigned txn
         addr_type, addr_or_pubkey, is_segwit = txo.get_address()
 
-        if addr_type == 'p2tr' and active_policy and \
-                getattr(active_policy, 'context', None) == 'tr':
-            try:
-                import chains
-                internal_key = self.get(self.tap_internal_key) \
-                    if self.tap_internal_key else None
-                tap_tree = self.get(self.tap_tree) if self.tap_tree else None
-                derived = active_policy.match_taproot_change(
-                    self.tap_subpaths or {}, txo.scriptPubKey,
-                    internal_key, tap_tree, chains.current_chain(), my_xfp)
-            except BaseException as exc:
-                raise FraudulentChangeOutput(
-                    out_idx, 'Taproot wallet policy change output does not match: %s' % exc)
-            self.policy_branch = derived.branch
-            self.policy_address_index = derived.index
-            self.is_change = derived.branch == 1
-            return
-
         if active_policy and not (active_policy.context == 'wsh' and
                                   addr_type == 'p2sh' and is_segwit):
             # Owning a destination key does not preserve the policy's spending
@@ -590,7 +572,7 @@ class psbtInputProxy(psbtProxy):
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
                   'added_sigs',
                   'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
-                  'policy_spend_plan', 'added_tap_script_sig')
+                  'policy_spend_plan')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -850,58 +832,7 @@ class psbtInputProxy(psbtProxy):
                     which_key = pubkey
 
             if self.tap_leaf_scripts or any(hashes for _, hashes in self.tap_subpaths.values()):
-                from wallet_policy import require_taproot_policy_support
-                from policy_errors import UnsupportedPolicyError
-                try:
-                    require_taproot_policy_support()
-                except UnsupportedPolicyError as exc:
-                    raise FatalPSBTIssue(str(exc))
-                from common import settings
-                policy_records = settings.get('wallet_policies', [])
-                if policy_records:
-                    from wallet_policy import WalletPolicyRegistry
-                    import chains
-                    leaf_scripts = {control: self.get(value)
-                                    for control, value in self.tap_leaf_scripts.items()}
-                    internal_key = self.get(self.tap_internal_key) \
-                        if self.tap_internal_key else None
-                    merkle_root = self.get(self.tap_merkle_root) \
-                        if self.tap_merkle_root else None
-                    matches = []
-                    for policy in WalletPolicyRegistry(settings).iter_policies(
-                            xfp2str(my_xfp).lower()):
-                        try:
-                            plan = policy.make_taproot_spend_plan(
-                                my_idx, self.tap_subpaths, utxo.scriptPubKey,
-                                leaf_scripts, internal_key, merkle_root,
-                                chains.current_chain(), my_xfp, self.sighash)
-                            matches.append((policy, plan))
-                        except MemoryError:
-                            raise
-                        except Exception:
-                            pass
-                    if len(matches) > 1:
-                        raise FatalPSBTIssue(
-                            'Input #%d matches multiple wallet policies' % my_idx)
-                    if matches:
-                        policy, plan = matches[0]
-                        if psbt.active_multisig:
-                            raise FatalPSBTIssue(
-                                'Cannot mix registered wallet policy and legacy multisig inputs')
-                        if psbt.active_policy and \
-                                psbt.active_policy.policy_id != policy.policy_id:
-                            raise FatalPSBTIssue(
-                                'Cannot sign inputs from multiple wallet policies')
-                        psbt.active_policy = policy
-                        self.policy_spend_plan = plan
-                        signature_key = plan.expected_pubkey + plan.tapleaf_hash
-                        which_key = (None if signature_key in self.tap_script_sigs
-                                     else plan.expected_pubkey)
-                        self.is_multisig = True
-                        matched_policy = True
-                if not matched_policy:
-                    raise FatalPSBTIssue(
-                        'Unknown registered Taproot wallet policy for input #%d' % my_idx)
+                raise FatalPSBTIssue('Taproot script-path signing is not supported')
         else:
             # we don't know how to "solve" this type of input
             pass
@@ -1012,10 +943,7 @@ class psbtInputProxy(psbtProxy):
         # need to re-serialize as a PSBT.
 
     def get_signing_node(self, sv, my_xfp, my_idx):
-        # A registered Taproot script path has one x-only signing key, even
-        # though policy inputs share the multisig validation machinery.
-        tapscript = self.policy_spend_plan and self.policy_spend_plan.script_context == 'tapscript'
-        if self.is_multisig and not tapscript:
+        if self.is_multisig:
             # The fingerprint is only a hint. Derive each candidate to prove
             # that Passport owns one of the public keys required by the script.
             for which_key in self.required_key:
@@ -1120,10 +1048,6 @@ class psbtInputProxy(psbtProxy):
 
         for k in self.tap_script_sigs:
             wr(PSBT_IN_TAP_SCRIPT_SIG, self.tap_script_sigs[k], k)
-
-        if self.added_tap_script_sig:
-            key, signature = self.added_tap_script_sig
-            wr(PSBT_IN_TAP_SCRIPT_SIG, signature, key)
 
         for control_block in self.tap_leaf_scripts:
             wr(PSBT_IN_TAP_LEAF_SCRIPT, self.tap_leaf_scripts[control_block],
@@ -1913,8 +1837,7 @@ class psbtObject(psbtProxy):
         return trezorcrypto.sha256(rv.digest()).digest()
 
     def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None,
-                                 ext_flag=0, tapleaf_hash=None,
-                                 key_version=0, codeseparator_pos=0xffffffff):
+                                 ext_flag=0):
         # Implement BIP 341 hashing algo for signature of segwit programs.
         # see <https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules>
 
@@ -1922,10 +1845,7 @@ class psbtObject(psbtProxy):
         old_pos = fd.tell()
 
         assert sighash_type == SIGHASH_DEFAULT
-        assert ext_flag in (0, 1)
-        if ext_flag == 1:
-            assert isinstance(tapleaf_hash, bytes) and len(tapleaf_hash) == 32
-            assert key_version == 0
+        assert ext_flag == 0, 'Taproot script-path signing is not supported'
 
         if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1976,14 +1896,6 @@ class psbtObject(psbtProxy):
 
         if annex is not None:
             data += trezorcrypto.sha256(ser_string(annex)).digest()
-
-        if ext_flag == 1:
-            # BIP342 common signature-message extension.  The registered
-            # policy profile does not permit OP_CODESEPARATOR, so the last
-            # executed position is always 0xffffffff.
-            data += tapleaf_hash
-            data += bytes([key_version])
-            data += pack('<I', codeseparator_pos)
 
         fd.seek(old_pos)
         return tagged_hash('TapSighash', bytes([0]) + data)
