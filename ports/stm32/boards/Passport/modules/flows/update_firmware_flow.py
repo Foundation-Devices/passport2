@@ -26,6 +26,7 @@ class UpdateFirmwareFlow(Flow):
         self.statusbar = statusbar
         self.filename = None
         self.error_message = None
+        self.update_header = None
 
     async def on_done(self, error=None, message=None):
         self.error = error
@@ -81,6 +82,7 @@ class UpdateFirmwareFlow(Flow):
                 try:
                     version, is_user_signed = passport.verify_update_header(header)
                     self.version = version
+                    self.update_header = header
                 except passport.InvalidFirmwareUpdate as e:
                     await ErrorPage(text='Firmware update is invalid.\n\n{}'.format(str(e))).show()
                     self.set_result(False)
@@ -109,7 +111,7 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Verifying signatures', left_micron=None, right_micron=None)
 
         self.verify_task = start_task(verify_firmware_signature_task(
-            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+            self.update_file_path, self.size, self.update_header, self.progress_page.set_progress, self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()
@@ -133,7 +135,7 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Preparing Update', left_micron=None, right_micron=None)
 
         self.update_task = start_task(copy_firmware_to_spi_flash_task(
-            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+            self.update_file_path, self.size, self.update_header, self.progress_page.set_progress, self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()
