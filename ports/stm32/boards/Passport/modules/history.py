@@ -107,17 +107,12 @@ class OutptValueCache:
 
     @classmethod
     def verify_amount(cls, prevout, amount, in_idx):
-        # check this input either:
-        #   - not been seen before, in which case, record it
-        #   - OR: the amount matches exactly, any previously-seend UTXO w/ same outpoint
+        # Check previously recorded amounts without trusting new PSBT data.
+        # New amounts are recorded only after successful signing.
         # raises IncorrectUTXOAmount with details if it fails, which should abort any signing
         exp = cls.fetch_amount(prevout)
 
-        if exp is None:
-            # new entry, add it
-            cls.add(prevout, amount)
-
-        elif exp != amount:
+        if exp is not None and exp != amount:
             # Found the hacking we are looking for!
             ch = chains.current_chain()
             exp, units = ch.render_value(exp, True)
@@ -125,6 +120,13 @@ class OutptValueCache:
 
             raise IncorrectUTXOAmount(in_idx, "Expected %s but PSBT claims %s %s" % (
                 exp, amount, units))
+
+    @classmethod
+    def record_amount(cls, prevout, amount, in_idx):
+        # Only call for inputs whose ownership was verified and which we signed.
+        cls.verify_amount(prevout, amount, in_idx)
+        if cls.fetch_amount(prevout) is None:
+            cls.add(prevout, amount)
 
     @classmethod
     def add(cls, prevout, amount):
