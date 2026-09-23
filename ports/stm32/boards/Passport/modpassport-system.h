@@ -228,7 +228,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_get_sd_root_obj, mod_passpo
 STATIC mp_obj_t mod_passport_System_is_user_firmware_installed(mp_obj_t self) {
     passport_firmware_header_t* fwhdr = (passport_firmware_header_t*)FW_HDR;
 
-    return (fwhdr->signature.pubkey1 == FW_USER_KEY && fwhdr->signature.pubkey2 == 0) ? mp_const_true : mp_const_false;
+    // The first key selects which signature-verification path is used.
+    return (fwhdr->signature.pubkey1 == FW_USER_KEY) ? mp_const_true : mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_is_user_firmware_installed_obj,
                                  mod_passport_System_is_user_firmware_installed);
