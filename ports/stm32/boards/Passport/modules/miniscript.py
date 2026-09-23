@@ -5,8 +5,7 @@
 
 This module deliberately has no UI, settings, or secret-key dependencies.  It
 implements the BIP379 grammar and a conservative registered-policy profile.
-P2WSH and Tapscript use distinct validation contexts so fragments cannot cross
-their consensus environments accidentally.
+Only the native SegWit P2WSH context is supported.
 """
 
 try:
@@ -61,7 +60,6 @@ OP_CHECKMULTISIG = 0xae
 OP_CHECKMULTISIGVERIFY = 0xaf
 OP_CHECKLOCKTIMEVERIFY = 0xb1
 OP_CHECKSEQUENCEVERIFY = 0xb2
-OP_CHECKSIGADD = 0xba
 
 
 def _is_ascii_digit(ch):
@@ -317,7 +315,7 @@ class Parser:
             self._take(')')
             return self._node(name, tuple(children), threshold)
 
-        if name in ('multi', 'multi_a'):
+        if name == 'multi':
             threshold = self._number()
             keys = []
             while self._peek() == ',':
@@ -348,6 +346,7 @@ def _require(condition, message):
 
 def analyze(node, context='wsh'):
     """Return BIP379 correctness/malleability properties for an AST."""
+    _require(context == 'wsh', 'Only P2WSH Miniscript is supported')
     kind = node.kind
     args = node.args
 
@@ -378,15 +377,11 @@ def analyze(node, context='wsh'):
         return TypeInfo('B', z=True, f=True, locks=lock)
     if kind in ('sha256', 'hash256', 'ripemd160', 'hash160'):
         return TypeInfo('B', o=True, n=True, d=True, u=True)
-    if kind in ('multi', 'multi_a'):
+    if kind == 'multi':
         count = len(args)
         _require(1 <= node.value <= count, '{} threshold is invalid'.format(kind))
-        if kind == 'multi':
-            _require(context == 'wsh', 'multi is only valid in P2WSH')
-            _require(count <= 20, 'P2WSH multi is limited to 20 keys')
-            return TypeInfo('B', n=True, d=True, u=True, s=True, e=True)
-        _require(context == 'tr', 'multi_a is only valid in Tapscript')
-        return TypeInfo('B', d=True, u=True, s=True, e=True)
+        _require(count <= 20, 'P2WSH multi is limited to 20 keys')
+        return TypeInfo('B', n=True, d=True, u=True, s=True, e=True)
 
     children = [analyze(child, context) for child in args]
     locks = 0
@@ -521,7 +516,7 @@ def iter_policy_keys(node):
     for item in _walk(node):
         if item.kind in ('pk_k', 'pk_h'):
             yield item.value
-        elif item.kind in ('multi', 'multi_a'):
+        elif item.kind == 'multi':
             for key in item.args:
                 yield key
 
@@ -547,8 +542,6 @@ def validate(node, context='wsh', require_signed=True, allow_hashlocks=False):
     for item in _walk(node):
         if item.kind in ('sha256', 'hash256', 'ripemd160', 'hash160') and not allow_hashlocks:
             raise UnsupportedPolicyError('Hashlock policies are not supported')
-        if item.kind == 'multi_a' and context != 'tr':
-            raise PolicyTypeError('multi_a is only valid in Tapscript')
     for key in iter_policy_keys(node):
         ident = key.identity()
         if ident in seen:
@@ -645,8 +638,7 @@ def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
     """Compile a validated AST.
 
     key_resolver is called as ``resolver(key_index, child_branch, index)`` and
-    must return a compressed 33-byte key for P2WSH or a 32-byte x-only key for
-    Tapscript.
+    must return a compressed 33-byte key for P2WSH.
     """
     if branch not in (0, 1):
         raise ValueError('branch must be receive (0) or change (1)')
@@ -657,7 +649,7 @@ def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
 
     def key_bytes(key):
         result = key_resolver(key.index, key.branches[branch], address_index)
-        expected = 33 if context == 'wsh' else 32
+        expected = 33
         if not isinstance(result, (bytes, bytearray)) or len(result) != expected:
             raise PolicyTypeError('Key resolver returned an invalid public key')
         return bytes(result)
@@ -709,12 +701,6 @@ def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
             for key in item.args:
                 script += _push_data(key_bytes(key))
             return script + _script_num(len(item.args)) + bytes([OP_CHECKMULTISIG])
-        if kind == 'multi_a':
-            script = b''
-            for position, key in enumerate(item.args):
-                script += _push_data(key_bytes(key))
-                script += bytes([OP_CHECKSIG if position == 0 else OP_CHECKSIGADD])
-            return script + _script_num(item.value) + bytes([OP_NUMEQUAL])
         if kind == 'a':
             return bytes([OP_TOALTSTACK]) + emit(item.args[0]) + bytes([OP_FROMALTSTACK])
         if kind == 's':
@@ -734,7 +720,7 @@ def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
     script = emit(node)
     if len(script) > max_script_size:
         raise PolicyResourceError('Compiled script exceeds {} bytes'.format(max_script_size))
-    if context == 'wsh' and _count_non_push_ops(script) > MAX_P2WSH_OPS:
+    if _count_non_push_ops(script) > MAX_P2WSH_OPS:
         raise PolicyResourceError('Compiled P2WSH script exceeds {} opcodes'.format(MAX_P2WSH_OPS))
     return script
 

@@ -11,6 +11,6 @@ def test_registered_policy_psbt_matches_in_micropython(exec_file):
     exec_file(script)
 
 
-def test_registered_taproot_policy_psbt_matches_in_micropython(exec_file):
+def test_taproot_script_path_rejection_and_bip86_signing_in_micropython(exec_file):
     script = Path(__file__).parent / 'unit' / 'wallet_policy_taproot_psbt.py'
     exec_file(script)

@@ -29,7 +29,6 @@ from wallet_policy import MiniscriptPolicy  # noqa: E402
 
 XPUB = ('xpub6Br37sWxruYfT8ASpCjVHKGwgdnYFEn98DwiN76i2oyY6fgH1LAPmmDcF46x'
         'jxJr22gw4jmVjTE2E3URMnRPEPYyo1zoPSUba563ESMXCeb')
-INTERNAL_KEY = ('79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798')
 
 
 def without_recolor(text):
@@ -331,27 +330,6 @@ def test_conditional_policy_is_rendered_structurally_without_false_simplificatio
     assert '\n  Then also\n' in review
     assert '\n  Otherwise\n' in review
     assert 'Review the conditional branches carefully' in review
-
-
-def test_taproot_key_paths_are_first_class_spending_paths(monkeypatch):
-    monkeypatch.setattr('wallet_policy.ENABLE_TAPROOT_POLICIES', True)
-    fixed = MiniscriptPolicy(
-        'Fixed Internal', 'BTC',
-        'tr({},pk(@0/**))'.format(INTERNAL_KEY),
-        (key_info(0, 86),), (0,))
-    fixed_review = '\n'.join(plain_review_pages(fixed))
-    assert '2 ways to spend' in fixed_review
-    assert 'Taproot key path' in fixed_review
-    assert 'can bypass every script condition' in fixed_review
-    assert 'cannot verify that no one controls this key' in fixed_review
-
-    dynamic = MiniscriptPolicy(
-        'Dynamic Internal', 'BTC', 'tr(@0/**,pk(@1/**))',
-        (key_info(0, 86), key_info(1, 86)), (1,))
-    dynamic_review = '\n'.join(plain_review_pages(dynamic))
-    assert 'Key 1 - 6738 736C can spend without using any script-path conditions' \
-        in dynamic_review
-    assert 'This path does not require Passport' in dynamic_review
 
 
 def test_height_and_time_locks_get_human_and_exact_descriptions():
