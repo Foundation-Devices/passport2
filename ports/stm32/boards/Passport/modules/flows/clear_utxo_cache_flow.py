@@ -10,9 +10,9 @@ class ClearUTXOCacheFlow(Flow):
 
     async def confirm(self):
         from history import OutptValueCache
-        from pages import QuestionPage, SuccessPage
+        from pages import LongQuestionPage, SuccessPage
 
-        result = await QuestionPage(
+        result = await LongQuestionPage(
             text='Clear remembered transaction input amounts?\n\n'
                  'Only do this to recover from an incorrect UTXO amount error. '
                  'Clearing removes protection against changed amounts in previously signed transactions. '
