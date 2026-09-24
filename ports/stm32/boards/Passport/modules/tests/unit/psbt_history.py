@@ -169,6 +169,7 @@ async def run_tests():
         (stash, 'SensitiveValues', FakeSensitiveValues),
         (stash, 'blank_object', lambda obj: None),
         (pages, 'QuestionPage', FakeQuestionPage),
+        (pages, 'LongQuestionPage', FakeQuestionPage),
         (pages, 'SuccessPage', FakeSuccessPage),
     )
     originals = [(module, name, getattr(module, name)) for module, name, _ in replacements]
