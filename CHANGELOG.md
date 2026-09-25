@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
-- Backup verification now decrypts backup contents and checks their integrity using the Backup Code
+- Backup verification now decrypts backup contents and checks their integrity using the Backup Code or legacy six-word password
 - Added Coconut Wallet as a single-sig Connect Wallet option
 - Improved self-send transaction information formatting (PASS1-638)
 - Added the key manager extension, compatible with BIP85 and Nostr (PASS1-24)

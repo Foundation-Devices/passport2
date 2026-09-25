@@ -86,4 +86,32 @@ expect_failure(
     lambda: validate(archive, max_size=len(CONTENTS) - 1),
     'too big')
 
+# Valid archives retain support for current and historical work factors and
+# both kinds of backup credentials.
+for rounds_pow in (13, 16, 17, 19):
+    password = 'able acid also apex aqua arch'
+    legacy = compat7z.Builder(password=password, rounds_pow=rounds_pow)
+    legacy.add_data(CONTENTS)
+    prefix, footer = legacy.save('passport-backup.txt')
+    assert validate(prefix + legacy.body + footer, password=password)[1] == CONTENTS
+
+# Recompute the unkeyed header CRCs so rejection must come from the work-factor
+# limit, rather than from a corrupt header. No hashing may start.
+original_sha256 = compat7z.sha256
+
+
+def forbidden_hash():
+    raise AssertionError('KDF started for an excessive work factor')
+
+
+try:
+    compat7z.sha256 = forbidden_hash
+    for rounds_pow in (20, 30, 63):
+        builder.rounds_pow = rounds_pow
+        prefix, footer = builder.save('passport-backup.txt')
+        hostile = prefix + builder.body + footer
+        expect_failure(ValueError, lambda: validate(hostile), 'Unsupported backup key derivation work factor')
+finally:
+    compat7z.sha256 = original_sha256
+
 return_value.write(b'OK')

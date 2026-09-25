@@ -23,6 +23,11 @@ import trezorcrypto
 from uio import BytesIO
 
 
+# Keep the standard 7z work factor and the lower factors used by Passport.
+# Archive metadata is untrusted; larger values can block the device for hours.
+MAX_ROUNDS_POW = 19
+
+
 def masked_crc(bits):
     return crc32(bits) & 0xffffffff
 
@@ -355,6 +360,8 @@ class Builder(object):
     def calculate_key(self, password, progress_fcn=None):
         # do the expected key-derivation
         # emulate CKeyInfo::CalculateDigest in p7zip_9.38.1/CPP/7zip/Crypto/7zAes.cpp
+        if not 0 <= self.rounds_pow <= MAX_ROUNDS_POW:
+            raise ValueError('Unsupported backup key derivation work factor')
         rounds = 1 << self.rounds_pow
 
         password = encode_utf_16_le(password)
