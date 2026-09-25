@@ -14,18 +14,17 @@ from files import CardSlot, CardMissingError
 from errors import Error
 
 
-async def verify_firmware_signature_task(file_path, size, on_progress, on_done):
+async def verify_firmware_signature_task(file_path, size, expected_header, on_progress, on_done):
     header = None
     s = trezorcrypto.sha256()
 
     try:
         with CardSlot() as card:
             with open(file_path, 'rb') as fp:
-                # This is assumed to have been validated before, TOCTOU
-                # attacks are not an issue here since if the information data
-                # changes so does the validation hash making the signature
-                # verification to fail.
                 header = fp.read(FW_HEADER_SIZE)
+                if len(header) != FW_HEADER_SIZE or header != expected_header:
+                    await on_done(Error.FIRMWARE_UPDATE_FAILED, "Firmware header changed. Select the file again.")
+                    return
                 s.update(header[:FW_HEADER_INFORMATION_SIZE])
 
                 buf = bytearray(1024)
@@ -41,6 +40,8 @@ async def verify_firmware_signature_task(file_path, size, on_progress, on_done):
                         await sleep_ms(1)
 
                     here = fp.readinto(buf)
+                    if not here:
+                        raise ValueError("Firmware file is truncated")
                     s.update(buf[:here])
                     pos += here
 
