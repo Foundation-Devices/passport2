@@ -149,7 +149,7 @@ class FakeQuestionPage:
             return False
         if self.text == 'Cancel this transaction?':
             return True
-        assert 'protection' in self.text
+        assert 'Clear saved input amounts?' in self.text
         return self.approved
 
 
