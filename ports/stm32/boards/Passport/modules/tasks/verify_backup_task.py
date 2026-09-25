@@ -10,38 +10,9 @@
 # verify_backup_task.py - Task for verifying a backup from microSD.
 
 
-import compat7z
-
-from files import CardSlot, CardMissingError
-from errors import Error
-from constants import MAX_BACKUP_FILE_SIZE
+from backup_reader import verify_backup_file
 
 
-async def verify_backup_task(on_done, backup_file_path):
-    try:
-        with CardSlot() as card:
-            fd = open(backup_file_path, 'rb')
-
-            try:
-                try:
-                    compat7z.check_file_headers(fd)
-                except Exception as e:
-                    await on_done(Error.INVALID_BACKUP_FILE_HEADER)
-                    return
-
-                zz = compat7z.Builder()
-                files = zz.verify_file_crc(fd, MAX_BACKUP_FILE_SIZE)
-
-                assert len(files) == 1
-                fname, fsize = files[0]
-
-            finally:
-                fd.close()
-    except CardMissingError:
-        await on_done(Error.MICROSD_CARD_MISSING)
-        return
-    except Exception as e:
-        await on_done(Error.FILE_READ_ERROR)
-        return
-
-    await on_done(None)
+async def verify_backup_task(on_done, decryption_password, backup_file_path):
+    error = verify_backup_file(decryption_password, backup_file_path)
+    await on_done(error)

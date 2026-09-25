@@ -10,52 +10,21 @@
 # restore_backup_task.py - Task for restoring Passport from a microSD backup file.
 
 import chains
-import compat7z
 import stash
 import ujson
 
-from files import CardSlot, CardMissingError
+from backup_reader import read_backup_file
 from ubinascii import unhexlify as a2b_hex
 from errors import Error
-from constants import MAX_BACKUP_FILE_SIZE
 from pincodes import SE_SECRET_LEN
 
 
 async def restore_backup_task(on_done, decryption_password, backup_file_path):
     from common import pa, settings
 
-    try:
-        with CardSlot() as card:
-            fd = open(backup_file_path, 'rb')
-
-            try:
-                try:
-                    compat7z.check_file_headers(fd)
-                except Exception as e:
-                    await on_done(Error.INVALID_BACKUP_FILE_HEADER)
-                    return
-
-                try:
-                    zz = compat7z.Builder()
-                    fname, contents = zz.read_file(fd, decryption_password, MAX_BACKUP_FILE_SIZE,
-                                                   progress_fcn=None)
-
-                    # Quick sanity check
-                    assert contents[0:1] == b'#' and contents[-1:] == b'\n'
-
-                except Exception as e:
-                    # Assume all exceptions here are "incorrect password" errors
-                    await on_done(Error.INVALID_BACKUP_CODE)
-                    return
-
-            finally:
-                fd.close()
-
-    except CardMissingError:
-        await on_done(Error.MICROSD_CARD_MISSING)
-        return
-    except BaseException:
-        await on_done(Error.FILE_READ_ERROR)
+    contents, error = read_backup_file(decryption_password, backup_file_path)
+    if error is not None:
+        await on_done(error)
         return
 
     vals = {}
