@@ -102,7 +102,7 @@
                   fi
                 '';
               }
-              // lib.optionalAttrs pkgs.stdenv.isLinux {
+              // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
                 QT_QPA_PLATFORM = "xcb";
                 SDL_RENDER_DRIVER = "software";
               }
