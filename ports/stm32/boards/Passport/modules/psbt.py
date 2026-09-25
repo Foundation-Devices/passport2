@@ -1494,8 +1494,7 @@ class psbtObject(psbtProxy):
                 for i in witness_inputs_to_verify:
                     self.inputs[i].get_signing_node(sv, self.my_xfp, i)
 
-        # Only update the amount cache after all claimed owned inputs have
-        # proved their signing keys, so rejected metadata cannot be recorded.
+        # Check known amounts without recording unapproved PSBT data.
         for i, txi in self.input_iter():
             inp = self.inputs[i]
             if inp.is_segwit:
