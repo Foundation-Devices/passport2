@@ -103,6 +103,29 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
                 await on_done(Error.CORRUPT_BACKUP_FILE)
                 return
 
+        # Wallet policies are security-critical and cannot be restored as
+        # opaque settings.  Validate their identity, xpub encodings, network,
+        # and declared Passport-owned key against the backup's root node before
+        # changing the Secure Element secret.
+        policy_records = vals.get('setting.wallet_policies', [])
+        if policy_records:
+            from utils import xfp2str
+            from wallet_policy import validate_backup_policy_records
+            expected_fingerprint = xfp2str(node.my_fingerprint()).lower()
+
+            def derive_policy_node(path):
+                child = node.clone()
+                for element in path:
+                    child.derive(element)
+                return child
+
+            vals['setting.wallet_policies'] = validate_backup_policy_records(
+                policy_records, expected_fingerprint, derive_policy_node,
+                chains.get_chain)
+        elif not isinstance(policy_records, list):
+            await on_done(Error.CORRUPT_BACKUP_FILE)
+            return
+
     except Exception as e:
         await on_done(Error.CORRUPT_BACKUP_FILE)
         return

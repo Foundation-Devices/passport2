@@ -570,7 +570,9 @@ class ConnectWalletFlow(Flow):
         self.goto(self.complete)
 
     async def complete(self):
-        await SuccessPage(text='Connection Complete').show()
+        await SuccessPage(
+            text=self.get_custom_text(
+                'connection_complete', 'Connection Complete')).show()
         self.set_result(True)
 
     async def show_error(self):

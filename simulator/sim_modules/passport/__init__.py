@@ -12,6 +12,7 @@ IS_SIMULATOR = True
 IS_COLOR = sys.argv[6] == 'color'
 IS_DEV = True
 HAS_FUEL_GAUGE = False
+CONSTRAINED_STARTUP = '--constrained-startup' in sys.argv
 
 
 class Noise:
@@ -88,6 +89,14 @@ class System:
             hash_buf[i] = self.device_hash[i]
         return None
 
+    def dispatch(self, _command, buf, _arg2):
+        # The frozen hardware PinAttempt implementation checks the bricked flag
+        # with a null buffer before attempting a Secure Element exchange. Let
+        # that check pass, then take main.py's existing simulator fallback.
+        if buf is None:
+            return 0
+        raise RuntimeError('Secure Element dispatch is unavailable in simulator')
+
     def reset(self):
         sys.exit()
 
@@ -122,7 +131,8 @@ class System:
         return (True, '2.0.1', None, False)
 
     def enable_lv_refresh(self, enable):
-        pass
+        if CONSTRAINED_STARTUP and enable:
+            print('Constrained startup reached UI')
 
 # Always "passes"
 

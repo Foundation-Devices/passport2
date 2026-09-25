@@ -7,6 +7,7 @@ import common
 import flows
 import pages
 import stash
+import tasks.sign_psbt_task as sign_psbt_task_module
 import utils
 import uasyncio as asyncio
 from flows import Flow, SignPsbtCommonFlow
@@ -45,6 +46,7 @@ class FakePsbt:
     def __init__(self, needs_approval):
         self.multisig_import_needs_approval = needs_approval
         self.active_multisig = 'proposed-wallet'
+        self.active_policy = None
         self.my_xfp = MY_XFP
         self.outputs = []
 
@@ -158,7 +160,7 @@ async def run_tests():
         (stash, 'SensitiveValues', FakeSensitiveValues),
         (utils, 'spinner_task', fake_spinner_task),
         (sign_psbt_common_flow, 'spinner_task', fake_spinner_task),
-        (sign_psbt_common_flow, 'sign_psbt_task', fake_sign_psbt_task),
+        (sign_psbt_task_module, 'sign_psbt_task', fake_sign_psbt_task),
     )
     originals = [(module, name, getattr(module, name)) for module, name, _ in replacements]
 

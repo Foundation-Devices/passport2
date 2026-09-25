@@ -66,6 +66,17 @@
             config.allowUnfree = true;
           };
           customPackages = self.packages.${system};
+          embit = pkgs.python3Packages.buildPythonPackage rec {
+            pname = "embit";
+            version = "0.8.0";
+            pyproject = true;
+            src = pkgs.fetchPypi {
+              inherit pname version;
+              hash = "sha256-i/SxAHPGdAA3DOUj+xbwNf51n2/dmHxXm9zCaNde13A=";
+            };
+            build-system = with pkgs.python3Packages; [ setuptools wheel ];
+            pythonImportsCheck = [ "embit.descriptor.arguments" ];
+          };
           runtimeLibPath = with pkgs; pkgs.lib.makeLibraryPath [
             stdenv.cc.cc.lib
             glib
@@ -139,6 +150,7 @@
               xterm
             ]
             ++ [
+              embit
               customPackages.add-secrets
               customPackages.cosign
               customPackages.mpy-cross

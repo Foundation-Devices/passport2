@@ -106,7 +106,7 @@ class FakeSensitiveValues:
 
 
 class FakeSigningInput:
-    pass
+    policy_spend_plan = None
 
 
 class FakeInputPSBT:
@@ -185,7 +185,7 @@ assert_raises(
 class FakeOutputProxy:
     is_change = False
 
-    def validate(self, _idx, _txout, _xfp, _active_multisig):
+    def validate(self, _idx, _txout, _xfp, _active_multisig, _active_policy):
         pass
 
 
@@ -199,6 +199,7 @@ class FakeOutputPSBT:
         self.warnings = []
         self.my_xfp = 0
         self.active_multisig = None
+        self.active_policy = None
 
     def output_iter(self):
         yield 0, CTxOut(self.total_value_out, P2WPKH_SCRIPT)
