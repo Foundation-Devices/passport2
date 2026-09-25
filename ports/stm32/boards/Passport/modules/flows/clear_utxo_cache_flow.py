@@ -13,10 +13,10 @@ class ClearUTXOCacheFlow(Flow):
         from pages import LongQuestionPage, SuccessPage
 
         result = await LongQuestionPage(
-            text='Clear remembered transaction input amounts?\n\n'
-                 'Only do this to recover from an incorrect UTXO amount error. '
-                 'Clearing removes protection against changed amounts in previously signed transactions. '
-                 'Verify your transaction details with a trusted wallet before signing again.').show()
+            text='Clear saved input amounts?\n\n'
+                 "Only use this if Passport rejected a transaction because an input amount didn't match.\n\n"
+                 'Passport will forget amounts from past signings, '
+                 'so check the amounts in a trusted wallet before you sign again.').show()
         if not result:
             self.set_result(False)
             return
