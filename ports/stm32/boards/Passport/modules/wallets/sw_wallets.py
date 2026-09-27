@@ -6,6 +6,7 @@
 
 from .bitcoin_core import BitcoinCoreWallet
 from .bitcoin_safe import BitcoinSafeWallet
+from .blockstream import BlockstreamWallet
 from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
@@ -34,6 +35,7 @@ supported_software_wallets = [
     EnvoyWallet,
     BitcoinCoreWallet,
     BitcoinSafeWallet,
+    BlockstreamWallet,
     KeeperWallet,
     BlueWallet,
     BtcPayWallet,
