@@ -17,6 +17,7 @@ from serializations import hash160, ser_compact_size
 from ucollections import namedtuple
 from opcodes import OP_CHECKMULTISIG
 from taproot import output_script
+from ubinascii import hexlify as b2a_hex
 
 # See SLIP 132 <https://github.com/satoshilabs/slips/blob/master/slip-0132.md>
 # for background on these version bytes. Not to be confused with SLIP-32 which involves Bech32.
@@ -247,8 +248,9 @@ class ChainsBase:
                     text = message.decode()
                 except UnicodeError:
                     # Not valid UTF-8, so show the raw bytes rather than failing the render.
-                    # This build defines UnicodeError but not UnicodeDecodeError.
-                    text = message.hex()
+                    # This build defines UnicodeError but not UnicodeDecodeError, and its
+                    # bytes type has no .hex(), so both differ from CPython here.
+                    text = b2a_hex(message).decode()
                 # Always keep the "OP_RETURN:\n" prefix: render_output() splits on that
                 # newline to recover the message body.
                 return 'OP_RETURN:\n{}'.format(text)
