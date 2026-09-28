@@ -8,7 +8,6 @@ import hashlib
 import importlib.util
 import os
 from pathlib import Path
-import re
 import shlex
 import subprocess
 import sys
@@ -167,30 +166,21 @@ def test_copy_failure_never_authorizes_update(environment, tmp_path):
 
 
 def test_installed_firmware_detection_c(tmp_path):
-    source = (BOARD / 'modpassport-system.h').read_text()
-    function = re.search(r'STATIC mp_obj_t mod_passport_System_is_user_firmware_installed\([^)]*\) \{.*?\n\}',
-                         source, re.S).group()
     harness = tmp_path / 'detection.c'
     harness.write_text('''
 #include <assert.h>
-#include "fwheader.h"
-#include "firmware-keys.h"
+#include "firmware-classification.h"
 static passport_firmware_header_t installed;
-#define BL_FW_HDR_BASE (&installed)
-#define STATIC static
-typedef int mp_obj_t;
-#define mp_const_true 1
-#define mp_const_false 0
-''' + function + '''
+
 int main(void) {
     const uint32_t second_keys[] = {0, 1, 2, FW_MAX_PUB_KEYS, UINT32_MAX};
     for (unsigned int i = 0; i < sizeof(second_keys) / sizeof(second_keys[0]); i++) {
         installed.signature.pubkey2 = second_keys[i];
         installed.signature.pubkey1 = FW_USER_KEY;
-        assert(mod_passport_System_is_user_firmware_installed(0) == mp_const_true);
+        assert(firmware_is_user_signed(&installed));
         for (uint32_t key = 0; key < FW_MAX_PUB_KEYS; key++) {
             installed.signature.pubkey1 = key;
-            assert(mod_passport_System_is_user_firmware_installed(0) == mp_const_false);
+            assert(!firmware_is_user_signed(&installed));
         }
     }
 }
