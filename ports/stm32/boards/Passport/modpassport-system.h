@@ -18,6 +18,7 @@
 #include "gpio.h"
 #include "display.h"
 #include "firmware-keys.h"
+#include "firmware-classification.h"
 #include "frequency.h"
 #include "dispatch.h"
 #include "adc.h"
@@ -134,7 +135,7 @@ STATIC mp_obj_t mod_passport_System_get_software_info(mp_obj_t self) {
     tuple[2] = mp_obj_new_int_from_uint(boot_counter);
 
     // User-signed firmware?
-    tuple[3] = (fwhdr->signature.pubkey1 == FW_USER_KEY) ? mp_const_true : mp_const_false;
+    tuple[3] = firmware_is_user_signed(fwhdr) ? mp_const_true : mp_const_false;
 
     // Firmware date string
     tuple[4] =
@@ -228,8 +229,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_get_sd_root_obj, mod_passpo
 STATIC mp_obj_t mod_passport_System_is_user_firmware_installed(mp_obj_t self) {
     passport_firmware_header_t* fwhdr = (passport_firmware_header_t*)FW_HDR;
 
-    // The first key selects which signature-verification path is used.
-    return (fwhdr->signature.pubkey1 == FW_USER_KEY) ? mp_const_true : mp_const_false;
+    return firmware_is_user_signed(fwhdr) ? mp_const_true : mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_passport_System_is_user_firmware_installed_obj,
                                  mod_passport_System_is_user_firmware_installed);

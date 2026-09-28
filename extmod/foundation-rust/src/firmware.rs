@@ -124,17 +124,12 @@ fn verify_update_header_impl(
 
     // Developer images use only the first signature. Require the unused
     // second key and signature to be zero in both installer entry points.
-    if header.is_signed_by_user() {
-        if header.signature.public_key2 != 0 {
-            *result = FirmwareResult::InvalidPublicKey2Index {
-                index: header.signature.public_key2,
-            };
-            return None;
-        }
-        if header.signature.signature2.serialize_compact() != [0; 64] {
-            *result = FirmwareResult::InvalidHeader;
-            return None;
-        }
+    if header.is_signed_by_user()
+        && (header.signature.public_key2 != 0
+            || header.signature.signature2.serialize_compact() != [0; 64])
+    {
+        *result = FirmwareResult::InvalidHeader;
+        return None;
     }
 
     if header.information.timestamp < current_timestamp {
@@ -325,8 +320,7 @@ mod tests {
                     check_header(&header),
                     check_signature(&header, &hash, &key),
                 ] {
-                    assert!(matches!(result,
-                        FirmwareResult::InvalidPublicKey2Index { index: actual } if actual == index));
+                    assert!(matches!(result, FirmwareResult::InvalidHeader));
                 }
             }
         }
