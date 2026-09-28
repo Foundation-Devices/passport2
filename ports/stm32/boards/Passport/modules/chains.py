@@ -182,6 +182,36 @@ class ChainsBase:
             txt = ('%d' % (val))
         return txt, label
 
+    @staticmethod
+    def op_return_payload(script):
+        # Return the payload of a single-push OP_RETURN script, or None when the script
+        # isn't a form we can render. Sizes are checked against the actual script length,
+        # so a mis-declared push can never over-read.
+        ll = len(script)
+
+        if ll == 1:
+            # bare OP_RETURN, no payload
+            return b''
+
+        opcode = script[1]
+
+        if 0x01 <= opcode <= 0x4b:
+            # direct push: the opcode itself is the payload length
+            start, size = 2, opcode
+        elif opcode == 0x4c and ll >= 3:
+            # OP_PUSHDATA1
+            start, size = 3, script[2]
+        elif opcode == 0x4d and ll >= 4:
+            # OP_PUSHDATA2, little-endian length
+            start, size = 4, script[2] | (script[3] << 8)
+        else:
+            return None
+
+        if start + size != ll:
+            return None
+
+        return script[start:start + size]
+
     @classmethod
     def render_address(cls, script):
         # take a scriptPubKey (part of the TxOut) and convert into conventional human-readable
@@ -209,15 +239,19 @@ class ChainsBase:
         if ll == 34 and script[0:2] == b'\x51\x20':
             return tcc.codecs.bech32_encode(cls.bech32_hrp, 1, script[2:], tcc.codecs.BECH32_ENCODING_BECH32M)
 
-        # OP_RETURN, 3 bytes of metadata
-        if ll > 3 and script[0:2] == b'\x6a\x4c' and script[2] == ll - 3:
-            message = script[3:]
-            try:
-                decoded_message = message.decode()
-                return 'OP_RETURN:\n{}'.format(decoded_message)
-            except UnicodeDecodeError:
-                hex_data = message.hex()
-                return 'OP_RETURN:\n{}'.format(hex_data)
+        # OP_RETURN carrying a single data push: bare, direct, PUSHDATA1 or PUSHDATA2
+        if ll >= 1 and script[0] == 0x6a:
+            message = cls.op_return_payload(script)
+            if message is not None:
+                try:
+                    text = message.decode()
+                except UnicodeError:
+                    # Not valid UTF-8, so show the raw bytes rather than failing the render.
+                    # This build defines UnicodeError but not UnicodeDecodeError.
+                    text = message.hex()
+                # Always keep the "OP_RETURN:\n" prefix: render_output() splits on that
+                # newline to recover the message body.
+                return 'OP_RETURN:\n{}'.format(text)
 
         raise ValueError('Unknown payment script', repr(script))
 

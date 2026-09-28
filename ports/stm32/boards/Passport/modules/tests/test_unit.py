@@ -36,6 +36,10 @@ def test_sign_psbt(test):
     assert test('sign_psbt.py') == b'OK'
 
 
+def test_op_return_rendering(test):
+    assert test('op_return_rendering.py') == b'OK'
+
+
 def test_foundation(test):
     assert test('foundation.py') == b'OK'
 
