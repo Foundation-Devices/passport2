@@ -465,12 +465,15 @@ STATIC mp_obj_t mod_foundation_ur_new_derived_key(size_t n_args,
         source_fingerprint = mp_obj_int_get_uint_checked(args[5].u_obj);
     }
 
+    // Rust takes these as Option<&T>, which is null-pointer optimized, so an
+    // absent argument must be a real NULL. Taking &obj->field through a NULL
+    // obj would instead produce a small non-null address and be read as Some.
     ur_registry_new_derived_key(&value,
                                 args[1].u_bool,
                                 key_data.buf,
                                 chain_code_info.buf,
-                                &use_info_obj->info,
-                                &origin_obj->keypath,
+                                use_info_obj ? &use_info_obj->info : NULL,
+                                origin_obj ? &origin_obj->keypath : NULL,
                                 source_fingerprint);
 
     return MP_OBJ_FROM_PTR(mod_foundation_ur_Value_new(&value));
