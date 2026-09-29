@@ -12,6 +12,15 @@ from serializations import hash256
 from taproot import output_script, tagged_hash
 
 
+def reverse_bytes(data):
+    # Transaction ids are displayed least-significant byte first. MicroPython
+    # has no slices with a step, so data[::-1] is not available here.
+    out = bytearray(len(data))
+    for i in range(len(data)):
+        out[len(data) - 1 - i] = data[i]
+    return bytes(out)
+
+
 # A BIP-340 verifier, implemented here so the generated signature is checked
 # against an implementation independent of the one that produced it. Passport
 # builds with FOUNDATION_ADDITIONS, so trezorcrypto.bip340 is compiled out, and
@@ -96,10 +105,10 @@ message = b'Hello World'
 message_challenge = a2b_hex('00142b05d564e6a7a33c087f16e0f730d1440123799d')
 to_spend, to_sign = create_virtual_transactions(message, message_challenge)
 
-assert hash256(to_spend)[::-1] == a2b_hex(
+assert reverse_bytes(hash256(to_spend)) == a2b_hex(
     'b79d196740ad5217771c1098fc4a4b51e0535c32236c71f1ea4d61a2d603352b'
 )
-assert hash256(to_sign)[::-1] == a2b_hex(
+assert reverse_bytes(hash256(to_sign)) == a2b_hex(
     '88737ae86f2077145f93cc4b153ae9a1cb8d56afa511988c149c5c8c9d93bddf'
 )
 
