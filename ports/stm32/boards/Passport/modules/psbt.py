@@ -590,16 +590,20 @@ class psbtInputProxy(psbtProxy):
         self.parse_subpaths(my_xfp)
 
         # sighash, but we're probably going to ignore anyway.
+        is_taproot = len(self.tap_subpaths) > 0
+
         if self.sighash is None:
             # Taproot PSBTs can be built with no explicit sighash
-            if len(self.tap_subpaths) > 0:
-                self.sighash = SIGHASH_DEFAULT
-            else:
-                self.sighash = SIGHASH_ALL
+            self.sighash = SIGHASH_DEFAULT if is_taproot else SIGHASH_ALL
 
-        if self.sighash not in VALID_SIGHASHES:
-            # - someday we will expand to other types, but not yet
-            raise FatalPSBTIssue('Can only do SIGHASH_ALL')
+        # Which types are supported depends on how this input gets signed.
+        # SIGHASH_DEFAULT only exists for taproot (BIP-341); elsewhere zero is not a
+        # defined hash type, so the signers below have nothing to do with it.
+        # - someday we will expand to other types, but not yet
+        supported = VALID_SIGHASHES if is_taproot else (SIGHASH_ALL,)
+
+        if self.sighash not in supported:
+            raise FatalPSBTIssue('Input #%d: unsupported sighash type %d' % (idx, self.sighash))
 
         # How complete is the set of signatures so far?
         # - assuming PSBT creator doesn't give us extra data not required
@@ -1691,9 +1695,10 @@ class psbtObject(psbtProxy):
         # locktime
         rv.update(pack('<I', self.lock_time))
 
-        assert sighash_type in VALID_SIGHASHES  # "only SIGHASH_ALL supported"
-        # SIGHASH_ALL==1 value
-        rv.update(b'\x01\x00\x00\x00')
+        # Commit to the type we are about to serialize beside the signature, so the
+        # digest and the trailing DER flag byte cannot disagree
+        assert sighash_type == SIGHASH_ALL, 'Unsupported sighash type for legacy input'
+        rv.update(pack('<I', sighash_type))
 
         fd.seek(old_pos)
 
@@ -1708,7 +1713,8 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_ALL  # add support for others here
+        # add support for others here
+        assert sighash_type == SIGHASH_ALL, 'Unsupported sighash type for segwit v0 input'
 
         if self.hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1773,7 +1779,10 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_DEFAULT
+        # Both documented ALL modes are supported: the type goes into the message as
+        # its leading hash_type byte below, and taproot_sign_key() appends it to the
+        # signature for anything but SIGHASH_DEFAULT (BIP-341)
+        assert sighash_type in VALID_SIGHASHES, 'Unsupported sighash type for taproot input'
 
         if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
