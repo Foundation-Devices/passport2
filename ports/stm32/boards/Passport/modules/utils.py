@@ -43,6 +43,27 @@ def read_user_firmware_pubkey():
 
     return result, pubkey
 
+
+def is_valid_firmware_pubkey(pubkey):
+    '''Is this a point on secp256k1, given as 64 bytes of x then y?
+
+    The all zero key is how "no developer key installed" is stored, so it is not
+    accepted here: removing a key goes through its own flow.
+    '''
+    from taproot import p as field_prime
+
+    if len(pubkey) != 64:
+        return False
+
+    x = int.from_bytes(pubkey[0:32], 'big')
+    y = int.from_bytes(pubkey[32:64], 'big')
+
+    if x >= field_prime or y >= field_prime:
+        return False
+
+    # y^2 == x^3 + 7, which also rejects the all zero key
+    return (y * y - x * x * x - 7) % field_prime == 0
+
 # We cache this here to avoid slowing down the menus, since the menu items in the Developer Pubkey
 # menu look up this value to decide when to become visible/hidden.
 
