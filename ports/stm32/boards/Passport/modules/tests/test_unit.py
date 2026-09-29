@@ -20,6 +20,10 @@ def test_ext_settings(test):
     assert test('ext_settings.py') == b'OK'
 
 
+def test_passphrase_length(test):
+    assert test('passphrase_length.py') == b'OK'
+
+
 def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
