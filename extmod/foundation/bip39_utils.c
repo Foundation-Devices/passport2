@@ -98,26 +98,32 @@ void get_words_matching_prefix(char*              prefix,
     uint32_t num_matches   = 0;
     uint32_t total_written = 0;
 
-    for (uint32_t i = 0; i < num_words; i++) {
+    if (matches_len == 0) {
+        // Not even room for the terminator
+        return;
+    }
+
+    // Don't do more work than requested
+    for (uint32_t i = 0; i < num_words && num_matches < max_matches; i++) {
         snprintf(candidate_keypad_digits, MAX_WORD_LEN + 1, "%"PRIu32, word_info[i].keypad_digits);
         if (starts_with(candidate_keypad_digits, prefix)) {
-            // This is a match, so convert the offsets to a real string and append to the buffer
-            uint32_t len = word_info_to_string(candidate_keypad_digits, word_info[i].offsets, pnext_match);
-            if (total_written + len > matches_len - 1) {
+            uint32_t len = strlen(candidate_keypad_digits);
+
+            // Room for the word plus the separator that follows it, which the terminator
+            // later overwrites, so this accounts for the terminator too
+            if (total_written + len + 1 > matches_len) {
                 // Don't write this one, as there is not enough room
                 break;
             }
-            total_written += len;
+
+            // This is a match, so convert the offsets to a real string and append to the buffer
+            word_info_to_string(candidate_keypad_digits, word_info[i].offsets, pnext_match);
+            total_written += len + 1;
 
             pnext_match += len;
             *pnext_match = ',';
             pnext_match++;
             num_matches++;
-
-            // Don't do more work than requested
-            if (num_matches == max_matches) {
-                break;
-            }
         }
     }
 
