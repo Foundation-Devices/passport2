@@ -5,10 +5,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Clarify the error when change-address ownership cannot be verified
+- Complete change-address verification before transaction review
 - Identify network fees from unverifiable PSBT inputs as unverified
 - Validate the complete local xpub when importing multisig wallets
 - Require confirmation before using PSBT-proposed multisig wallets with temporary seeds,
   and cancel signing if import is declined
+- Added Unchained as a multisig Connect Wallet option
 - Added Coconut Wallet as a single-sig Connect Wallet option
 - Improved self-send transaction information formatting (PASS1-638)
 - Added the key manager extension, compatible with BIP85 and Nostr (PASS1-24)

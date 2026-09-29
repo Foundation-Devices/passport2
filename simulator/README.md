@@ -37,5 +37,3 @@ setenv PKG_CONFIG_PATH /usr/local/opt/libffi/lib/pkgconfig
 
 - Sorry we haven't gotten around to that yet, but certainly would be possible to build
   this on Linux or FreeBSD... but not Windows.
-
-

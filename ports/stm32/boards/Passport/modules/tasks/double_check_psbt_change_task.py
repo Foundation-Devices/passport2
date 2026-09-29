@@ -55,7 +55,8 @@ async def double_check_psbt_change_task(on_done, psbt):
 
                 if not good:
                     # print('double_check_psbt_change_task() Fraudulent Change Error')
-                    await on_done("Deception regarding change output. BIP32 path doesn't match actual address.",
+                    await on_done('Transaction rejected. Passport could not verify that the change address '
+                                  'belongs to this wallet.',
                                   Error.PSBT_FRAUDULENT_CHANGE_ERROR)
                     return
 

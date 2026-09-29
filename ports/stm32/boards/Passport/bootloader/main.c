@@ -578,6 +578,21 @@ void random_boot_delay() {
     delay_ms(ms_to_delay);
 }
 
+void rng_fatal_error(void) {
+    // The first entropy checks run before the normal display initialization.
+    // Bring up only the UI hardware required to show a permanent fatal error.
+    display_init(true);
+    gpio_init();
+    keypad_init();
+    backlight_init();
+    backlight_intensity(100);
+    ui_show_fatal_error("Entropy source failure.");
+
+    // ui_show_fatal_error() does not return, but retain a hard fail-safe if its
+    // implementation ever changes.
+    LOCKUP_FOREVER();
+}
+
 void do_verify_current_firmware() {
     // Validate the internal firmware
     secresult result = verify_current_firmware(true);
