@@ -16,6 +16,10 @@ def test(exec_file):
     return doit
 
 
+def test_error_codes(test):
+    assert test('error_codes.py') == b'OK'
+
+
 def test_ext_settings(test):
     assert test('ext_settings.py') == b'OK'
 
