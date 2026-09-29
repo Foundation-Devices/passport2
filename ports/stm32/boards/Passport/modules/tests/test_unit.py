@@ -44,6 +44,10 @@ def test_bip39_prefix_matching(test):
     assert test('bip39_prefix_matching.py') == b'OK'
 
 
+def test_hdnode_blank(test):
+    assert test('hdnode_blank.py') == b'OK'
+
+
 def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
