@@ -422,6 +422,18 @@ typedef struct {
 } UR_PassportResponse;
 
 /**
+ * A Casa `crypto-account` containing both supported registration keys.
+ */
+typedef struct {
+  uint32_t master_fingerprint;
+  uint64_t network;
+  uint8_t root_key_data[33];
+  uint8_t root_chain_code[32];
+  uint8_t casa_key_data[33];
+  uint8_t casa_chain_code[32];
+} UR_CryptoAccount;
+
+/**
  * A uniform resource.
  */
 typedef enum {
@@ -445,6 +457,10 @@ typedef enum {
    * Passport custom `x-passport-response`.
    */
   PassportResponse,
+  /**
+   * Casa wallet-registration `crypto-account`.
+   */
+  CryptoAccount,
 } UR_Value_Tag;
 
 typedef struct {
@@ -470,6 +486,9 @@ typedef struct {
     };
     struct {
       UR_PassportResponse passport_response;
+    };
+    struct {
+      UR_CryptoAccount crypto_account;
     };
   };
 } UR_Value;
@@ -615,12 +634,28 @@ void ur_encoder_start(UR_Encoder *encoder,
                       size_t max_chars);
 
 /**
+ * Start the encoder with an already CBOR-encoded Uniform Resource.
+ *
+ * # Safety
+ *
+ * `ur_type` and `message` must be valid for reads of their respective
+ * lengths for the duration of this call. The caller is responsible for
+ * ensuring that `message` contains well-formed CBOR.
+ */
+bool ur_encoder_start_raw(UR_Encoder *encoder,
+                          const uint8_t *ur_type,
+                          size_t ur_type_len,
+                          const uint8_t *message,
+                          size_t message_len,
+                          size_t max_chars);
+
+/**
  * Returns the UR corresponding to the next fountain encoded part.
  *
  * # Safety
  *
- * This function must not be called if `ur_encoder_start` was not called to
- * start the encoder. Or if the data used to start the encoder is freed.
+ * `ur` and `ur_len` must be valid for writes. If the encoder has not been
+ * started successfully, this function returns an empty string.
  *
  * # Return Value
  *
@@ -648,6 +683,17 @@ void ur_registry_new_derived_key(UR_Value *value,
                                  const UR_CoinInfo *use_info,
                                  const UR_Keypath *origin,
                                  uint32_t parent_fingerprint);
+
+/**
+ * Create the Casa wallet-registration `crypto-account` UR.
+ */
+void ur_registry_new_crypto_account(UR_Value *value,
+                                    const uint8_t (*root_key_data)[33],
+                                    const uint8_t (*root_chain_code)[32],
+                                    const uint8_t (*casa_key_data)[33],
+                                    const uint8_t (*casa_chain_code)[32],
+                                    uint32_t master_fingerprint,
+                                    uint64_t network);
 
 /**
  * Create a new `psbt` UR.

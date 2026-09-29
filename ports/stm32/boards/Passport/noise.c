@@ -38,10 +38,10 @@ void noise_disable() {
 }
 
 bool noise_get_random_uint16(uint16_t* result) {
-    HAL_StatusTypeDef ret;
-    uint32_t          noise1 = 0;
-    uint32_t          noise2 = 0;
-    uint16_t          r      = 0;
+    int      ret;
+    uint32_t noise1 = 0;
+    uint32_t noise2 = 0;
+    uint16_t r      = 0;
 
     for (int i = 0; i < 4; i++) {
         r = r << 4;

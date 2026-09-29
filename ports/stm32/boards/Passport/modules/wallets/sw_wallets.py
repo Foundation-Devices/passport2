@@ -5,6 +5,7 @@
 #
 
 from .bitcoin_core import BitcoinCoreWallet
+from .bitcoin_safe import BitcoinSafeWallet
 from .keeper import KeeperWallet
 from .bluewallet import BlueWallet
 from .btcpay import BtcPayWallet
@@ -24,6 +25,7 @@ from .simple_bitcoin_wallet import SimpleBitcoinWallet
 from .sparrow import SparrowWallet
 from .specter import SpecterWallet
 from .theya import TheyaWallet
+from .unchained import UnchainedWallet
 from .zeus import ZeusWallet
 
 # Array of all supported software wallets and their attributes.
@@ -31,6 +33,7 @@ from .zeus import ZeusWallet
 supported_software_wallets = [
     EnvoyWallet,
     BitcoinCoreWallet,
+    BitcoinSafeWallet,
     KeeperWallet,
     BlueWallet,
     BtcPayWallet,
@@ -49,5 +52,6 @@ supported_software_wallets = [
     SparrowWallet,
     SpecterWallet,
     TheyaWallet,
+    UnchainedWallet,
     ZeusWallet,
 ]

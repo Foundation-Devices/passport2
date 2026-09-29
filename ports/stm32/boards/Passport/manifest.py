@@ -290,12 +290,6 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'tasks/verify_backup_task.py',
         'tasks/verify_firmware_signature_task.py'))
 
-# Translations
-freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
-       ('translations/__init__.py',
-        'translations/en.py',
-        'translations/tags.py'))
-
 # UI
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('ui/__init__.py',
@@ -343,6 +337,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
 freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
        ('wallets/__init__.py',
         'wallets/bitcoin_core.py',
+        'wallets/bitcoin_safe.py',
         'wallets/bluewallet.py',
         'wallets/btcpay.py',
         'wallets/bull.py',
@@ -369,6 +364,7 @@ freeze('$(MPY_DIR)/ports/stm32/boards/Passport/modules',
         'wallets/vault.py',
         'wallets/keeper.py',
         'wallets/theya.py',
+        'wallets/unchained.py',
         'wallets/zeus.py'))
 
 # Extensions

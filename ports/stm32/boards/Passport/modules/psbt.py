@@ -392,7 +392,7 @@ class psbtOutputProxy(psbtProxy):
         # careful and fully validate all the details.
         # - no output info is needed, in general, so
         #   any output info provided better be right, or fail as "fraud"
-        # - full key derivation and validation is done during signing, and critical.
+        # - the signing flow derives and validates change public keys before review.
         # - we raise fraud alarms, since these are not innocent errors
         #
 
