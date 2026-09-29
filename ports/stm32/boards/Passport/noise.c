@@ -60,15 +60,16 @@ bool noise_get_random_uint16(uint16_t* result) {
 }
 
 bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
+    // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
+    // Checked before the clock change below, so this path has nothing to undo.
+    if (buf_len < 4) {
+        return false;
+    }
+
 // Need to be fast for this
 #ifndef FACTORY_TEST
     frequency_turbo(true);
 #endif
-
-    // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
-    if (buf_len < 4) {
-        return false;
-    }
 
     // printf("sources = 0x%02x  buf_len=%d\n", sources, buf_len);
     if (!(sources & NOISE_AVALANCHE_SOURCE) && !(sources & NOISE_MCU_RNG_SOURCE) && !(sources & NOISE_SE_RNG_SOURCE)) {
@@ -107,15 +108,19 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
     // MCU RNG
     if (sources & NOISE_MCU_RNG_SOURCE) {
         // printf("Using MCU source\n");
-        uint32_t* pbuf32 = (uint32_t*)buf;
+        uint8_t* pbuf8     = (uint8_t*)buf;
+        uint8_t* pbuf8_end = pbuf8 + buf_len;
 
-        // NOTE: We don't sample and mixin additional entropy into the final 1-3 bytes if buffer size
-        //       is not a multiple of 4 bytes.
-        for (int i = 0; i < buf_len / 4; i++) {
+        // Walk to the end of the buffer rather than over whole words, and mix in
+        // only what is left, so every byte gets a sample
+        while (pbuf8 < pbuf8_end) {
             uint32_t sample = rng_sample();
             // printf("MCU SAMPLE: 0x%08lx\n", sample);
-            // XOR in the sample
-            *(pbuf32 + i) ^= sample;
+
+            // XOR in the sample - don't overflow output buffer
+            int len = (int)MIN((size_t)(pbuf8_end - pbuf8), sizeof(sample));
+            xor_mixin(pbuf8, (uint8_t*)&sample, len);
+            pbuf8 += len;
         }
     }
 
@@ -126,7 +131,9 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
         uint8_t  num_in[20], sample[32];
         memset(num_in, 0, 20);
 
-        for (int i = 0; i < buf_len / 32; i++) {
+        // Walk to the end of the buffer rather than over whole blocks, and mix in
+        // only what is left, so every byte gets a sample
+        while (pbuf8 < pbuf8_end) {
             int rc = se_pick_nonce(num_in, sample);
             if (rc < 0) {
                 se_show_error();
@@ -140,8 +147,9 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
             // printf("SE SAMPLE: 0x%08lx %08lx %08lx %08lx\n", *s, *(s+1), *(s+2), *(s+3));
 
             // Mixin the sample values - don't overflow output buffer
-            xor_mixin(pbuf8, sample, MIN(pbuf8_end - pbuf8, 32));
-            pbuf8 += 32;
+            int len = (int)MIN((size_t)(pbuf8_end - pbuf8), sizeof(sample));
+            xor_mixin(pbuf8, sample, len);
+            pbuf8 += len;
         }
     }
 
