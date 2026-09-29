@@ -166,6 +166,14 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
 }
 
 // trezor-firmware randomness functions
+//
+// These back trezor-crypto's internal randomness, where an avalanche sample per
+// call would be paid on every operation. Their consumers are blinding and nonce
+// material in ecdsa.c and zkp_context.c, and trezorcrypto.random, which
+// ext_settings.py uses for wear levelling and deniability padding.
+//
+// Secret generation is not one of them - see new_seed_task, which asks
+// noise_get_random_bytes() for every source.
 
 void random_reseed(const uint32_t value) {
     (void)value;
