@@ -62,3 +62,7 @@ def test_psbt_fee(test):
 
 def test_unchained(test):
     assert test('unchained.py') == b'OK'
+
+
+def test_restore_backup(test):
+    assert test('restore_backup.py') == b'OK'
