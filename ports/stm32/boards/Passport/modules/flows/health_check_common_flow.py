@@ -37,6 +37,11 @@ class HealthCheckCommonFlow(Flow):
             self.subpath = parts[1]
             self.text = parts[2][len('ascii:'):]
 
+            if not self.text:
+                await ErrorPage(text='Message is empty.').show()
+                self.set_result(None)
+                return
+
             (subpath, error) = validate_sign_text(self.text, self.subpath)
 
             if error is not None:
