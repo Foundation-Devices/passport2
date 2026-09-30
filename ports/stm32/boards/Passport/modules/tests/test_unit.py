@@ -16,8 +16,16 @@ def test(exec_file):
     return doit
 
 
+def test_error_codes(test):
+    assert test('error_codes.py') == b'OK'
+
+
 def test_ext_settings(test):
     assert test('ext_settings.py') == b'OK'
+
+
+def test_passphrase_length(test):
+    assert test('passphrase_length.py') == b'OK'
 
 
 def test_psbt_multisig_approval(test):
@@ -54,6 +62,10 @@ def test_psbt_fee(test):
 
 def test_unchained(test):
     assert test('unchained.py') == b'OK'
+
+
+def test_restore_backup(test):
+    assert test('restore_backup.py') == b'OK'
 
 
 def test_bip322(test):

@@ -39,7 +39,9 @@ async def verify_backup_task(on_done, backup_file_path):
                 fd.close()
     except CardMissingError:
         await on_done(Error.MICROSD_CARD_MISSING)
+        return
     except Exception as e:
-        await on_done(Error.FILE_READ_ERRROR)
+        await on_done(Error.FILE_READ_ERROR)
+        return
 
     await on_done(None)
