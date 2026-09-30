@@ -114,7 +114,7 @@ def message_of(call):
 
 # ---------------------------------------------------------------- input validation
 
-class FakeInputProxy:
+class MockInputProxy:
     def __init__(self, sighash, taproot):
         self.witness_script = None
         self.redeem_script = None
@@ -131,7 +131,7 @@ class FakeInputProxy:
 
 
 def validate(sighash=None, taproot=False):
-    inp = FakeInputProxy(sighash, taproot)
+    inp = MockInputProxy(sighash, taproot)
     psbtInputProxy.validate(inp, 0, None, 0)
     return inp.sighash
 
@@ -185,7 +185,7 @@ def ser_txn(spec):
     return body
 
 
-class FakeInput:
+class MockInput:
     def __init__(self, spec_input, segwit):
         self.spec = spec_input
         self.is_segwit = segwit
@@ -195,7 +195,7 @@ class FakeInput:
         return CTxOut(self.spec['value'], self.spec['spk'])
 
 
-class FakePSBT:
+class MockPSBT:
     '''Just enough of a psbtObject for the sighash builders to run on.'''
 
     def __init__(self, spec, segwit):
@@ -203,7 +203,7 @@ class FakePSBT:
         self.fd = BytesIO(raw)
         self.txn = (0, len(raw))
         self.total_value_out = None
-        self.inputs = [FakeInput(i, segwit) for i in spec['inputs']]
+        self.inputs = [MockInput(i, segwit) for i in spec['inputs']]
         self.tap_hashPrevouts = None
         self.tap_hashSequence = None
         self.tap_hashOutputs = None
@@ -244,7 +244,7 @@ def ref_taproot_sighash(spec, input_idx, hash_type):
     return tagged_hash('TapSighash', b'\x00' + msg)
 
 
-psbt = FakePSBT(SPEC, True)
+psbt = MockPSBT(SPEC, True)
 
 digests = {}
 for hash_type in (SIGHASH_DEFAULT, SIGHASH_ALL):
@@ -313,7 +313,7 @@ def ref_legacy_sighash(spec, replace_idx, script_sig, hash_type):
     return sha256(sha256(body))
 
 
-legacy_psbt = FakePSBT(SPEC, False)
+legacy_psbt = MockPSBT(SPEC, False)
 
 for replace_idx in (0, 1):
     spec_input = SPEC['inputs'][replace_idx]
