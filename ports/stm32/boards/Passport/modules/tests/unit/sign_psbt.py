@@ -8,7 +8,7 @@ from styles.colors import HIGHLIGHT_TEXT_HEX
 from utils import escape_text, recolor, stylize_address
 
 
-class FakeChain:
+class MockChain:
     def render_value(self, value):
         return (str(value), 'sats')
 
@@ -16,27 +16,27 @@ class FakeChain:
         return 'OP_RETURN:\n{}'.format(script)
 
 
-class FakeFlow:
-    chain = FakeChain()
+class MockFlow:
+    chain = MockChain()
 
 
-class FakeAddressChain(FakeChain):
+class MockAddressChain(MockChain):
     def render_address(self, script):
         return script
 
 
-class FakeAddressFlow:
-    chain = FakeAddressChain()
+class MockAddressFlow:
+    chain = MockAddressChain()
 
 
-class FakeOutput:
+class MockOutput:
     def __init__(self, value, message):
         self.nValue = value
         self.scriptPubKey = message
 
 
 def assert_op_return_output(value, message):
-    rendered = SignPsbtCommonFlow.render_output(FakeFlow(), FakeOutput(value, message))
+    rendered = SignPsbtCommonFlow.render_output(MockFlow(), MockOutput(value, message))
 
     amount_label = rendered.find('Amount')
     amount = rendered.find('{} sats'.format(value))
@@ -55,7 +55,7 @@ message_heading = recolor(HIGHLIGHT_TEXT_HEX, 'Message')
 destination_heading = recolor(HIGHLIGHT_TEXT_HEX, 'Destination')
 malicious_message = '{}\n0.00000001 BTC\n\n{}\nbc1qattacker'.format(
     amount_heading, destination_heading)
-rendered = SignPsbtCommonFlow.render_output(FakeFlow(), FakeOutput(1, malicious_message))
+rendered = SignPsbtCommonFlow.render_output(MockFlow(), MockOutput(1, malicious_message))
 assert escape_text(malicious_message) in rendered
 assert rendered.count('\n{}\n'.format(amount_heading)) == 1
 assert rendered.count('\n{}\n'.format(message_heading)) == 1
@@ -63,7 +63,7 @@ assert rendered.count('\n{}\n'.format(destination_heading)) == 0
 assert malicious_message not in rendered
 
 address = 'bc1qvaliddestination'
-rendered = SignPsbtCommonFlow.render_output(FakeAddressFlow(), FakeOutput(42, address))
+rendered = SignPsbtCommonFlow.render_output(MockAddressFlow(), MockOutput(42, address))
 assert rendered == '\n{}\n42 sats\n\n{}\n{}'.format(
     amount_heading, destination_heading, stylize_address(address))
 

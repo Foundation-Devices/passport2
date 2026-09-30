@@ -7,7 +7,7 @@
 from tasks.restore_backup_task import restore_settings_from_backup
 
 
-class FakeSettings:
+class MockSettings:
     def __init__(self):
         self.values = {}
 
@@ -26,7 +26,7 @@ vals = {
     'setting.backup_quiz': True,
 }
 
-settings = FakeSettings()
+settings = MockSettings()
 restore_settings_from_backup(vals, settings)
 
 assert settings.values == {
@@ -107,7 +107,7 @@ class StoredSettings:
         self.volatile.clear()
 
 
-class FakePa:
+class MockPa:
     def __init__(self):
         self.calls = []
 
@@ -118,7 +118,7 @@ class FakePa:
         self.calls.append('new_main_secret')
 
 
-class FakeCardSlot:
+class MockCardSlot:
     def __enter__(self):
         return self
 
@@ -126,18 +126,18 @@ class FakeCardSlot:
         return False
 
 
-class FakeFile:
+class MockFile:
     def close(self):
         pass
 
 
-class FakeBuilder:
+class MockBuilder:
     def read_file(self, fd, password, maxsize, progress_fcn=None):
         return ('backup.txt', BACKUP_CONTENTS)
 
 
-class FakeCompat7z:
-    Builder = FakeBuilder
+class MockCompat7z:
+    Builder = MockBuilder
 
     @staticmethod
     def check_file_headers(fd):
@@ -155,16 +155,16 @@ async def run_restore():
 
 
 stored = StoredSettings()
-pa = FakePa()
+pa = MockPa()
 
 # Set the module-level open() before the try, so the finally can always undo it.
-restore_module.open = lambda path, mode: FakeFile()
+restore_module.open = lambda path, mode: MockFile()
 originals = (common.settings, common.pa, restore_module.compat7z, restore_module.CardSlot)
 try:
     common.settings = stored
     common.pa = pa
-    restore_module.compat7z = FakeCompat7z
-    restore_module.CardSlot = FakeCardSlot
+    restore_module.compat7z = MockCompat7z
+    restore_module.CardSlot = MockCardSlot
 
     assert asyncio.run(run_restore()) == [None]
 finally:

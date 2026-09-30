@@ -14,7 +14,7 @@ from serializations import CTxOut
 P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
 
 
-class FakePSBT:
+class MockPSBT:
     def __init__(self, values):
         self.fd = BytesIO(b''.join(CTxOut(value, P2WPKH_SCRIPT).serialize() for value in values))
         self.vout_start = 0
@@ -22,15 +22,15 @@ class FakePSBT:
         self.total_value_out = None
 
 
-class FakePrevout:
+class MockPrevout:
     n = 0
 
 
-class FakeTxIn:
-    prevout = FakePrevout()
+class MockTxIn:
+    prevout = MockPrevout()
 
 
-class FakeInput:
+class MockInput:
     def __init__(self, value):
         self.value = value
         self.fully_signed = False
@@ -49,9 +49,9 @@ class FakeInput:
         pass
 
 
-class FakeInputPSBT:
+class MockInputPSBT:
     def __init__(self, values):
-        self.inputs = [FakeInput(value) for value in values]
+        self.inputs = [MockInput(value) for value in values]
         self.my_xfp = 0
         self.total_value_in = None
         self.fee_is_verified = True
@@ -61,23 +61,23 @@ class FakeInputPSBT:
 
     def input_iter(self):
         for idx in range(self.num_inputs):
-            yield idx, FakeTxIn()
+            yield idx, MockTxIn()
 
 
 def read_outputs(values):
-    psbt = FakePSBT(values)
+    psbt = MockPSBT(values)
     parsed = [tx_out.nValue for _, tx_out in psbtObject.output_iter(psbt)]
     return psbt, parsed
 
 
 def read_inputs(values):
-    psbt = FakeInputPSBT(values)
+    psbt = MockInputPSBT(values)
     psbtObject.consider_inputs(psbt)
     return psbt
 
 
 def assert_invalid_outputs(values, invalid_idx):
-    psbt = FakePSBT(values)
+    psbt = MockPSBT(values)
     try:
         list(psbtObject.output_iter(psbt))
     except FatalPSBTIssue as exc:
@@ -88,7 +88,7 @@ def assert_invalid_outputs(values, invalid_idx):
 
 
 def assert_invalid_inputs(values, invalid_idx):
-    psbt = FakeInputPSBT(values)
+    psbt = MockInputPSBT(values)
     try:
         psbtObject.consider_inputs(psbt)
     except FatalPSBTIssue as exc:

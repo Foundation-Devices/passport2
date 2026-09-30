@@ -28,20 +28,20 @@ OWNED_KEYS = (
 events = []
 
 
-class FakeImportMultisigWalletFlow:
+class MockImportMultisigWalletFlow:
     result = None
     calls = 0
 
     def __init__(self, wallet):
         assert wallet == 'proposed-wallet'
-        FakeImportMultisigWalletFlow.calls += 1
+        MockImportMultisigWalletFlow.calls += 1
 
     async def run(self):
         events.append('import')
         return self.result
 
 
-class FakePsbt:
+class MockPsbt:
     def __init__(self, needs_approval):
         self.multisig_import_needs_approval = needs_approval
         self.active_multisig = 'proposed-wallet'
@@ -49,7 +49,7 @@ class FakePsbt:
         self.outputs = []
 
 
-class FakeOutput:
+class MockOutput:
     is_change = True
 
     def __init__(self, path, key):
@@ -64,7 +64,7 @@ class FakeOutput:
             self.subpaths[key] = str_to_keypath(MY_XFP, path)
 
 
-class FakeNode:
+class MockNode:
     def __init__(self, key):
         self.key = key
 
@@ -72,7 +72,7 @@ class FakeNode:
         return self.key
 
 
-class FakeSensitiveValues:
+class MockSensitiveValues:
     def __enter__(self):
         events.append('verify')
         return self
@@ -83,10 +83,10 @@ class FakeSensitiveValues:
     def derive_path(self, path):
         assert path in PATHS
         events.append(path)
-        return FakeNode(OWNED_KEYS[PATHS.index(path)])
+        return MockNode(OWNED_KEYS[PATHS.index(path)])
 
 
-class FakeErrorPage:
+class MockErrorPage:
     def __init__(self, text):
         assert text == ('Transaction rejected. Passport could not verify that the change address '
                         'belongs to this wallet.')
@@ -95,7 +95,7 @@ class FakeErrorPage:
         events.append('error')
 
 
-class FakeQuestionPage:
+class MockQuestionPage:
     def __init__(self, **_kwargs):
         pass
 
@@ -104,7 +104,7 @@ class FakeQuestionPage:
         return True
 
 
-async def fake_spinner_task(_text, task, args=()):
+async def mock_spinner_task(_text, task, args=()):
     results = []
 
     async def on_done(*result):
@@ -115,12 +115,12 @@ async def fake_spinner_task(_text, task, args=()):
     return results[0]
 
 
-async def fake_sign_psbt_task(on_done, _psbt):
+async def mock_sign_psbt_task(on_done, _psbt):
     events.append('sign')
     await on_done(None, None)
 
 
-class FakeSettings:
+class MockSettings:
     temporary_mode = True
 
     def __init__(self, policy=None):
@@ -134,11 +134,11 @@ class FakeSettings:
         return default
 
 
-class FakeSignFlow(SignPsbtCommonFlow):
+class MockSignFlow(SignPsbtCommonFlow):
     def __init__(self, needs_approval):
         # Exercise state ordering without rendering pages or accessing device settings.
         Flow.__init__(self, initial_state=self.check_multisig_import)
-        self.psbt = FakePsbt(needs_approval)
+        self.psbt = MockPsbt(needs_approval)
         self.cancel_review = False
 
     async def show_transaction_details(self):
@@ -152,13 +152,13 @@ class FakeSignFlow(SignPsbtCommonFlow):
 async def run_tests():
     original_settings = common.settings
     replacements = (
-        (flows, 'ImportMultisigWalletFlow', FakeImportMultisigWalletFlow),
-        (pages, 'ErrorPage', FakeErrorPage),
-        (pages, 'QuestionPage', FakeQuestionPage),
-        (stash, 'SensitiveValues', FakeSensitiveValues),
-        (utils, 'spinner_task', fake_spinner_task),
-        (sign_psbt_common_flow, 'spinner_task', fake_spinner_task),
-        (sign_psbt_common_flow, 'sign_psbt_task', fake_sign_psbt_task),
+        (flows, 'ImportMultisigWalletFlow', MockImportMultisigWalletFlow),
+        (pages, 'ErrorPage', MockErrorPage),
+        (pages, 'QuestionPage', MockQuestionPage),
+        (stash, 'SensitiveValues', MockSensitiveValues),
+        (utils, 'spinner_task', mock_spinner_task),
+        (sign_psbt_common_flow, 'spinner_task', mock_spinner_task),
+        (sign_psbt_common_flow, 'sign_psbt_task', mock_sign_psbt_task),
     )
     originals = [(module, name, getattr(module, name)) for module, name, _ in replacements]
 
@@ -166,37 +166,37 @@ async def run_tests():
         for module, name, replacement in replacements:
             setattr(module, name, replacement)
 
-        FakeImportMultisigWalletFlow.result = False
-        FakeImportMultisigWalletFlow.calls = 0
+        MockImportMultisigWalletFlow.result = False
+        MockImportMultisigWalletFlow.calls = 0
         events.clear()
-        flow = FakeSignFlow(needs_approval=True)
+        flow = MockSignFlow(needs_approval=True)
         assert await flow.run() is None
-        assert FakeImportMultisigWalletFlow.calls == 1
+        assert MockImportMultisigWalletFlow.calls == 1
         assert events == ['import']
 
-        FakeImportMultisigWalletFlow.result = True
+        MockImportMultisigWalletFlow.result = True
         for needs_approval in (True, False):
             events.clear()
-            flow = FakeSignFlow(needs_approval)
-            flow.psbt.outputs = [FakeOutput(PATHS[0], OWNED_KEYS[0])]
+            flow = MockSignFlow(needs_approval)
+            flow.psbt.outputs = [MockOutput(PATHS[0], OWNED_KEYS[0])]
             assert await flow.run() is flow.psbt
             expected = ['import'] if needs_approval else []
             assert events == expected + ['verify', PATHS[0], 'clear', 'review', 'confirm', 'sign']
 
         # Reviewing and cancelling a transaction without change must not open the key store.
-        payment = FakeOutput(PATHS[0], OTHER_KEY)
+        payment = MockOutput(PATHS[0], OTHER_KEY)
         payment.is_change = False
         for outputs in ([], [payment]):
             events.clear()
-            flow = FakeSignFlow(needs_approval=False)
+            flow = MockSignFlow(needs_approval=False)
             flow.psbt.outputs = outputs
             flow.cancel_review = True
             assert await flow.run() is None
             assert events == ['review']
 
         events.clear()
-        flow = FakeSignFlow(needs_approval=False)
-        flow.psbt.outputs = [FakeOutput(PATHS[0], OWNED_KEYS[0])]
+        flow = MockSignFlow(needs_approval=False)
+        flow.psbt.outputs = [MockOutput(PATHS[0], OWNED_KEYS[0])]
         flow.cancel_review = True
         assert await flow.run() is None
         assert events == ['verify', PATHS[0], 'clear', 'review']
@@ -206,8 +206,8 @@ async def run_tests():
         for path, owned_key in zip(PATHS, OWNED_KEYS):
             for key in (owned_key, OTHER_KEY):
                 events.clear()
-                flow = FakeSignFlow(needs_approval=False)
-                flow.psbt.outputs = [FakeOutput(path, key)]
+                flow = MockSignFlow(needs_approval=False)
+                flow.psbt.outputs = [MockOutput(path, key)]
                 result = await flow.run()
                 if key == owned_key:
                     assert result is flow.psbt
@@ -216,10 +216,10 @@ async def run_tests():
                     assert result is None
                     assert events == ['verify', path, 'clear', 'error']
 
-        common.settings = FakeSettings()
+        common.settings = MockSettings()
         assert get_multisig_policy() == MUSIG_ASK
 
-        common.settings = FakeSettings(policy=MUSIG_SKIP)
+        common.settings = MockSettings(policy=MUSIG_SKIP)
         assert get_multisig_policy() == MUSIG_SKIP
 
         return_value.write(b'OK')

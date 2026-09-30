@@ -76,15 +76,15 @@ script_mismatch = make_input(CTxOut(1000, b'\x00\x14' + (b'\x33' * 20)), matchin
 assert_raises(AssertionError, lambda: script_mismatch.get_utxo(0))
 
 
-class FakePrevout:
+class MockPrevout:
     n = 0
 
 
-class FakeTxIn:
-    prevout = FakePrevout()
+class MockTxIn:
+    prevout = MockPrevout()
 
 
-class FakeNode:
+class MockNode:
     def __init__(self, public_key):
         self._public_key = public_key
 
@@ -92,7 +92,7 @@ class FakeNode:
         return self._public_key
 
 
-class FakeSensitiveValues:
+class MockSensitiveValues:
     def __enter__(self):
         return self
 
@@ -102,14 +102,14 @@ class FakeSensitiveValues:
     @staticmethod
     def derive_path(path, register=True):
         assert register
-        return FakeNode(DERIVED_PUBKEYS[path])
+        return MockNode(DERIVED_PUBKEYS[path])
 
 
-class FakeSigningInput:
+class MockSigningInput:
     pass
 
 
-class FakeInputPSBT:
+class MockInputPSBT:
     def __init__(self, psbt_input, my_xfp=0):
         self.inputs = [psbt_input]
         self.my_xfp = my_xfp
@@ -120,30 +120,30 @@ class FakeInputPSBT:
         self.warnings = []
 
     def input_iter(self):
-        yield 0, FakeTxIn()
+        yield 0, MockTxIn()
 
 
 verified_amounts = []
 original_verify_amount = history.verify_amount
 original_sensitive_values = stash.SensitiveValues
 history.verify_amount = lambda _prevout, amount, idx: verified_amounts.append((amount, idx))
-stash.SensitiveValues = FakeSensitiveValues
+stash.SensitiveValues = MockSensitiveValues
 try:
-    external_input_psbt = FakeInputPSBT(make_input(CTxOut(2000, P2WPKH_SCRIPT)))
+    external_input_psbt = MockInputPSBT(make_input(CTxOut(2000, P2WPKH_SCRIPT)))
     psbtObject.consider_inputs(external_input_psbt)
     assert not external_input_psbt.fee_is_verified
 
     owned_input = make_owned_input()
-    owned_input.validate(0, FakeTxIn(), MY_XFP)
-    owned_input_psbt = FakeInputPSBT(owned_input, MY_XFP)
+    owned_input.validate(0, MockTxIn(), MY_XFP)
+    owned_input_psbt = MockInputPSBT(owned_input, MY_XFP)
     psbtObject.consider_inputs(owned_input_psbt)
     assert owned_input_psbt.fee_is_verified
     assert owned_input.num_our_keys == 1
     assert owned_input.required_key == OWNED_PUBKEY
 
     forged_input = make_owned_input(FORGED_PUBKEY)
-    forged_input.validate(0, FakeTxIn(), MY_XFP)
-    forged_input_psbt = FakeInputPSBT(forged_input, MY_XFP)
+    forged_input.validate(0, MockTxIn(), MY_XFP)
+    forged_input_psbt = MockInputPSBT(forged_input, MY_XFP)
     assert_raises(AssertionError, lambda: psbtObject.consider_inputs(forged_input_psbt))
 finally:
     history.verify_amount = original_verify_amount
@@ -151,26 +151,26 @@ finally:
 
 assert verified_amounts == [(2000, 0), (2000, 0)]
 
-multisig_input = FakeSigningInput()
+multisig_input = MockSigningInput()
 multisig_input.is_multisig = True
 multisig_input.required_key = {OWNED_PUBKEY}
 multisig_input.subpaths = {OWNED_PUBKEY: [MY_XFP, 0]}
 node, which_key = psbtInputProxy.get_signing_node(
-    multisig_input, FakeSensitiveValues(), MY_XFP, 0)
+    multisig_input, MockSensitiveValues(), MY_XFP, 0)
 assert node.public_key() == OWNED_PUBKEY
 assert which_key == OWNED_PUBKEY
 
-taproot_input = FakeSigningInput()
+taproot_input = MockSigningInput()
 taproot_input.is_multisig = False
 taproot_input.required_key = TAPROOT_PUBKEY
 taproot_input.subpaths = {}
 taproot_input.tap_subpaths = {TAPROOT_PUBKEY: ([MY_XFP, 1], [])}
 node, which_key = psbtInputProxy.get_signing_node(
-    taproot_input, FakeSensitiveValues(), MY_XFP, 0)
+    taproot_input, MockSensitiveValues(), MY_XFP, 0)
 assert node.public_key()[1:] == TAPROOT_PUBKEY
 assert which_key == TAPROOT_PUBKEY
 
-missing_path_input = FakeSigningInput()
+missing_path_input = MockSigningInput()
 missing_path_input.is_multisig = False
 missing_path_input.required_key = OWNED_PUBKEY
 missing_path_input.subpaths = {}
@@ -178,20 +178,20 @@ missing_path_input.tap_subpaths = {}
 assert_raises(
     AssertionError,
     lambda: psbtInputProxy.get_signing_node(
-        missing_path_input, FakeSensitiveValues(), MY_XFP, 0),
+        missing_path_input, MockSensitiveValues(), MY_XFP, 0),
 )
 
 
-class FakeOutputProxy:
+class MockOutputProxy:
     is_change = False
 
     def validate(self, _idx, _txout, _xfp, _active_multisig):
         pass
 
 
-class FakeOutputPSBT:
+class MockOutputPSBT:
     def __init__(self, fee_is_verified):
-        self.outputs = [FakeOutputProxy()]
+        self.outputs = [MockOutputProxy()]
         self.total_value_out = 1000
         self.total_value_in = 5000
         self.fee_is_verified = fee_is_verified
@@ -210,33 +210,33 @@ class FakeOutputPSBT:
         pass
 
 
-unverified_fee_psbt = FakeOutputPSBT(external_input_psbt.fee_is_verified)
+unverified_fee_psbt = MockOutputPSBT(external_input_psbt.fee_is_verified)
 psbtObject.consider_outputs(unverified_fee_psbt)
 assert unverified_fee_psbt.warnings[0][0] == 'Unverified Fee'
 assert all(label not in {'Big Fee', 'Huge Fee'} for label, _text in unverified_fee_psbt.warnings)
 
-verified_fee_psbt = FakeOutputPSBT(owned_input_psbt.fee_is_verified)
+verified_fee_psbt = MockOutputPSBT(owned_input_psbt.fee_is_verified)
 psbtObject.consider_outputs(verified_fee_psbt)
 assert verified_fee_psbt.warnings[0][0] == 'Huge Fee'
 
 
-class FakeChain:
+class MockChain:
     def render_value(self, value):
         return str(value), 'sats'
 
 
-class FakeFlow:
-    chain = FakeChain()
+class MockFlow:
+    chain = MockChain()
 
     def __init__(self, psbt):
         self.psbt = psbt
 
 
-review = SignPsbtCommonFlow.render_warnings(FakeFlow(unverified_fee_psbt))
+review = SignPsbtCommonFlow.render_warnings(MockFlow(unverified_fee_psbt))
 assert 'Unverified' in review
 assert '4000 sats' not in review
 
-review = SignPsbtCommonFlow.render_warnings(FakeFlow(verified_fee_psbt))
+review = SignPsbtCommonFlow.render_warnings(MockFlow(verified_fee_psbt))
 assert '4000 sats' in review
 
 return_value.write(b'OK')
