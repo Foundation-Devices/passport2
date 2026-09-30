@@ -16,7 +16,7 @@ P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
 OUTPUT_VALUE = 1000
 
 
-class FakePSBT:
+class MockPSBT:
     '''Just enough of a psbtObject for parse_txn() and the iterators to work on.'''
 
     def __init__(self, raw):
@@ -58,7 +58,7 @@ def must_raise(exc_type, call):
 
 # A compliant unsigned transaction parses, and the positions it records let the
 # input and output iterators walk it.
-psbt = FakePSBT(ser_unsigned_txn(num_in=2, num_out=3))
+psbt = MockPSBT(ser_unsigned_txn(num_in=2, num_out=3))
 psbtObject.parse_txn(psbt)
 
 assert psbt.txn_version == 2
@@ -73,16 +73,16 @@ assert [txo.nValue for _, txo in psbtObject.output_iter(psbt)] == [OUTPUT_VALUE]
 # the bare ValueError('CTxInWitness') that _skip_n_objs() used to raise once the
 # parser reached the witness area.
 must_raise(FatalPSBTIssue,
-           lambda: psbtObject.parse_txn(FakePSBT(ser_unsigned_txn(witness=True))))
+           lambda: psbtObject.parse_txn(MockPSBT(ser_unsigned_txn(witness=True))))
 
 # A zero input count is indistinguishable from the segwit marker, so it is caught on
 # that path rather than by the 'no ins?' assertion. Either way it is rejected.
 must_raise(FatalPSBTIssue,
-           lambda: psbtObject.parse_txn(FakePSBT(ser_unsigned_txn(num_in=0))))
+           lambda: psbtObject.parse_txn(MockPSBT(ser_unsigned_txn(num_in=0))))
 
 # Version checking is unaffected.
 must_raise(AssertionError,
-           lambda: psbtObject.parse_txn(FakePSBT(ser_unsigned_txn(version=3))))
+           lambda: psbtObject.parse_txn(MockPSBT(ser_unsigned_txn(version=3))))
 
 # finalize() fills the witness area itself, so every input gets a fresh empty
 # witness it can assign a stack to.
