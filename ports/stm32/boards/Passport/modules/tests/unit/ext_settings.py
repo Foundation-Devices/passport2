@@ -74,4 +74,21 @@ else:
 
 assert common.sf.data == bytearray(b'\xff' * FLASH_SIZE)
 
+# Direct writes must also reject oversized data without changing flash or save state.
+flash_before = bytes(common.sf.data)
+pos_before = oversized.my_pos
+slots_before = oversized.last_save_slots[:]
+dirty_before = oversized.is_dirty
+try:
+    oversized.save_impl(SLOT_START, b'x' * (oversized.max_json_len + 1))
+except SettingsOutOfSpace:
+    pass
+else:
+    raise RuntimeError('Oversized direct writes should fail before writing')
+
+assert common.sf.data == flash_before
+assert oversized.my_pos == pos_before
+assert oversized.last_save_slots == slots_before
+assert oversized.is_dirty == dirty_before
+
 return_value.write(b'OK')

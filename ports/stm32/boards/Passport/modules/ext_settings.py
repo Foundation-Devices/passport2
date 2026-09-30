@@ -423,9 +423,11 @@ class ExtSettings:
         return d
 
     def save_impl(self, pos, data, erase_old_pos=True):
-        aes = self.get_aes(pos)
-
         pad_len = self.max_json_len - len(data)
+        if pad_len < 0:
+            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
+
+        aes = self.get_aes(pos)
 
         with SFFile(pos, pre_erased=True, max_size=self.slot_size) as fd:
             chk = trezorcrypto.sha256()
