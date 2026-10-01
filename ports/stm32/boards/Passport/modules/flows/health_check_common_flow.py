@@ -24,7 +24,9 @@ class HealthCheckCommonFlow(Flow):
         err_label = 'Message' if self.normal_signing else 'Health check'
 
         # single-line `signmessage <path> ascii:<message>` (Envoy export)
-        # Multiline messages are preserved by joining lines back before splitting.
+        # Join lines so validation rejects embedded newlines instead of silently
+        # discarding text. Keep the legacy strict whitespace and ASCII checks.
+        # This format is intentionally supported for health checks too.
         if self.lines and self.lines[0].startswith('signmessage '):
             raw = '\n'.join(self.lines)
             parts = raw.split(' ', 2)
@@ -50,6 +52,13 @@ class HealthCheckCommonFlow(Flow):
                 return
 
             self.subpath = subpath
+
+            # A root or missing path has no purpose component for address-type
+            # detection, even though the general path validator accepts it.
+            if not subpath or subpath == 'm':
+                await ErrorPage(text='Message derivation path is invalid.').show()
+                self.set_result(None)
+                return
 
             derived = get_addr_type_from_deriv(self.subpath)
 
