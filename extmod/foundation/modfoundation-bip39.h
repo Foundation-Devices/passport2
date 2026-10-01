@@ -28,7 +28,12 @@ STATIC mp_obj_t mod_foundation_bip39_get_words_matching_prefix(size_t n_args, co
     mp_check_self(mp_obj_is_str_or_bytes(args[0]));
     GET_STR_DATA_LEN(args[0], prefix_str, prefix_len);
 
-    int max_matches = mp_obj_get_int(args[1]);
+    mp_int_t max_matches = mp_obj_get_int(args[1]);
+    if (max_matches < 0) {
+        // The count is unsigned in get_words_matching_prefix(), so a negative value
+        // would become an effectively unlimited one
+        mp_raise_ValueError(MP_ERROR_TEXT("max_matches must not be negative"));
+    }
 
     // Must be "bip39" or "bytewords"
     mp_check_self(mp_obj_is_str_or_bytes(args[2]));
