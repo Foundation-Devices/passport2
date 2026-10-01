@@ -108,7 +108,11 @@ class OutptValueCache:
     @classmethod
     def verify_amount(cls, prevout, amount, in_idx):
         # Check previously recorded amounts without trusting new PSBT data.
-        # New amounts are recorded only after successful signing.
+        # New amounts are recorded only after successful signing. Deliberately
+        # forget amounts seen only in unsigned/rejected PSBTs: remembering them
+        # lets an untrusted coordinator poison later legitimate spends. This
+        # loses cross-attempt comparison until we sign; history remains a
+        # secondary check, not a replacement for non_witness_utxo verification.
         # raises IncorrectUTXOAmount with details if it fails, which should abort any signing
         exp = cls.fetch_amount(prevout)
 
@@ -120,12 +124,12 @@ class OutptValueCache:
 
             raise IncorrectUTXOAmount(in_idx, "Expected %s but PSBT claims %s %s" % (
                 exp, amount, units))
+        return exp
 
     @classmethod
     def record_amount(cls, prevout, amount, in_idx):
         # Only call for inputs whose ownership was verified and which we signed.
-        cls.verify_amount(prevout, amount, in_idx)
-        if cls.fetch_amount(prevout) is None:
+        if cls.verify_amount(prevout, amount, in_idx) is None:
             cls.add(prevout, amount)
 
     @classmethod

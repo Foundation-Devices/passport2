@@ -22,5 +22,5 @@ class ClearUTXOCacheFlow(Flow):
             return
 
         OutptValueCache.clear()
-        await SuccessPage(text='UTXO cache cleared.').show()
+        await SuccessPage(text='Saved input amounts cleared.').show()
         self.set_result(True)

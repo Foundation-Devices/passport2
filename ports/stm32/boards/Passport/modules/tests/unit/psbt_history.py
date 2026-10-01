@@ -90,13 +90,14 @@ def make_input(amount, owned=True, pubkey=PUBKEY, taproot=False):
 
 
 class TestPSBT:
-    def __init__(self, inputs):
+    def __init__(self, inputs, prevouts=None):
         self.inputs = inputs
         self.my_xfp = MY_XFP
         self.total_value_in = None
         self.fee_is_verified = True
         self.presigned_inputs = set()
         self.num_inputs = len(inputs)
+        self.prevouts = prevouts or [COutPoint(idx + 1, 0) for idx in range(self.num_inputs)]
         self.warnings = []
         self.fail_at = None
         for idx, txi in self.input_iter():
@@ -105,7 +106,7 @@ class TestPSBT:
     def input_iter(self):
         for idx in range(self.num_inputs):
             txi = CTxIn()
-            txi.prevout = COutPoint(idx + 1, 0)
+            txi.prevout = self.prevouts[idx]
             yield idx, txi
 
     def make_txn_segwit_sighash(self, idx, *_args):
@@ -155,7 +156,7 @@ class MockQuestionPage:
 
 class MockSuccessPage:
     def __init__(self, text):
-        pass
+        assert text == 'Saved input amounts cleared.'
 
     async def show(self):
         pass
@@ -181,6 +182,32 @@ async def run_tests():
         Cache.runtime_cache = []
         Cache._cache_loaded = False
         prevout = COutPoint(1, 0)
+
+        # Duplicate outpoints must fail before signing, even with matching amounts,
+        # unowned inputs, or a non-adjacent duplicate. No rejected amount may persist.
+        for amounts in ((9999, 1000), (1000, 1000), (9999, 2000, 1000)):
+            for owned in (True, False):
+                outpoints = [COutPoint(idx + 1, 0) for idx in range(len(amounts))]
+                outpoints[-1] = COutPoint(1, 0)
+                duplicate = TestPSBT([make_input(amount, owned=owned) for amount in amounts], outpoints)
+                try:
+                    psbtObject.consider_inputs(duplicate)
+                except FatalPSBTIssue as exc:
+                    assert str(exc) == 'Duplicate input #%d' % (len(amounts) - 1)
+                else:
+                    raise AssertionError('Duplicate input accepted')
+                assert all(inp.added_sig is None for inp in duplicate.inputs)
+                assert flash.writes == 0
+                Cache.runtime_cache = []
+                Cache._cache_loaded = False
+                assert Cache.fetch_amount(prevout) is None
+
+        # Different output indexes in the same transaction are distinct outpoints.
+        distinct = TestPSBT([make_input(1000), make_input(2000)],
+                            [COutPoint(1, 0), COutPoint(1, 1)])
+        psbtObject.consider_inputs(distinct)
+        assert distinct.total_value_in == 3000
+        assert flash.writes == 0
 
         # The real input parser and cache must not trust a PSBT rejected by consider_keys.
         malicious = TestPSBT([make_input(9999, owned=False)])

@@ -420,7 +420,7 @@ def advanced_menu():
         {'icon': 'ICON_ONE_KEY', 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': 'ICON_MICROSD', 'label': 'microSD', 'submenu': microsd_menu},
-        {'icon': 'ICON_ERASE', 'label': 'Clear UTXO Cache', 'flow': ClearUTXOCacheFlow},
+        {'icon': 'ICON_ERASE', 'label': 'Clear Saved Input Amounts', 'flow': ClearUTXOCacheFlow},
         {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow,
          'is_visible': lambda: not has_temporary_seed()},
         {'icon': 'ICON_SHIELD', 'label': 'Security Check', 'flow': ScvFlow,

@@ -1433,9 +1433,17 @@ class psbtObject(psbtProxy):
         missing = 0
         total_in = 0
         witness_inputs_to_verify = []
+        prevouts = set()
 
         for i, txi in self.input_iter():
             gc.collect()
+            # Reject repeated spends before review/signing, regardless of
+            # ownership or amount. Otherwise post-sign recording can persist
+            # the first claimed amount before a conflicting duplicate fails.
+            prevout = (txi.prevout.hash, txi.prevout.n)
+            if prevout in prevouts:
+                raise FatalPSBTIssue('Duplicate input #%d' % i)
+            prevouts.add(prevout)
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -1475,6 +1483,7 @@ class psbtObject(psbtProxy):
 
             del utxo
 
+        del prevouts
         if witness_inputs_to_verify:
             import stash
             with stash.SensitiveValues() as sv:
