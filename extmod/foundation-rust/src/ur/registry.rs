@@ -7,8 +7,8 @@ use foundation_urtypes::{
     passport::Model,
     registry::PassportRequest,
     registry::{
-        CoinInfo, CoinType, DerivedKey, HDKey, Keypath, PassportResponse,
-        PathComponents,
+        CoinInfo, CoinType, DerivedKeyRef, HDKeyRef, KeypathRef,
+        PassportResponse, PathComponents,
     },
     supply_chain_validation::{Challenge, Solution},
     value,
@@ -203,10 +203,12 @@ pub enum UR_HDKey {
     DerivedKey(UR_DerivedKey),
 }
 
-impl<'a> From<&'a UR_HDKey> for HDKey<'a> {
-    fn from(value: &'a UR_HDKey) -> HDKey<'a> {
+impl<'a> From<&'a UR_HDKey> for HDKeyRef<'a> {
+    fn from(value: &'a UR_HDKey) -> HDKeyRef<'a> {
         match value {
-            UR_HDKey::DerivedKey(v) => HDKey::DerivedKey(DerivedKey::from(v)),
+            UR_HDKey::DerivedKey(v) => {
+                HDKeyRef::DerivedKey(DerivedKeyRef::from(v))
+            }
         }
     }
 }
@@ -237,9 +239,9 @@ pub struct UR_DerivedKey {
     pub parent_fingerprint: u32,
 }
 
-impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
-    fn from(value: &'a UR_DerivedKey) -> DerivedKey<'a> {
-        DerivedKey {
+impl<'a> From<&'a UR_DerivedKey> for DerivedKeyRef<'a> {
+    fn from(value: &'a UR_DerivedKey) -> DerivedKeyRef<'a> {
+        DerivedKeyRef {
             is_private: value.is_private,
             key_data: value.key_data,
             chain_code: if value.has_chain_code {
@@ -253,7 +255,7 @@ impl<'a> From<&'a UR_DerivedKey> for DerivedKey<'a> {
                 None
             },
             origin: if value.has_origin {
-                Some(Keypath::from(&value.origin))
+                Some(KeypathRef::from(&value.origin))
             } else {
                 None
             },
@@ -311,8 +313,8 @@ pub struct UR_Keypath {
     pub has_depth: bool,
 }
 
-impl<'a> From<Keypath<'a>> for UR_Keypath {
-    fn from(v: Keypath<'a>) -> UR_Keypath {
+impl<'a> From<KeypathRef<'a>> for UR_Keypath {
+    fn from(v: KeypathRef<'a>) -> UR_Keypath {
         UR_Keypath {
             source_fingerprint: v
                 .source_fingerprint
@@ -324,9 +326,9 @@ impl<'a> From<Keypath<'a>> for UR_Keypath {
     }
 }
 
-impl<'a> From<&'a UR_Keypath> for Keypath<'a> {
-    fn from(v: &UR_Keypath) -> Keypath<'a> {
-        Keypath {
+impl<'a> From<&'a UR_Keypath> for KeypathRef<'a> {
+    fn from(v: &UR_Keypath) -> KeypathRef<'a> {
+        KeypathRef {
             components: PathComponents::from(&[]),
             source_fingerprint: NonZeroU32::new(v.source_fingerprint),
             depth: if v.has_depth { Some(v.depth) } else { None },
@@ -601,6 +603,58 @@ pub extern "C" fn ur_registry_new_passport_response(
 mod tests {
     use super::*;
     use minicbor::encode::write::Cursor;
+
+    #[test]
+    fn borrowed_hdkey_bridge_roundtrips_optional_metadata() {
+        for present in [false, true] {
+            let mut value = UR_Value::Bytes {
+                data: core::ptr::null(),
+                len: 0,
+            };
+            let key_data = [2u8; 33];
+            let chain_code = [3u8; 32];
+            let coin = UR_CoinInfo {
+                coin_type: UR_CoinType::BTC,
+                network: UR_NETWORK_TESTNET as u64,
+            };
+            let origin = UR_Keypath {
+                source_fingerprint: 0x1234_5678,
+                depth: 4,
+                has_depth: true,
+            };
+            ur_registry_new_derived_key(
+                &mut value,
+                false,
+                &key_data,
+                present.then_some(&chain_code),
+                present.then_some(&coin),
+                present.then_some(&origin),
+                if present { 0x2345_6789 } else { 0 },
+            );
+            // The constructor above initializes owned UR_HDKey storage.
+            let Value::HDKey(key) = (unsafe { value.to_value() }) else {
+                panic!("expected hdkey");
+            };
+            let mut output = Cursor::new([0u8; 256]);
+            key.encode(&mut Encoder::new(&mut output), &mut ()).unwrap();
+            let encoded = &output.get_ref()[..output.position()];
+            let decoded: HDKeyRef<'_> = minicbor::decode(encoded).unwrap();
+            assert_eq!(decoded, key);
+            let HDKeyRef::DerivedKey(derived) = decoded else {
+                panic!("expected derived key");
+            };
+            assert_eq!(derived.key_data, key_data);
+            assert!(!derived.is_private);
+            assert_eq!(derived.chain_code, present.then_some(chain_code));
+            assert_eq!(derived.use_info.is_some(), present);
+            assert_eq!(derived.origin.is_some(), present);
+            assert_eq!(derived.parent_fingerprint.is_some(), present);
+            if let Some(path) = derived.origin {
+                assert_eq!(path.source_fingerprint.unwrap().get(), 0x1234_5678);
+                assert_eq!(path.depth, Some(4));
+            }
+        }
+    }
 
     #[test]
     fn casa_crypto_account_wire_format_is_pinned() {
