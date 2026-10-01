@@ -7,8 +7,8 @@ use foundation_urtypes::{
     passport::Model,
     registry::PassportRequest,
     registry::{
-        CoinInfo, CoinType, DerivedKeyRef, HDKeyRef, KeypathRef, PassportResponse,
-        PathComponents,
+        CoinInfo, CoinType, DerivedKeyRef, HDKeyRef, KeypathRef,
+        PassportResponse, PathComponents,
     },
     supply_chain_validation::{Challenge, Solution},
     value,
@@ -206,7 +206,9 @@ pub enum UR_HDKey {
 impl<'a> From<&'a UR_HDKey> for HDKeyRef<'a> {
     fn from(value: &'a UR_HDKey) -> HDKeyRef<'a> {
         match value {
-            UR_HDKey::DerivedKey(v) => HDKeyRef::DerivedKey(DerivedKeyRef::from(v)),
+            UR_HDKey::DerivedKey(v) => {
+                HDKeyRef::DerivedKey(DerivedKeyRef::from(v))
+            }
         }
     }
 }
@@ -634,8 +636,7 @@ mod tests {
                 panic!("expected hdkey");
             };
             let mut output = Cursor::new([0u8; 256]);
-            key.encode(&mut Encoder::new(&mut output), &mut ())
-                .unwrap();
+            key.encode(&mut Encoder::new(&mut output), &mut ()).unwrap();
             let encoded = &output.get_ref()[..output.position()];
             let decoded: HDKeyRef<'_> = minicbor::decode(encoded).unwrap();
             assert_eq!(decoded, key);
