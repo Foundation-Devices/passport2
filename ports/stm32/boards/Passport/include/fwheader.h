@@ -10,7 +10,14 @@
 
 #define FW_START (BL_FW_HDR_BASE)
 #define FW_HEADER_SIZE 2048
+
+// Total budget for what gets written at FW_START: the header followed by the firmware.
 #define FW_MAX_SIZE ((1792 * 1024) - 256)
+
+// `fwlength` in the header counts the firmware only - cosign.c writes it as
+// (file size - FW_HEADER_SIZE), and every consumer adds FW_HEADER_SIZE back to get
+// the total - so the value it may declare has to leave room for the header.
+#define FW_MAX_FWLENGTH (FW_MAX_SIZE - FW_HEADER_SIZE)
 #define FW_HEADER_MAGIC 0x50415353
 #define FW_HEADER_MAGIC_COLOR 0x53534150
 #define FW_HDR ((passport_firmware_header_t*)(FW_START))

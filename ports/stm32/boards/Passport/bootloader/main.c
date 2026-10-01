@@ -532,6 +532,21 @@ retry:
     // Version downgrade check
     uint32_t current_firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
 
+    // A failed read comes back as zero, which no timestamp is less than, so the
+    // check below would pass anything. update.c refuses on the same condition.
+    if (current_firmware_timestamp == 0) {
+    timestamp_error:
+        if (ui_show_error("PASSPORT", "Recovery Error",
+                          "Unable to read last firmware timestamp.\n\nFirmware will not be installed.",
+                          &ICON_SHUTDOWN, &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
+            clear_update_from_spi_flash(FW_HEADER_SIZE + sd_card_hdr.info.fwlength);
+            return;
+        } else {
+            ui_ask_shutdown();
+            goto timestamp_error;
+        }
+    }
+
     if (sd_card_hdr.info.timestamp < current_firmware_timestamp) {
     downgrade_error:
         if (ui_show_error("PASSPORT", "Recovery Error",

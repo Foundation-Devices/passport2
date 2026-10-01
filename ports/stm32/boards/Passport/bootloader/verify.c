@@ -42,7 +42,7 @@ secresult verify_header(passport_firmware_header_t* hdr) {
     if (hdr->info.timestamp == 0) goto fail;
     if (hdr->info.fwversion[0] == 0x0) goto fail;
     if (hdr->info.fwlength < FW_HEADER_SIZE) goto fail;
-    if (hdr->info.fwlength > FW_MAX_SIZE) goto fail;
+    if (hdr->info.fwlength > FW_MAX_FWLENGTH) goto fail;
 
     // if (hdr->signature.pubkey1 == 0) goto fail;
     if ((hdr->signature.pubkey1 != FW_USER_KEY) && (hdr->signature.pubkey1 > FW_MAX_PUB_KEYS)) goto fail;
