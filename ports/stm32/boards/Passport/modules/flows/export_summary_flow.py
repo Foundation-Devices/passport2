@@ -85,15 +85,14 @@ be needed for different systems.
                             hard_sub, chain.serialize_public(node, addr_fmt)))
 
                     submaster = hard_sub
-                    # TODO: Add blank() back into trezor?
-                    # node.blank()
+                    node.blank()
                     del node
 
                 # show the payment address
                 node = sv.derive_path(subpath, register=False)
                 yield ('%s => %s\n' % (subpath, chain.address(node, addr_fmt)))
 
-                # TODO: Do we need to do this? node.blank()
+                node.blank()
                 del node
 
             yield ('\n\n')
