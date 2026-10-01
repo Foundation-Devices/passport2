@@ -28,7 +28,7 @@ from wallets.utils import (
 from public_constants import MUSIG_SKIP, MARGIN_FOR_ADDRESSES
 from wallets.constants import EXPORT_MODE_MICROSD, EXPORT_MODE_QR
 from wallets.sw_wallets import supported_software_wallets
-from utils import random_hex, spinner_task, stylize_address
+from utils import spinner_task, stylize_address
 from foundation import ur
 import common
 import microns

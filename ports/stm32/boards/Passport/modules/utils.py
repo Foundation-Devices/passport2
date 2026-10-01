@@ -766,16 +766,6 @@ def to_str(o):
     return lines
 
 
-def random_hex(num_chars):
-    import urandom
-
-    rand = bytearray((num_chars + 1) // 2)
-    for i in range(len(rand)):
-        rand[i] = urandom.randint(0, 255)
-    s = b2a_hex(rand).decode('utf-8').upper()
-    return s[:num_chars]
-
-
 def recolor(color, text):
     # Recolor a fragment of text
     h = '{0:0{1}x}'.format(color, 6)
