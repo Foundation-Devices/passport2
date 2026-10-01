@@ -25,12 +25,12 @@ MY_XFP = 0x12345678
 PUBKEY = unhexlify('0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798')
 
 
-class FakeSettings:
+class MockSettings:
     def get(self, key, default=None):
         return default
 
 
-class FakeFlashCache:
+class MockFlashCache:
     def __init__(self):
         self.data = {}
         self.writes = 0
@@ -51,7 +51,7 @@ class FakeFlashCache:
         self.saves += 1
 
 
-class FakeNode:
+class MockNode:
     def public_key(self):
         return PUBKEY
 
@@ -59,7 +59,7 @@ class FakeNode:
         return b'\x00' * 31 + b'\x01'
 
 
-class FakeSensitiveValues:
+class MockSensitiveValues:
     def __enter__(self):
         return self
 
@@ -69,7 +69,7 @@ class FakeSensitiveValues:
     def derive_path(self, path, register=True):
         assert path == 'm/0'
         assert register
-        return FakeNode()
+        return MockNode()
 
 
 def field(kind, value, key=b''):
@@ -138,7 +138,7 @@ async def sign(psbt, success=True):
         assert results[0][1] is not None
 
 
-class FakeQuestionPage:
+class MockQuestionPage:
     approved = False
 
     def __init__(self, text, **_kwargs):
@@ -153,7 +153,7 @@ class FakeQuestionPage:
         return self.approved
 
 
-class FakeSuccessPage:
+class MockSuccessPage:
     def __init__(self, text):
         pass
 
@@ -162,15 +162,15 @@ class FakeSuccessPage:
 
 
 async def run_tests():
-    flash = FakeFlashCache()
+    flash = MockFlashCache()
     replacements = (
-        (common, 'settings', FakeSettings()),
+        (common, 'settings', MockSettings()),
         (history, 'flash_cache', flash),
-        (stash, 'SensitiveValues', FakeSensitiveValues),
+        (stash, 'SensitiveValues', MockSensitiveValues),
         (stash, 'blank_object', lambda obj: None),
-        (pages, 'QuestionPage', FakeQuestionPage),
-        (pages, 'LongQuestionPage', FakeQuestionPage),
-        (pages, 'SuccessPage', FakeSuccessPage),
+        (pages, 'QuestionPage', MockQuestionPage),
+        (pages, 'LongQuestionPage', MockQuestionPage),
+        (pages, 'SuccessPage', MockSuccessPage),
     )
     originals = [(module, name, getattr(module, name)) for module, name, _ in replacements]
     original_runtime = Cache.runtime_cache
@@ -245,7 +245,7 @@ async def run_tests():
         assert await ClearUTXOCacheFlow().run() is False
         assert Cache.fetch_amount(prevout) == 1000
         assert flash.writes == 1
-        FakeQuestionPage.approved = True
+        MockQuestionPage.approved = True
         assert await ClearUTXOCacheFlow().run() is True
         assert flash.saves == 1
         assert Cache.KEY not in flash.data
