@@ -14,7 +14,7 @@ PUBLIC_KEY = b'\x02' + (b'\x11' * 32)
 CHAIN_CODE = b'\x22' * 32
 
 
-class FakeNode:
+class MockNode:
     def __init__(self, public_key, chain_code):
         self._public_key = public_key
         self._chain_code = chain_code
@@ -29,7 +29,7 @@ class FakeNode:
         return self._chain_code
 
 
-class FakeChain:
+class MockChain:
     ctype = 'BTC'
 
     @staticmethod
@@ -38,7 +38,7 @@ class FakeChain:
         return 'normalized-xpub'
 
 
-class FakeSensitiveValues:
+class MockSensitiveValues:
     def __enter__(self):
         return self
 
@@ -48,7 +48,7 @@ class FakeSensitiveValues:
     @staticmethod
     def derive_path(derivation):
         assert derivation == DERIVATION
-        return FakeNode(PUBLIC_KEY, CHAIN_CODE)
+        return MockNode(PUBLIC_KEY, CHAIN_CODE)
 
 
 def check_node(node):
@@ -56,8 +56,8 @@ def check_node(node):
     original_sensitive_values = stash.SensitiveValues
 
     try:
-        multisig_wallet.import_xpub = lambda _xpub: (node, FakeChain, AF_P2SH)
-        stash.SensitiveValues = FakeSensitiveValues
+        multisig_wallet.import_xpub = lambda _xpub: (node, MockChain, AF_P2SH)
+        stash.SensitiveValues = MockSensitiveValues
         xpubs = []
         is_mine = MultisigWallet.check_xpub(
             MY_XFP,
@@ -73,12 +73,12 @@ def check_node(node):
         stash.SensitiveValues = original_sensitive_values
 
 
-is_mine, xpubs = check_node(FakeNode(PUBLIC_KEY, CHAIN_CODE))
+is_mine, xpubs = check_node(MockNode(PUBLIC_KEY, CHAIN_CODE))
 assert is_mine
 assert xpubs == [(MY_XFP, DERIVATION, 'normalized-xpub')]
 
 try:
-    check_node(FakeNode(PUBLIC_KEY, b'\x33' * 32))
+    check_node(MockNode(PUBLIC_KEY, b'\x33' * 32))
 except AssertionError as exc:
     assert 'wrong xpub' in str(exc)
 else:
