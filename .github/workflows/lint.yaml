@@ -28,11 +28,13 @@ jobs:
           toolchain: 1.77.1
           targets: thumbv7em-none-eabihf
       - run: |
-          cargo check --manifest-path extmod/foundation-rust/Cargo.toml
+          cargo check --manifest-path extmod/foundation-rust/Cargo.toml \
+                      --locked
       # Required by secp256k1-sys.
       - run: sudo apt-get install -y gcc-arm-none-eabi
       - run: |
           cargo check --manifest-path extmod/foundation-rust/Cargo.toml \
+                      --locked \
                       --target thumbv7em-none-eabihf
 
   is-the-rust-code-formatted:
@@ -66,7 +68,7 @@ jobs:
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
-      - run: cargo install cbindgen@^0.24 --locked
+      - run: cargo install cbindgen --version '=0.24.5' --locked
       - run: |
           cbindgen --config extmod/foundation-rust/cbindgen.toml \
                    --output extmod/foundation-rust/include/foundation.h \
@@ -85,4 +87,5 @@ jobs:
           targets: 
       - run: |
           cargo test --manifest-path extmod/foundation-rust/Cargo.toml \
+                     --locked \
                      --features std
