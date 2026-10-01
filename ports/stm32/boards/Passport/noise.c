@@ -61,7 +61,7 @@ bool noise_get_random_uint16(uint16_t* result) {
 
 bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
     // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
-    // Checked before the clock change below, so this path has nothing to undo.
+    // Reject undersized buffers before enabling the turbo clock.
     if (buf_len < 4) {
         return false;
     }
@@ -111,8 +111,7 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
         uint8_t* pbuf8     = (uint8_t*)buf;
         uint8_t* pbuf8_end = pbuf8 + buf_len;
 
-        // Walk to the end of the buffer rather than over whole words, and mix in
-        // only what is left, so every byte gets a sample
+        // Mix MCU entropy into every byte, including any partial final sample.
         while (pbuf8 < pbuf8_end) {
             uint32_t sample = rng_sample();
             // printf("MCU SAMPLE: 0x%08lx\n", sample);
@@ -131,8 +130,7 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
         uint8_t  num_in[20], sample[32];
         memset(num_in, 0, 20);
 
-        // Walk to the end of the buffer rather than over whole blocks, and mix in
-        // only what is left, so every byte gets a sample
+        // Mix secure element entropy into every byte, including any partial final sample.
         while (pbuf8 < pbuf8_end) {
             int rc = se_pick_nonce(num_in, sample);
             if (rc < 0) {
