@@ -105,10 +105,12 @@ class HealthCheckCommonFlow(Flow):
             return
 
     async def format_signature(self):
-        from ubinascii import b2a_base64
         from public_constants import RFC_SIGNATURE_TEMPLATE
 
-        sig = b2a_base64(self.signature).decode('ascii').strip()
-
-        signed_message = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
+        signed_message = RFC_SIGNATURE_TEMPLATE.format(
+            addr=self.address,
+            msg=self.text,
+            blockchain='BITCOIN',
+            sig=self.signature,
+        )
         self.set_result(signed_message)

@@ -66,3 +66,7 @@ def test_unchained(test):
 
 def test_restore_backup(test):
     assert test('restore_backup.py') == b'OK'
+
+
+def test_bip322(test):
+    assert test('bip322.py') == b'OK'
