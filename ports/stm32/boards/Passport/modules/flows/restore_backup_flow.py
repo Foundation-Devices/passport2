@@ -188,3 +188,9 @@ class RestoreBackupFlow(Flow):
         elif error is Error.CORRUPT_BACKUP_FILE:
             await ErrorPage(text='Corrupt data in backup file. The backup may have been modified.').show()
             self.set_result(False)
+        elif error is Error.OUT_OF_MEMORY_ERROR:
+            await ErrorPage(text='Not enough memory to restore this backup.').show()
+            self.set_result(False)
+        else:
+            await ErrorPage(text='Unable to restore backup.').show()
+            self.set_result(False)

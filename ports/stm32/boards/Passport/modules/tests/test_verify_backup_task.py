@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import asyncio
-import builtins
 import importlib.util
 import os
 import sys
@@ -16,43 +15,21 @@ sys.path.insert(1, MODULES_DIR)
 from errors import Error
 
 
-class CardMissingError(Exception):
-    pass
+def load_task(monkeypatch, error=None):
+    calls = []
+    backup_reader = types.ModuleType('backup_reader')
 
+    def verify_backup_file(password, path):
+        calls.append((password, path))
+        return error
 
-class CardSlot:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        return False
-
-
-def load_task(monkeypatch, card_slot=CardSlot, check_headers=None, files=None):
-    compat7z = types.ModuleType('compat7z')
-    compat7z.check_file_headers = check_headers or (lambda _fd: None)
-
-    class Builder:
-        def verify_file_crc(self, _fd, _max_size):
-            return files or [('passport-backup.txt', 1)]
-
-    compat7z.Builder = Builder
-
-    files_module = types.ModuleType('files')
-    files_module.CardSlot = card_slot
-    files_module.CardMissingError = CardMissingError
-
-    constants = types.ModuleType('constants')
-    constants.MAX_BACKUP_FILE_SIZE = 1024
-
-    monkeypatch.setitem(sys.modules, 'compat7z', compat7z)
-    monkeypatch.setitem(sys.modules, 'files', files_module)
-    monkeypatch.setitem(sys.modules, 'constants', constants)
+    backup_reader.verify_backup_file = verify_backup_file
+    monkeypatch.setitem(sys.modules, 'backup_reader', backup_reader)
 
     spec = importlib.util.spec_from_file_location('verify_backup_task_under_test', TASK_PATH)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.verify_backup_task
+    return module.verify_backup_task, calls
 
 
 def run_task(task):
@@ -61,45 +38,29 @@ def run_task(task):
     async def on_done(error):
         results.append(error)
 
-    asyncio.run(task(on_done, 'backup.7z'))
+    asyncio.run(task(on_done, '1111-2222-3333-4444-5555', 'backup.7z'))
     return results
 
 
-def test_success_reports_once(monkeypatch):
-    fd = types.SimpleNamespace(close=lambda: None)
-    monkeypatch.setattr(builtins, 'open', lambda *_args, **_kwargs: fd)
+def test_success_reports_once_and_passes_credentials(monkeypatch):
+    task, calls = load_task(monkeypatch)
 
-    assert run_task(load_task(monkeypatch)) == [None]
-
-
-def test_card_removal_reports_once(monkeypatch):
-    class MissingCardSlot:
-        def __enter__(self):
-            raise CardMissingError
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            return False
-
-    assert run_task(load_task(monkeypatch, card_slot=MissingCardSlot)) == [Error.MICROSD_CARD_MISSING]
+    assert run_task(task) == [None]
+    assert calls == [('1111-2222-3333-4444-5555', 'backup.7z')]
 
 
-def test_file_read_failure_reports_once(monkeypatch):
-    def fail_open(*_args, **_kwargs):
-        raise OSError('read failed')
+def test_each_reader_failure_reports_once(monkeypatch):
+    errors = (
+        Error.MICROSD_CARD_MISSING,
+        Error.FILE_READ_ERROR,
+        Error.INVALID_BACKUP_FILE_HEADER,
+        Error.INVALID_BACKUP_CODE,
+        Error.OUT_OF_MEMORY_ERROR,
+    )
 
-    monkeypatch.setattr(builtins, 'open', fail_open)
-
-    assert run_task(load_task(monkeypatch)) == [Error.FILE_READ_ERROR]
-
-
-def test_invalid_header_reports_once(monkeypatch):
-    fd = types.SimpleNamespace(close=lambda: None)
-    monkeypatch.setattr(builtins, 'open', lambda *_args, **_kwargs: fd)
-
-    def reject_header(_fd):
-        raise ValueError('invalid header')
-
-    assert run_task(load_task(monkeypatch, check_headers=reject_header)) == [Error.INVALID_BACKUP_FILE_HEADER]
+    for error in errors:
+        task, _calls = load_task(monkeypatch, error=error)
+        assert run_task(task) == [error]
 
 
 def test_related_error_members_are_available():
