@@ -114,7 +114,8 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     except AssertionError as e:
         # print('AssertionError: {}'.format(e))
-        error_msg = e.args[0]
+        # A bare assert carries no args, so fall back to a message of our own
+        error_msg = e.args[0] if e.args else 'Unable to sign transaction.'
         error_code = Error.PSBT_FATAL_ERROR
     except MemoryError as e:
         # print('MemoryError: {}'.format(e))
