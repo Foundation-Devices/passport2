@@ -10,7 +10,7 @@ import ujson
 from ext_settings import ExtSettings, SettingsOutOfSpace
 
 
-class FakeFlash:
+class MockFlash:
     def __init__(self, size):
         self.data = bytearray(b'\xff' * size)
 
@@ -36,7 +36,7 @@ SLOT_START = 4096
 FLASH_SIZE = SLOT_START + (SLOT_SIZE * 2)
 SLOTS = range(SLOT_START, FLASH_SIZE, SLOT_SIZE)
 
-common.sf = FakeFlash(FLASH_SIZE)
+common.sf = MockFlash(FLASH_SIZE)
 
 settings = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
 names = ['\ube44\ud2b8\ucf54\uc778 \uae08\uace0', 'Multisig \u2018Vault\u2019']
@@ -48,7 +48,7 @@ loaded.load()
 assert [entry['name'] for entry in loaded.get('multisig')] == names
 
 # A payload that exactly fills the encoded data area must still round-trip.
-common.sf = FakeFlash(FLASH_SIZE)
+common.sf = MockFlash(FLASH_SIZE)
 exact = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
 exact.current['value'] = ''
 json_overhead = len(ujson.dumps(exact.current).encode('utf8'))
@@ -61,7 +61,7 @@ loaded.load()
 assert loaded.get('value') == exact_value
 
 # An oversized payload must fail before selecting or writing a slot.
-common.sf = FakeFlash(FLASH_SIZE)
+common.sf = MockFlash(FLASH_SIZE)
 oversized = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
 oversized.current['value'] = exact_value + 'x'
 
