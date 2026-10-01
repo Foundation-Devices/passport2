@@ -12,16 +12,24 @@ from pathlib import Path
 BOARD = Path(__file__).resolve().parents[2]
 
 
+def extract_between(source, start, end, filename):
+    _, found_start, remainder = source.partition(start)
+    assert found_start, '{}: missing harness start marker {!r}'.format(filename, start)
+    extracted, found_end, _ = remainder.partition(end)
+    assert found_end, '{}: missing harness end marker {!r} after {!r}'.format(filename, end, start)
+    return extracted
+
+
 def test_native_supply_chain_buffer_bounds(tmp_path):
     native = (BOARD / 'modpassport.c').read_text()
     functions = []
     for name in ['mod_passport_supply_chain_challenge', 'mod_passport_verify_supply_chain_server_signature']:
         prefix = 'STATIC mp_obj_t ' + name + '('
-        function = prefix + native.split(prefix, 1)[1]
-        functions.append(function.split('\nSTATIC MP_DEFINE_CONST_FUN_OBJ_2', 1)[0])
+        functions.append(prefix + extract_between(
+            native, prefix, '\nSTATIC MP_DEFINE_CONST_FUN_OBJ_2', 'modpassport.c'))
     dispatch = (BOARD / 'dispatch.c').read_text()
-    case = dispatch.split('case CMD_GET_SUPPLY_CHAIN_VALIDATION_WORDS:', 1)[1]
-    case = case.split('case CMD_GET_RANDOM_BYTES:', 1)[0]
+    case = extract_between(dispatch, 'case CMD_GET_SUPPLY_CHAIN_VALIDATION_WORDS:',
+                           'case CMD_GET_RANDOM_BYTES:', 'dispatch.c')
     source = r'''
 #include <assert.h>
 #include <errno.h>
