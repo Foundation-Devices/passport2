@@ -44,6 +44,12 @@ STATIC mp_obj_t mod_trezorcrypto_ecdsa_scalar_multiply(mp_obj_t k_obj) {
     mp_buffer_info_t k_buf;
     mp_get_buffer_raise(k_obj, &k_buf, MP_BUFFER_READ);
 
+    // bn_read_be() always reads 32 bytes, so reject anything else rather than
+    // reading past the end of the buffer.
+    if (k_buf.len != 32) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of scalar"));
+    }
+
     // Convert k to a bignum
     bignum256 k;
     bn_read_be((uint8_t *)k_buf.buf, &k);
@@ -93,6 +99,21 @@ STATIC mp_obj_t mod_trezorcrypto_ecdsa_point_add(size_t n_args, const mp_obj_t *
 
     mp_buffer_info_t y2_buf;
     mp_get_buffer_raise(args[3], &y2_buf, MP_BUFFER_READ);
+
+    // bn_read_be() always reads 32 bytes from each coordinate, so reject any
+    // other length rather than reading past the end of the buffer.
+    if (x1_buf.len != 32) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of x1"));
+    }
+    if (y1_buf.len != 32) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of y1"));
+    }
+    if (x2_buf.len != 32) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of x2"));
+    }
+    if (y2_buf.len != 32) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid length of y2"));
+    }
 
     // Convert coordinates to bignums
     bn_read_be((uint8_t *)x1_buf.buf, &p1.x);
