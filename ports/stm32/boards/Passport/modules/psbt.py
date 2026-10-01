@@ -1293,7 +1293,8 @@ class psbtObject(psbtProxy):
 
         # A change script containing our key does not give us exclusive control
         # when any one of several cosigners can spend it. Keep existing wallets
-        # usable, but disclose this before signing, including for self-sends.
+        # usable, but disclose this on every spend, including self-sends and
+        # transactions with no change output.
         if self.active_multisig and self.active_multisig.M == 1 and self.active_multisig.N > 1:
             self.warnings.append(
                 ('1-of-{} Multisig'.format(self.active_multisig.N),
