@@ -604,7 +604,7 @@ def _verify_last(script):
 
 
 def _count_non_push_ops(script):
-    """Count Script opcodes using the legacy P2WSH consensus rule."""
+    """Count static opcodes, including those in unexecuted branches."""
     position = 0
     count = 0
     length = len(script)
@@ -631,6 +631,24 @@ def _count_non_push_ops(script):
         if position > length:
             raise PolicyTypeError('Compiled script contains a truncated push')
     return count
+
+
+def _max_multisig_ops(node):
+    """Bound the additional CHECKMULTISIG key charge on any execution path.
+
+    Both successful and failed signature checks pay this charge. Alternative
+    IF branches cannot both execute; other combinations conservatively sum
+    their children, including dissatisfactions used by thresholds and ORs.
+    Wrappers retain the charge even when they can skip their child.
+    """
+    if node.kind == 'multi':
+        return len(node.args)
+    costs = [_max_multisig_ops(arg) for arg in node.args if isinstance(arg, Node)]
+    if node.kind == 'or_i':
+        return max(costs)
+    if node.kind == 'andor':
+        return costs[0] + max(costs[1], costs[2])
+    return sum(costs)
 
 
 def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
@@ -720,7 +738,7 @@ def compile_miniscript(node, key_resolver, branch, address_index, context='wsh',
     script = emit(node)
     if len(script) > max_script_size:
         raise PolicyResourceError('Compiled script exceeds {} bytes'.format(max_script_size))
-    if _count_non_push_ops(script) > MAX_P2WSH_OPS:
+    if _count_non_push_ops(script) + _max_multisig_ops(node) > MAX_P2WSH_OPS:
         raise PolicyResourceError('Compiled P2WSH script exceeds {} opcodes'.format(MAX_P2WSH_OPS))
     return script
 

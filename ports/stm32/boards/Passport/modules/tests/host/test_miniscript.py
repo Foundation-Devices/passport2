@@ -138,6 +138,46 @@ def test_opcode_counter_ignores_pushed_bytes():
     assert _count_non_push_ops(script) == 2
 
 
+@pytest.mark.parametrize('wrappers, key_count, verify, allowed', (
+    (49, 1, False, True),
+    (50, 1, False, False),
+    (49, 4, False, True),  # 196 static wrapper ops + CHECKMULTISIG + 4 = 201.
+    (49, 5, False, False),
+    (49, 4, True, True),
+    (49, 5, True, False),
+))
+def test_multisig_opcode_budget_boundary(wrappers, key_count, verify, allowed):
+    keys = ','.join('@0/<{};{}>/*'.format(2 * i, 2 * i + 1)
+                    for i in range(key_count))
+    expression = 'j' * wrappers + ('tv' if verify else '') + ':multi(1,{})'.format(keys)
+    node = Parser(expression).parse()
+    if allowed:
+        script = compile_miniscript(node, lambda *_: KEYS[0], 0, 0)
+        assert _count_non_push_ops(script) + key_count <= 201
+    else:
+        with pytest.raises(PolicyResourceError, match='201 opcodes'):
+            compile_miniscript(node, lambda *_: KEYS[0], 0, 0)
+
+
+def test_opcode_budget_counts_only_one_if_branch_multisig_charge():
+    # All 197 static operations count, but at most four keys are charged.
+    expression = ('or_i(' + 'j' * 48 + ':multi(1,@0/**),'
+                  'multi(1,@1/**,@1/<2;3>/*,@1/<4;5>/*,@1/<6;7>/*))')
+    script = compile_miniscript(Parser(expression).parse(), lambda *_: KEYS[0], 0, 0)
+    assert _count_non_push_ops(script) == 197
+
+
+def test_opcode_budget_includes_dissatisfied_multisig_checks(monkeypatch):
+    import miniscript
+    # or_b executes both multisigs, even though only one needs to succeed.
+    expression = 'or_b(multi(1,@0/**),a:multi(1,@1/**,@2/**,@3/**))'
+    monkeypatch.setattr(miniscript, 'MAX_P2WSH_OPS', 8)
+    with pytest.raises(PolicyResourceError, match='8 opcodes'):
+        compile_miniscript(Parser(expression).parse(), resolve, 0, 0)
+    monkeypatch.setattr(miniscript, 'MAX_P2WSH_OPS', 9)
+    assert compile_miniscript(Parser(expression).parse(), resolve, 0, 0)
+
+
 # Independently cross-checked against Bitcoin Core's Miniscript implementation
 # and embit.  Hashes keep the additional wrapper/fragment vectors compact.
 CROSS_IMPLEMENTATION_VECTORS = (
