@@ -48,6 +48,10 @@ def test_hdnode_blank(test):
     assert test('hdnode_blank.py') == b'OK'
 
 
+def test_psbt_unsigned_txn(test):
+    assert test('psbt_unsigned_txn.py') == b'OK'
+
+
 def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 

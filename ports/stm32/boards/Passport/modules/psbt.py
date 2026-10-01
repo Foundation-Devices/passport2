@@ -990,12 +990,10 @@ class psbtObject(psbtProxy):
         # details that we discover as we go
         self.inputs = None
         self.outputs = None
-        self.had_witness = None
         self.num_inputs = None
         self.num_outputs = None
         self.vin_start = None
         self.vout_start = None
-        self.wit_start = None
         self.txn_version = None
         self.lock_time = None
         self.total_value_out = None
@@ -1079,13 +1077,18 @@ class psbtObject(psbtProxy):
         # don't force that
 
         self.txn_version, marker, flags = unpack("<iBB", fd.read(6))
-        self.had_witness = (marker == 0 and flags != 0x0)
 
         assert self.txn_version in {1, 2}, "bad txn version"
 
-        if not self.had_witness:
-            # rewind back over marker+flags
-            fd.seek(-2, 1)
+        # BIP-174 requires the unsigned transaction to be serialized without witness
+        # data. A zero marker can only be the segwit marker here, since an input count
+        # of zero is rejected below. This already failed, but as a bare ValueError from
+        # _skip_n_objs(), which has no pattern for 'CTxInWitness'.
+        if marker == 0 and flags != 0x0:
+            raise FatalPSBTIssue('Unsigned transaction must not include witness data')
+
+        # rewind back over marker+flags
+        fd.seek(-2, 1)
 
         num_in = deser_compact_size(fd)
         assert num_in > 0, "no ins?"
@@ -1103,13 +1106,6 @@ class psbtObject(psbtProxy):
         self.vout_start = _skip_n_objs(fd, self.num_outputs, 'CTxOut')
 
         end_pos = sum(self.txn)
-
-        # remainder is the witness data, and then the lock time
-
-        if self.had_witness:
-            # we'll need to come back to this pos if we
-            # want to read the witness data later.
-            self.wit_start = _skip_n_objs(fd, num_in, 'CTxInWitness')
 
         # we are at end of outputs, and no witness data, so locktime is here
         self.lock_time = unpack("<I", fd.read(4))[0]
@@ -1142,23 +1138,10 @@ class psbtObject(psbtProxy):
             fd.seek(cont)
 
     def input_witness_iter(self):
-        # yield all the witness data, in order by input
-        if not self.had_witness:
-            # original txn had no witness data, so provide placeholder objs
-            for in_idx in range(self.num_inputs):
-                yield in_idx, CTxInWitness()
-            return
-
-        fd.seek(self.wit_start)
-        for idx in range(num_in):
-
-            wit = CTxInWitness()
-            wit.deserialize(fd)
-
-            cont = fd.tell()
-            yield idx, wit
-
-            fd.seek(cont)
+        # yield a placeholder witness for each input: parse_txn() rejects a witness
+        # serialized unsigned txn, so there is never any witness data to preserve
+        for in_idx in range(self.num_inputs):
+            yield in_idx, CTxInWitness()
 
     def guess_M_of_N(self):
         # Peek at the inputs to see if we can guess M/N value. Just takes
@@ -1867,9 +1850,8 @@ class psbtObject(psbtProxy):
         fd.write(pack('<i', self.txn_version))           # nVersion
 
         # does this txn require witness data to be included?
-        # - yes, if the original txn had some
         # - yes, if we did a segwit signature on any input
-        needs_witness = self.had_witness or any(i.is_segwit for i in self.inputs if i)
+        needs_witness = any(i.is_segwit for i in self.inputs if i)
 
         if needs_witness:
             # zero marker, and flags=0x01
