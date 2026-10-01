@@ -286,6 +286,10 @@ class MiniscriptPolicy:
             context = 'wsh'
             miniscript = Parser(template[4:-1]).parse()
             validate(miniscript, context)
+            # Script size and opcode costs do not depend on derived key bytes.
+            # Reject unsafe policies before registration, not just at derivation.
+            compile_miniscript(miniscript, lambda *_: b'\x02' + bytes(32), 0, 0,
+                               hash160_fn=lambda _: bytes(20))
             key_expressions = list(iter_policy_keys(miniscript))
         else:
             raise UnsupportedPolicyError('Only native SegWit (wsh) wallet policies are supported')

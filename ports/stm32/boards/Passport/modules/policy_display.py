@@ -88,15 +88,28 @@ def _about_duration(seconds):
 
 
 def _utc_date(timestamp):
-    try:
-        try:
-            import utime as time
-        except ImportError:  # pragma: no cover - CPython host tests
-            import time
-        value = time.gmtime(timestamp)
-        return '{:04d}-{:02d}-{:02d} UTC'.format(value[0], value[1], value[2])
-    except BaseException:
+    # Bitcoin uses Unix seconds, while STM32 utime starts in 2000. Convert
+    # directly so dates before 2000 also work on ports with unsigned time_t.
+    # BIP379 limits absolute locks to signed 31-bit values (through 2038).
+    if not 0 <= timestamp < 0x80000000:
         return None
+    days = timestamp // 86400
+    year = 1970
+    while True:
+        leap = year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+        year_days = 366 if leap else 365
+        if days < year_days:
+            break
+        days -= year_days
+        year += 1
+    month = 1
+    for month_days in (31, 29 if leap else 28, 31, 30, 31, 30,
+                       31, 31, 30, 31, 30, 31):
+        if days < month_days:
+            break
+        days -= month_days
+        month += 1
+    return '{:04d}-{:02d}-{:02d} UTC'.format(year, month, days + 1)
 
 
 def describe_timelock(kind, value):
