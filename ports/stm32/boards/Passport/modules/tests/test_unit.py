@@ -32,6 +32,10 @@ def test_crypto_api_surface(test):
     assert test('crypto_api_surface.py') == b'OK'
 
 
+def test_firmware_pubkey(test):
+    assert test('firmware_pubkey.py') == b'OK'
+
+
 def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
