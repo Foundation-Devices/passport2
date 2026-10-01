@@ -9,7 +9,7 @@ from flows.health_check_common_flow import HealthCheckCommonFlow
 from public_constants import AF_CLASSIC, AF_P2WPKH
 
 
-class ErrorPage:
+class MockErrorPage:
     errors = []
 
     def __init__(self, text):
@@ -19,7 +19,7 @@ class ErrorPage:
         return True
 
 
-class TestFlow:
+class MockFlow:
     show_message = 'review'
     sign_health_check = 'sign'
 
@@ -41,30 +41,58 @@ async def run_tests():
     original_error_page = pages.ErrorPage
     path = "m/84'/0'/0'/0/0"
     try:
-        pages.ErrorPage = ErrorPage
+        pages.ErrorPage = MockErrorPage
         for normal_signing in (True, False):
-            ErrorPage.errors = []
-            flow = TestFlow(['signmessage ' + path + ' ascii:'], normal_signing)
+            MockErrorPage.errors = []
+            flow = MockFlow(['signmessage ' + path + ' ascii:'], normal_signing)
             await HealthCheckCommonFlow.validate_lines(flow)
-            assert ErrorPage.errors == ['Message is empty.']
+            assert MockErrorPage.errors == ['Message is empty.']
             assert flow.result is None
             assert flow.next_state is None
 
-        for message in ('x', 'message with spaces and ascii: inside'):
-            ErrorPage.errors = []
-            flow = TestFlow(['signmessage ' + path + ' ascii:' + message], True)
+        for normal_signing in (True, False):
+            for invalid_path in ('x', 'm', 'm/foo', ''):
+                MockErrorPage.errors = []
+                flow = MockFlow(['signmessage ' + invalid_path + ' ascii:hi'], normal_signing)
+                await HealthCheckCommonFlow.validate_lines(flow)
+                assert MockErrorPage.errors
+                assert flow.result is None
+                assert flow.next_state is None
+
+            # Strict text checks also apply to health checks, deliberately.
+            for message in (' leading', 'trailing ', 'four    spaces', 'line\nbreak', 'a\x00b', '\u00e9'):
+                MockErrorPage.errors = []
+                flow = MockFlow(['signmessage ' + path + ' ascii:' + message], normal_signing)
+                await HealthCheckCommonFlow.validate_lines(flow)
+                assert MockErrorPage.errors
+                assert flow.result is None
+                assert flow.next_state is None
+
+            # A normalized path drives address selection; health-check mode
+            # intentionally accepts this format without entering message review.
+            MockErrorPage.errors = []
+            flow = MockFlow(['signmessage m/84h/0h/0h/0/0 ascii:hello'], normal_signing)
             await HealthCheckCommonFlow.validate_lines(flow)
-            assert not ErrorPage.errors
+            assert not MockErrorPage.errors
+            assert flow.subpath == path
+            assert flow.addr_type == AF_P2WPKH
+            assert flow.next_state == (flow.show_message if normal_signing else flow.sign_health_check)
+
+        for message in ('x', 'message with spaces and ascii: inside'):
+            MockErrorPage.errors = []
+            flow = MockFlow(['signmessage ' + path + ' ascii:' + message], True)
+            await HealthCheckCommonFlow.validate_lines(flow)
+            assert not MockErrorPage.errors
             assert flow.text == message
             assert flow.subpath == path
             assert flow.addr_type == AF_P2WPKH
             assert flow.next_state == flow.show_message
             assert flow.result == 'unset'
 
-        ErrorPage.errors = []
-        flow = TestFlow(['signmessage ' + path + ' hex:00'], True)
+        MockErrorPage.errors = []
+        flow = MockFlow(['signmessage ' + path + ' hex:00'], True)
         await HealthCheckCommonFlow.validate_lines(flow)
-        assert ErrorPage.errors == ['Message format is invalid.']
+        assert MockErrorPage.errors == ['Message format is invalid.']
         assert flow.result is None
         assert flow.next_state is None
         return_value.write(b'OK')
