@@ -14,6 +14,7 @@ async def save_multisig_wallet_task(on_done, ms):
     # Data to save: Important that this fails immediately when Settings memory would overflow
     from common import settings
     from errors import Error
+    from ext_settings import SettingsOutOfSpace
 
     obj = ms.serialize()
 
@@ -32,9 +33,8 @@ async def save_multisig_wallet_task(on_done, ms):
     # Save now, rather than in background, so we can recover from out-of-space situation
     try:
         settings.save()
-        await on_done(None)
-    except BaseException:
-        # Back out change -- User settings doesn't have enough space for this update
+    except BaseException as exc:
+        # Back out the in-memory change when the save fails for any reason.
         try:
             settings.set('multisig', original)
             settings.save()
@@ -43,4 +43,10 @@ async def save_multisig_wallet_task(on_done, ms):
             # Give up on recovery
             pass
 
-        await on_done(Error.USER_SETTINGS_FULL)
+        if isinstance(exc, SettingsOutOfSpace):
+            await on_done(Error.USER_SETTINGS_FULL)
+        else:
+            await on_done(Error.USER_SETTINGS_SAVE_FAILED)
+        return
+
+    await on_done(None)

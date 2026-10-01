@@ -36,6 +36,10 @@ def test_seedqr_codec(test):
     assert test('seedqr_codec.py') == b'OK'
 
 
+def test_multisig_save_task(test):
+    assert test('multisig_save_task.py') == b'OK'
+
+
 def test_ui(test):
     assert test('ui.py') == b'OK'
 
