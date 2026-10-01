@@ -66,9 +66,12 @@ int se_dispatch(
     }
 
         // Use these macros
-#define REQUIRE_OUT(x) \
-    if (len_in < x) {  \
-        goto fail;     \
+        // Set rv before jumping: fail: returns it as-is, and it starts at zero, so a
+        // guard that forgets reports the rejection as success.
+#define REQUIRE_OUT(x)  \
+    if (len_in < x) {   \
+        rv = ERANGE;    \
+        goto fail;      \
     }
 
     // printf("se_dispatch() method_num=%d\n", method_num);
@@ -166,7 +169,6 @@ int se_dispatch(
             rv = ENOENT;
             break;
     }
-#undef REQUIRE_IN_ONLY
 #undef REQUIRE_OUT
 
 fail:
