@@ -13,7 +13,7 @@ if MODULES not in sys.path:
 
 from policy_errors import UnsupportedPolicyError  # noqa: E402
 from policy_transport import decode_policy_transport  # noqa: E402
-from test_wallet_policy import DerivationChain, FakeSettings, OwnedNode, KEY_INFO  # noqa: E402
+from test_wallet_policy import DerivationChain, MockSettings, OwnedNode, KEY_INFO  # noqa: E402
 from descriptor import append_checksum  # noqa: E402
 from wallet_policy import (MiniscriptPolicy, WalletPolicyRegistry,  # noqa: E402
                            validate_backup_policy_records)
@@ -52,7 +52,7 @@ def test_release_rejects_backup_and_existing_records(experimental_policy):
         MiniscriptPolicy.deserialize(record)
     with pytest.raises(UnsupportedPolicyError):
         validate_backup_policy_records([record], '6738736c', None, None)
-    settings = FakeSettings()
+    settings = MockSettings()
     settings.set('wallet_policies', [record])
     registry = WalletPolicyRegistry(settings)
     assert list(registry.iter_policies()) == []

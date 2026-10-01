@@ -29,15 +29,15 @@ from spend_plan import SpendPlan  # noqa: E402
 SCRIPT = bytes.fromhex('5221' + '02' + '11' * 32 + '51ae')
 
 
-class FakeChain:
+class MockChain:
     ctype = 'BTC'
 
 
-class FakeMultisigWallet:
+class MockMultisigWallet:
     name = 'Legacy'
     chain_type = 'BTC'
     id = 42
-    chain = FakeChain()
+    chain = MockChain()
 
     def __init__(self, address_format):
         self.addr_fmt = address_format
@@ -56,7 +56,7 @@ class FakeMultisigWallet:
     (8, b'\xa9\x14' + hashlib.new('ripemd160', hashlib.sha256(SCRIPT).digest()).digest() + b'\x87'),
 ))
 def test_legacy_multisig_adapter_derives_exact_scriptpubkey(address_format, expected_script):
-    policy = StandardMultisigPolicy(FakeMultisigWallet(address_format))
+    policy = StandardMultisigPolicy(MockMultisigWallet(address_format))
     result = policy.derive(1, 7)
     assert result.policy_id == 'legacy-multisig:42'
     assert result.branch == 1
