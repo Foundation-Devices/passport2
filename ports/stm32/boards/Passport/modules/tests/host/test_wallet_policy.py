@@ -48,7 +48,7 @@ class StubChain:
         return 'test-address-' + hashlib.sha256(witness_script).hexdigest()[:8]
 
 
-class FakeNode:
+class MockNode:
     def __init__(self, xpub, depth):
         self.xpub = xpub
         self._depth = depth
@@ -70,7 +70,7 @@ class DerivationChain(StubChain):
     @staticmethod
     def deserialize_node(xpub, address_format):
         assert address_format == 8
-        return FakeNode(xpub, 3)
+        return MockNode(xpub, 3)
 
     @staticmethod
     def serialize_public(node, address_format):
@@ -83,7 +83,7 @@ class OwnedNode:
         self.xpub = xpub
 
 
-class FakeSettings:
+class MockSettings:
     def __init__(self, maximum=8192 - 32):
         self.current = {'_revision': 1}
         self.temporary_settings = {}
@@ -243,7 +243,7 @@ def test_liana_multisig_allows_owned_xpub_in_exclusive_paths():
         @staticmethod
         def deserialize_node(xpub, address_format):
             assert address_format == 8
-            return FakeNode(xpub, 4)
+            return MockNode(xpub, 4)
 
     chain = LianaChain()
     my_xfp = int.from_bytes(bytes.fromhex('9f141cf0'), 'little')
@@ -357,7 +357,7 @@ def test_relative_timelock_rejects_values_that_consensus_would_mask():
 
 
 def test_registry_validates_records_and_quarantines_corruption():
-    settings = FakeSettings()
+    settings = MockSettings()
     registry = WalletPolicyRegistry(settings)
     policy = make_policy()
     registry.save(policy)
@@ -378,7 +378,7 @@ def test_registry_validates_records_and_quarantines_corruption():
 
 
 def test_registry_preserves_settings_headroom():
-    settings = FakeSettings(maximum=900)
+    settings = MockSettings(maximum=900)
     registry = WalletPolicyRegistry(settings)
     with pytest.raises(PolicyResourceError, match='space'):
         registry.save(make_policy())
