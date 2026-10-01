@@ -97,6 +97,17 @@ class FakeSettings:
         self.current[key] = value
 
 
+def test_multisig_opcode_budget_is_checked_before_registration_and_derivation():
+    with pytest.raises(PolicyResourceError, match='201 opcodes'):
+        MiniscriptPolicy('Budget', 'BTC', 'wsh(' + 'j' * 50 + ':multi(1,@0/**))',
+                         (KEY_INFO,), (0,))
+
+    policy = MiniscriptPolicy('Budget', 'BTC', 'wsh(' + 'j' * 49 + ':multi(1,@0/**))',
+                              (KEY_INFO,), (0,))
+    result = policy.derive(0, 0, StubChain(), lambda *_: PUBKEY)
+    assert result.address.startswith('test-address-')
+
+
 def make_policy(name='Recovery'):
     return MiniscriptPolicy(
         name,

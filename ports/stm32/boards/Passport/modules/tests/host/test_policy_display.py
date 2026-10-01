@@ -374,6 +374,30 @@ def test_time_based_relative_delay_and_absolute_date_are_unambiguous():
         '2027-01-01 UTC', 'Unix timestamp 1,798,761,600')
 
 
+@pytest.mark.parametrize('epoch_offset', (0, 946684800))
+@pytest.mark.parametrize('timestamp, expected', (
+    (500000000, '1985-11-05 UTC'),
+    (946684799, '1999-12-31 UTC'),
+    (946684800, '2000-01-01 UTC'),
+    (951782400, '2000-02-29 UTC'),
+    (1709251200, '2024-03-01 UTC'),
+    (1798761600, '2027-01-01 UTC'),
+    (2147483647, '2038-01-19 UTC'),
+))
+def test_absolute_dates_are_independent_of_runtime_epoch(
+        monkeypatch, epoch_offset, timestamp, expected):
+    import time
+
+    def gmtime(seconds):
+        # Model STM32's unsigned seconds since 2000 as well as the host epoch.
+        if epoch_offset and seconds < 0:
+            raise OverflowError('unsigned time_t')
+        return time.gmtime(seconds + epoch_offset)
+
+    monkeypatch.setitem(sys.modules, 'utime', types.SimpleNamespace(gmtime=gmtime))
+    assert describe_timelock('after', timestamp)[0] == expected
+
+
 def test_absolute_path_compatibility_requires_matching_locktime_and_sequence():
     policy = MiniscriptPolicy(
         'Absolute Recovery', 'BTC',
