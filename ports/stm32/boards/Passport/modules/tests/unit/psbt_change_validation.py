@@ -44,7 +44,7 @@ BIP84_SHORT_SUBPATH = [MY_XFP, PURPOSE_84]
 BIP_UNKNOWN_SUBPATH = [MY_XFP, 0x80000000 | 123, COIN_0, ACCOUNT_0, 1, 7]
 
 
-class FakeOutput:
+class MockOutput:
     validate = psbtOutputProxy.validate
 
     def __init__(self, script_pubkey, subpaths=None, tap_subpaths=None, redeem_script=None,
@@ -66,7 +66,7 @@ class FakeOutput:
 
 def must_fail(script_pubkey, expected_message):
     try:
-        FakeOutput(script_pubkey,
+        MockOutput(script_pubkey,
                    subpaths={PUBKEY: BIP49_SUBPATH},
                    redeem_script=REDEEM_SCRIPT).validate(0, CTxOut(0, script_pubkey), MY_XFP, None)
     except FraudulentChangeOutput as exc:
@@ -86,7 +86,7 @@ def validate_must_fail(output, expected_message, active_multisig=None):
     raise RuntimeError('expected FraudulentChangeOutput')
 
 
-class FakeInput:
+class MockInput:
     def __init__(self, subpaths=None, tap_subpaths=None, required_key=None):
         self.subpaths = subpaths or {}
         self.tap_subpaths = tap_subpaths or {}
@@ -94,7 +94,7 @@ class FakeInput:
         self.fully_signed = False
 
 
-class FakePsbt:
+class MockPsbt:
     consider_dangerous_change = psbtObject.consider_dangerous_change
 
     def __init__(self, inputs, outputs):
@@ -115,18 +115,18 @@ class MismatchedMultisig:
 
 
 def assert_no_change_warning(inputs, outputs):
-    fake_psbt = FakePsbt(inputs, outputs)
-    fake_psbt.consider_dangerous_change(MY_XFP)
-    assert fake_psbt.warnings == []
+    mock_psbt = MockPsbt(inputs, outputs)
+    mock_psbt.consider_dangerous_change(MY_XFP)
+    assert mock_psbt.warnings == []
 
 
-segwit_inputs = [FakeInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY)]
-taproot_inputs = [FakeInput(tap_subpaths={TAP_PUBKEY: (BIP86_INPUT_SUBPATH, [])},
+segwit_inputs = [MockInput(subpaths={PUBKEY: BIP84_INPUT_SUBPATH}, required_key=PUBKEY)]
+taproot_inputs = [MockInput(tap_subpaths={TAP_PUBKEY: (BIP86_INPUT_SUBPATH, [])},
                             required_key=TAP_PUBKEY)]
 mixed_inputs = segwit_inputs + taproot_inputs
 
 
-valid = FakeOutput(GOOD_P2SH,
+valid = MockOutput(GOOD_P2SH,
                    subpaths={PUBKEY: BIP49_SUBPATH},
                    redeem_script=REDEEM_SCRIPT)
 valid.validate(0, CTxOut(0, GOOD_P2SH), MY_XFP, None)
@@ -137,19 +137,19 @@ must_fail(NATIVE_P2WPKH, CHANGE_WRONG_ACCOUNT_TYPE)
 
 # Raw P2PK outputs and unknown derivations remain visible rather than being
 # treated as change or aborting a signing operation.
-raw_p2pk = FakeOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+raw_p2pk = MockOutput(P2PK_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 raw_p2pk.validate(0, raw_p2pk._txo, MY_XFP, None)
 assert raw_p2pk.is_change is False
 
 # Taproot metadata is only valid for a BIP86-derived P2TR output.
-validate_must_fail(FakeOutput(TAPROOT_SCRIPT,
+validate_must_fail(MockOutput(TAPROOT_SCRIPT,
                               tap_subpaths={TAP_PUBKEY: (BIP84_CHANGE_SUBPATH, [])}),
                    CHANGE_WRONG_ACCOUNT_TYPE)
 
 # A single-sig path without a recognized full account derivation is not safe to
 # classify as change, but should not prevent signing.
 for path in (BIP84_SHORT_SUBPATH, BIP_UNKNOWN_SUBPATH):
-    unsupported_path = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: path})
+    unsupported_path = MockOutput(NATIVE_P2WPKH, subpaths={PUBKEY: path})
     unsupported_path.validate(0, unsupported_path._txo, MY_XFP, None)
     assert unsupported_path.is_change is False
 
@@ -160,7 +160,7 @@ for script_pubkey, redeem_script, witness_script in (
         (LEGACY_P2SH, MULTISIG_SCRIPT, None),
         (NESTED_P2WSH, P2WSH_REDEEM_SCRIPT, MULTISIG_SCRIPT),
         (NATIVE_P2WSH, None, MULTISIG_SCRIPT)):
-    one_of_one_change = FakeOutput(script_pubkey,
+    one_of_one_change = MockOutput(script_pubkey,
                                    subpaths={PUBKEY: BIP48_SUBPATH},
                                    redeem_script=redeem_script,
                                    witness_script=witness_script)
@@ -173,39 +173,39 @@ for script_pubkey, redeem_script, witness_script in (
 for purpose in (45, 48):
     script_wallet_path = list(BIP48_SUBPATH)
     script_wallet_path[1] = 0x80000000 | purpose
-    validate_must_fail(FakeOutput(GOOD_P2SH,
+    validate_must_fail(MockOutput(GOOD_P2SH,
                                   subpaths={PUBKEY: script_wallet_path},
                                   redeem_script=REDEEM_SCRIPT),
                        CHANGE_WRONG_ACCOUNT_TYPE,
                        active_multisig=OneOfOneMultisig())
 
 
-validate_must_fail(FakeOutput(LEGACY_P2SH,
+validate_must_fail(MockOutput(LEGACY_P2SH,
                               subpaths={PUBKEY: BIP48_SUBPATH},
                               redeem_script=MULTISIG_SCRIPT),
                    CHANGE_MULTISIG_SETUP_MISMATCH,
                    active_multisig=MismatchedMultisig())
 
 
-valid_mixed_segwit_change = FakeOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+valid_mixed_segwit_change = MockOutput(NATIVE_P2WPKH, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 valid_mixed_segwit_change.validate(0, CTxOut(0, NATIVE_P2WPKH), MY_XFP, None)
 assert valid_mixed_segwit_change.is_change is True
 for inputs in (segwit_inputs, taproot_inputs, mixed_inputs):
     assert_no_change_warning(inputs, [valid_mixed_segwit_change])
 
-valid_mixed_taproot_change = FakeOutput(TAPROOT_SCRIPT,
+valid_mixed_taproot_change = MockOutput(TAPROOT_SCRIPT,
                                         tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
 valid_mixed_taproot_change.validate(0, CTxOut(0, TAPROOT_SCRIPT), MY_XFP, None)
 assert valid_mixed_taproot_change.is_change is True
 for inputs in (segwit_inputs, taproot_inputs, mixed_inputs):
     assert_no_change_warning(inputs, [valid_mixed_taproot_change])
 
-wrong_tap_metadata_for_segwit = FakeOutput(NATIVE_P2WPKH,
+wrong_tap_metadata_for_segwit = MockOutput(NATIVE_P2WPKH,
                                            tap_subpaths={TAP_PUBKEY: (BIP86_CHANGE_SUBPATH, [])})
 validate_must_fail(wrong_tap_metadata_for_segwit,
                    CHANGE_WRONG_ACCOUNT_TYPE)
 
-wrong_segwit_metadata_for_taproot = FakeOutput(TAPROOT_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
+wrong_segwit_metadata_for_taproot = MockOutput(TAPROOT_SCRIPT, subpaths={PUBKEY: BIP84_CHANGE_SUBPATH})
 validate_must_fail(wrong_segwit_metadata_for_taproot,
                    CHANGE_WRONG_ACCOUNT_TYPE)
 
