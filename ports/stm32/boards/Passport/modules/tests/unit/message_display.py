@@ -11,7 +11,7 @@ import flows.sign_electrum_message_flow as electrum
 from flows.health_check_common_flow import HealthCheckCommonFlow
 
 
-class ReviewPage:
+class MockReviewPage:
     texts = []
 
     def __init__(self, text, **kwargs):
@@ -21,7 +21,7 @@ class ReviewPage:
         return True
 
 
-class SensitiveValues:
+class MockSensitiveValues:
     def __enter__(self):
         self.chain = self
         return self
@@ -36,7 +36,7 @@ class SensitiveValues:
         return '1BoatSLRHtKNngkdXEeobR76b53LETtpyT'
 
 
-class TestFlow:
+class MockFlow:
     subpath = "m/44'/0'/0'/0/0"
     addr_type = 0
     normal_signing = True
@@ -55,7 +55,7 @@ class TestFlow:
 signed_messages = []
 
 
-async def sign_spinner(label, task, args):
+async def mock_sign_spinner(label, task, args):
     assert task is electrum.sign_text_file_task
     signed_messages.append(args[0])
     return (b'signature', args[3], None)
@@ -70,10 +70,10 @@ async def run_tests():
     original_spinner = utils.spinner_task
     original_electrum_spinner = electrum.spinner_task
     try:
-        pages.LongTextPage = electrum.LongTextPage = ReviewPage
-        pages.LongQuestionPage = electrum.LongQuestionPage = ReviewPage
-        stash.SensitiveValues = SensitiveValues
-        utils.spinner_task = electrum.spinner_task = sign_spinner
+        pages.LongTextPage = electrum.LongTextPage = MockReviewPage
+        pages.LongQuestionPage = electrum.LongQuestionPage = MockReviewPage
+        stash.SensitiveValues = MockSensitiveValues
+        utils.spinner_task = electrum.spinner_task = mock_sign_spinner
 
         cases = (
             ('literal # and ## hashes', 'literal ## and #### hashes'),
@@ -82,9 +82,9 @@ async def run_tests():
         )
         for message, displayed in cases:
             for is_electrum in (True, False):
-                flow = TestFlow()
+                flow = MockFlow()
                 flow.message = flow.text = message
-                ReviewPage.texts = []
+                MockReviewPage.texts = []
                 before = len(signed_messages)
                 if is_electrum:
                     await electrum.SignElectrumMessageFlow.show_message(flow)
@@ -92,8 +92,8 @@ async def run_tests():
                 else:
                     await HealthCheckCommonFlow.show_message(flow)
                     assert flow.next_state == flow.sign_health_check
-                assert ReviewPage.texts[0] == '\n' + displayed
-                assert len(ReviewPage.texts) == 2
+                assert MockReviewPage.texts[0] == '\n' + displayed
+                assert len(MockReviewPage.texts) == 2
                 assert len(signed_messages) == before
                 assert flow.message == flow.text == message
                 if is_electrum:
