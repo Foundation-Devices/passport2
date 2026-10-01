@@ -330,6 +330,10 @@ __attribute__((section(".ramfunc"))) void flash_lockdown_hard(void) {
 }
 
 static void pick_pairing_secret(rom_secrets_t* local) {
+    // Provisioning runs before se_setup_config(). The production bootloader
+    // does not link the ADC/noise mixer (only FACTORY_TEST does), so retain the
+    // MCU source here. Adding independent entropy requires bootloader hardware
+    // bring-up and provisioning validation, not a call to the firmware mixer.
     uint32_t  secret[8];
     int       i;
     uint32_t* pos;
@@ -341,7 +345,7 @@ static void pick_pairing_secret(rom_secrets_t* local) {
 
     // enforce policy that first word is not all ones (so it never
     // looks like unprogrammed flash).
-    while (secret[0] == 0xff) {
+    while (secret[0] == 0xffffffffU) {
         secret[0] = rng_sample();
     }
 
