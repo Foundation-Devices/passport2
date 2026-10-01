@@ -28,7 +28,7 @@ from ubinascii import hexlify as b2a_hex
 from taproot import output_script, tagged_hash
 
 from public_constants import (
-    PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
+    PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_GLOBAL_VERSION, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
     PSBT_IN_PARTIAL_SIG, PSBT_IN_SIGHASH_TYPE, PSBT_IN_REDEEM_SCRIPT,
     PSBT_IN_WITNESS_SCRIPT, PSBT_IN_BIP32_DERIVATION, PSBT_IN_FINAL_SCRIPTSIG,
     PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
@@ -196,14 +196,16 @@ class psbtProxy:
 
                 self.store(kt, bytes(key), proxy)
 
-    def write(self, out_fd, ktype, val, key=b''):
+    def write(self, out_fd, ktype, val, key=b'', raw=False):
         # serialize helper: write w/ size and key byte
         out_fd.write(ser_compact_size(1 + len(key)))
         out_fd.write(bytes([ktype]))
         out_fd.write(key)
 
         if isinstance(val, tuple):
-            if ktype in (PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION):
+            # Unknown fields always contain file offsets, even when their type
+            # number matches a known field in another PSBT map.
+            if not raw and ktype in (PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION):
                 path, tap_hashes = val
                 output = ser_compact_size(len(tap_hashes))
                 for h in tap_hashes:
@@ -382,7 +384,7 @@ class psbtOutputProxy(psbtProxy):
                 wr(PSBT_OUT_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
         for k in self.unknowns:
-            wr(k[0], self.unknowns[k], k[1:])
+            self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
     def validate(self, out_idx, txo, my_xfp, active_multisig):
         # Do things make sense for this output?
@@ -969,7 +971,7 @@ class psbtInputProxy(psbtProxy):
             wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
 
         for k in self.unknowns:
-            wr(k[0], self.unknowns[k], k[1:])
+            self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
 
 class psbtObject(psbtProxy):
@@ -982,6 +984,7 @@ class psbtObject(psbtProxy):
 
         # global objects
         self.txn = None
+        self.psbt_version = None  # Absent means version 0; preserve explicit 0 on export.
         self.xpubs = []         # tuples(xfp_path, xpub)
 
         from common import settings
@@ -1030,6 +1033,16 @@ class psbtObject(psbtProxy):
             # list of tuples(xfp_path, xpub)
             self.xpubs.append((self.get(val), key[1:]))
             assert len(self.xpubs) <= MAX_SIGNERS
+        elif kt == PSBT_GLOBAL_VERSION:
+            if len(key) != 1 or val[1] != 4:
+                raise FatalPSBTIssue('Invalid PSBT version field')
+            if self.psbt_version is not None:
+                raise FatalPSBTIssue('Duplicate PSBT version field')
+            # BIP174: no key data and exactly four little-endian version bytes.
+            # This parser supports only v0, whether explicit or omitted.
+            if self.get(val) != b'\x00\x00\x00\x00':
+                raise FatalPSBTIssue('Unsupported PSBT version')
+            self.psbt_version = 0
         else:
             self.unknowns[key] = val
 
@@ -1628,9 +1641,12 @@ class psbtObject(psbtProxy):
             for v, k in self.xpubs:
                 wr(PSBT_GLOBAL_XPUB, v, k)
 
+        if self.psbt_version is not None:
+            wr(PSBT_GLOBAL_VERSION, pack('<I', self.psbt_version))
+
         if self.unknowns:
             for k in self.unknowns:
-                wr(k[0], self.unknowns[k], k[1:])
+                self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
         # sep between globals and inputs
         out_fd.write(b'\0')
