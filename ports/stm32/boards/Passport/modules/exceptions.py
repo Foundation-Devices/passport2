@@ -18,9 +18,18 @@ class FatalPSBTIssue(RuntimeError):
     pass
 
 
+CHANGE_ADDRESS_NOT_OURS = (
+    "Transaction rejected. The change address doesn't belong to this wallet.")
+CHANGE_MULTISIG_SETUP_MISMATCH = (
+    "Transaction rejected. The change address doesn't match this multisig wallet's setup.")
+CHANGE_WRONG_ACCOUNT_TYPE = (
+    "Transaction rejected. The change address is the wrong type for this account.")
+
+
 class FraudulentChangeOutput(FatalPSBTIssue):
     def __init__(self, out_idx, msg):
-        super().__init__('Output #%d: %s' % (out_idx, msg))
+        self.out_idx = out_idx
+        super().__init__(msg)
 
 
 class IncorrectUTXOAmount(FatalPSBTIssue):

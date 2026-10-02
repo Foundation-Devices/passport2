@@ -14,6 +14,7 @@ async def double_check_psbt_change_task(on_done, psbt):
     import stash
     from utils import swab32, keypath_to_str
     from errors import Error
+    from exceptions import CHANGE_ADDRESS_NOT_OURS
 
     with stash.SensitiveValues() as sv:
         # Double check the change outputs are right. This is slow, but critical because
@@ -55,9 +56,7 @@ async def double_check_psbt_change_task(on_done, psbt):
 
                 if not good:
                     # print('double_check_psbt_change_task() Fraudulent Change Error')
-                    await on_done('Transaction rejected. Passport could not verify that the change address '
-                                  'belongs to this wallet.',
-                                  Error.PSBT_FRAUDULENT_CHANGE_ERROR)
+                    await on_done(CHANGE_ADDRESS_NOT_OURS, Error.PSBT_FRAUDULENT_CHANGE_ERROR)
                     return
 
     # print('double_check_psbt_change_task() OK')
