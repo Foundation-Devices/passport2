@@ -14,7 +14,7 @@ from flows import Flow
 import microns
 from pages.chooser_page import ChooserPage
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
-from tasks import sign_psbt_task, validate_psbt_task
+from tasks import validate_psbt_task
 import gc
 from utils import escape_text, spinner_task, recolor, stylize_address
 
@@ -29,16 +29,25 @@ class SignPsbtCommonFlow(Flow):
         self.header = 'Transaction Info'
 
     async def validate_psbt(self):
-        from pages import ErrorPage
-
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
                                                            args=[self.psbt_len])
         # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
         if error is not None:
-            await ErrorPage(error_msg).show()
+            await self.show_psbt_error(error_msg)
             self.set_result(None)
         else:
+            if self.psbt.active_policy:
+                self.header = 'Policy transaction'
             self.goto(self.check_multisig_import)
+
+    async def show_psbt_error(self, error_msg):
+        from pages import ErrorPage
+        from psbt_display import format_psbt_error
+        friendly, technical = format_psbt_error(error_msg)
+        text = friendly
+        if technical:
+            text = [friendly, 'Technical details\n\n{}'.format(technical)]
+        await ErrorPage(text=text).show()
 
     async def check_multisig_import(self):
         from flows import ImportMultisigWalletFlow
@@ -157,17 +166,56 @@ class SignPsbtCommonFlow(Flow):
             if not result:
                 self.back()
             else:
-                self.goto(self.sign_transaction)
+                self.goto(self.show_policy_authorization)
         else:
+            self.goto(self.show_policy_authorization)
+
+    async def show_policy_authorization(self):
+        policy = self.psbt.active_policy
+        if policy is None:
             self.goto(self.sign_transaction)
+            return
+
+        from policy_display import compatible_path_indexes
+        compatible_sets = []
+        for input_index, txin in self.psbt.input_iter():
+            plan = self.psbt.inputs[input_index].policy_spend_plan
+            if plan and plan.policy_id == policy.policy_id:
+                compatible_sets.append(compatible_path_indexes(
+                    policy, self.psbt.txn_version, self.psbt.lock_time,
+                    txin.nSequence))
+        compatible = None
+        if compatible_sets and compatible_sets[0] and \
+                all(paths == compatible_sets[0] for paths in compatible_sets):
+            compatible = compatible_sets[0]
+
+        from flows import SeriesOfPagesFlow
+        from pages import LongTextPage
+        page_args = [{
+            'card_header': {'title': 'Policy transaction'},
+            'text': text,
+            'centered': True,
+        } for text in policy.format_signing_pages(compatible)]
+        result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
+        if result:
+            self.goto(self.sign_transaction)
+        else:
+            self.back()
 
     async def sign_transaction(self):
+        from tasks.sign_psbt_task import sign_psbt_task
         from utils import spinner_task
         from pages import ErrorPage, QuestionPage
 
         gc.collect()
 
-        result = await QuestionPage(text='Sign transaction?', right_micron=microns.Sign).show()  # Change to Sign icon
+        if self.psbt.active_policy:
+            from utils import escape_text
+            question = 'Sign with {}?'.format(
+                escape_text(self.psbt.active_policy.name))
+        else:
+            question = 'Sign transaction?'
+        result = await QuestionPage(text=question, right_micron=microns.Sign).show()
         if not result:
             options = [{'label': 'Cancel', 'value': True},
                        {'label': 'Review Details', 'value': False}]
@@ -182,7 +230,7 @@ class SignPsbtCommonFlow(Flow):
                                                     sign_psbt_task, args=[self.psbt])
             gc.collect()
             if error is not None:
-                await ErrorPage(error_msg).show()
+                await self.show_psbt_error(error_msg)
                 self.set_result(None)
                 return
 
