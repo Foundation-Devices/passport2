@@ -24,11 +24,10 @@ async def validate_electrum_message_task(on_done, message):
             await on_done(None, 'Unsupported message type')
             return
 
-        (subpath, error) = validate_sign_text(message,
-                                              header_elements[1],
-                                              space_limit=False,
-                                              check_whitespace=False,
-                                              check_ascii=False)
+        # Keep the printable-ASCII check: controls can truncate or obscure the
+        # preview even though the original message bytes would still be signed.
+        (subpath, error) = validate_sign_text(
+            message, header_elements[1], space_limit=False, check_whitespace=False)
 
         if error:
             await on_done(None, error)
