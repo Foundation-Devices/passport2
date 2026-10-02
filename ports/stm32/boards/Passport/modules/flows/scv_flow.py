@@ -80,6 +80,12 @@ class ScvFlow(Flow):
                 await self.show_error('Security Check QR code is invalid.\n')
                 return
 
+        # The secure element HMAC consumes 32 challenge bytes. Reject short
+        # inputs here as well as at the native boundary, with a useful error.
+        if len(scv_id) < 32:
+            await self.show_error('Security Check challenge is too short.')
+            return
+
         id_hash = bytearray(32)
         foundation.sha256(b2a_hex(scv_id), id_hash)
 
