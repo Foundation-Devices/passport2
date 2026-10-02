@@ -329,23 +329,33 @@ __attribute__((section(".ramfunc"))) void flash_lockdown_hard(void) {
 #endif /* LOCKED */
 }
 
+// Applies to future provisioning/source reuse, not deployed, non-upgradeable
+// bootloaders. A repeatedly erased first word must not stall provisioning.
+#define PAIRING_SECRET_MAX_RETRIES 8U
+
 static void pick_pairing_secret(rom_secrets_t* local) {
     // Provisioning runs before se_setup_config(). The production bootloader
     // does not link the ADC/noise mixer (only FACTORY_TEST does), so retain the
     // MCU source here. Adding independent entropy requires bootloader hardware
     // bring-up and provisioning validation, not a call to the firmware mixer.
-    uint32_t  secret[8];
-    int       i;
+    uint32_t  secret[sizeof(local->pairing_secret) / sizeof(uint32_t)];
+    unsigned  i;
     uint32_t* pos;
     uint16_t  len;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < sizeof(secret) / sizeof(secret[0]); i++) {
         secret[i] = rng_sample();
     }
 
     // enforce policy that first word is not all ones (so it never
     // looks like unprogrammed flash).
+    unsigned retries = 0;
     while (secret[0] == 0xffffffffU) {
+        if (retries++ == PAIRING_SECRET_MAX_RETRIES) {
+            rng_fatal_error();
+        }
+        // rng_sample() also bounds hardware polling/recovery and stops on
+        // failure. Exhaustion cannot reach se_setup_config() or flash writes.
         secret[0] = rng_sample();
     }
 
