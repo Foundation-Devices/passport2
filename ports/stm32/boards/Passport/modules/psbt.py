@@ -491,16 +491,18 @@ class psbtOutputProxy(psbtProxy):
                 # complete derivation map is sufficient to verify the output.
                 # If a witness script is present, match_derivations also checks
                 # it exactly.
+                from policy_errors import WalletPolicyError
                 try:
                     import chains
                     derived, _, _ = active_policy.match_derivations(
                         self.subpaths, txo.scriptPubKey, witness_script,
                         chains.current_chain(), my_xfp)
-                except BaseException as exc:
+                except (WalletPolicyError, ValueError, TypeError, KeyError) as exc:
                     raise FraudulentChangeOutput(
                         out_idx, "Wallet policy change output does not match: %s" % exc)
                 self.policy_branch = derived.branch
                 self.policy_address_index = derived.index
+                # branch is the multipath index, so /<2;3>/* uses 1 for change.
                 self.is_change = derived.branch == 1
                 return
 
