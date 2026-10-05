@@ -64,6 +64,10 @@ def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
 
+def test_one_of_n_warning(test):
+    assert test('one_of_n_warning.py') == b'OK'
+
+
 def test_seedqr_codec(test):
     assert test('seedqr_codec.py') == b'OK'
 

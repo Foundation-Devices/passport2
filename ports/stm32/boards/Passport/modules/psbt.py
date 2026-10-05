@@ -1291,6 +1291,16 @@ class psbtObject(psbtProxy):
             for out_idx, txo in self.output_iter():
                 pass
 
+        # A change script containing our key does not give us exclusive control
+        # when any one of several cosigners can spend it. Keep existing wallets
+        # usable, but disclose this on every spend, including self-sends and
+        # transactions with no change output.
+        if self.active_multisig and self.active_multisig.M == 1 and self.active_multisig.N > 1:
+            self.warnings.append(
+                ('1-of-{} Multisig'.format(self.active_multisig.N),
+                 'Any other cosigner can spend funds in this wallet, including change, '
+                 'without approval from this wallet.'))
+
         # check fee is reasonable
         total_non_change_out = self.total_value_out - total_change
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
