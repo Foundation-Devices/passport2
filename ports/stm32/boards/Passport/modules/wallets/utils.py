@@ -116,18 +116,25 @@ def get_addr_type_from_deriv(path):
     addr_type = get_addr_type_from_deriv_path(path)
     subpath = get_part_from_deriv_path(path, 4)
 
-    if addr_type == 44:
+    return get_addr_type_from_bip_numbers(addr_type, subpath)
+
+
+def get_addr_type_from_bip_numbers(purpose, script_type=None):
+    # Translate the BIP purpose (and, for BIP48, its script subtype) into the
+    # corresponding Passport address format. Keep this mapping shared by all
+    # callers that reason about BIP32 derivation metadata.
+    if purpose == 44:
         return AF_CLASSIC
-    elif addr_type == 49:
+    elif purpose == 49:
         return AF_P2WPKH_P2SH
-    elif addr_type == 84:
+    elif purpose == 84:
         return AF_P2WPKH
-    elif addr_type == 48:
-        if subpath == 1:
+    elif purpose == 48:
+        if script_type == 1:
             return AF_P2WSH_P2SH
-        elif subpath == 2:
+        elif script_type == 2:
             return AF_P2WSH
-    elif addr_type == 86:
+    elif purpose == 86:
         return AF_P2TR
 
     return None

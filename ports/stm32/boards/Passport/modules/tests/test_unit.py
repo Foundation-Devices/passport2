@@ -134,3 +134,7 @@ def test_restore_backup(test):
 
 def test_bip322(test):
     assert test('bip322.py') == b'OK'
+
+
+def test_psbt_change_validation(test):
+    assert test('psbt_change_validation.py') == b'OK'
