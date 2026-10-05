@@ -139,6 +139,30 @@ async def run_test():
     except FraudulentChangeOutput:
         pass
 
+    # Resource failures must reach the out-of-memory handler rather than be
+    # reported as fraudulent change. Actual matching errors still fail closed.
+    from policy_errors import WalletPolicyError
+    original_match = MiniscriptPolicy.match_derivations
+    for failure in (MemoryError, WalletPolicyError, ValueError, TypeError, KeyError):
+        resource_failure = psbtObject.read_psbt(BytesIO(a2b_base64(PSBT_BASE64)))
+        await resource_failure.validate()
+        resource_failure.consider_inputs()
+
+        def fail_match(*args):
+            raise failure('policy matching failed')
+
+        MiniscriptPolicy.match_derivations = fail_match
+        try:
+            try:
+                resource_failure.consider_outputs()
+                assert False, 'Policy matching failure was accepted'
+            except MemoryError:
+                assert failure is MemoryError
+            except FraudulentChangeOutput:
+                assert failure is not MemoryError
+        finally:
+            MiniscriptPolicy.match_derivations = original_match
+
 
 LIANA_DESCRIPTOR = (
     "wsh(or_i(and_v(v:thresh(2,pkh([9f141cf0/48'/1'/0'/2']tpubDFnReAwXvYd6RA46X55HuFpmvZsLanD"
