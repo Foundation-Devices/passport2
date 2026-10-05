@@ -24,7 +24,7 @@
 #include "update.h"
 #include "verify.h"
 #include "spiflash.h"
-#include "firmware-keys.h"
+#include "firmware-classification.h"
 
 #include "backlight.h"
 #include "display.h"
@@ -520,7 +520,7 @@ retry:
     }
 
     // User signed firmware cannot be used as a factory reset firmware.
-    if (sd_card_hdr.signature.pubkey1 == FW_USER_KEY && sd_card_hdr.signature.pubkey2 == 0) {
+    if (firmware_is_user_signed(&sd_card_hdr)) {
         strcpy(message, "Firmware signed by a Developer PubKey cannot be used for recovery.");
         goto fail;
     }

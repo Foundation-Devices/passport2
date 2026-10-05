@@ -167,10 +167,16 @@ def test_copy_failure_never_authorizes_update(environment, tmp_path):
 
 def test_installed_firmware_detection_c(tmp_path):
     harness = tmp_path / 'detection.c'
+    source = (BOARD / 'bootloader/update.c').read_text()
+    start = source.index('secresult is_user_signed_firmware_installed(void) {')
+    detection = source[start:source.index('\n}', start) + 2]
     harness.write_text('''
 #include <assert.h>
+#include "secresult.h"
 #include "firmware-classification.h"
 static passport_firmware_header_t installed;
+#define BL_FW_HDR_BASE (&installed)
+''' + detection + '''
 
 int main(void) {
     const uint32_t second_keys[] = {0, 1, 2, FW_MAX_PUB_KEYS, UINT32_MAX};
@@ -178,9 +184,11 @@ int main(void) {
         installed.signature.pubkey2 = second_keys[i];
         installed.signature.pubkey1 = FW_USER_KEY;
         assert(firmware_is_user_signed(&installed));
+        assert(is_user_signed_firmware_installed() == SEC_TRUE);
         for (uint32_t key = 0; key < FW_MAX_PUB_KEYS; key++) {
             installed.signature.pubkey1 = key;
             assert(!firmware_is_user_signed(&installed));
+            assert(is_user_signed_firmware_installed() == SEC_FALSE);
         }
     }
 }
@@ -188,6 +196,63 @@ int main(void) {
     binary = tmp_path / 'detection'
     subprocess.run(shlex.split(os.environ.get('CC', 'cc')) +
                    ['-std=c11', '-I', str(BOARD / 'include'), str(harness), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+
+
+@pytest.mark.parametrize('screen', ['COLOR', 'MONO'])
+def test_bootloader_header_validation_c(tmp_path, screen):
+    source = (BOARD / 'bootloader/verify.c').read_text()
+    start = source.index('secresult verify_header(')
+    validation = source[start:source.index('\n}', start) + 2]
+    harness = tmp_path / 'header.c'
+    harness.write_text('''
+#include <assert.h>
+#include <stddef.h>
+#include "firmware-classification.h"
+#include "secresult.h"
+''' + validation + '''
+int main(void) {
+    passport_firmware_header_t header = {0};
+#ifdef SCREEN_MODE_COLOR
+    header.info.magic = FW_HEADER_MAGIC_COLOR;
+#else
+    header.info.magic = FW_HEADER_MAGIC;
+#endif
+    header.info.timestamp = 1;
+    header.info.fwversion[0] = '1';
+    header.info.fwlength = FW_HEADER_SIZE;
+    header.signature.pubkey1 = FW_USER_KEY;
+    header.signature.signature1[0] = 1;
+    assert(verify_header(&header) == SEC_TRUE);
+
+    const uint32_t second_keys[] = {1, FW_MAX_PUB_KEYS, FW_USER_KEY, UINT32_MAX};
+    for (size_t i = 0; i < sizeof(second_keys) / sizeof(second_keys[0]); i++) {
+        header.signature.pubkey2 = second_keys[i];
+        assert(verify_header(&header) == SEC_FALSE);
+    }
+    header.signature.pubkey2 = 0;
+    for (size_t i = 0; i < sizeof(header.signature.signature2); i++) {
+        header.signature.signature2[i] = 1;
+        assert(verify_header(&header) == SEC_FALSE);
+        header.signature.signature2[i] = 0;
+    }
+    assert(verify_header(&header) == SEC_TRUE);
+
+    header.signature.signature2[0] = 1;
+    for (uint32_t first = 0; first < FW_MAX_PUB_KEYS; first++) {
+        for (uint32_t second = 0; second < FW_MAX_PUB_KEYS; second++) {
+            if (first == second) continue;
+            header.signature.pubkey1 = first;
+            header.signature.pubkey2 = second;
+            assert(verify_header(&header) == SEC_TRUE);
+        }
+    }
+}
+''')
+    binary = tmp_path / 'header'
+    subprocess.run(shlex.split(os.environ.get('CC', 'cc')) +
+                   ['-std=c11', '-D', 'SCREEN_MODE_' + screen, '-I', str(BOARD / 'include'),
+                    str(harness), '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
 
 

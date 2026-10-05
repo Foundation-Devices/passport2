@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "delay.h"
+#include "firmware-classification.h"
 #include "firmware-keys.h"
 #include "hash.h"
 #include "se-config.h"
@@ -44,10 +45,13 @@ secresult verify_header(passport_firmware_header_t* hdr) {
     if (hdr->info.fwlength < FW_HEADER_SIZE) goto fail;
     if (hdr->info.fwlength > FW_MAX_FWLENGTH) goto fail;
 
-    // if (hdr->signature.pubkey1 == 0) goto fail;
-    if ((hdr->signature.pubkey1 != FW_USER_KEY) && (hdr->signature.pubkey1 > FW_MAX_PUB_KEYS)) goto fail;
-    if (hdr->signature.pubkey1 != FW_USER_KEY) {
-        // if (hdr->signature.pubkey2 == 0) goto fail;
+    if (firmware_is_user_signed(hdr)) {
+        if (hdr->signature.pubkey2 != 0) goto fail;
+        for (size_t i = 0; i < sizeof(hdr->signature.signature2); i++) {
+            if (hdr->signature.signature2[i] != 0) goto fail;
+        }
+    } else {
+        if (hdr->signature.pubkey1 > FW_MAX_PUB_KEYS) goto fail;
         if (hdr->signature.pubkey2 > FW_MAX_PUB_KEYS) goto fail;
     }
 
@@ -60,7 +64,7 @@ fail:
 secresult verify_signature(passport_firmware_header_t* hdr, uint8_t* fw_hash, uint32_t hashlen) {
     int rc;
 
-    if (hdr->signature.pubkey1 == FW_USER_KEY) {
+    if (firmware_is_user_signed(hdr)) {
         uint8_t user_public_key[72] = {0};
 #ifdef DEBUG_PRINT_VERIFY
         printf("Checking user-signed signature\r\n");
