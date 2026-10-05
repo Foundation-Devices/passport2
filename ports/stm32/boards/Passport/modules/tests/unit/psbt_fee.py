@@ -77,6 +77,7 @@ assert_raises(AssertionError, lambda: script_mismatch.get_utxo(0))
 
 
 class MockPrevout:
+    hash = 1
     n = 0
 
 

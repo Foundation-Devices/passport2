@@ -8,7 +8,7 @@ from uio import BytesIO
 from exceptions import FatalPSBTIssue
 from psbt import psbtObject
 from public_constants import MAX_MONEY
-from serializations import CTxOut
+from serializations import COutPoint, CTxIn, CTxOut
 
 
 P2WPKH_SCRIPT = b'\x00\x14' + (b'\x11' * 20)
@@ -20,14 +20,6 @@ class MockPSBT:
         self.vout_start = 0
         self.num_outputs = len(values)
         self.total_value_out = None
-
-
-class MockPrevout:
-    n = 0
-
-
-class MockTxIn:
-    prevout = MockPrevout()
 
 
 class MockInput:
@@ -61,7 +53,9 @@ class MockInputPSBT:
 
     def input_iter(self):
         for idx in range(self.num_inputs):
-            yield idx, MockTxIn()
+            txi = CTxIn()
+            txi.prevout = COutPoint(idx + 1, 0)
+            yield idx, txi
 
 
 def read_outputs(values):

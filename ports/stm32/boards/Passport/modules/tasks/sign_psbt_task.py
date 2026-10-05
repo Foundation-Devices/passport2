@@ -18,6 +18,7 @@ async def sign_psbt_task(on_done, psbt):
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
+    import history
 
     try:
         with stash.SensitiveValues() as sv:
@@ -53,6 +54,9 @@ async def sign_psbt_task(on_done, psbt):
                 txi.scriptSig = inp.scriptSig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
+
+                if inp.is_segwit:
+                    history.verify_amount(txi.prevout, inp.amount, in_idx)
 
                 if not inp.is_segwit:
                     # Hash by serializing/blanking various subparts of the transaction
@@ -101,6 +105,13 @@ async def sign_psbt_task(on_done, psbt):
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
                 success.add(in_idx)
+
+        # No cache writes until every signature succeeds. The success set only
+        # includes inputs whose signing keys we derived and verified above.
+        for in_idx, txi in psbt.input_iter():
+            inp = psbt.inputs[in_idx]
+            if in_idx in success and inp.is_segwit:
+                history.OutptValueCache.record_amount(txi.prevout, inp.amount, in_idx)
 
         # All went well, so just fall through and call on_done()
 
