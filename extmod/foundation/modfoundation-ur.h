@@ -132,7 +132,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_ur_type_obj, mod_founda
 ///     """
 STATIC mp_obj_t mod_foundation_ur_Value_unwrap_bytes(mp_obj_t self_in) {
     mp_obj_Value_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_check_self(self->value.tag == Bytes);
+    if (self->value.tag != Bytes) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("expected bytes UR"));
+    }
     return mp_obj_new_bytearray_by_ref(self->value.bytes.len, (void *)self->value.bytes.data);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_bytes_obj,
