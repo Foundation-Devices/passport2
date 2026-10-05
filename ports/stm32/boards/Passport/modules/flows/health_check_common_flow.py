@@ -52,7 +52,7 @@ class HealthCheckCommonFlow(Flow):
 
     async def show_message(self):
         import stash
-        from utils import stylize_address
+        from utils import escape_text, stylize_address
         from pages import LongTextPage, LongQuestionPage
         import microns
         from public_constants import MARGIN_FOR_ADDRESSES
@@ -64,7 +64,7 @@ class HealthCheckCommonFlow(Flow):
         display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
-                                    text=('\n' + self.text),
+                                    text=('\n' + escape_text(self.text)),
                                     card_header={'title': 'Message'}).show()
 
         if not result:

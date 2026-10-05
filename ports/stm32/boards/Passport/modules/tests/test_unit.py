@@ -88,6 +88,14 @@ def test_op_return_rendering(test):
     assert test('op_return_rendering.py') == b'OK'
 
 
+def test_message_display(test):
+    assert test('message_display.py') == b'OK'
+
+
+def test_electrum_message_validation(test):
+    assert test('electrum_message_validation.py') == b'OK'
+
+
 def test_foundation(test):
     assert test('foundation.py') == b'OK'
 
