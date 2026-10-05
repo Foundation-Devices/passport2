@@ -63,7 +63,8 @@ def psbt_module(monkeypatch):
     module('utils', xfp2str=lambda value: value.to_bytes(4, 'little').hex(),
            B2A=lambda value: value.hex(), bytes_to_hex_str=lambda value: value.hex(),
            keypath_to_str=lambda value: tuple(value), swab32=lambda value: value)
-    module('history', verify_amount=lambda *args: None)
+    module('history', verify_amount=lambda *args: None,
+           OutptValueCache=types.SimpleNamespace(record_amount=lambda *args: None))
     module('sffile', SizerFile=object)
     module('passport', mem=types.SimpleNamespace())
     module('constants', PSBT_MAX_SIZE=1024 * 1024)
@@ -324,7 +325,7 @@ def test_legacy_multisig_ignores_a_nonowned_fingerprint_collision(monkeypatch, p
     inp.get_signing_node = types.MethodType(psbt_module.psbtInputProxy.get_signing_node, inp)
     psbt = types.SimpleNamespace(
         inputs=[inp], my_xfp=xfp,
-        input_iter=lambda: iter([(0, types.SimpleNamespace())]),
+        input_iter=lambda: iter([(0, types.SimpleNamespace(prevout=object()))]),
         make_txn_segwit_sighash=lambda *args: bytes(32))
     results = []
 

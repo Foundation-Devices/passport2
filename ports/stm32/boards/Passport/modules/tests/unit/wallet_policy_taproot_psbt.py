@@ -132,12 +132,23 @@ async def run_test():
 
     stash.SensitiveValues = KeyPathValues
     stash.blank_object = lambda value: None
+    original_cache = history.OutptValueCache
+    recorded_amounts = []
+
+    class MockValueCache:
+        @staticmethod
+        def record_amount(prevout, amount, in_idx):
+            recorded_amounts.append((amount, in_idx))
+
+    history.OutptValueCache = MockValueCache
     try:
         await sign_psbt_task(key_path_done, key_path)
     finally:
         stash.SensitiveValues = original_sensitive_values
         stash.blank_object = original_blank_object
+        history.OutptValueCache = original_cache
     assert key_path_result == [(None, None)]
+    assert recorded_amounts == [(key_input.amount, 0)]
     assert len(key_input.tap_key_sig) == 64
 
 
