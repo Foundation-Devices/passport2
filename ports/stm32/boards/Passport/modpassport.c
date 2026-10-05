@@ -40,6 +40,10 @@ STATIC mp_obj_t mod_passport_supply_chain_challenge(mp_obj_t challenge_obj, mp_o
     mp_get_buffer_raise(challenge_obj, &challenge_info, MP_BUFFER_READ);
     mp_get_buffer_raise(response_obj, &response_info, MP_BUFFER_WRITE);
 
+    if (challenge_info.len != 32 || response_info.len < 32) {
+        return mp_const_false;
+    }
+
     se_pair_unlock();
     int rc = se_hmac32(KEYNUM_supply_chain, challenge_info.buf, response_info.buf);
     if (rc == 0) {
@@ -61,6 +65,12 @@ STATIC mp_obj_t mod_passport_verify_supply_chain_server_signature(mp_obj_t hash_
 
     mp_get_buffer_raise(hash_obj, &hash_info, MP_BUFFER_READ);
     mp_get_buffer_raise(signature_obj, &signature_info, MP_BUFFER_READ);
+
+    // The SCV protocol signs a SHA-256 digest with a raw secp256k1 signature.
+    // micro-ecc assumes the signature buffer contains both 32-byte scalars.
+    if (hash_info.len != 32 || signature_info.len != 64) {
+        return mp_const_false;
+    }
 
     rc = uECC_verify(supply_chain_validation_server_pubkey, hash_info.buf, hash_info.len, signature_info.buf,
                      uECC_secp256k1());
