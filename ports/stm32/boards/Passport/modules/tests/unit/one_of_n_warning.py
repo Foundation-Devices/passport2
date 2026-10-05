@@ -25,6 +25,7 @@ class MockOutput:
 
 
 class MockPSBT:
+    active_policy = None
     my_xfp = 123
     total_value_out = 1000
     fee_is_verified = True
@@ -59,7 +60,7 @@ class MockChain:
 class MockFlow:
     chain = MockChain()
     header = 'Transaction Info'
-    sign_transaction = 'sign'
+    show_policy_authorization = 'authorize'
     render_warnings = SignPsbtCommonFlow.render_warnings
 
     def __init__(self, psbt):
@@ -81,7 +82,8 @@ for policy in (None, (1, 1), (1, 2), (1, 15), (2, 3), (3, 3)):
         assert len(psbt.outputs) == (1 if change is None else 2)
         for index, output in enumerate(psbt.outputs):
             assert len(output.validations) == 1
-            idx, txo, xfp, wallet = output.validations[0]
+            idx, txo, xfp, wallet, active_policy = output.validations[0]
+            assert active_policy is None
             assert idx == index and txo.nValue == psbt.values[index]
             assert xfp == psbt.my_xfp and wallet is psbt.active_multisig
         assert psbt.change_checks == [psbt.my_xfp]
@@ -120,7 +122,7 @@ async def run_tests():
             MockPage.flow = flow
             MockPage.approve = approve
             await SignPsbtCommonFlow.show_warnings(flow)
-            assert flow.events == ['review', 'sign' if approve else 'back']
+            assert flow.events == ['review', 'authorize' if approve else 'back']
     finally:
         pages.LongTextPage = original_page
 
