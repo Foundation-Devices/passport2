@@ -277,12 +277,17 @@ class ImportWalletPolicyFromQRFlow(Flow):
         from data_codecs.qr_type import QRType
         from flows import ScanQRFlow
         from foundation import ur
+        from errors import Error
 
         result = await ScanQRFlow(
             qr_types=[QRType.QR, QRType.UR2], ur_types=[ur.Value.BYTES],
             data_description='a wallet policy').run()
         if result is None:
             self.set_result(False)
+            return
+        if result in (Error.QR_TOO_LARGE, Error.PSBT_OVERSIZED):
+            self.error = 'Wallet policy QR code is too large. Import it from microSD instead.'
+            self.goto(self.show_error)
             return
         try:
             data = result.unwrap_bytes() if hasattr(result, 'unwrap_bytes') else result
@@ -310,6 +315,7 @@ class ImportWalletPolicyFromMicroSDFlow(Flow):
     async def choose_file(self):
         from flows import FilePickerFlow
         from tasks import read_file_task
+        from policy_transport import bounded_transport_read
         from utils import spinner_task
 
         result = await FilePickerFlow(show_folders=True).run()
@@ -319,7 +325,8 @@ class ImportWalletPolicyFromMicroSDFlow(Flow):
         _, full_path, is_folder = result
         if is_folder:
             return
-        data, error = await spinner_task('Reading policy', read_file_task, args=[full_path])
+        data, error = await spinner_task(
+            'Reading policy', read_file_task, args=[full_path, True, bounded_transport_read])
         if error is not None:
             self.error = 'Unable to read wallet policy file.'
             self.goto(self.show_error)
@@ -576,6 +583,7 @@ class ExportWalletPolicyMicroSDFlow(SaveToMicroSDFlow):
 
 class VerifyWalletPolicyRequestFlow(Flow):
     """Derive a bound Liana address request and return a confirmation QR."""
+
     def __init__(self, context=None):
         self.expected_policy_id = context
         self.request = None

@@ -64,9 +64,16 @@ class SPIFlash:
         assert 1 <= len(buf) <= self.PAGE_SIZE
         assert 0 <= address <= _SIZE - len(buf)
         assert address // self.PAGE_SIZE == (address + len(buf) - 1) // self.PAGE_SIZE
-        self._file.seek(address)
-        self._file.write(buf)
-        self._mark_written(address // self.PAGE_SIZE)
+        page = address // self.PAGE_SIZE
+        start = page * self.PAGE_SIZE
+        data = bytearray(self.PAGE_SIZE)
+        self.read(start, data)
+        offset = address - start
+        for index, value in enumerate(buf):
+            data[offset + index] &= value
+        self._file.seek(start)
+        self._file.write(data)
+        self._mark_written(page)
 
     def is_busy(self):
         return False
