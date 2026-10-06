@@ -28,6 +28,7 @@ default-features = false
 version = "1"
 default-features = false
 
+# SFT-7497: Await the release containing foundation-rs #64.
 [dependencies.foundation-firmware]
 version = "0.2"
 default-features = false
