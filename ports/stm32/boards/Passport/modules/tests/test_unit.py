@@ -138,3 +138,7 @@ def test_bip322(test):
 
 def test_psbt_change_validation(test):
     assert test('psbt_change_validation.py') == b'OK'
+
+
+def test_single_line_message(test):
+    assert test('single_line_message.py') == b'OK'
