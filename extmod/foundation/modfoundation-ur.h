@@ -145,7 +145,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_bytes_obj,
 ///     """
 STATIC mp_obj_t mod_foundation_ur_Value_unwrap_psbt(mp_obj_t self_in) {
     mp_obj_Value_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_check_self(self->value.tag == Psbt);
+    if (self->value.tag != Psbt) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("expected psbt UR"));
+    }
 
     return mp_obj_new_bytearray_by_ref(self->value.psbt.len, (void *)self->value.psbt.data);
 }
@@ -157,7 +159,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_Value_unwrap_psbt_obj,
 ///     """
 STATIC mp_obj_t mod_foundation_ur_Value_unwrap_passport_request(mp_obj_t self_in) {
     mp_obj_Value_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_check_self(self->value.tag == PassportRequest);
+    if (self->value.tag != PassportRequest) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("expected passport-request UR"));
+    }
 
     return MP_OBJ_FROM_PTR(mod_foundation_ur_PassportRequest_new(&self->value.passport_request));
 }
@@ -330,8 +334,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_PassportRequest_uuid_obj,
 
 STATIC mp_obj_t mod_foundation_ur_PassportRequest_scv_challenge_id(mp_obj_t self_in)
 {
-    mp_check_self(self->passport_request.has_scv_challenge);
     mp_obj_PassportRequest_t *self = MP_OBJ_TO_PTR(self_in);
+    if (!self->passport_request.has_scv_challenge) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("request has no SCV challenge"));
+    }
 
     return mp_obj_new_bytes(self->passport_request.scv_challenge.id, 32);
 }
@@ -340,8 +346,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_foundation_ur_PassportRequest_scv_challenge
 
 STATIC mp_obj_t mod_foundation_ur_PassportRequest_scv_challenge_signature(mp_obj_t self_in)
 {
-    mp_check_self(self->passport_request.has_scv_challenge);
     mp_obj_PassportRequest_t *self = MP_OBJ_TO_PTR(self_in);
+    if (!self->passport_request.has_scv_challenge) {
+        mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("request has no SCV challenge"));
+    }
 
     return mp_obj_new_bytes(self->passport_request.scv_challenge.signature, 64);
 }
@@ -694,7 +702,9 @@ STATIC mp_obj_t mod_foundation_ur_decoder_receive(mp_obj_t ur_obj)
 {
     UR_Error error = {0};
 
-    mp_check_self(mp_obj_is_str(ur_obj));
+    if (!mp_obj_is_str(ur_obj)) {
+        mp_raise_TypeError(MP_ERROR_TEXT("ur must be a string"));
+    }
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
 
     uint32_t num_frames = 0;
@@ -771,7 +781,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_foundation_ur_decoder_decode_message_obj,
 ///     """
 STATIC mp_obj_t mod_foundation_ur_validate(mp_obj_t ur_obj)
 {
-    mp_check_self(mp_obj_is_str(ur_obj));
+    if (!mp_obj_is_str(ur_obj)) {
+        mp_raise_TypeError(MP_ERROR_TEXT("ur must be a string"));
+    }
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
 
     return ur_validate(ur, ur_len) ? mp_const_true : mp_const_false;
@@ -786,7 +798,9 @@ STATIC mp_obj_t mod_foundation_ur_decode_single_part(mp_obj_t ur_obj)
     UR_Error error = {0};
     UR_Value value = {0};
 
-    mp_check_self(mp_obj_is_str(ur_obj));
+    if (!mp_obj_is_str(ur_obj)) {
+        mp_raise_TypeError(MP_ERROR_TEXT("ur must be a string"));
+    }
     GET_STR_DATA_LEN(ur_obj, ur, ur_len);
 
     if (!ur_decode_single_part(ur, ur_len, &value, &error)) {
