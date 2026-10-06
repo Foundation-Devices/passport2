@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: © 2026 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""Export one BIP84 key; the native crypto-account encoder requires two Casa keys."""
+
 import chains
 import stash
 
@@ -33,8 +35,10 @@ def create_blockstream_account_cbor(public_key,
                                     master_fingerprint,
                                     account_index,
                                     parent_fingerprint,
-                                    is_testnet):
+                                    coin_type):
     """Encode a BIP84 account in the crypto-account form accepted by Jade."""
+    assert coin_type in (0, 1)
+    is_testnet = coin_type == 1
     assert len(public_key) == 33
     assert len(chain_code) == 32
 
@@ -50,13 +54,13 @@ def create_blockstream_account_cbor(public_key,
     result.extend(chain_code)
 
     if is_testnet:
-        # crypto-coin-info: Bitcoin (type 0), testnet (network 1).
-        result.extend(b'\x05\xd9\x01\x31\xa2\x01\x00\x02\x01')
+        # Omit the default Bitcoin type, matching the native registry encoder.
+        result.extend(b'\x05\xd9\x01\x31\xa1\x02\x01')
 
     result.extend(b'\x06\xd9\x01\x30\xa3\x01\x86')
     _append_cbor_uint(result, 84)
     result.append(0xf5)
-    _append_cbor_uint(result, 1 if is_testnet else 0)
+    _append_cbor_uint(result, coin_type)
     result.append(0xf5)
     _append_cbor_uint(result, account_index)
     result.append(0xf5)
@@ -91,7 +95,7 @@ def create_blockstream_export(sw_wallet=None,
                                                master_fingerprint,
                                                acct_num,
                                                parent_fingerprint,
-                                               chain.ctype != 'BTC')
+                                               coin_type)
 
     accts = [{'fmt': AF_P2WPKH, 'deriv': account_path, 'acct': acct_num}]
     return (ur.new_raw('crypto-account', cbor), accts)

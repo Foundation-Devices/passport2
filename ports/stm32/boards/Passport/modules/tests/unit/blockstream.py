@@ -16,7 +16,7 @@ cbor = create_blockstream_account_cbor(public_key,
                                        0x12345678,
                                        7,
                                        0x90abcdef,
-                                       False)
+                                       0)
 expected = unhexlify(
     'a2'
     '011a12345678'
@@ -37,7 +37,7 @@ testnet_cbor = create_blockstream_account_cbor(public_key,
                                                0x12345678,
                                                24,
                                                0x90abcdef,
-                                               True)
+                                               1)
 testnet_expected = unhexlify(
     'a2'
     '011a12345678'
@@ -45,7 +45,7 @@ testnet_expected = unhexlify(
     'a5'
     '035821' + '02' + '11' * 32 +
     '045820' + '22' * 32 +
-    '05d90131a201000201'
+    '05d90131a10201'
     '06d90130a3'
     '01861854f501f51818f5'
     '021a12345678'
