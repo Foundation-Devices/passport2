@@ -25,7 +25,9 @@ extern word_info_t bytewords_word_info[]; // TODO: Restructure this so bip39 and
 ///     '''
 STATIC mp_obj_t mod_foundation_bip39_get_words_matching_prefix(size_t n_args, const mp_obj_t *args)
 {
-    mp_check_self(mp_obj_is_str_or_bytes(args[0]));
+    if (!mp_obj_is_str_or_bytes(args[0])) {
+        mp_raise_TypeError(MP_ERROR_TEXT("prefix must be a string"));
+    }
     GET_STR_DATA_LEN(args[0], prefix_str, prefix_len);
 
     mp_int_t max_matches = mp_obj_get_int(args[1]);
@@ -36,7 +38,9 @@ STATIC mp_obj_t mod_foundation_bip39_get_words_matching_prefix(size_t n_args, co
     }
 
     // Must be "bip39" or "bytewords"
-    mp_check_self(mp_obj_is_str_or_bytes(args[2]));
+    if (!mp_obj_is_str_or_bytes(args[2])) {
+        mp_raise_TypeError(MP_ERROR_TEXT("word_list must be a string"));
+    }
     GET_STR_DATA_LEN(args[2], word_list_str, word_list_len);
 
     const word_info_t *word_info = NULL;
@@ -81,7 +85,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_foundation_bip39_get_words_matchi
 ///     '''
 STATIC mp_obj_t mod_foundation_bip39_mnemonic_to_bits(mp_obj_t mnemonic, mp_obj_t entropy)
 {
-    mp_check_self(mp_obj_is_str_or_bytes(mnemonic));
+    if (!mp_obj_is_str_or_bytes(mnemonic)) {
+        mp_raise_TypeError(MP_ERROR_TEXT("mnemonic must be a string"));
+    }
     GET_STR_DATA_LEN(mnemonic, mnemonic_str, mnemonic_len);
     mp_buffer_info_t entropy_info;
     mp_get_buffer_raise(entropy, &entropy_info, MP_BUFFER_WRITE);

@@ -18,6 +18,26 @@ jobs:
       - uses: actions/checkout@v6
       - run: make -C extmod/quirc/tests test
 
+  # The foundation bindings validate their arguments with explicit raises.
+  # mp_check_self is not the mechanism for that here: it addresses a different
+  # case, which the interpreter already covers for us. Keep it out of this tree.
+  #
+  # Scoped to our own bindings on purpose. Uses under extmod/trezor-firmware/
+  # are upstream's and are correct for what they do.
+  bindings-validate-explicitly:
+    name: Do the foundation bindings validate explicitly?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: |
+          if grep -rn 'mp_check_self' extmod/foundation/; then
+            echo "::error::Validate explicitly in extmod/foundation/:"\
+                 "mp_raise_TypeError() for a wrong argument type,"\
+                 "mp_raise_msg(&mp_type_ValueError, ...) for a wrong variant or"\
+                 "an absent optional field. See SFT-8229."
+            exit 1
+          fi
+
   rust-code-compiles:
     name: Rust code compiles?
     runs-on: ubuntu-latest

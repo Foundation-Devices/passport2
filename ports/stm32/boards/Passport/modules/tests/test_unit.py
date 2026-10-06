@@ -64,6 +64,10 @@ def test_multisig_qr_import(test):
     assert test('multisig_qr_import.py') == b'OK'
 
 
+def test_binding_argument_checks(test):
+    assert test('binding_argument_checks.py') == b'OK'
+
+
 def test_psbt_multisig_approval(test):
     assert test('psbt_multisig_approval.py') == b'OK'
 
