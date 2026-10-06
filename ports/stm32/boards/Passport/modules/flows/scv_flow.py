@@ -61,11 +61,14 @@ class ScvFlow(Flow):
             return
 
         if self.envoy:
-            passport_request = result.unwrap_passport_request()
-
-            self.uuid = passport_request.uuid()
-            scv_id = passport_request.scv_challenge_id()
-            scv_signature = passport_request.scv_challenge_signature()
+            try:
+                passport_request = result.unwrap_passport_request()
+                self.uuid = passport_request.uuid()
+                scv_id = passport_request.scv_challenge_id()
+                scv_signature = passport_request.scv_challenge_signature()
+            except ValueError:
+                await self.show_error('Security Check QR code is invalid.')
+                return
         else:
             parts = result.split(' ')
             if len(parts) != 2:
