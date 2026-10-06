@@ -32,6 +32,10 @@ def test_ui(test):
     assert test('ui.py') == b'OK'
 
 
+def test_blockstream(test):
+    assert test('blockstream.py') == b'OK'
+
+
 def test_sign_psbt(test):
     assert test('sign_psbt.py') == b'OK'
 
@@ -54,7 +58,3 @@ def test_psbt_fee(test):
 
 def test_unchained(test):
     assert test('unchained.py') == b'OK'
-
-
-def test_blockstream(test):
-    assert test('blockstream.py') == b'OK'
