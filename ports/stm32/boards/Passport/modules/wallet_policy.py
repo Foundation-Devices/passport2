@@ -136,6 +136,8 @@ class KeyInfo:
         if close < 0:
             raise PolicyParseError('Key origin is missing closing bracket')
         origin = text[1:close]
+        if origin.count('/') > 16:
+            raise PolicyResourceError('Key origin path exceeds 16 levels')
         xpub = text[close + 1:]
         parts = origin.split('/')
         fingerprint = parts[0]

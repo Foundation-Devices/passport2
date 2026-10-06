@@ -185,17 +185,28 @@ class SignPsbtCommonFlow(Flow):
                     policy, self.psbt.txn_version, self.psbt.lock_time,
                     txin.nSequence))
         compatible = None
-        if compatible_sets and compatible_sets[0] and \
-                all(paths == compatible_sets[0] for paths in compatible_sets):
+        warning = None
+        if not compatible_sets:
+            warning = ('Spending paths could not be checked for this transaction. '
+                       'The following pages describe the full wallet policy.')
+        elif any(not paths for paths in compatible_sets):
+            compatible = ()
+        elif all(paths == compatible_sets[0] for paths in compatible_sets):
             compatible = compatible_sets[0]
+        else:
+            warning = 'Inputs allow different spending paths. The following pages describe the full wallet policy.'
 
         from flows import SeriesOfPagesFlow
         from pages import LongTextPage
+        if warning:
+            texts = (warning,) + policy.format_review_pages()
+        else:
+            texts = policy.format_signing_pages(compatible)
         page_args = [{
             'card_header': {'title': 'Policy transaction'},
             'text': text,
             'centered': True,
-        } for text in policy.format_signing_pages(compatible)]
+        } for text in texts]
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
             self.goto(self.sign_transaction)

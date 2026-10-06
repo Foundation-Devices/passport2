@@ -676,8 +676,12 @@ def format_signing_pages(policy, compatible_indexes=None):
     if compatible_indexes is not None:
         filtered = tuple(all_paths[index] for index in compatible_indexes
                          if 0 <= index < len(all_paths))
-        if filtered:
-            paths = filtered
+        if not filtered:
+            return (('Wallet\n{}\n\n'
+                     'At least one input has no spending path compatible with this transaction.\n\n'
+                     'Signing does not make it spendable. Check the transaction in your wallet app.')
+                    .format(_escape(policy.name)),)
+        paths = filtered
     simple = _classify_simple_inheritance(policy, paths)
     owned = policy.keys[policy.owned_key_indexes[0]]
     if simple:

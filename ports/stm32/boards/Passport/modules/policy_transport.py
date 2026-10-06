@@ -108,9 +108,12 @@ def decode_policy_transport(data, chain, master_xfp, derive_node,
             raise PolicyParseError('Wallet policy JSON must be an object')
         if envelope.get('format') != TRANSPORT_FORMAT or envelope.get('version') != TRANSPORT_VERSION:
             raise PolicyParseError('Unsupported wallet policy transport version')
-        name = envelope.get('name') or default_name
+        name = envelope.get('name', default_name)
         network = envelope.get('network')
         template = envelope.get('template')
+        if not all(isinstance(value, str) for value in (name, network, template)):
+            raise PolicyParseError('Wallet policy name, network and template must be text')
+        name = name or default_name
         raw_keys = envelope.get('keys')
         if not isinstance(raw_keys, list):
             raise PolicyParseError('Wallet policy key vector is missing')
