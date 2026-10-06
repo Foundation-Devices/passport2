@@ -32,6 +32,7 @@ default-features = false
 version = "0.2"
 default-features = false
 
+# SFT-7485: Await the release containing foundation-rs #65.
 [dependencies.foundation-ur]
 version = "0.4"
 default-features = false
