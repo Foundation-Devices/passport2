@@ -26,7 +26,7 @@
 #include "ui-splash.h"
 #include "utils.h"
 
-#include "firmware-keys.h"
+#include "firmware-classification.h"
 #include "flash.h"
 #include "gpio.h"
 #include "se-atecc608a.h"
@@ -338,7 +338,7 @@ void update_firmware(void) {
         }
     }
 
-    bool      is_spi_fw_user_signed = spihdr.signature.pubkey1 == FW_USER_KEY;
+    bool      is_spi_fw_user_signed = firmware_is_user_signed(&spihdr);
     secresult current_firmware_result;
 
     // Handle the firmware hash update
@@ -486,7 +486,7 @@ out:
 
 secresult is_user_signed_firmware_installed(void) {
     passport_firmware_header_t* hdr = FW_HDR;
-    return (hdr->signature.pubkey1 == FW_USER_KEY && hdr->signature.pubkey2 == 0) ? SEC_TRUE : SEC_FALSE;
+    return firmware_is_user_signed(hdr) ? SEC_TRUE : SEC_FALSE;
 }
 
 // Definitions for the code below
