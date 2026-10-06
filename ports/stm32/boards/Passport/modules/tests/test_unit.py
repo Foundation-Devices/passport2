@@ -88,6 +88,10 @@ def test_ui(test):
     assert test('ui.py') == b'OK'
 
 
+def test_blockstream(test):
+    assert test('blockstream.py') == b'OK'
+
+
 def test_sign_psbt(test):
     assert test('sign_psbt.py') == b'OK'
 
@@ -150,7 +154,3 @@ def test_psbt_change_validation(test):
 
 def test_single_line_message(test):
     assert test('single_line_message.py') == b'OK'
-
-
-def test_blockstream(test):
-    assert test('blockstream.py') == b'OK'

@@ -38,9 +38,20 @@ testnet_cbor = create_blockstream_account_cbor(public_key,
                                                24,
                                                0x90abcdef,
                                                True)
-assert testnet_cbor[0] == 0xa2
-assert b'\x05\xd9\x01\x31\xa2\x01\x00\x02\x01' in testnet_cbor
-assert b'\x01\x86\x18\x54\xf5\x01\xf5\x18\x18\xf5' in testnet_cbor
+testnet_expected = unhexlify(
+    'a2'
+    '011a12345678'
+    '0281d90134d90194d9012f'
+    'a5'
+    '035821' + '02' + '11' * 32 +
+    '045820' + '22' * 32 +
+    '05d90131a201000201'
+    '06d90130a3'
+    '01861854f501f51818f5'
+    '021a12345678'
+    '0303'
+    '081a90abcdef')
+assert testnet_cbor == testnet_expected
 
 assert BlockstreamWallet in supported_software_wallets
 assert BlockstreamWallet['label'] == 'Blockstream'
