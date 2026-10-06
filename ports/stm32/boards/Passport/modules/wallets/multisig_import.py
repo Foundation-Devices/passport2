@@ -15,8 +15,13 @@
 #       connect_wallet_flow.py, and that probably needs to be modified during the refactoring.
 
 async def read_multisig_config_from_qr():
-    from pages import ScanQRPage
-    return await ScanQRPage().show()
+    from data_codecs.qr_type import QRType
+    from flows import ScanQRFlow
+    from foundation import ur
+
+    return await ScanQRFlow(qr_types=[QRType.QR, QRType.UR2],
+                            ur_types=[ur.Value.BYTES],
+                            data_description='a multisig wallet configuration file').run()
 
 
 async def read_multisig_config_from_microsd():

@@ -399,20 +399,15 @@ class ConnectWalletFlow(Flow):
             # Retry
             return
 
-        if scan_result.error is not None:
-            # Show error
+        if scan_result in (Error.QR_TOO_LARGE, Error.PSBT_OVERSIZED):
             self.set_result(False)
             return
 
         try:
-            # Mulitsig config should be a bytes-like object that we decode to a string
-            if isinstance(scan_result.data, ur.Value):
-                self.multisig_import_data = scan_result.data.unwrap_bytes().decode('utf-8')
-            elif isinstance(scan_result.data, str):
-                self.multisig_import_data = scan_result.data
-
-            # from utils import to_str
-            # print('MS Data: {}'.format(to_str(self.multisig_import_data)))
+            if isinstance(scan_result, ur.Value):
+                self.multisig_import_data = scan_result.unwrap_bytes().decode('utf-8')
+            elif isinstance(scan_result, str):
+                self.multisig_import_data = scan_result
         except BaseException as e:
             await ErrorPage(text='Unexpected data format: {}'.format(e)).show()
             return
