@@ -56,6 +56,10 @@
 /* SE extended error codes */
 #define SE_EX_RETRY_OUT 0xE0
 
+#define SE_RESPONSE_COUNT_SIZE 1
+#define SE_RESPONSE_CHECKSUM_SIZE 2
+#define SE_RESPONSE_OVERHEAD (SE_RESPONSE_COUNT_SIZE + SE_RESPONSE_CHECKSUM_SIZE)
+
 #define STATS(x)
 
 static uint8_t last_error;
@@ -359,13 +363,13 @@ void se_write(seopcode_t opcode, uint8_t p1, uint16_t p2, uint8_t* data, uint8_t
 }
 
 int se_read(uint8_t* data, uint8_t len) {
-    uint8_t tmp[1 + len + 2]; /* msg length + data length + checksum length */
+    uint8_t tmp[SE_RESPONSE_OVERHEAD + len];
     int     retry;
 
     for (retry = 100; retry >= 0; retry--) {
         int actual;
 
-        actual = se_read_response(tmp, len + 3);
+        actual = se_read_response(tmp, len + SE_RESPONSE_OVERHEAD);
         if (actual < 4) {
             if (actual == 0) {
                 /* No data...probably still processing the command */
@@ -386,7 +390,7 @@ int se_read(uint8_t* data, uint8_t len) {
          */
         if (current_opcode != OP_Info) {
             uint8_t resp_len = tmp[0];
-            if (resp_len != (len + 3)) {
+            if (resp_len != (len + SE_RESPONSE_OVERHEAD)) {
                 len_error++;
                 if (resp_len == 4) {
                     /* Error code returned */
@@ -422,7 +426,7 @@ int se_read(uint8_t* data, uint8_t len) {
          * already imply it. Retry rather than fail, matching the short-read
          * arm, so a transient truncation gets another attempt.
          */
-        if (actual < len + 3) {
+        if (actual < len + SE_RESPONSE_OVERHEAD) {
             ERR("short resp");
             short_error++;
             goto try_again;
@@ -433,7 +437,7 @@ int se_read(uint8_t* data, uint8_t len) {
          * the bus, and tmp only ever holds len + 3 bytes, so it is not a bound
          * on the destination.
          */
-        memcpy(data, tmp + 1, len);
+        memcpy(data, tmp + SE_RESPONSE_COUNT_SIZE, len);
 
         /*
          * Pause the watchdog in case there's more to do
