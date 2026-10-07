@@ -411,6 +411,24 @@ int se_read(uint8_t* data, uint8_t len) {
         }
 
         /*
+         * The response also has to be long enough to fill the caller's buffer.
+         * deserialize() only writes what arrived, so a short response leaves
+         * the tail of tmp untouched and the fixed-length copy below would hand
+         * back whatever the stack happened to hold.
+         *
+         * In practice this only bites OP_Info, which skips the checks above:
+         * for every other opcode check_crc() requires tmp[0] == actual while
+         * the length check requires tmp[0] == len + 3, so the two together
+         * already imply it. Retry rather than fail, matching the short-read
+         * arm, so a transient truncation gets another attempt.
+         */
+        if (actual < len + 3) {
+            ERR("short resp");
+            short_error++;
+            goto try_again;
+        }
+
+        /*
          * Copy the length the caller asked for. `actual` counts what arrived on
          * the bus, and tmp only ever holds len + 3 bytes, so it is not a bound
          * on the destination.
