@@ -292,7 +292,12 @@ static int se_read_response(uint8_t* buf, int max_len) {
     return actual / 8;
 }
 
-static bool check_crc(const uint8_t* data, uint8_t length) {
+/*
+ * `length` is checked against the count byte, so it has to represent every value
+ * a caller can pass. A narrower parameter wraps, and a wrapped value can compare
+ * equal to a count that does not describe the response.
+ */
+static bool check_crc(const uint8_t* data, int length) {
     uint8_t obs[2] = {0, 0};
 
     if (data[0] != length) {
@@ -300,7 +305,8 @@ static bool check_crc(const uint8_t* data, uint8_t length) {
         return false;
     }
 
-    se_crc16_chain(length - 2, data, obs);
+    /* The comparison above succeeded against a uint8_t, so length fits one. */
+    se_crc16_chain((uint8_t)(length - 2), data, obs);
 
     return (obs[0] == data[length - 2] && obs[1] == data[length - 1]);
 }
@@ -404,7 +410,12 @@ int se_read(uint8_t* data, uint8_t len) {
             }
         }
 
-        memcpy(data, tmp + 1, actual - 3);
+        /*
+         * Copy the length the caller asked for. `actual` counts what arrived on
+         * the bus, and tmp only ever holds len + 3 bytes, so it is not a bound
+         * on the destination.
+         */
+        memcpy(data, tmp + 1, len);
 
         /*
          * Pause the watchdog in case there's more to do
