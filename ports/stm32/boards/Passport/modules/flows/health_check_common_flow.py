@@ -39,31 +39,8 @@ class HealthCheckCommonFlow(Flow):
             self.subpath = parts[1]
             self.text = parts[2][len('ascii:'):]
 
-            if not self.text:
-                await ErrorPage(text='Message is empty.').show()
-                self.set_result(None)
-                return
-
-            (subpath, error) = validate_sign_text(self.text, self.subpath)
-
-            if error is not None:
-                await ErrorPage(text=error).show()
-                self.set_result(None)
-                return
-
-            self.subpath = subpath
-
-            # A root or missing path has no purpose component for address-type
-            # detection, even though the general path validator accepts it.
-            if not subpath or subpath == 'm':
-                await ErrorPage(text='Message derivation path is invalid.').show()
-                self.set_result(None)
-                return
-
-            derived = get_addr_type_from_deriv(self.subpath)
-
-            if derived is not None:
-                self.addr_type = derived
+            # Envoy does not send an address type, so it comes from the path.
+            derive_addr_type = True
         else:
             if len(self.lines) not in [2, 3]:
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -76,14 +53,38 @@ class HealthCheckCommonFlow(Flow):
             if len(self.lines) == 3:
                 self.addr_type = get_addr_type_from_string(self.lines[2])
 
-            (subpath, error) = validate_sign_text(self.text, self.subpath)
+            derive_addr_type = False
 
-            if error is not None:
-                await ErrorPage(text=error).show()
+        # One validation path for both formats. These checks used to be
+        # duplicated per branch, and the empty-message guard was only ever added
+        # to one of them, so an empty first line in the legacy format still
+        # reached validate_sign_text() and indexed text[0] of an empty string.
+        if not self.text:
+            await ErrorPage(text='Message is empty.').show()
+            self.set_result(None)
+            return
+
+        (subpath, error) = validate_sign_text(self.text, self.subpath)
+
+        if error is not None:
+            await ErrorPage(text=error).show()
+            self.set_result(None)
+            return
+
+        self.subpath = subpath
+
+        if derive_addr_type:
+            # A root or missing path has no purpose component for address-type
+            # detection, even though the general path validator accepts it.
+            if not self.subpath or self.subpath == 'm':
+                await ErrorPage(text='Message derivation path is invalid.').show()
                 self.set_result(None)
                 return
 
-            self.subpath = subpath
+            derived = get_addr_type_from_deriv(self.subpath)
+
+            if derived is not None:
+                self.addr_type = derived
 
         # User Interaction for non-health check signing
         if self.normal_signing:
