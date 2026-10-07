@@ -117,7 +117,7 @@ class SignPsbtCommonFlow(Flow):
             self.set_result(None)
 
         except BaseException as e:
-            await ErrorPage(text='Invalid PSBT: {}'.format(e)).show()
+            await ErrorPage(text=self.invalid_psbt_text(e)).show()
             self.set_result(None)
 
     async def show_change(self):
@@ -138,7 +138,7 @@ class SignPsbtCommonFlow(Flow):
             else:
                 self.goto(self.show_warnings)
         except Exception as e:
-            await ErrorPage(text='Invalid PSBT: {}'.format(e)).show()
+            await ErrorPage(text=self.invalid_psbt_text(e)).show()
             self.set_result(None)
 
     async def show_warnings(self):
@@ -249,6 +249,13 @@ class SignPsbtCommonFlow(Flow):
                     msg.write('%s\n\n' % a)
 
             return msg.getvalue()
+
+    def invalid_psbt_text(self, exc):
+        # Labels render with LVGL recolor on, so a literal '#' in the text opens
+        # a colour tag and the characters after it are eaten as a hex code.
+        # psbt.py raises plenty of messages shaped like "... for input #3", and
+        # the index is the most useful part of them, so escape before display.
+        return 'Invalid PSBT: {}'.format(escape_text('{}'.format(exc)))
 
     def render_warnings(self):
         import uio

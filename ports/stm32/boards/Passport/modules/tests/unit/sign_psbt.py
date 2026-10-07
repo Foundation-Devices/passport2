@@ -67,4 +67,25 @@ rendered = SignPsbtCommonFlow.render_output(MockAddressFlow(), MockOutput(42, ad
 assert rendered == '\n{}\n42 sats\n\n{}\n{}'.format(
     amount_heading, destination_heading, stylize_address(address))
 
+# PSBT failures are reported through a recolor-enabled label, and psbt.py raises
+# plenty of messages carrying a literal '#'. Unescaped, LVGL reads that as the
+# start of a colour tag and drops the index that follows it.
+indexed = 'Missing redeem/witness script for input #3'
+rendered = SignPsbtCommonFlow.invalid_psbt_text(MockFlow(), ValueError(indexed))
+assert rendered == 'Invalid PSBT: {}'.format(escape_text(indexed))
+assert 'input ##3' in rendered
+# Every '#' is doubled, which is what makes LVGL draw it rather than read a
+# colour tag. Checking the invariant beats checking for a literal, because the
+# escaped form of a tag still contains the unescaped form as a substring.
+assert '#' not in rendered.replace('##', '')
+
+# A message with no '#' must come through untouched.
+plain = 'Network fee bigger than the amount you are sending'
+assert SignPsbtCommonFlow.invalid_psbt_text(MockFlow(), ValueError(plain)) == \
+    'Invalid PSBT: {}'.format(plain)
+
+# And recolor markup inside an exception cannot open a colour span.
+injected = SignPsbtCommonFlow.invalid_psbt_text(MockFlow(), ValueError(amount_heading))
+assert '#' not in injected.replace('##', '')
+
 return_value.write(b'OK')
