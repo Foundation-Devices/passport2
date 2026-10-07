@@ -26,6 +26,8 @@ The backend of the simulator is the standard MicroPython runtime with the Passpo
 
 * **Secure Element** - The actual Passport hardware has an ATECC608A/B chip, but on the Unix Runtime, we replace that with a simple module that implements similar features.  It is NOT secure at all and the functionality this module provides to the Unix Runtime is limited.
 
+* **Entropy** - The hardware mixes an avalanche noise source, the MCU TRNG and the Secure Element.  The Simulator has none of those and reads `/dev/urandom` instead.  That is fine for exercising the UI, but the Simulator is not a hardware wallet: **never put real funds in a wallet whose seed was generated here.**
+
 * **SPI Flash** - The Simulator provides a memory buffer to simulate SPI flash.
 
 * **Red/Blue LEDs** - The Secure Element can turn on either the blue or red LED.  The simulator needs to be notified when the status of the LEDs changes.  This is done through another Unix pipe.
