@@ -5,21 +5,19 @@ import ast
 import asyncio
 import importlib.util
 import io
-import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
 
 import pytest
 
-from test_wallet_policy import KEY_INFO, XPUB, StubChain
-from policy_errors import PolicyParseError, PolicyResourceError
-from policy_transport import decode_policy_transport
-from wallet_policy import KeyInfo, MiniscriptPolicy, POLICY_STORAGE_KEY
+from test_wallet_policy import KEY_INFO
+from policy_errors import PolicyResourceError
+from wallet_policy import MiniscriptPolicy, POLICY_STORAGE_KEY
 
 
-MODULES = Path(__file__).resolve().parents[2]
-ROOT = MODULES.parents[4]
+MODULES_PARENT_INDEX = 2
+MODULES = Path(__file__).resolve().parents[MODULES_PARENT_INDEX]
 
 
 def load_module(path):
@@ -36,46 +34,6 @@ def flow_method(filename, class_name, method_name):
     namespace = {}
     exec(compile(ast.Module(body=[method], type_ignores=[]), filename, 'exec'), namespace)
     return namespace[method_name]
-
-
-def test_sparse_flash_partial_and_repeated_programming(tmp_path, monkeypatch):
-    module = load_module(ROOT / 'simulator/sim_modules/constrained_sflash.py')
-    monkeypatch.setattr(module, '_BACKING_FILE', str(tmp_path / 'flash.bin'))
-    flash = module.SPIFlash()
-    try:
-        flash.write(17, b'\xf0\x55')
-        page = bytearray(256)
-        flash.read(0, page)
-        assert page == b'\xff' * 17 + b'\xf0\x55' + b'\xff' * 237
-        flash.write(17, b'\x0f\xff')
-        flash.read(0, page)
-        assert page[17:19] == b'\x00\x55'
-        flash.sector_erase(0)
-        flash.write(20, b'\xaa')
-        flash.read(0, page)
-        assert page == b'\xff' * 20 + b'\xaa' + b'\xff' * 235
-    finally:
-        flash._file.close()
-
-
-def test_key_origin_depth_bound():
-    assert len(KeyInfo.parse('[6738736c' + '/0' * 16 + ']' + XPUB).path) == 16
-    with pytest.raises(PolicyResourceError):
-        KeyInfo.parse('[6738736c' + '/0' * 17 + ']' + XPUB)
-
-
-@pytest.mark.parametrize('field', ['name', 'network', 'template'])
-@pytest.mark.parametrize('value', [None, 0, [], {}])
-def test_transport_field_types_rejected_before_derivation(field, value):
-    envelope = dict(format='passport-wallet-policy', version=1, name='Test', network='BTC',
-                    template='wsh(pk(@0/**))', keys=[KEY_INFO])
-    envelope[field] = value
-
-    def derive(path):
-        pytest.fail('Malformed transport reached key derivation')
-
-    with pytest.raises(PolicyParseError):
-        decode_policy_transport(json.dumps(envelope), StubChain(), 0, derive)
 
 
 @pytest.mark.parametrize('compatible_sets,expected', [

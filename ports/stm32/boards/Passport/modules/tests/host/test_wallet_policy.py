@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import hashlib
+import json
 import builtins
 import os
 import sys
@@ -22,7 +23,7 @@ sys.modules.setdefault('public_constants', types.SimpleNamespace(
 from descriptor import append_checksum, split_checksum  # noqa: E402
 from policy_errors import (PolicyMismatchError, PolicyParseError,  # noqa: E402
                            PolicyResourceError, PolicyTypeError)
-from wallet_policy import (KeyInfo, MiniscriptPolicy,  # noqa: E402
+from wallet_policy import (KeyInfo, MAX_ORIGIN_DEPTH, MiniscriptPolicy,  # noqa: E402
                            WalletPolicyRegistry,
                            descriptor_to_policy_template,
                            validate_backup_policy_records)
@@ -495,3 +496,25 @@ def test_address_request_derives_independently_and_response_is_bound():
 def test_policy_microsd_read_is_bounded_before_json_decode():
     import io
     assert len(bounded_transport_read(io.BytesIO(b'x' * 8192))) == 4097
+
+
+def test_key_origin_depth_bound():
+    at_limit = KeyInfo.parse('[6738736c' + '/0' * MAX_ORIGIN_DEPTH + ']' + XPUB)
+    assert len(at_limit.path) == MAX_ORIGIN_DEPTH
+    with pytest.raises(PolicyResourceError) as raised:
+        KeyInfo.parse('[6738736c' + '/0' * (MAX_ORIGIN_DEPTH + 1) + ']' + XPUB)
+    assert str(MAX_ORIGIN_DEPTH) in str(raised.value)
+
+
+@pytest.mark.parametrize('field', ['name', 'network', 'template'])
+@pytest.mark.parametrize('value', [None, 0, [], {}])
+def test_transport_field_types_rejected_before_derivation(field, value):
+    envelope = dict(format='passport-wallet-policy', version=1, name='Test', network='BTC',
+                    template='wsh(pk(@0/**))', keys=[KEY_INFO])
+    envelope[field] = value
+
+    def derive(path):
+        pytest.fail('Malformed transport reached key derivation')
+
+    with pytest.raises(PolicyParseError):
+        decode_policy_transport(json.dumps(envelope), StubChain(), 0, derive)

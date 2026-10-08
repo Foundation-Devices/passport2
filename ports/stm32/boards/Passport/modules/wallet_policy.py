@@ -26,6 +26,11 @@ MAX_POLICY_NAME_LENGTH = 20
 MAX_KEY_NAME_LENGTH = 20
 MAX_POLICY_RECORD_LENGTH = 3072
 SETTINGS_HEADROOM = 768
+# Levels allowed in a key origin path. Each one costs a BIP32 derivation during
+# ownership discovery, and nothing real goes beyond six. Distinct from
+# miniscript's MAX_PARSE_DEPTH, which bounds AST recursion and shares the value
+# only by coincidence.
+MAX_ORIGIN_DEPTH = 16
 BASE58_CHARS = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
@@ -136,8 +141,9 @@ class KeyInfo:
         if close < 0:
             raise PolicyParseError('Key origin is missing closing bracket')
         origin = text[1:close]
-        if origin.count('/') > 16:
-            raise PolicyResourceError('Key origin path exceeds 16 levels')
+        if origin.count('/') > MAX_ORIGIN_DEPTH:
+            raise PolicyResourceError(
+                'Key origin path exceeds {} levels'.format(MAX_ORIGIN_DEPTH))
         xpub = text[close + 1:]
         parts = origin.split('/')
         fingerprint = parts[0]
