@@ -100,6 +100,7 @@ impl From<VerifySignatureError> for FirmwareResult {
             VerifySignatureError::FailedSignature1 { .. } => FailedSignature1,
             VerifySignatureError::FailedSignature2 { .. } => FailedSignature2,
             VerifySignatureError::MissingUserPublicKey => MissingUserPublicKey,
+            VerifySignatureError::InvalidHeader(error) => error.into(),
         }
     }
 }
@@ -143,6 +144,7 @@ fn verify_update_header_impl(
 }
 
 /// Verify the header of a firmware update.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[export_name = "foundation_firmware_verify_update_header"]
 pub extern "C" fn verify_update_header(
     header: *const u8,
@@ -172,6 +174,7 @@ pub extern "C" fn verify_update_header(
     }
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[export_name = "foundation_firmware_verify_update_signatures"]
 pub extern "C" fn verify_update_signatures(
     header: *const u8,
@@ -357,6 +360,22 @@ mod tests {
                 signed_by_user: false,
                 ..
             }
+        ));
+    }
+
+    #[test]
+    fn signature_header_errors_preserve_installer_result() {
+        assert!(matches!(
+            FirmwareResult::from(VerifySignatureError::InvalidHeader(
+                VerifyHeaderError::InvalidPublicKey1Index(4)
+            )),
+            FirmwareResult::InvalidPublicKey1Index { index: 4 }
+        ));
+        assert!(matches!(
+            FirmwareResult::from(VerifySignatureError::InvalidHeader(
+                VerifyHeaderError::InvalidPublicKey2Index(u32::MAX)
+            )),
+            FirmwareResult::InvalidPublicKey2Index { index: u32::MAX }
         ));
     }
 
