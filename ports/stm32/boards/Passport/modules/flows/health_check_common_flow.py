@@ -23,13 +23,9 @@ class HealthCheckCommonFlow(Flow):
 
         err_label = 'Message' if self.normal_signing else 'Health check'
 
-        # single-line `signmessage <path> ascii:<message>` (Envoy export)
-        # Join lines so validation rejects embedded newlines instead of silently
-        # discarding text. Keep the legacy strict whitespace and ASCII checks.
-        # This format is intentionally supported for health checks too.
-        if self.lines and self.lines[0].startswith('signmessage '):
-            raw = '\n'.join(self.lines)
-            parts = raw.split(' ', 2)
+        single_line = len(self.lines) == 1 and self.lines[0].startswith('signmessage ')
+        if single_line:
+            parts = self.lines[0].split(' ', 2)
 
             if len(parts) != 3 or not parts[2].startswith('ascii:'):
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -39,31 +35,6 @@ class HealthCheckCommonFlow(Flow):
             self.subpath = parts[1]
             self.text = parts[2][len('ascii:'):]
 
-            if not self.text:
-                await ErrorPage(text='Message is empty.').show()
-                self.set_result(None)
-                return
-
-            (subpath, error) = validate_sign_text(self.text, self.subpath)
-
-            if error is not None:
-                await ErrorPage(text=error).show()
-                self.set_result(None)
-                return
-
-            self.subpath = subpath
-
-            # A root or missing path has no purpose component for address-type
-            # detection, even though the general path validator accepts it.
-            if not subpath or subpath == 'm':
-                await ErrorPage(text='Message derivation path is invalid.').show()
-                self.set_result(None)
-                return
-
-            derived = get_addr_type_from_deriv(self.subpath)
-
-            if derived is not None:
-                self.addr_type = derived
         else:
             if len(self.lines) not in [2, 3]:
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -76,14 +47,32 @@ class HealthCheckCommonFlow(Flow):
             if len(self.lines) == 3:
                 self.addr_type = get_addr_type_from_string(self.lines[2])
 
-            (subpath, error) = validate_sign_text(self.text, self.subpath)
+        if not self.text:
+            await ErrorPage(text='Message is empty.').show()
+            self.set_result(None)
+            return
 
-            if error is not None:
-                await ErrorPage(text=error).show()
+        (subpath, error) = validate_sign_text(self.text, self.subpath)
+
+        if error is not None:
+            await ErrorPage(text=error).show()
+            self.set_result(None)
+            return
+
+        self.subpath = subpath
+
+        if single_line:
+            # A root or missing path has no purpose component for address-type
+            # detection, even though the general path validator accepts it.
+            if not self.subpath or self.subpath == 'm':
+                await ErrorPage(text='Message derivation path is invalid.').show()
                 self.set_result(None)
                 return
 
-            self.subpath = subpath
+            derived = get_addr_type_from_deriv(self.subpath)
+
+            if derived is not None:
+                self.addr_type = derived
 
         # User Interaction for non-health check signing
         if self.normal_signing:

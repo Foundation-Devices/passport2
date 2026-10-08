@@ -95,6 +95,57 @@ async def run_tests():
         assert MockErrorPage.errors == ['Message format is invalid.']
         assert flow.result is None
         assert flow.next_state is None
+
+        # The legacy 2- and 3-line format takes the same empty-message check.
+        # A file beginning with a newline splits to an empty first line, which
+        # used to reach validate_sign_text() and raise IndexError on text[0].
+        for normal_signing in (True, False):
+            for lines in (['', path], ['', path, 'p2wpkh']):
+                MockErrorPage.errors = []
+                flow = MockFlow(lines, normal_signing)
+                await HealthCheckCommonFlow.validate_lines(flow)
+                assert MockErrorPage.errors == ['Message is empty.']
+                assert flow.result is None
+                assert flow.next_state is None
+
+        # The legacy format still works, and still takes its address type from
+        # the third line rather than from the path.
+        for lines in (['hello', path], ['hello', path, 'p2pkh']):
+            MockErrorPage.errors = []
+            flow = MockFlow(lines, True)
+            await HealthCheckCommonFlow.validate_lines(flow)
+            assert not MockErrorPage.errors
+            assert flow.text == 'hello'
+            assert flow.subpath == path
+            assert flow.next_state == flow.show_message
+            assert flow.result == 'unset'
+
+        # A legacy file whose path is unusable is still refused by the shared
+        # validator, not by the path check that only the Envoy format runs.
+        MockErrorPage.errors = []
+        flow = MockFlow(['hello', 'not-a-path'], True)
+        await HealthCheckCommonFlow.validate_lines(flow)
+        assert MockErrorPage.errors
+        assert flow.result is None
+        assert flow.next_state is None
+
+        for normal_signing in (True, False):
+            for suffix in ([], ['p2wpkh']):
+                MockErrorPage.errors = []
+                flow = MockFlow(['signmessage hello', path] + suffix, normal_signing)
+                await HealthCheckCommonFlow.validate_lines(flow)
+                assert not MockErrorPage.errors
+                assert flow.text == 'signmessage hello'
+                assert flow.subpath == path
+                assert flow.next_state == (flow.show_message if normal_signing else flow.sign_health_check)
+
+            MockErrorPage.errors = []
+            flow = MockFlow(('signmessage ' + path + ' ascii:line\nbreak').splitlines(), normal_signing)
+            await HealthCheckCommonFlow.validate_lines(flow)
+            assert MockErrorPage.errors
+            assert flow.result is None
+            assert flow.next_state is None
+
         return_value.write(b'OK')
     finally:
         pages.ErrorPage = original_error_page
