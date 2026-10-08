@@ -56,6 +56,10 @@
 /* SE extended error codes */
 #define SE_EX_RETRY_OUT 0xE0
 
+#define SE_RESPONSE_COUNT_SIZE 1
+#define SE_RESPONSE_CHECKSUM_SIZE 2
+#define SE_RESPONSE_OVERHEAD (SE_RESPONSE_COUNT_SIZE + SE_RESPONSE_CHECKSUM_SIZE)
+
 #define STATS(x)
 
 static uint8_t last_error;
@@ -292,7 +296,12 @@ static int se_read_response(uint8_t* buf, int max_len) {
     return actual / 8;
 }
 
-static bool check_crc(const uint8_t* data, uint8_t length) {
+/*
+ * `length` is checked against the count byte, so it has to represent every value
+ * a caller can pass. A narrower parameter wraps, and a wrapped value can compare
+ * equal to a count that does not describe the response.
+ */
+static bool check_crc(const uint8_t* data, int length) {
     uint8_t obs[2] = {0, 0};
 
     if (data[0] != length) {
@@ -300,7 +309,8 @@ static bool check_crc(const uint8_t* data, uint8_t length) {
         return false;
     }
 
-    se_crc16_chain(length - 2, data, obs);
+    /* The comparison above succeeded against a uint8_t, so length fits one. */
+    se_crc16_chain((uint8_t)(length - 2), data, obs);
 
     return (obs[0] == data[length - 2] && obs[1] == data[length - 1]);
 }
@@ -353,13 +363,13 @@ void se_write(seopcode_t opcode, uint8_t p1, uint16_t p2, uint8_t* data, uint8_t
 }
 
 int se_read(uint8_t* data, uint8_t len) {
-    uint8_t tmp[1 + len + 2]; /* msg length + data length + checksum length */
+    uint8_t tmp[SE_RESPONSE_OVERHEAD + len];
     int     retry;
 
     for (retry = 100; retry >= 0; retry--) {
         int actual;
 
-        actual = se_read_response(tmp, len + 3);
+        actual = se_read_response(tmp, len + SE_RESPONSE_OVERHEAD);
         if (actual < 4) {
             if (actual == 0) {
                 /* No data...probably still processing the command */
@@ -380,7 +390,7 @@ int se_read(uint8_t* data, uint8_t len) {
          */
         if (current_opcode != OP_Info) {
             uint8_t resp_len = tmp[0];
-            if (resp_len != (len + 3)) {
+            if (resp_len != (len + SE_RESPONSE_OVERHEAD)) {
                 len_error++;
                 if (resp_len == 4) {
                     /* Error code returned */
@@ -404,7 +414,30 @@ int se_read(uint8_t* data, uint8_t len) {
             }
         }
 
-        memcpy(data, tmp + 1, actual - 3);
+        /*
+         * The response also has to be long enough to fill the caller's buffer.
+         * deserialize() only writes what arrived, so a short response leaves
+         * the tail of tmp untouched and the fixed-length copy below would hand
+         * back whatever the stack happened to hold.
+         *
+         * In practice this only bites OP_Info, which skips the checks above:
+         * for every other opcode check_crc() requires tmp[0] == actual while
+         * the length check requires tmp[0] == len + 3, so the two together
+         * already imply it. Retry rather than fail, matching the short-read
+         * arm, so a transient truncation gets another attempt.
+         */
+        if (actual < len + SE_RESPONSE_OVERHEAD) {
+            ERR("short resp");
+            short_error++;
+            goto try_again;
+        }
+
+        /*
+         * Copy the length the caller asked for. `actual` counts what arrived on
+         * the bus, and tmp only ever holds len + 3 bytes, so it is not a bound
+         * on the destination.
+         */
+        memcpy(data, tmp + SE_RESPONSE_COUNT_SIZE, len);
 
         /*
          * Pause the watchdog in case there's more to do
