@@ -129,6 +129,23 @@ async def run_tests():
         assert flow.result is None
         assert flow.next_state is None
 
+        for normal_signing in (True, False):
+            for suffix in ([], ['p2wpkh']):
+                MockErrorPage.errors = []
+                flow = MockFlow(['signmessage hello', path] + suffix, normal_signing)
+                await HealthCheckCommonFlow.validate_lines(flow)
+                assert not MockErrorPage.errors
+                assert flow.text == 'signmessage hello'
+                assert flow.subpath == path
+                assert flow.next_state == (flow.show_message if normal_signing else flow.sign_health_check)
+
+            MockErrorPage.errors = []
+            flow = MockFlow(('signmessage ' + path + ' ascii:line\nbreak').splitlines(), normal_signing)
+            await HealthCheckCommonFlow.validate_lines(flow)
+            assert MockErrorPage.errors
+            assert flow.result is None
+            assert flow.next_state is None
+
         return_value.write(b'OK')
     finally:
         pages.ErrorPage = original_error_page

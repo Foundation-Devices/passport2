@@ -23,13 +23,9 @@ class HealthCheckCommonFlow(Flow):
 
         err_label = 'Message' if self.normal_signing else 'Health check'
 
-        # single-line `signmessage <path> ascii:<message>` (Envoy export)
-        # Join lines so validation rejects embedded newlines instead of silently
-        # discarding text. Keep the legacy strict whitespace and ASCII checks.
-        # This format is intentionally supported for health checks too.
-        if self.lines and self.lines[0].startswith('signmessage '):
-            raw = '\n'.join(self.lines)
-            parts = raw.split(' ', 2)
+        single_line = len(self.lines) == 1 and self.lines[0].startswith('signmessage ')
+        if single_line:
+            parts = self.lines[0].split(' ', 2)
 
             if len(parts) != 3 or not parts[2].startswith('ascii:'):
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -39,8 +35,6 @@ class HealthCheckCommonFlow(Flow):
             self.subpath = parts[1]
             self.text = parts[2][len('ascii:'):]
 
-            # Envoy does not send an address type, so it comes from the path.
-            derive_addr_type = True
         else:
             if len(self.lines) not in [2, 3]:
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -53,12 +47,6 @@ class HealthCheckCommonFlow(Flow):
             if len(self.lines) == 3:
                 self.addr_type = get_addr_type_from_string(self.lines[2])
 
-            derive_addr_type = False
-
-        # One validation path for both formats. These checks used to be
-        # duplicated per branch, and the empty-message guard was only ever added
-        # to one of them, so an empty first line in the legacy format still
-        # reached validate_sign_text() and indexed text[0] of an empty string.
         if not self.text:
             await ErrorPage(text='Message is empty.').show()
             self.set_result(None)
@@ -73,7 +61,7 @@ class HealthCheckCommonFlow(Flow):
 
         self.subpath = subpath
 
-        if derive_addr_type:
+        if single_line:
             # A root or missing path has no purpose component for address-type
             # detection, even though the general path validator accepts it.
             if not self.subpath or self.subpath == 'm':
