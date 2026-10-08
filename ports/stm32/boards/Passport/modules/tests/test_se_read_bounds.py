@@ -69,7 +69,8 @@ static void prepare_response(int payload_length) {
     memset(response, 0, sizeof(response));
     response[0] = payload_length + SE_RESPONSE_OVERHEAD;
     for (int i = 0; i < payload_length; i++) response[i + SE_RESPONSE_COUNT_SIZE] = i + 1;
-    se_crc16_chain(payload_length + SE_RESPONSE_COUNT_SIZE, response, response + payload_length + SE_RESPONSE_COUNT_SIZE);
+    se_crc16_chain(payload_length + SE_RESPONSE_COUNT_SIZE, response,
+                   response + payload_length + SE_RESPONSE_COUNT_SIZE);
 }
 int main(void) {
     uint8_t output[OUTPUT_BUFFER_SIZE];
