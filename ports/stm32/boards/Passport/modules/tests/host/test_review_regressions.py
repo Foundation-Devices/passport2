@@ -62,7 +62,10 @@ def psbt_module(monkeypatch):
            ripemd160=lambda data: hashlib.new('ripemd160', data))
     module('utils', xfp2str=lambda value: value.to_bytes(4, 'little').hex(),
            B2A=lambda value: value.hex(), bytes_to_hex_str=lambda value: value.hex(),
-           keypath_to_str=lambda value: tuple(value), swab32=lambda value: value)
+           keypath_to_str=lambda value: tuple(value), swab32=lambda value: value,
+           get_accounts_by_xfp=None, get_derived_keys=None)
+    module('chains')
+    module('common')
     module('history', verify_amount=lambda *args: None,
            OutptValueCache=types.SimpleNamespace(record_amount=lambda *args: None))
     module('sffile', SizerFile=object)
@@ -74,31 +77,40 @@ def psbt_module(monkeypatch):
     for name in ('public_constants', 'serializations', 'exceptions'):
         loaded = module(name)
         loaded.__dict__.update(runpy.run_path(str(MODULES / (name + '.py'))))
+    wallet_utils = module('wallets.utils')
+    wallet_utils.__dict__.update(runpy.run_path(str(MODULES / 'wallets/utils.py')))
     return types.SimpleNamespace(**runpy.run_path(str(MODULES / 'psbt.py')))
 
 
 @pytest.mark.parametrize('output_kind', ['p2pkh', 'p2wpkh', 'p2sh-p2wpkh'])
 @pytest.mark.parametrize('registered_policy', [True, False])
+@pytest.mark.parametrize('derivation_kind', ['policy', 'singlesig'])
 def test_policy_funds_sent_to_singlesig_are_not_hidden_as_change(
-        monkeypatch, psbt_module, output_kind, registered_policy):
+        monkeypatch, psbt_module, output_kind, registered_policy, derivation_kind):
     from wallet_policy import MiniscriptPolicy
     policy = MiniscriptPolicy('Two signers', 'BTC',
                               'wsh(multi(2,@0/**,@1/**))', test_keys(2), (0,))
     root = bip32.HDKey.from_seed(bytes([1]) * 32)
-    child = root.derive('m/48h/0h/0h/2h/1/7')
+    if derivation_kind == 'policy':
+        derivation = bip32.parse_path('m/48h/0h/0h/2h/1/7')
+    else:
+        purpose = {'p2pkh': 44, 'p2wpkh': 84, 'p2sh-p2wpkh': 49}[output_kind]
+        derivation = bip32.parse_path('m/{}h/0h/0h/1/7'.format(purpose))
+    child = root.derive(derivation)
     pubkey = child.get_public_key()
     xfp = int.from_bytes(root.my_fingerprint, 'little')
-    path = [xfp, 0x80000030, 0x80000000, 0x80000000, 0x80000002, 1, 7]
+    path = [xfp] + derivation
     redeem_script = script.p2wpkh(pubkey).data if output_kind == 'p2sh-p2wpkh' else b''
     output_script = script.p2sh(script.Script(redeem_script)).data if redeem_script else \
         getattr(script, output_kind)(pubkey).data
     txo = sys.modules['serializations'].CTxOut(10000, output_script)
     output = psbt_module.psbtOutputProxy(io.BytesIO(b'\x00'), 0)
     # Exercise the production derivation decoder using its file-offset values.
-    output.fd = io.BytesIO(struct.pack('<7I', *path) + redeem_script)
-    output.subpaths = {pubkey.sec(): (0, 28)}
+    derivation_bytes = struct.pack('<{}I'.format(len(path)), *path)
+    output.fd = io.BytesIO(derivation_bytes + redeem_script)
+    output.subpaths = {pubkey.sec(): (0, len(derivation_bytes))}
     if redeem_script:
-        output.redeem_script = (28, len(redeem_script))
+        output.redeem_script = (len(derivation_bytes), len(redeem_script))
     output.validate(0, txo, xfp, None, policy if registered_policy else None)
     # The final ownership check also passes: this really is Passport's key,
     # but the output has removed the other signer's authorization requirement.
@@ -124,7 +136,7 @@ def test_policy_funds_sent_to_singlesig_are_not_hidden_as_change(
         'double_check_psbt_change_task']
     asyncio.run(check(done, types.SimpleNamespace(outputs=[output], my_xfp=xfp)))
     assert results == [(None, None)]
-    if registered_policy:
+    if registered_policy or derivation_kind == 'policy':
         assert not output.is_change, 'An output outside the registered policy must be displayed'
     else:
         assert output.is_change, 'Ordinary singlesig change must still be recognized'
