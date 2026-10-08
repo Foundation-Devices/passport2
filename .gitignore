@@ -99,3 +99,4 @@ simulator/snapshots/
 *.gif
 *.pem
 .vscode
+/.local-code-artifacts/
