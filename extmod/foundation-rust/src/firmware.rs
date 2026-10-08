@@ -144,14 +144,19 @@ fn verify_update_header_impl(
 }
 
 /// Verify the header of a firmware update.
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
+///
+/// # Safety
+/// `header` must be non-null and point to `header_len` initialized bytes in one
+/// allocation, with length at most `isize::MAX`. This memory must remain readable
+/// and unmodified for the call and must not overlap `result`.
 #[export_name = "foundation_firmware_verify_update_header"]
-pub extern "C" fn verify_update_header(
+pub unsafe extern "C" fn verify_update_header(
     header: *const u8,
     header_len: usize,
     current_timestamp: u32,
     result: &mut FirmwareResult,
 ) {
+    // SAFETY: The C ABI supplies a raw buffer; the caller guarantees slice validity.
     let header = unsafe { slice::from_raw_parts(header, header_len) };
 
     match verify_update_header_impl(header, current_timestamp, result) {
@@ -174,9 +179,14 @@ pub extern "C" fn verify_update_header(
     }
 }
 
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
+/// Verify a firmware update's header and signatures against its hash.
+///
+/// # Safety
+/// `header` must be non-null and point to `header_len` initialized bytes in one
+/// allocation, with length at most `isize::MAX`. This memory must remain readable
+/// and unmodified for the call and must not overlap `result`.
 #[export_name = "foundation_firmware_verify_update_signatures"]
-pub extern "C" fn verify_update_signatures(
+pub unsafe extern "C" fn verify_update_signatures(
     header: *const u8,
     header_len: usize,
     current_timestamp: u32,
@@ -184,6 +194,7 @@ pub extern "C" fn verify_update_signatures(
     user_public_key: Option<&[u8; 64]>,
     result: &mut FirmwareResult,
 ) {
+    // SAFETY: The C ABI supplies a raw buffer; the caller guarantees slice validity.
     let header = unsafe { slice::from_raw_parts(header, header_len) };
     let firmware_hash = match sha256d::Hash::from_slice(hash) {
         Ok(v) => v,
@@ -269,7 +280,10 @@ mod tests {
 
     fn check_header(header: &[u8]) -> FirmwareResult {
         let mut result = FirmwareResult::SignaturesOk;
-        verify_update_header(header.as_ptr(), header.len(), 0, &mut result);
+        // SAFETY: Testing the C entry point requires a raw pointer; the slice is live and separate from result.
+        unsafe {
+            verify_update_header(header.as_ptr(), header.len(), 0, &mut result);
+        }
         result
     }
 
@@ -279,14 +293,17 @@ mod tests {
         key: &[u8; 64],
     ) -> FirmwareResult {
         let mut result = FirmwareResult::SignaturesOk;
-        verify_update_signatures(
-            header.as_ptr(),
-            header.len(),
-            0,
-            hash,
-            Some(key),
-            &mut result,
-        );
+        // SAFETY: Testing the C entry point requires a raw pointer; the slice is live and separate from result.
+        unsafe {
+            verify_update_signatures(
+                header.as_ptr(),
+                header.len(),
+                0,
+                hash,
+                Some(key),
+                &mut result,
+            );
+        }
         result
     }
 
