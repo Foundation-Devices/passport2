@@ -15,7 +15,8 @@ import pytest
 from test_wallet_policy import KEY_INFO, XPUB, StubChain
 from policy_errors import PolicyParseError, PolicyResourceError
 from policy_transport import decode_policy_transport
-from wallet_policy import KeyInfo, MiniscriptPolicy, POLICY_STORAGE_KEY
+from wallet_policy import (KeyInfo, MAX_ORIGIN_DEPTH, MiniscriptPolicy,
+                           POLICY_STORAGE_KEY)
 
 
 MODULES = Path(__file__).resolve().parents[2]
@@ -59,9 +60,11 @@ def test_sparse_flash_partial_and_repeated_programming(tmp_path, monkeypatch):
 
 
 def test_key_origin_depth_bound():
-    assert len(KeyInfo.parse('[6738736c' + '/0' * 16 + ']' + XPUB).path) == 16
-    with pytest.raises(PolicyResourceError):
-        KeyInfo.parse('[6738736c' + '/0' * 17 + ']' + XPUB)
+    at_limit = KeyInfo.parse('[6738736c' + '/0' * MAX_ORIGIN_DEPTH + ']' + XPUB)
+    assert len(at_limit.path) == MAX_ORIGIN_DEPTH
+    with pytest.raises(PolicyResourceError) as raised:
+        KeyInfo.parse('[6738736c' + '/0' * (MAX_ORIGIN_DEPTH + 1) + ']' + XPUB)
+    assert str(MAX_ORIGIN_DEPTH) in str(raised.value)
 
 
 @pytest.mark.parametrize('field', ['name', 'network', 'template'])
