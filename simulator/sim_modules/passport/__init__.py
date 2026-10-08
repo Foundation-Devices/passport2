@@ -5,8 +5,6 @@
 #
 
 import sys
-from urandom import randint, seed
-from utime import ticks_ms
 
 IS_SIMULATOR = True
 IS_COLOR = sys.argv[6] == 'color'
@@ -21,14 +19,22 @@ class Noise:
     ALS = 8
     ALL = AVALANCHE | MCU | SE | ALS
 
-    def __init__(self):
-        v = ticks_ms()
-        # print('Initialize RNG with seed = {}'.format(v))
-        seed(v)
-
     def random_bytes(self, buf, _source):
+        # Read host entropy straight from the kernel. This used to be urandom
+        # seeded with ticks_ms(), which made anything the simulator generated
+        # reproducible from the boot time it happened at. The unix port does not
+        # define MICROPY_PY_URANDOM_SEED_INIT_FUNC, so dropping the explicit
+        # seed would have left a fixed default rather than fixing it.
+        with open('/dev/urandom', 'rb') as f:
+            data = f.read(len(buf))
+
+        # Fail loudly. Falling back to a seeded PRNG is the thing being fixed.
+        if len(data) != len(buf):
+            raise OSError('short read of host entropy: wanted {}, got {}'.format(
+                len(buf), len(data)))
+
         for i in range(len(buf)):
-            buf[i] = randint(0, 255)
+            buf[i] = data[i]
 
 
 class Powermon:
