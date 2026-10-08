@@ -127,7 +127,9 @@
               python3
               python3Packages.autopep8
               python3Packages.imageio
-              python3Packages.opencv4
+              (python3Packages.opencv4.override {
+                enableGtk3 = stdenv.hostPlatform.isLinux;
+              })
               python3Packages.pip
               python3Packages.pillow
               python3Packages.pytest
