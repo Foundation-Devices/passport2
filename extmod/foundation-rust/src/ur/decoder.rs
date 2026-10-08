@@ -281,3 +281,69 @@ pub unsafe extern "C" fn ur_decode_single_part(
 
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use foundation_ur::fountain::part::Part;
+
+    #[test]
+    fn rejected_metadata_does_not_poison_next_scan() {
+        let mut decoder = UR_Decoder {
+            inner: HeaplessDecoder::new(),
+        };
+        let fragment = Part {
+            sequence: 1,
+            sequence_count: 2,
+            message_length: 2,
+            checksum: 0,
+            data: &[1],
+        };
+        let serialized = UR::MultiPartDeserialized {
+            ur_type: "bytes",
+            fragment: fragment.clone(),
+        }
+        .to_string()
+        .replacen("1-2", "1-1", 1);
+        let mut error = UR_Error {
+            kind: super::super::UR_ErrorKind::UR_ERROR_KIND_OTHER,
+            message: core::ptr::null(),
+            len: 0,
+        };
+        let mut frames = 0;
+        // SAFETY: Test the FFI with a live string; no other test writes UR_ERROR.
+        assert!(!unsafe {
+            ur_decoder_receive(
+                &mut decoder,
+                serialized.as_ptr(),
+                serialized.len(),
+                &mut error,
+                &mut frames,
+            )
+        });
+        assert!(decoder.inner.is_empty());
+        assert_eq!(decoder.inner.ur_type(), None);
+        for sequence in 1..=2 {
+            let serialized = UR::MultiPartDeserialized {
+                ur_type: "crypto-psbt",
+                fragment: Part {
+                    sequence,
+                    ..fragment.clone()
+                },
+            }
+            .to_string();
+            // SAFETY: Test the FFI with a live string; no other test writes UR_ERROR.
+            assert!(unsafe {
+                ur_decoder_receive(
+                    &mut decoder,
+                    serialized.as_ptr(),
+                    serialized.len(),
+                    &mut error,
+                    &mut frames,
+                )
+            });
+        }
+        assert!(decoder.inner.is_complete());
+        assert_eq!(decoder.inner.message().unwrap(), Some(&[1, 1][..]));
+    }
+}

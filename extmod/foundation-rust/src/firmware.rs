@@ -143,6 +143,7 @@ fn verify_update_header_impl(
 }
 
 /// Verify the header of a firmware update.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[export_name = "foundation_firmware_verify_update_header"]
 pub extern "C" fn verify_update_header(
     header: *const u8,
@@ -172,6 +173,7 @@ pub extern "C" fn verify_update_header(
     }
 }
 
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[export_name = "foundation_firmware_verify_update_signatures"]
 pub extern "C" fn verify_update_signatures(
     header: *const u8,
