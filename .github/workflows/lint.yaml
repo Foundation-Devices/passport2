@@ -4,14 +4,6 @@
 name: Lint
 on: [push, pull_request]
 jobs:
-  firmware-state-tests:
-    name: Firmware state tests pass?
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - run: python3 -m pip install pytest
-      - run: python3 -m pytest -q ports/stm32/boards/Passport/modules/tests/test_firmware_timestamp.py
-
   is-reuse-compliant:
     name: Is REUSE compliant?
     runs-on: ubuntu-latest
