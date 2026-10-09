@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Improve firmware-update state validation
 - Clarify the error when change-address ownership cannot be verified
 - Complete change-address verification before transaction review
 - Identify network fees from unverifiable PSBT inputs as unverified
