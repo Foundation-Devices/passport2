@@ -8,7 +8,7 @@ jobs:
     name: Is REUSE compliant?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: fsfe/reuse-action@v6
 
   quirc-tests-pass:
@@ -42,7 +42,7 @@ jobs:
     name: Rust code compiles?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
@@ -62,7 +62,7 @@ jobs:
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
@@ -75,7 +75,7 @@ jobs:
     name: Is the Python code formatted?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: sudo apt-get install -y pycodestyle
       - run: pycodestyle --statistics ports/stm32/boards/Passport
 
@@ -84,7 +84,7 @@ jobs:
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
@@ -100,7 +100,7 @@ jobs:
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/rust-toolchain
         with:
           toolchain: 1.77.1
