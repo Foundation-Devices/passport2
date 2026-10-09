@@ -133,9 +133,9 @@ checksum = "777e495443499419b935d80c5abffb7e7006859242c8a1d40b5831fea4911175"
 
 [[package]]
 name = "foundation-firmware"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3275fe6157eee489494fb148a173e0918181aacbd319c86e7d3fc3c221a241f"
+checksum = "3a758c0a99372a055268583d3cad1c4070334a3c955366da0499d5529f8431e1"
 dependencies = [
  "bitcoin_hashes",
  "heapless",

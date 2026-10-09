@@ -509,12 +509,25 @@ extern UR_Encoder UR_ENCODER;
 
 /**
  * Verify the header of a firmware update.
+ *
+ * # Safety
+ * `header` must be non-null and point to `header_len` initialized bytes in one
+ * allocation, with length at most `isize::MAX`. This memory must remain readable
+ * and unmodified for the call and must not overlap `result`.
  */
 void foundation_firmware_verify_update_header(const uint8_t *header,
                                               size_t header_len,
                                               uint32_t current_timestamp,
                                               FirmwareResult *result);
 
+/**
+ * Verify a firmware update's header and signatures against its hash.
+ *
+ * # Safety
+ * `header` must be non-null and point to `header_len` initialized bytes in one
+ * allocation, with length at most `isize::MAX`. This memory must remain readable
+ * and unmodified for the call and must not overlap `result`.
+ */
 void foundation_firmware_verify_update_signatures(const uint8_t *header,
                                                   size_t header_len,
                                                   uint32_t current_timestamp,
