@@ -79,6 +79,19 @@ STATIC mp_obj_t mod_passport_verify_supply_chain_server_signature(mp_obj_t hash_
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_verify_supply_chain_server_signature_obj,
                                  mod_passport_verify_supply_chain_server_signature);
 
+STATIC uint32_t get_minimum_firmware_timestamp(void) {
+    uint8_t current_board_hash[HASH_LEN] = {0};
+    get_current_board_hash(current_board_hash);
+
+    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+#ifdef PRODUCTION_BUILD
+    if (firmware_timestamp == 0) {
+        mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Unable to read firmware timestamp."));
+    }
+#endif
+    return firmware_timestamp;
+}
+
 /// def verify_update_header(self, header: bytearray) -> None:
 ///     '''
 ///     Verify the given firmware header bytes as a potential candidate to be
@@ -90,12 +103,7 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
     mp_buffer_info_t header_info;
     mp_get_buffer_raise(header, &header_info, MP_BUFFER_READ);
 
-    // Build the current board hash so we can get the minimum firmware
-    // timestamp
-    uint8_t current_board_hash[HASH_LEN] = {0};
-    get_current_board_hash(current_board_hash);
-
-    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+    uint32_t firmware_timestamp = get_minimum_firmware_timestamp();
 
     FirmwareResult result = {0};
     foundation_firmware_verify_update_header(header_info.buf,
@@ -196,12 +204,7 @@ STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t 
     mp_buffer_info_t validation_hash_info;
     mp_get_buffer_raise(validation_hash, &validation_hash_info, MP_BUFFER_READ);
 
-    // Build the current board hash so we can get the minimum firmware
-    // timestamp
-    uint8_t current_board_hash[HASH_LEN] = {0};
-    get_current_board_hash(current_board_hash);
-
-    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+    uint32_t firmware_timestamp = get_minimum_firmware_timestamp();
 
     se_pair_unlock();
     bool has_user_key = false;

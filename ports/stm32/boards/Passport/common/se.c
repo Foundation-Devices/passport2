@@ -1189,6 +1189,13 @@ uint32_t se_get_firmware_timestamp(uint8_t* board_hash) {
     int rc = se_encrypted_read(KEYNUM_firmware_timestamp, KEYNUM_firmware_hash, board_hash, buf, sizeof(buf));
     if (rc < 0) {
         printf("ERROR: Unable to read firmware timestamp: rec=%d\r\n", rc);
+        memzero(buf, sizeof(buf));
+        return 0;
+    }
+
+    // Verify the complete stored block before using its timestamp.
+    if (se_pair_unlock() < 0 || se_checkmac_hard(KEYNUM_firmware_timestamp, buf) < 0) {
+        memzero(buf, sizeof(buf));
         return 0;
     }
 
@@ -1198,6 +1205,7 @@ uint32_t se_get_firmware_timestamp(uint8_t* board_hash) {
 #endif
 
     memcpy(&firmware_timestamp, buf, sizeof(uint32_t));
+    memzero(buf, sizeof(buf));
 
 #ifdef DEBUG_PRINT_FW_TIMESTAMP
     printf("GET: firmware_timestamp=%lu\r\n", firmware_timestamp);
