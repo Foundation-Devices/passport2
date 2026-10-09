@@ -3,11 +3,16 @@
 
 """Exercise native firmware-state checks with controlled SE responses."""
 
+import ast
+import asyncio
+from contextlib import nullcontext
 import hashlib
 import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -208,3 +213,39 @@ int main(void) {
                  'STATIC mp_obj_t mod_passport_verify_update_signatures(']:
         wrapper = function(native, name)
         assert wrapper.index('get_minimum_firmware_timestamp()') < wrapper.index('foundation_firmware_verify_')
+
+
+def test_header_state_failure_is_recoverable(tmp_path, monkeypatch):
+    source = ast.parse((BOARD / 'modules/flows/update_firmware_flow.py').read_text())
+    flow_class = next(node for node in source.body if isinstance(node, ast.ClassDef))
+    method = next(node for node in flow_class.body if node.name == 'show_firmware_details')
+    messages, results = [], []
+
+    class ErrorPage:
+        def __init__(self, text):
+            messages.append(text)
+
+        async def show(self):
+            return True
+
+    def verify_header(_):
+        raise RuntimeError('Unable to read firmware timestamp.')
+
+    header_size = 2048
+    path = tmp_path / 'firmware.bin'
+    path.write_bytes(bytes(header_size))
+    flow = SimpleNamespace(update_file_path=str(path), set_result=results.append)
+    monkeypatch.setitem(sys.modules, 'common', SimpleNamespace())
+    namespace = {
+        'CardSlot': nullcontext,
+        'ErrorPage': ErrorPage,
+        'FW_HEADER_SIZE': header_size,
+        'FW_MAX_SIZE': header_size,
+        'passport': SimpleNamespace(InvalidFirmwareUpdate=ValueError, verify_update_header=verify_header),
+    }
+    isolated = ast.Module(body=[method], type_ignores=[])
+    exec(compile(isolated, 'update_firmware_flow.py', 'exec'), namespace)
+    asyncio.run(namespace['show_firmware_details'](flow))
+    assert results == [False]
+    assert messages == ['Firmware update cannot continue.\n\nUnable to read firmware timestamp.']
+    assert not hasattr(flow, 'update_header')

@@ -87,6 +87,10 @@ class UpdateFirmwareFlow(Flow):
                     await ErrorPage(text='Firmware update is invalid.\n\n{}'.format(str(e))).show()
                     self.set_result(False)
                     return
+                except RuntimeError as e:
+                    await ErrorPage(text='Firmware update cannot continue.\n\n{}'.format(str(e))).show()
+                    self.set_result(False)
+                    return
 
                 if is_user_signed:
                     pubkey_result, pubkey = read_user_firmware_pubkey()
