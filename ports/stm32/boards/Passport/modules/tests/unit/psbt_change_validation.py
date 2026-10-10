@@ -101,6 +101,7 @@ class MockPsbt:
         self.inputs = inputs
         self.outputs = outputs
         self.warnings = []
+        self.active_policy = None
 
 
 class OneOfOneMultisig:

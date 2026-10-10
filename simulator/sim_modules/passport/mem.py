@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from passport import CONSTRAINED_STARTUP
+
 MAX_QR_VERSION = 13
 
 
@@ -14,7 +16,9 @@ def _qr_buffer_size_for_version(version):
 
 
 def _alloc(ln):
-    return bytearray(ln)
+    # These buffers live in statically allocated MCU memory on a real Passport,
+    # rather than in the MicroPython garbage-collected heap.
+    return bytearray(1 if CONSTRAINED_STARTUP else ln)
 
 
 psbt_output = _alloc(26 * 1024)
