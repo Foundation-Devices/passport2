@@ -96,6 +96,10 @@ def test_sign_psbt(test):
     assert test('sign_psbt.py') == b'OK'
 
 
+def test_transaction_review(test):
+    assert test('transaction_review.py') == b'OK'
+
+
 def test_op_return_rendering(test):
     assert test('op_return_rendering.py') == b'OK'
 

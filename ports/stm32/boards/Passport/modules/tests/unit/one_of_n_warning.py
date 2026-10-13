@@ -3,8 +3,6 @@
 #
 # Exercise imported PSBT review methods in the standard simulator harness.
 
-import pages
-import uasyncio as asyncio
 from psbt import psbtObject
 from serializations import CTxOut
 from flows.sign_psbt_common_flow import SignPsbtCommonFlow
@@ -56,22 +54,14 @@ class MockChain:
     def render_value(self, value):
         return str(value), 'sats'
 
+    def render_address(self, script):
+        return 'bc1qtest'
 
-class MockFlow:
-    chain = MockChain()
-    header = 'Transaction Info'
-    show_policy_authorization = 'authorize'
-    render_warnings = SignPsbtCommonFlow.render_warnings
 
+class MockFlow(SignPsbtCommonFlow):
     def __init__(self, psbt):
         self.psbt = psbt
-        self.events = []
-
-    def back(self):
-        self.events.append('back')
-
-    def goto(self, state):
-        self.events.append(state)
+        self.chain = MockChain()
 
 
 # None means there is no change output at all; zero retains a zero-value one.
@@ -91,41 +81,14 @@ for policy in (None, (1, 1), (1, 2), (1, 15), (2, 3), (3, 3)):
         expected = policy is not None and policy[0] == 1 and policy[1] > 1
         assert len(psbt.warnings) == int(expected)
         if expected:
-            text = MockFlow(psbt).render_warnings()
+            review = list(MockFlow(psbt).review_pages())
+            text = review[-1]
+            assert 'Network Fee' not in text
+            assert sum('Any other cosigner' in page for page in review) == 1
             assert '1-of-{} Multisig'.format(policy[1]) in text
             assert 'Any other cosigner can spend' in text
             assert 'including change' in text
             assert 'without approval from this wallet' in text
 
 
-class MockPage:
-    approve = False
-    flow = None
-
-    def __init__(self, text, **kwargs):
-        assert text == self.flow.render_warnings()
-        assert '1-of-2 Multisig' in text
-
-    async def show(self):
-        self.flow.events.append('review')
-        return self.approve
-
-
-async def run_tests():
-    original_page = pages.LongTextPage
-    try:
-        pages.LongTextPage = MockPage
-        for approve in (False, True):
-            psbt = MockPSBT((1, 2), None)
-            psbtObject.consider_outputs(psbt)
-            flow = MockFlow(psbt)
-            MockPage.flow = flow
-            MockPage.approve = approve
-            await SignPsbtCommonFlow.show_warnings(flow)
-            assert flow.events == ['review', 'authorize' if approve else 'back']
-    finally:
-        pages.LongTextPage = original_page
-
-
-asyncio.run(run_tests())
 return_value.write(b'OK')
