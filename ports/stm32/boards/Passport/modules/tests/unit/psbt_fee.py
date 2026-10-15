@@ -234,11 +234,11 @@ class MockFlow:
         self.psbt = psbt
 
 
-review = SignPsbtCommonFlow.render_warnings(MockFlow(unverified_fee_psbt))
+review = SignPsbtCommonFlow.render_fee(MockFlow(unverified_fee_psbt))
 assert 'Unverified' in review
 assert '4000 sats' not in review
 
-review = SignPsbtCommonFlow.render_warnings(MockFlow(verified_fee_psbt))
+review = SignPsbtCommonFlow.render_fee(MockFlow(verified_fee_psbt))
 assert '4000 sats' in review
 
 return_value.write(b'OK')

@@ -23,7 +23,8 @@ class LongTextPage(Page):
                  left_micron=microns.Back,
                  right_micron=microns.Forward,
                  margins=None,
-                 top_margin=None):
+                 top_margin=None,
+                 require_scroll_to_end=False):
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -36,6 +37,11 @@ class LongTextPage(Page):
         self.centered = centered
         self.side_margins = (margins if margins is not None else 12)
         self.top_margin = (top_margin if top_margin is not None else 16)
+        self.require_scroll_to_end = require_scroll_to_end
+        self.reviewed = not require_scroll_to_end
+        self.forward_micron = right_micron
+        if require_scroll_to_end:
+            self.right_micron = None
 
         # Set non-style props
         self.set_width(lv.pct(100))
@@ -85,6 +91,28 @@ class LongTextPage(Page):
         lv.gridnav_add(self.lvgl_root, lv.GRIDNAV_CTRL.NONE)
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
+        if self.require_scroll_to_end:
+            self.container.lvgl_root.add_event_cb(self.update_review_status, lv.EVENT.SCROLL, None)
+            self.update_review_status()
+
+    def update_review_status(self, event=None):
+        import common
+
+        if self.reviewed:
+            return
+        self.container.lvgl_root.update_layout()
+        if self.container.lvgl_root.get_scroll_bottom() <= 0:
+            self.reviewed = True
+            self.right_micron = self.forward_micron
+            common.ui.set_right_micron(self.right_micron)
+
+    def right_action(self, is_pressed):
+        if self.require_scroll_to_end:
+            self.update_review_status()
+        super().right_action(is_pressed)
+
     def detach(self):
+        if self.require_scroll_to_end:
+            self.container.lvgl_root.remove_event_cb(self.update_review_status)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()

@@ -52,6 +52,7 @@ def test_authorization_preserves_path_results(monkeypatch, compatible_sets, expe
 
     class Series:
         def __init__(self, page_type, args):
+            assert all(arg['require_scroll_to_end'] for arg in args)
             pages.extend(arg['text'] for arg in args)
 
         async def run(self):
