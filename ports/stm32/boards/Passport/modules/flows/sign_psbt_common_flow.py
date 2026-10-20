@@ -14,7 +14,7 @@ import microns
 from styles.colors import HIGHLIGHT_TEXT_HEX, BLACK_HEX
 from tasks import validate_psbt_task
 import gc
-from utils import escape_text, spinner_task, recolor, stylize_address
+from utils import b2a_hex, escape_text, spinner_task, recolor, stylize_address
 
 
 def render_op_return_message(message):
@@ -24,7 +24,6 @@ def render_op_return_message(message):
     if not message:
         return '(empty)'
     if not any('!' <= char <= '~' for char in message):
-        from ubinascii import b2a_hex
         return b2a_hex(message.encode()).decode()
     return escape_text(message)
 

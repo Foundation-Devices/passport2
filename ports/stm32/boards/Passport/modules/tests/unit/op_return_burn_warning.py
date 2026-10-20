@@ -4,6 +4,7 @@
 # Value sent to OP_RETURN outputs is reported as a warning during review.
 
 import chains
+import common
 from flows.sign_psbt_common_flow import SignPsbtCommonFlow
 from psbt import psbtObject
 from serializations import CTxOut
@@ -68,31 +69,38 @@ def rendered(value):
     return ' '.join(chains.current_chain().render_value(value))
 
 
-# Nothing is burned when OP_RETURN outputs carry no value, or there are none.
-for outputs in ([(1000, P2WPKH), (0, OP_RETURN)],
-                [(1000, P2WPKH), (0, BARE_OP_RETURN)],
-                [(1000, P2WPKH)]):
-    assert burn_warnings(outputs)[1] == []
+# chains.current_chain() and render_value() read settings, which the harness
+# leaves unset. Supply defaults (BTC, BTC units) and restore them afterwards.
+original_settings = common.settings
+common.settings = {}
+try:
+    # Nothing is burned when OP_RETURN outputs carry no value, or there are none.
+    for outputs in ([(1000, P2WPKH), (0, OP_RETURN)],
+                    [(1000, P2WPKH), (0, BARE_OP_RETURN)],
+                    [(1000, P2WPKH)]):
+        assert burn_warnings(outputs)[1] == []
 
-# A valued OP_RETURN is reported with its amount, bare or carrying data.
-for script in (OP_RETURN, BARE_OP_RETURN):
-    _, warnings = burn_warnings([(1000, P2WPKH), (100, script)])
+    # A valued OP_RETURN is reported with its amount, bare or carrying data.
+    for script in (OP_RETURN, BARE_OP_RETURN):
+        _, warnings = burn_warnings([(1000, P2WPKH), (100, script)])
+        assert len(warnings) == 1
+        assert warnings[0][1] == '{} is sent to OP_RETURN and can never be spent.'.format(rendered(100))
+
+    # Several valued OP_RETURN outputs produce one warning for the total.
+    _, warnings = burn_warnings([(100, OP_RETURN), (1000, P2WPKH), (50, BARE_OP_RETURN)])
     assert len(warnings) == 1
-    assert warnings[0][1] == '{} is sent to OP_RETURN and can never be spent.'.format(rendered(100))
+    assert rendered(150) in warnings[0][1]
 
-# Several valued OP_RETURN outputs produce one warning for the total.
-_, warnings = burn_warnings([(100, OP_RETURN), (1000, P2WPKH), (50, BARE_OP_RETURN)])
-assert len(warnings) == 1
-assert rendered(150) in warnings[0][1]
-
-# Review gives the warning a page of its own, after the network fee page.
-psbt, _ = burn_warnings([(1000, P2WPKH), (100, OP_RETURN)])
-pages = list(MockFlow(psbt).review_pages())
-fee_page = [index for index, page in enumerate(pages) if 'Network Fee' in page]
-burn_page = [index for index, page in enumerate(pages) if 'Burned Amount' in page]
-assert len(fee_page) == 1 and len(burn_page) == 1
-assert fee_page[0] < burn_page[0]
-assert 'Warning 1/1' in pages[burn_page[0]]
-assert 'can never be spent' in pages[burn_page[0]]
+    # Review gives the warning a page of its own, after the network fee page.
+    psbt, _ = burn_warnings([(1000, P2WPKH), (100, OP_RETURN)])
+    pages = list(MockFlow(psbt).review_pages())
+    fee_page = [index for index, page in enumerate(pages) if 'Network Fee' in page]
+    burn_page = [index for index, page in enumerate(pages) if 'Burned Amount' in page]
+    assert len(fee_page) == 1 and len(burn_page) == 1
+    assert fee_page[0] < burn_page[0]
+    assert 'Warning 1/1' in pages[burn_page[0]]
+    assert 'can never be spent' in pages[burn_page[0]]
+finally:
+    common.settings = original_settings
 
 return_value.write(b'OK')
