@@ -35,20 +35,32 @@ class MockOutput:
         self.scriptPubKey = message
 
 
-def assert_op_return_output(value, message):
+def assert_op_return_output(value, message, shown=None):
     rendered = SignPsbtCommonFlow.render_output(MockFlow(), MockOutput(value, message))
 
     amount_label = rendered.find('Amount')
     amount = rendered.find('{} sats'.format(value))
+    destination_label = rendered.find('Destination')
+    destination = rendered.find('\nOP_RETURN\n')
     message_label = rendered.find('Message')
-    payload = rendered.find(message)
+    payload = rendered.rfind(message if shown is None else shown)
 
-    assert -1 not in (amount_label, amount, message_label, payload)
-    assert amount_label < amount < message_label < payload
+    assert -1 not in (amount_label, amount, destination_label, destination, message_label, payload)
+    assert amount_label < amount < destination_label < destination < message_label < payload
+    return rendered
 
 
 assert_op_return_output(0, 'zero-value-message')
 assert_op_return_output(50000000, 'payment-id-12345')
+
+# The message is never blank: no payload says so, and a payload with nothing the
+# review font can draw (it only carries printable ASCII) falls back to hex.
+assert assert_op_return_output(0, '', '(empty)').endswith('\n(empty)')
+assert assert_op_return_output(1, '‘', 'e28098').endswith('\ne28098')
+assert assert_op_return_output(1, '한글', 'ed959ceab880').endswith('\ned959ceab880')
+assert assert_op_return_output(1, ' \n ', '200a20').endswith('\n200a20')
+# One drawable character is enough to show the text itself.
+assert assert_op_return_output(1, 'a‘b').endswith('\na‘b')
 
 amount_heading = recolor(HIGHLIGHT_TEXT_HEX, 'Amount')
 message_heading = recolor(HIGHLIGHT_TEXT_HEX, 'Message')
@@ -57,9 +69,11 @@ malicious_message = '{}\n0.00000001 BTC\n\n{}\nbc1qattacker'.format(
     amount_heading, destination_heading)
 rendered = SignPsbtCommonFlow.render_output(MockFlow(), MockOutput(1, malicious_message))
 assert escape_text(malicious_message) in rendered
+# Forged headings in the message are escaped, so only the real ones remain.
 assert rendered.count('\n{}\n'.format(amount_heading)) == 1
 assert rendered.count('\n{}\n'.format(message_heading)) == 1
-assert rendered.count('\n{}\n'.format(destination_heading)) == 0
+assert rendered.count('\n{}\n'.format(destination_heading)) == 1
+assert rendered.index('\n{}\nOP_RETURN\n'.format(destination_heading)) < rendered.index(message_heading)
 assert malicious_message not in rendered
 
 address = 'bc1qvaliddestination'

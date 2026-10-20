@@ -17,6 +17,18 @@ import gc
 from utils import escape_text, spinner_task, recolor, stylize_address
 
 
+def render_op_return_message(message):
+    # The review fonts only carry printable ASCII, and anything else is drawn as
+    # nothing at zero width. A message the user can't see must never look like no
+    # message, so fall back to its bytes in hex.
+    if not message:
+        return '(empty)'
+    if not any('!' <= char <= '~' for char in message):
+        from ubinascii import b2a_hex
+        return b2a_hex(message.encode()).decode()
+    return escape_text(message)
+
+
 class SignPsbtCommonFlow(Flow):
     def __init__(self, psbt_len):
         import chains
@@ -239,11 +251,14 @@ class SignPsbtCommonFlow(Flow):
         dest = self.chain.render_address(o.scriptPubKey)
 
         if dest.startswith("OP_RETURN"):
-            return '\n{}\n{}\n\n{}\n{}'.format(
+            # user-defined message starts after "OP_RETURN:\n"
+            message = dest.split('\n', 1)[1]
+            return '\n{}\n{}\n\n{}\nOP_RETURN\n\n{}\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, 'Amount'),
                 val,
+                recolor(HIGHLIGHT_TEXT_HEX, 'Destination'),
                 recolor(HIGHLIGHT_TEXT_HEX, 'Message'),
-                escape_text(dest.split('\n', 1)[1]))  # user-defined message starts after "OP_RETURN:\n"
+                render_op_return_message(message))
 
         dest = stylize_address(dest)
 
