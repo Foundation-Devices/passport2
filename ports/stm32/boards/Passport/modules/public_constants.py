@@ -27,8 +27,8 @@ MAX_TXN_LEN = PSBT_MAX_SIZE // 2
 TXN_INPUT_OFFSET = 0
 TXN_OUTPUT_OFFSET = MAX_TXN_LEN
 
-# Max length of text messages for signing
-MSG_SIGNING_MAX_LENGTH = const(240)
+# Bound microSD message files to keep parsing and review within memory limits.
+MSG_SIGNING_MAX_LENGTH = const(4096)
 
 # Types of user auth we support
 USER_AUTH_TOTP = const(1)       # RFC6238
