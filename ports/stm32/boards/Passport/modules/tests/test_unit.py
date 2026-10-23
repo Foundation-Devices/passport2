@@ -104,6 +104,10 @@ def test_op_return_rendering(test):
     assert test('op_return_rendering.py') == b'OK'
 
 
+def test_op_return_burn_warning(test):
+    assert test('op_return_burn_warning.py') == b'OK'
+
+
 def test_message_display(test):
     assert test('message_display.py') == b'OK'
 

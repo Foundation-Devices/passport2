@@ -1401,6 +1401,7 @@ class psbtObject(psbtProxy):
         # - mark change outputs, so perhaps we don't show them to users
 
         total_change = 0
+        total_burned = 0
         # print('len(self.outputs)={}'.format(len(self.outputs)))
         for idx, txo in self.output_iter():
             self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig,
@@ -1409,10 +1410,22 @@ class psbtObject(psbtProxy):
             if self.outputs[idx].is_change:
                 total_change += txo.nValue
 
+            if txo.scriptPubKey[:1] == b'\x6a':
+                total_burned += txo.nValue
+
         if self.total_value_out is None:
             # this happens, but would expect this to have done already?
             for out_idx, txo in self.output_iter():
                 pass
+
+        # An OP_RETURN output can never be spent, so any value it carries is lost.
+        # Review shows the amount on the output itself, but nothing there says it's gone.
+        if total_burned:
+            import chains
+            amount = ' '.join(chains.current_chain().render_value(total_burned))
+            self.warnings.append(
+                ('Burned Amount',
+                 '{} is sent to OP_RETURN and can never be spent.'.format(amount)))
 
         # A change script containing our key does not give us exclusive control
         # when any one of several cosigners can spend it. Keep existing wallets
