@@ -76,6 +76,8 @@ async def run_tests():
         utils.spinner_task = electrum.spinner_task = mock_sign_spinner
 
         cases = (
+            ('\nfirst\n\nsecond\n', '\nfirst\n\nsecond\n'),
+            ('first\r\n#ff0000 second#\r\n', 'first\r\n##ff0000 second##\r\n'),
             ('literal # and ## hashes', 'literal ## and #### hashes'),
             ('#ff0000 red#', '##ff0000 red##'),
             ('before #00ff00 green# after #', 'before ##00ff00 green## after ##'),

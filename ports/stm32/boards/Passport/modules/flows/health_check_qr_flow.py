@@ -13,7 +13,7 @@ class HealthCheckQRFlow(Flow):
         super().__init__(initial_state=self.scan_qr, name='HealthCheckQRFlow')
 
         self.service_name = context
-        self.lines = None
+        self.data = None
         self.signed_message = None
 
     async def scan_qr(self):
@@ -30,7 +30,7 @@ class HealthCheckQRFlow(Flow):
 
         try:
             data = result.unwrap_bytes().decode('utf-8')
-            self.lines = data.split('\n')
+            self.data = data
         except Exception as e:
             await ErrorPage('Health check format is invalid.').show()
             self.set_result(False)
@@ -41,7 +41,7 @@ class HealthCheckQRFlow(Flow):
     async def common_flow(self):
         from flows import HealthCheckCommonFlow
 
-        self.signed_message = await HealthCheckCommonFlow(self.lines).run()
+        self.signed_message = await HealthCheckCommonFlow(self.data).run()
         if self.signed_message is None:
             self.set_result(False)
             return

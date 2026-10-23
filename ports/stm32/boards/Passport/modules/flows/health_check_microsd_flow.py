@@ -37,7 +37,7 @@ class HealthCheckMicrosdFlow(Flow):
     def __init__(self, context=None, normal_signing=False):
         super().__init__(initial_state=self.choose_file, name='HealthCheckMicrosdFlow')
         self.file_path = None
-        self.lines = None
+        self.data = None
         self.signed_message = None
         self.service_name = context
         self.normal_signing = normal_signing
@@ -91,13 +91,13 @@ class HealthCheckMicrosdFlow(Flow):
                 self.set_result(False)
                 return
 
-        self.lines = data.splitlines()
+        self.data = data
         self.goto(self.common_flow)
 
     async def common_flow(self):
         from flows import HealthCheckCommonFlow
 
-        self.signed_message = await HealthCheckCommonFlow(self.lines, normal_signing=self.normal_signing).run()
+        self.signed_message = await HealthCheckCommonFlow(self.data, normal_signing=self.normal_signing).run()
         if self.signed_message is None:
             self.set_result(False)
             return
