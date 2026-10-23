@@ -24,7 +24,7 @@ class MockFlow:
     sign_health_check = 'sign'
 
     def __init__(self, lines, normal_signing):
-        self.lines = lines
+        self.data = '\n'.join(lines)
         self.normal_signing = normal_signing
         self.addr_type = AF_CLASSIC
         self.next_state = None
@@ -60,7 +60,7 @@ async def run_tests():
                 assert flow.next_state is None
 
             # Strict text checks also apply to health checks, deliberately.
-            for message in (' leading', 'trailing ', 'four    spaces', 'line\nbreak', 'a\x00b', '\u00e9'):
+            for message in (' leading', 'trailing ', 'four    spaces', 'line\rbreak', 'a\x00b', '\u00e9'):
                 MockErrorPage.errors = []
                 flow = MockFlow(['signmessage ' + path + ' ascii:' + message], normal_signing)
                 await HealthCheckCommonFlow.validate_lines(flow)
@@ -142,9 +142,9 @@ async def run_tests():
             MockErrorPage.errors = []
             flow = MockFlow(('signmessage ' + path + ' ascii:line\nbreak').splitlines(), normal_signing)
             await HealthCheckCommonFlow.validate_lines(flow)
-            assert MockErrorPage.errors
-            assert flow.result is None
-            assert flow.next_state is None
+            assert not MockErrorPage.errors
+            assert flow.text == 'line\nbreak'
+            assert flow.next_state == (flow.show_message if normal_signing else flow.sign_health_check)
 
         return_value.write(b'OK')
     finally:

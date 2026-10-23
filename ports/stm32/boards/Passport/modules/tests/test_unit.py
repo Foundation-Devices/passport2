@@ -164,5 +164,9 @@ def test_single_line_message(test):
     assert test('single_line_message.py') == b'OK'
 
 
+def test_microsd_message_length(test):
+    assert test('microsd_message_length.py') == b'OK'
+
+
 def test_scv_challenge(test):
     assert test('scv_challenge.py') == b'OK'
