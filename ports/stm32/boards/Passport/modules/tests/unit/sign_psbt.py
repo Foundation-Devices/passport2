@@ -59,6 +59,9 @@ assert assert_op_return_output(0, '', '(empty)').endswith('\n(empty)')
 assert assert_op_return_output(1, '‘', 'e28098').endswith('\ne28098')
 assert assert_op_return_output(1, '한글', 'ed959ceab880').endswith('\ned959ceab880')
 assert assert_op_return_output(1, ' \n ', '200a20').endswith('\n200a20')
+assert assert_op_return_output(1, '\x00A', '0041').endswith('\n0041')
+assert assert_op_return_output(1, 'A\x00B', '410042').endswith('\n410042')
+assert assert_op_return_output(1, 'A\x00', '4100').endswith('\n4100')
 # One drawable character is enough to show the text itself.
 assert assert_op_return_output(1, 'a‘b').endswith('\na‘b')
 
