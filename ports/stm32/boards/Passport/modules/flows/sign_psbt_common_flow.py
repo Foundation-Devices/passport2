@@ -23,7 +23,8 @@ def render_op_return_message(message):
     # message, so fall back to its bytes in hex.
     if not message:
         return '(empty)'
-    if not any('!' <= char <= '~' for char in message):
+    # LVGL truncates text at NUL, even when printable characters follow it.
+    if '\x00' in message or not any('!' <= char <= '~' for char in message):
         return b2a_hex(message.encode()).decode()
     return escape_text(message)
 
