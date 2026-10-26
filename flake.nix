@@ -84,6 +84,11 @@
                 # list of disabled tests is tuned for 12.3.0.
                 doCheck = false;
               });
+              # imageio needs only numpy and Pillow at runtime. Its tests pull in
+              # every optional codec (pillow-heif, astropy, av, ...), which would
+              # all rebuild against the overridden Pillow, and one pillow-heif
+              # pixel comparison is off by one against 13.0.0.
+              imageio = pyPrev.imageio.overridePythonAttrs { doCheck = false; };
             };
           };
           python3Packages = python3.pkgs;
