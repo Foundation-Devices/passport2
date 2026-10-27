@@ -473,6 +473,11 @@ class MiniscriptPolicy:
             lines.append('Key {} - {}\nFingerprint {}\nPath {}\n{}'.format(
                 index + 1, role, key.fingerprint.upper(),
                 self._format_origin_path(key.path), key.xpub))
+        from miniscript import policy_timelocks
+        for kind, value in policy_timelocks(self.miniscript):
+            if kind == 'older' and value & (1 << 22):
+                units = value & 0xffff
+                lines.append('older({}): {} x 512 = {} seconds'.format(value, units, units * 512))
         lines.append('Internal policy ID\n' + self.policy_id)
         return '\n\n'.join(lines)
 

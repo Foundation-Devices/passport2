@@ -115,7 +115,7 @@ Check for updates to Passport and your software wallet.""").show()
 
     async def handle_qr(self):
         if QRType.QR not in self.qr_types and QRType.QR != self.explicit_type:
-            await ErrorPage(text='Scan. failed.\n'
+            await ErrorPage(text='Scan failed.\n'
                                  'Expected to scan a Uniform Resource containing '
                                  '{}.'.format(self.data_description)).show()
             self.set_result(None)

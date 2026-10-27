@@ -400,7 +400,7 @@ def wallet_policy_item_menu():
     from flows.wallet_policy_flow import (
         DeleteWalletPolicyFlow, ExportWalletPolicyMicroSDFlow,
         ExportWalletPolicyQRFlow, NameWalletPolicyKeysFlow, RenameWalletPolicyFlow,
-        VerifyWalletPolicyRequestFlow, ViewWalletPolicyFlow)
+        VerifyWalletPolicyAddressFlow, ViewWalletPolicyFlow)
 
     return [
         {'icon': 'ICON_TWO_KEYS', 'label': 'View Details', 'flow': ViewWalletPolicyFlow},
@@ -408,9 +408,9 @@ def wallet_policy_item_menu():
          'statusbar': {'title': 'EXPORT'}},
         {'icon': 'ICON_MICROSD', 'label': 'Export via microSD',
          'flow': ExportWalletPolicyMicroSDFlow, 'statusbar': {'title': 'EXPORT'}},
-        {'icon': 'ICON_SCAN_QR', 'label': 'Verify Liana Address',
-         'flow': VerifyWalletPolicyRequestFlow, 'statusbar': {'title': 'VERIFY'}},
-        {'icon': 'ICON_SIGN', 'label': 'Rename', 'flow': RenameWalletPolicyFlow,
+        {'icon': 'ICON_SCAN_QR', 'label': 'Verify Address',
+         'flow': VerifyWalletPolicyAddressFlow, 'statusbar': {'title': 'VERIFY'}},
+        {'icon': 'ICON_SIGN', 'label': 'Rename Policy', 'flow': RenameWalletPolicyFlow,
          'exit_on_success': True},
         {'icon': 'ICON_TWO_KEYS', 'label': 'Name Signers',
          'flow': NameWalletPolicyKeysFlow, 'exit_on_success': True},

@@ -3,6 +3,7 @@
 
 import ast
 import asyncio
+import gc
 import importlib.util
 import io
 from pathlib import Path
@@ -31,7 +32,7 @@ def flow_method(filename, class_name, method_name):
     tree = ast.parse((MODULES / 'flows' / filename).read_text())
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name)
     method = next(node for node in cls.body if isinstance(node, ast.AsyncFunctionDef) and node.name == method_name)
-    namespace = {}
+    namespace = {'gc': gc}
     exec(compile(ast.Module(body=[method], type_ignores=[]), filename, 'exec'), namespace)
     return namespace[method_name]
 
@@ -196,3 +197,45 @@ def test_qr_import_reports_microsd_fallback(monkeypatch, scan_result):
     asyncio.run(flow_method('wallet_policy_flow.py', 'ImportWalletPolicyFromQRFlow', 'scan')(flow))
     assert states == ['error']
     assert 'microSD' in flow.error
+
+
+@pytest.mark.parametrize('exists, result', [(True, True), (True, False), (False, False)])
+def test_policy_menu_verifies_selected_policy(monkeypatch, exists, result):
+    policy = object() if exists else None
+    settings = object()
+    calls = []
+
+    class MockRegistry:
+        def __init__(self, actual_settings):
+            assert actual_settings is settings
+
+        def get(self, policy_id):
+            assert policy_id == 'selected-policy'
+            return policy
+
+    class MockVerifyAddressFlow:
+        def __init__(self, sig_type, wallet_policy):
+            assert sig_type == 'policy'
+            assert wallet_policy is policy
+            calls.append('verify')
+
+        async def run(self):
+            return result
+
+    class MockErrorPage:
+        def __init__(self, message):
+            assert message == 'Wallet policy was not found.'
+            calls.append('missing')
+
+        async def show(self):
+            pass
+
+    monkeypatch.setitem(sys.modules, 'common', SimpleNamespace(settings=settings))
+    monkeypatch.setitem(sys.modules, 'flows', SimpleNamespace(VerifyAddressFlow=MockVerifyAddressFlow))
+    monkeypatch.setitem(sys.modules, 'pages', SimpleNamespace(ErrorPage=MockErrorPage))
+    monkeypatch.setattr('wallet_policy.WalletPolicyRegistry', MockRegistry)
+    results = []
+    flow = SimpleNamespace(policy_id='selected-policy', set_result=results.append)
+    asyncio.run(flow_method('wallet_policy_flow.py', 'VerifyWalletPolicyAddressFlow', 'verify')(flow))
+    assert results == [result]
+    assert calls == ['verify' if exists else 'missing']

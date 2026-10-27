@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gc
+
 from flows import Flow, SaveToMicroSDFlow
 
 
@@ -9,6 +11,7 @@ def _decode_policy(data):
     import stash
     from policy_transport import decode_policy_transport
 
+    gc.collect()
     chain = chains.current_chain()
     with stash.SensitiveValues() as sv:
         def derive_node(path):
@@ -17,7 +20,9 @@ def _decode_policy(data):
                 node.derive(element)
             return node
 
-        return decode_policy_transport(data, chain, sv.get_xfp(), derive_node)
+        policy = decode_policy_transport(data, chain, sv.get_xfp(), derive_node)
+    gc.collect()
+    return policy
 
 
 def _verify_current_seed(policy, chain):
@@ -104,11 +109,13 @@ class ImportWalletPolicyFlow(Flow):
     async def show_overview(self):
         from flows import SeriesOfPagesFlow
         from pages import LongTextPage
+        gc.collect()
         page_args = [{
             'card_header': {'title': 'Wallet policy'},
             'text': text,
             'centered': not text.startswith('Path '),
         } for text in self.policy.format_review_pages()]
+        gc.collect()
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
             self.goto(self.choose_technical_details)
@@ -145,11 +152,13 @@ class ImportWalletPolicyFlow(Flow):
         from pages import LongQuestionPage
         from styles.colors import HIGHLIGHT_TEXT_HEX
         from utils import escape_text, recolor
+        gc.collect()
         text = 'Register {}?\n\n{}\n\n{}\n{}'.format(
             recolor(HIGHLIGHT_TEXT_HEX, escape_text(self.policy.name)),
             self.policy.format_confirmation(),
             recolor(HIGHLIGHT_TEXT_HEX, 'Policy checksum'),
             recolor(HIGHLIGHT_TEXT_HEX, self.policy.descriptor_check()))
+        gc.collect()
         result = await LongQuestionPage(text=text).show()
         if result:
             self.goto(self.save_policy)
@@ -296,7 +305,11 @@ class ImportWalletPolicyFromQRFlow(Flow):
             self.error = str(exc) or 'Wallet Policy Import Error'
             self.goto(self.show_error)
             return
-        result = await ImportWalletPolicyFlow(policy).run()
+        flow = ImportWalletPolicyFlow(policy)
+        # Import buffers would otherwise stay live throughout registration.
+        del data, result, policy
+        gc.collect()
+        result = await flow.run()
         self.set_result(result)
 
     async def show_error(self):
@@ -337,7 +350,10 @@ class ImportWalletPolicyFromMicroSDFlow(Flow):
             self.error = str(exc) or 'Wallet Policy Import Error'
             self.goto(self.show_error)
             return
-        result = await ImportWalletPolicyFlow(policy).run()
+        flow = ImportWalletPolicyFlow(policy)
+        del data, policy
+        gc.collect()
+        result = await flow.run()
         self.set_result(result)
 
     async def show_error(self):
@@ -361,11 +377,13 @@ class ViewWalletPolicyFlow(Flow):
             await ErrorPage('Wallet policy was not found.').show()
             self.set_result(False)
             return
+        gc.collect()
         page_args = [{
             'card_header': {'title': 'Wallet policy'},
             'text': text,
             'centered': not text.startswith('Path '),
         } for text in self.policy.format_review_pages()]
+        gc.collect()
         result = await SeriesOfPagesFlow(LongTextPage, page_args).run()
         if result:
             self.goto(self.choose_technical_details)
@@ -549,6 +567,7 @@ class ExportWalletPolicyQRFlow(Flow):
         super().__init__(initial_state=self.show_qr, name='ExportWalletPolicyQRFlow')
 
     async def show_qr(self):
+        gc.collect()
         from data_codecs.qr_type import QRType
         from foundation import ur
         from pages import ErrorPage, ShowQRPage
@@ -557,8 +576,13 @@ class ExportWalletPolicyQRFlow(Flow):
             await ErrorPage('Wallet policy was not found.').show()
             self.set_result(False)
             return
+        gc.collect()
         data = encode_policy_transport(self.policy).encode('utf-8')
-        await ShowQRPage(qr_type=QRType.UR2, qr_data=ur.new_bytes(data)).show()
+        gc.collect()
+        # The UR value borrows data, so retain it until the QR page closes.
+        page = ShowQRPage(qr_type=QRType.UR2, qr_data=ur.new_bytes(data))
+        gc.collect()
+        await page.show()
         self.set_result(True)
 
 
@@ -579,6 +603,25 @@ class ExportWalletPolicyMicroSDFlow(SaveToMicroSDFlow):
             filename='{}-policy.json'.format(safe_name),
             path=get_folder_path(DIR_WALLET_CONFIGS),
             data=encode_policy_transport(policy), success_text='wallet policy')
+
+
+class VerifyWalletPolicyAddressFlow(Flow):
+    def __init__(self, context=None):
+        self.policy_id = context
+        super().__init__(initial_state=self.verify, name='VerifyWalletPolicyAddressFlow')
+
+    async def verify(self):
+        from common import settings
+        from flows import VerifyAddressFlow
+        from pages import ErrorPage
+        from wallet_policy import WalletPolicyRegistry
+
+        policy = WalletPolicyRegistry(settings).get(self.policy_id)
+        if policy is None:
+            await ErrorPage('Wallet policy was not found.').show()
+            self.set_result(False)
+            return
+        self.set_result(await VerifyAddressFlow(sig_type='policy', wallet_policy=policy).run())
 
 
 class VerifyWalletPolicyRequestFlow(Flow):

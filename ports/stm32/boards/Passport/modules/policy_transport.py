@@ -3,6 +3,8 @@
 
 """Versioned QR/microSD transport for registered wallet policies."""
 
+import gc
+
 try:
     import ujson as json
 except ImportError:  # pragma: no cover - CPython host tests
@@ -98,6 +100,7 @@ def decode_policy_transport(data, chain, master_xfp, derive_node,
     if not data or len(data) > MAX_TRANSPORT_LENGTH:
         raise PolicyResourceError('Wallet policy transport is empty or too large')
 
+    gc.collect()
     policy_id = None
     if data.startswith('{'):
         try:
@@ -119,16 +122,20 @@ def decode_policy_transport(data, chain, master_xfp, derive_node,
             raise PolicyParseError('Wallet policy key vector is missing')
         keys = tuple(KeyInfo.parse(value) for value in raw_keys)
         policy_id = envelope.get('policy_id')
+        del envelope
     else:
         name = default_name
         template, raw_keys = descriptor_to_policy_template(data, require_checksum=True)
         keys = tuple(KeyInfo.parse(value) for value in raw_keys)
         network = _infer_standard_xpub_network(keys) or getattr(chain, 'ctype', None)
 
+    del data, raw_keys
+    gc.collect()
     if network != getattr(chain, 'ctype', None):
         raise PolicyMismatchError(_network_mismatch_message(network))
     owned = discover_owned_key(keys, chain, master_xfp, derive_node)
     policy = MiniscriptPolicy(name, network, template, keys, owned)
+    gc.collect()
     policy.validate_extended_keys(chain)
     policy.verify_owned_key(chain, derive_node)
     if policy_id is not None and policy_id != policy.policy_id:
