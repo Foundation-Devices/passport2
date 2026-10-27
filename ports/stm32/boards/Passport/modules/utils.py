@@ -1487,6 +1487,13 @@ def escape_text(text):
     return text.replace("#", "##")
 
 
+def message_review_warning(message):
+    if message and message[-1] in ' \r\n\t':
+        # TODO: localize
+        return ('This message ends with whitespace.', 'It will be included in the signature.')
+    return None
+
+
 def stylize_address(address):
     from styles.colors import TEXT_GREY_HEX, BLACK_HEX
 

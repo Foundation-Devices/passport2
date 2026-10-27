@@ -15,6 +15,17 @@ class MockReviewPage:
     texts = []
 
     def __init__(self, text, **kwargs):
+        assert kwargs['require_scroll_to_end']
+        self.texts.append((text, kwargs['footer']))
+
+    async def show(self):
+        return True
+
+
+class MockQuestionPage:
+    texts = []
+
+    def __init__(self, text, **kwargs):
         self.texts.append(text)
 
     async def show(self):
@@ -71,11 +82,14 @@ async def run_tests():
     original_electrum_spinner = electrum.spinner_task
     try:
         pages.LongTextPage = electrum.LongTextPage = MockReviewPage
-        pages.LongQuestionPage = electrum.LongQuestionPage = MockReviewPage
+        pages.LongQuestionPage = electrum.LongQuestionPage = MockQuestionPage
         stash.SensitiveValues = MockSensitiveValues
         utils.spinner_task = electrum.spinner_task = mock_sign_spinner
 
         cases = (
+            ('trailing space ', 'trailing space '),
+            ('leading and interior\nwhitespace', 'leading and interior\nwhitespace'),
+            ('I approve A' + '\n' * 40 + 'and B', 'I approve A' + '\n' * 40 + 'and B'),
             ('\nfirst\n\nsecond\n', '\nfirst\n\nsecond\n'),
             ('first\r\n#ff0000 second#\r\n', 'first\r\n##ff0000 second##\r\n'),
             ('literal # and ## hashes', 'literal ## and #### hashes'),
@@ -87,6 +101,7 @@ async def run_tests():
                 flow = MockFlow()
                 flow.message = flow.text = message
                 MockReviewPage.texts = []
+                MockQuestionPage.texts = []
                 before = len(signed_messages)
                 if is_electrum:
                     await electrum.SignElectrumMessageFlow.show_message(flow)
@@ -94,8 +109,11 @@ async def run_tests():
                 else:
                     await HealthCheckCommonFlow.show_message(flow)
                     assert flow.next_state == flow.sign_health_check
-                assert MockReviewPage.texts[0] == '\n' + displayed
-                assert len(MockReviewPage.texts) == 2
+                warning = None
+                if message.endswith(' ') or message.endswith('\n'):
+                    warning = ('This message ends with whitespace.', 'It will be included in the signature.')
+                assert MockReviewPage.texts == [('\n' + displayed, warning)]
+                assert len(MockQuestionPage.texts) == 1
                 assert len(signed_messages) == before
                 assert flow.message == flow.text == message
                 if is_electrum:

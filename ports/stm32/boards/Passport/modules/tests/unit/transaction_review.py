@@ -11,7 +11,7 @@ from flows.sign_psbt_common_flow import SignPsbtCommonFlow
 from pages.long_text_page import LongTextPage
 from psbt import psbtOutputProxy
 from serializations import CTxOut
-from styles.colors import HIGHLIGHT_TEXT_HEX
+from styles.colors import HIGHLIGHT_TEXT, HIGHLIGHT_TEXT_HEX, TEXT_GREY
 from uio import BytesIO
 from utils import escape_text, recolor, stylize_address
 
@@ -217,11 +217,20 @@ def test_scroll_gate():
     parent.set_flex_flow(lv.FLEX_FLOW.COLUMN)
     group = lv.group_create()
     try:
-        for text, overflow in (('Short text', False), ('Long warning\n' * 50, True)):
-            page = LongTextPage(text=text, require_scroll_to_end=True)
+        for text, footer, overflow in (
+                ('Short text', None, False),
+                ('Long warning\n' * 50, None, True),
+                ('Short text', ('Trailing whitespace notice ' * 30, 'Signature explanation'), True)):
+            page = LongTextPage(text=text, footer=footer, require_scroll_to_end=True)
             page.mount(parent)
             page.attach(group)
             container = page.container.lvgl_root
+            if footer is not None:
+                assert page.footer.lvgl_root.get_style_text_color(0).full == HIGHLIGHT_TEXT.full
+                assert not page.footer.lvgl_root.get_recolor()
+                assert page.footer.lvgl_root.get_height() > 30
+                assert page.footer_body.lvgl_root.get_style_text_color(0).full == TEXT_GREY.full
+                assert not page.footer_body.lvgl_root.get_recolor()
             assert (container.get_scroll_bottom() > 0) == overflow
             assert (common.ui.right_micron is None) == overflow
             page.right_action(True)
