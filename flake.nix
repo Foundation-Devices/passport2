@@ -66,7 +66,33 @@
             config.allowUnfree = true;
           };
           customPackages = self.packages.${system};
-          embit = pkgs.python3Packages.buildPythonPackage rec {
+          # nixpkgs still ships Pillow 12.3.0, which is affected by open Pillow
+          # advisories fixed in 13.0.0. Override it for the whole Python package
+          # set, so packages that depend on Pillow (imageio) use the same copy as
+          # the shell. Remove once nixpkgs carries Pillow >= 13.0.0.
+          python3 = pkgs.python3.override {
+            self = python3;
+            packageOverrides = pyFinal: pyPrev: {
+              pillow = pyPrev.pillow.overridePythonAttrs (old: rec {
+                version = "13.0.0";
+                src = pkgs.fetchPypi {
+                  pname = "pillow";
+                  inherit version;
+                  hash = "sha256-zc0bolgXj3NW10FwyagbpOq2pdVXSLxAKloqb+a+NRA=";
+                };
+                # The shell needs the library, not its test suite, and nixpkgs'
+                # list of disabled tests is tuned for 12.3.0.
+                doCheck = false;
+              });
+              # imageio needs only numpy and Pillow at runtime. Its tests pull in
+              # every optional codec (pillow-heif, astropy, av, ...), which would
+              # all rebuild against the overridden Pillow, and one pillow-heif
+              # pixel comparison is off by one against 13.0.0.
+              imageio = pyPrev.imageio.overridePythonAttrs { doCheck = false; };
+            };
+          };
+          python3Packages = python3.pkgs;
+          embit = python3Packages.buildPythonPackage rec {
             pname = "embit";
             version = "0.8.0";
             pyproject = true;
@@ -74,7 +100,7 @@
               inherit pname version;
               hash = "sha256-i/SxAHPGdAA3DOUj+xbwNf51n2/dmHxXm9zCaNde13A=";
             };
-            build-system = with pkgs.python3Packages; [ setuptools wheel ];
+            build-system = with python3Packages; [ setuptools wheel ];
             pythonImportsCheck = [ "embit.descriptor.arguments" ];
           };
           runtimeLibPath = with pkgs; pkgs.lib.makeLibraryPath [

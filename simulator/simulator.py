@@ -652,7 +652,7 @@ def start():
                 # TODO: use shared memory (mmap or sh_mem, faster, doesn't need to "sync").
                 screen_buf = bytearray()
                 while len(screen_buf) < DISP_BUF_SIZE:
-                    buf = r.read(DISP_BUF_SIZE)
+                    buf = r.read(DISP_BUF_SIZE - len(screen_buf))
                     if not buf:
                         # print('not read')
                         continue
