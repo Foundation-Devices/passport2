@@ -9,9 +9,9 @@ from public_constants import AF_CLASSIC
 
 
 class HealthCheckCommonFlow(Flow):
-    def __init__(self, lines, normal_signing=False):
+    def __init__(self, data, normal_signing=False):
         super().__init__(initial_state=self.validate_lines, name='HealthCheckCommonFlow')
-        self.lines = lines
+        self.data = data
         self.text = None
         self.subpath = None
         self.addr_type = AF_CLASSIC
@@ -23,9 +23,13 @@ class HealthCheckCommonFlow(Flow):
 
         err_label = 'Message' if self.normal_signing else 'Health check'
 
-        single_line = len(self.lines) == 1 and self.lines[0].startswith('signmessage ')
-        if single_line:
-            parts = self.lines[0].split(' ', 2)
+        lines = self.data.splitlines()
+        header = lines[0].split(' ', 2) if lines else []
+        electrum_format = self.data.startswith('signmessage ') and (
+            len(lines) == 1 or (len(header) == 3 and header[2].startswith('ascii:')))
+        if electrum_format:
+            # Splitting the payload into lines would change the signed bytes.
+            parts = self.data.split(' ', 2)
 
             if len(parts) != 3 or not parts[2].startswith('ascii:'):
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
@@ -36,23 +40,23 @@ class HealthCheckCommonFlow(Flow):
             self.text = parts[2][len('ascii:'):]
 
         else:
-            if len(self.lines) not in [2, 3]:
+            if len(lines) not in [2, 3]:
                 await ErrorPage('{} format is invalid.'.format(err_label)).show()
                 self.set_result(None)
                 return
 
-            self.text = self.lines[0]
-            self.subpath = self.lines[1]
+            self.text = lines[0]
+            self.subpath = lines[1]
 
-            if len(self.lines) == 3:
-                self.addr_type = get_addr_type_from_string(self.lines[2])
+            if len(lines) == 3:
+                self.addr_type = get_addr_type_from_string(lines[2])
 
         if not self.text:
             await ErrorPage(text='Message is empty.').show()
             self.set_result(None)
             return
 
-        (subpath, error) = validate_sign_text(self.text, self.subpath)
+        (subpath, error) = validate_sign_text(self.text, self.subpath, allow_newlines=electrum_format)
 
         if error is not None:
             await ErrorPage(text=error).show()
@@ -61,7 +65,7 @@ class HealthCheckCommonFlow(Flow):
 
         self.subpath = subpath
 
-        if single_line:
+        if electrum_format:
             # A root or missing path has no purpose component for address-type
             # detection, even though the general path validator accepts it.
             if not self.subpath or self.subpath == 'm':
@@ -83,7 +87,7 @@ class HealthCheckCommonFlow(Flow):
 
     async def show_message(self):
         import stash
-        from utils import escape_text, stylize_address
+        from utils import escape_text, message_review_warning, stylize_address
         from pages import LongTextPage, LongQuestionPage
         import microns
         from public_constants import MARGIN_FOR_ADDRESSES
@@ -95,7 +99,9 @@ class HealthCheckCommonFlow(Flow):
         display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
-                                    text=('\n' + escape_text(self.text)),
+                                    text='\n' + escape_text(self.text),
+                                    footer=message_review_warning(self.text),
+                                    require_scroll_to_end=True,
                                     card_header={'title': 'Message'}).show()
 
         if not result:

@@ -28,14 +28,15 @@ async def run_tests():
         'Visible #ffffff hidden text#',
         ' leading    spaces and trailing ',
         'message:with:colons',
+        '\nfirst\n\nsecond\n',
+        '\r\nfirst\r\n\r\nsecond\r\n',
     ):
         value, error = await validate(message)
         assert error is None
         assert value == (message, PATH)
 
-    # NUL must not hide a signed suffix. Other controls (including LF and TAB),
-    # DEL, and non-ASCII text are also outside the supported display charset.
-    for character in tuple(chr(code) for code in range(32)) + ('\x7f', '\u00e9', '\u202e'):
+    # NUL and other unsupported controls must not hide signed text.
+    for character in tuple(chr(code) for code in range(32) if code != 10) + ('\x7f', '\u00e9', '\u202e'):
         value, error = await validate('visible' + character + 'hidden')
         assert value is None
         assert error is not None

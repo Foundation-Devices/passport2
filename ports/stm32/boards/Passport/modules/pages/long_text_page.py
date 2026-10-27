@@ -7,7 +7,7 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Label, View, Icon
 from pages import Page
-from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
+from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR, HIGHLIGHT_TEXT
 import microns
 import passport
 
@@ -24,7 +24,8 @@ class LongTextPage(Page):
                  right_micron=microns.Forward,
                  margins=None,
                  top_margin=None,
-                 require_scroll_to_end=False):
+                 require_scroll_to_end=False,
+                 footer=None):
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -82,7 +83,19 @@ class LongTextPage(Page):
                     default.text_align(lv.TEXT_ALIGN.CENTER)
 
             self.container.set_children([self.text])
-            self.add_child(self.container)
+
+        if footer is not None:
+            title, body = footer
+            self.footer = Label(text=title, color=HIGHLIGHT_TEXT, center=centered, recolor=False)
+            self.footer.set_width(lv.pct(100))
+            with Stylize(self.footer) as default:
+                default.pad(top=16)
+            self.container.add_child(self.footer)
+            self.footer_body = Label(text=body, color=TEXT_GREY, center=centered, recolor=False)
+            self.footer_body.set_width(lv.pct(100))
+            self.container.add_child(self.footer_body)
+
+        self.add_child(self.container)
 
     def attach(self, group):
         super().attach(group)
