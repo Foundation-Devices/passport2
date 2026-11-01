@@ -68,7 +68,7 @@ class ImportWalletPolicyFlow(Flow):
             self.goto(self.show_error)
             return
         self.key_name_position = 0
-        self.goto(self.choose_key_name)
+        self.goto(self.choose_key_name if self.external_key_indexes else self.show_overview)
 
     async def choose_key_name(self):
         import microns

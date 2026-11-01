@@ -6,6 +6,7 @@ import json
 import builtins
 import os
 import sys
+import struct
 import types
 
 import pytest
@@ -190,6 +191,7 @@ def test_full_descriptor_converter_rejects_non_bip388_derivation(descriptor):
 
 def test_policy_id_is_stable_across_rename_but_contents_are_validated():
     policy = make_policy()
+    assert policy.policy_id == '938faed5cd17836ad2a5642d2227e304bc93aa2fb98f16f5e5c3932c49995323'
     renamed = policy.rename('Inheritance')
     assert renamed.policy_id == policy.policy_id
     record = policy.serialize()
@@ -197,6 +199,22 @@ def test_policy_id_is_stable_across_rename_but_contents_are_validated():
     record['t'] = 'wsh(pk(@0/**))'
     with pytest.raises(PolicyParseError):
         MiniscriptPolicy.deserialize(record)
+
+
+def test_policy_identity_preserves_compact_size_for_long_templates():
+    template = 'wsh(' + 'and_v(v:older(16),' * 14 + 'pk(@0/**)' + ')' * 14 + ')'
+    assert 253 <= len(template) <= 512
+    policy = MiniscriptPolicy('Long template', 'BTC', template, (KEY_INFO,), (0,))
+    payload = (b'Passport Wallet Policy\x00\x01\x03BTC' +
+               b'\xfd' + struct.pack('<H', len(template)) + template.encode('ascii') +
+               b'\x01' + bytes([len(KEY_INFO)]) + KEY_INFO.encode('ascii'))
+    assert policy.policy_id == hashlib.sha256(payload).hexdigest()
+
+
+def test_registration_rejects_unsigned_policy():
+    with pytest.raises(PolicyTypeError, match='require a signature'):
+        MiniscriptPolicy('Unsigned', 'BTC', 'wsh(or_i(pk(@0/**),older(10)))',
+                         (KEY_INFO,), (0,))
 
 
 def test_local_key_names_are_migration_safe_and_do_not_change_policy_identity():
@@ -252,6 +270,7 @@ def test_liana_multisig_allows_owned_xpub_in_exclusive_paths():
     policy = decode_policy_transport(
         descriptor, chain, my_xfp, lambda path: OwnedNode(owned_xpub),
         default_name='Liana Multisig')
+    assert policy.name == 'Liana Multisig'
     review_pages = policy.format_review_pages()
     assert review_pages
     assert any('Passport' in page for page in review_pages)
@@ -422,7 +441,28 @@ def test_policy_transport_round_trip_rediscovers_owned_key():
         int.from_bytes(bytes.fromhex('6738736c'), 'little'),
         lambda path: OwnedNode(XPUB))
     assert decoded.policy_id == policy.policy_id
+    assert decoded.name == policy.name
     assert decoded.owned_key_indexes == (0,)
+
+
+@pytest.mark.parametrize('transport', ('descriptor', 'missing-name', 'empty-name'))
+def test_unnamed_policy_import_uses_descriptor_checksum(transport):
+    policy = make_policy()
+    if transport == 'descriptor':
+        data = policy.full_descriptor()
+    else:
+        envelope = json.loads(encode_policy_transport(policy))
+        if transport == 'missing-name':
+            del envelope['name']
+        else:
+            envelope['name'] = ''
+        data = json.dumps(envelope)
+    decoded = decode_policy_transport(
+        data, DerivationChain(),
+        int.from_bytes(bytes.fromhex('6738736c'), 'little'),
+        lambda path: OwnedNode(XPUB))
+    assert decoded.name == decoded.descriptor_check() == policy.descriptor_check()
+    assert decoded.policy_id == policy.policy_id
 
 
 def test_policy_transport_accepts_ur_bytearray():

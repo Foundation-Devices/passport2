@@ -239,3 +239,87 @@ def test_policy_menu_verifies_selected_policy(monkeypatch, exists, result):
     asyncio.run(flow_method('wallet_policy_flow.py', 'VerifyWalletPolicyAddressFlow', 'verify')(flow))
     assert results == [result]
     assert calls == ['verify' if exists else 'missing']
+
+
+@pytest.mark.parametrize('key_count', [1, 2])
+def test_policy_import_starts_with_wallet_name_prompt(monkeypatch, key_count):
+    class Flow:
+        def __init__(self, initial_state, name):
+            self.state = initial_state
+
+    monkeypatch.setitem(sys.modules, 'flows', SimpleNamespace(Flow=Flow, SaveToMicroSDFlow=object))
+    module = load_module(MODULES / 'flows' / 'wallet_policy_flow.py')
+    policy = SimpleNamespace(keys=[None] * key_count, key_names=[''] * key_count,
+                             owned_key_indexes=(0,))
+    flow = module.ImportWalletPolicyFlow(policy)
+    assert flow.state.__name__ == 'choose_name'
+
+
+def test_policy_import_can_go_back_from_review_without_external_signers(monkeypatch):
+    class Series:
+        def __init__(self, *args):
+            pass
+
+        async def run(self):
+            return False
+
+    monkeypatch.setitem(sys.modules, 'flows', SimpleNamespace(SeriesOfPagesFlow=Series))
+    monkeypatch.setitem(sys.modules, 'pages', SimpleNamespace(LongTextPage=object))
+    results = []
+    flow = SimpleNamespace(policy=SimpleNamespace(format_review_pages=lambda: ['Review']),
+                           external_key_indexes=(), back=lambda: results.append('back'))
+    asyncio.run(flow_method('wallet_policy_flow.py', 'ImportWalletPolicyFlow', 'show_overview')(flow))
+    assert results == ['back']
+
+
+def test_policy_import_can_go_back_from_first_signer_name(monkeypatch):
+    class TextInputPage:
+        def __init__(self, **kwargs):
+            pass
+
+        async def show(self):
+            return None
+
+    monkeypatch.setitem(sys.modules, 'microns', SimpleNamespace(Back=None, Checkmark=None))
+    monkeypatch.setitem(sys.modules, 'pages', SimpleNamespace(ErrorPage=object, TextInputPage=TextInputPage))
+    monkeypatch.setitem(sys.modules, 'policy_display', SimpleNamespace(
+        format_fingerprint=lambda value: value, suggested_key_name=lambda policy, index: 'Signer'))
+    results = []
+    flow = SimpleNamespace(policy=SimpleNamespace(keys=[SimpleNamespace(fingerprint='12345678')]),
+                           external_key_indexes=(0,), key_names=[''], key_name_position=0,
+                           back=lambda: results.append('back'))
+    asyncio.run(flow_method('wallet_policy_flow.py', 'ImportWalletPolicyFlow', 'choose_key_name')(flow))
+    assert results == ['back']
+
+
+@pytest.mark.parametrize('name,response', [
+    ('HQ3FM2R2', 'HQ3FM2R2'),
+    ('Supplied name', 'Supplied name'),
+    ('HQ3FM2R2', 'My wallet'),
+    ('HQ3FM2R2', None),
+])
+@pytest.mark.parametrize('external_keys', [(), (1,)])
+def test_policy_name_prompt_preserves_prefill_editing_and_cancel(monkeypatch, name, response, external_keys):
+    class TextInputPage:
+        def __init__(self, **kwargs):
+            assert kwargs['initial_text'] == name
+
+        async def show(self):
+            return response
+
+    monkeypatch.setitem(sys.modules, 'microns', SimpleNamespace(Cancel=None, Checkmark=None))
+    monkeypatch.setitem(sys.modules, 'pages', SimpleNamespace(TextInputPage=TextInputPage))
+    policy = MiniscriptPolicy(name, 'BTC', 'wsh(pk(@0/**))', (KEY_INFO,), (0,))
+    states = []
+    results = []
+    flow = SimpleNamespace(policy=policy, external_key_indexes=external_keys,
+                           choose_key_name='signers', show_overview='overview',
+                           goto=states.append, set_result=results.append)
+    asyncio.run(flow_method('wallet_policy_flow.py', 'ImportWalletPolicyFlow', 'choose_name')(flow))
+    if response is None:
+        assert results == [False]
+        assert states == []
+    else:
+        assert flow.policy.name == response
+        assert flow.policy.policy_id == policy.policy_id
+        assert states == ['signers' if external_keys else 'overview']

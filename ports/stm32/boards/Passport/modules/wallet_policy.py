@@ -15,7 +15,7 @@ except ImportError:  # pragma: no cover - CPython host tests
 
 from descriptor import split_checksum
 from miniscript import (MAX_KEYS, MAX_TEMPLATE_LENGTH, Parser,
-                        compile_miniscript, iter_policy_keys, validate)
+                        compile_miniscript, iter_policy_keys)
 from policy_errors import (PolicyMismatchError, PolicyParseError,
                            PolicyResourceError, UnsupportedPolicyError, WalletPolicyError)
 
@@ -251,6 +251,14 @@ def descriptor_to_policy_template(descriptor, require_checksum=True):
     return template, tuple(key_values)
 
 
+def format_policy_descriptor(template, keys):
+    """Expand a policy template into a full descriptor without its checksum."""
+    # Replace higher indexes first so @1 cannot match the start of @10.
+    for index in range(len(keys) - 1, -1, -1):
+        template = template.replace('@{}'.format(index), keys[index].canonical())
+    return template
+
+
 class DerivedPolicyOutput:
     __slots__ = ('policy_id', 'branch', 'index', 'witness_script',
                  'redeem_script', 'script_pubkey', 'address')
@@ -293,7 +301,6 @@ class MiniscriptPolicy:
         if template.startswith('wsh(') and template.endswith(')'):
             context = 'wsh'
             miniscript = Parser(template[4:-1]).parse()
-            validate(miniscript, context)
             # Script size and opcode costs do not depend on derived key bytes.
             # Reject unsafe policies before registration, not just at derivation.
             compile_miniscript(miniscript, lambda *_: b'\x02' + bytes(32), 0, 0,
@@ -425,13 +432,19 @@ class MiniscriptPolicy:
         return policy
 
     def calculate_id(self):
-        payload = b'Passport Wallet Policy\x00' + bytes([POLICY_FORMAT_VERSION])
-        payload += _encode_field(self.network)
-        payload += _encode_field(self.template)
-        payload += _compact_size(len(self.keys))
+        try:
+            from trezorcrypto import sha256
+        except ImportError:  # pragma: no cover - CPython host tests
+            from hashlib import sha256
+
+        digest = sha256(b'Passport Wallet Policy\x00')
+        digest.update(bytes([POLICY_FORMAT_VERSION]))
+        digest.update(_encode_field(self.network))
+        digest.update(_encode_field(self.template))
+        digest.update(_compact_size(len(self.keys)))
         for key in self.keys:
-            payload += _encode_field(key.canonical())
-        return hexlify(_sha256(payload)).decode('ascii')
+            digest.update(_encode_field(key.canonical()))
+        return hexlify(digest.digest()).decode('ascii')
 
     def serialize(self):
         record = {
@@ -482,11 +495,7 @@ class MiniscriptPolicy:
         return '\n\n'.join(lines)
 
     def full_descriptor(self, with_checksum=True):
-        descriptor = self.template
-        # Replace higher indexes first so @1 cannot match the start of @10.
-        for index in range(len(self.keys) - 1, -1, -1):
-            descriptor = descriptor.replace('@{}'.format(index),
-                                            self.keys[index].canonical())
+        descriptor = format_policy_descriptor(self.template, self.keys)
         if with_checksum:
             from descriptor import append_checksum
             return append_checksum(descriptor)

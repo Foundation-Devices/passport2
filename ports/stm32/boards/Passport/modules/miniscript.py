@@ -504,11 +504,14 @@ def analyze(node, context='wsh'):
 
 
 def _walk(node):
-    yield node
-    for arg in node.args:
-        if isinstance(arg, Node):
-            for child in _walk(arg):
-                yield child
+    pending = [node]
+    while pending:
+        node = pending.pop()
+        yield node
+        for index in range(len(node.args) - 1, -1, -1):
+            child = node.args[index]
+            if isinstance(child, Node):
+                pending.append(child)
 
 
 def iter_policy_keys(node):

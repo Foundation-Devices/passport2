@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover - CPython host tests
 
 from policy_errors import PolicyMismatchError, PolicyParseError, PolicyResourceError
 from wallet_policy import (KeyInfo, MiniscriptPolicy,
-                           descriptor_to_policy_template)
+                           descriptor_to_policy_template, format_policy_descriptor)
 
 
 TRANSPORT_FORMAT = 'passport-wallet-policy'
@@ -92,7 +92,7 @@ def _transport_text(data, invalid_utf8_message):
 
 
 def decode_policy_transport(data, chain, master_xfp, derive_node,
-                            default_name='Wallet Policy'):
+                            default_name=''):
     data = _transport_text(data, 'Wallet policy file is not UTF-8 text')
     if not isinstance(data, str):
         raise PolicyParseError('Wallet policy transport must be text')
@@ -134,6 +134,9 @@ def decode_policy_transport(data, chain, master_xfp, derive_node,
     if network != getattr(chain, 'ctype', None):
         raise PolicyMismatchError(_network_mismatch_message(network))
     owned = discover_owned_key(keys, chain, master_xfp, derive_node)
+    if not name:
+        from descriptor import descriptor_checksum
+        name = descriptor_checksum(format_policy_descriptor(template, keys)).upper()
     policy = MiniscriptPolicy(name, network, template, keys, owned)
     gc.collect()
     policy.validate_extended_keys(chain)
