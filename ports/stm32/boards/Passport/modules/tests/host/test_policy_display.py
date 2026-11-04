@@ -340,7 +340,7 @@ def test_height_and_time_locks_get_human_and_exact_descriptions():
 
     short, exact, detail = describe_timelock('older', (1 << 22) | 1182)
     assert short == 'about 1 week'
-    assert exact == '605,184 seconds (1,182 x 512)'
+    assert exact == '605,184 seconds'
     assert 'each coin confirms' in detail
 
     assert describe_timelock('after', 840000)[:2] == (
@@ -367,9 +367,9 @@ def test_relative_block_delays_scale_from_one_block_to_consensus_maximum(
 
 def test_time_based_relative_delay_and_absolute_date_are_unambiguous():
     assert describe_timelock('older', (1 << 22) | 1)[:2] == (
-        'about 8 minutes', '512 seconds (1 x 512)')
+        'about 8 minutes', '512 seconds')
     assert describe_timelock('older', (1 << 22) | 65535)[:2] == (
-        'about 1 year 1 month', '33,553,920 seconds (65,535 x 512)')
+        'about 1 year 1 month', '33,553,920 seconds')
     assert describe_timelock('after', 1798761600)[:2] == (
         '2027-01-01 UTC', 'Unix timestamp 1,798,761,600')
 
@@ -468,3 +468,36 @@ def test_unconditional_lock_still_filters_a_path_with_nested_optional_timing():
     assert '5 blocks' in review
     assert '10 blocks' in review
     assert 'Available after' not in review
+
+
+@pytest.mark.parametrize('owned, expected', [
+    (2, 'Passport not used in 1\nPassport optional in 1'),
+    (0, 'Passport optional in 2'),
+])
+def test_confirmation_distinguishes_optional_and_absent_passport(owned, expected):
+    policy = MiniscriptPolicy(
+        'Recovery', 'BTC',
+        'wsh(or_i(multi(1,@0/<2;3>/*,@1/<2;3>/*),and_v(v:multi(1,@0/**,@1/**,@2/**),after(1795046400))))',
+        tuple(key_info(index) for index in range(3)), (owned,))
+    assert policy.format_confirmation() == '2 spending paths\n' + expected
+
+
+def test_confirmation_preserves_required_and_unknown_roles():
+    policy = MiniscriptPolicy('Required', 'BTC', 'wsh(pk(@0/**))', (key_info(0),), (0,))
+    assert policy.format_confirmation() == '1 spending path\nPassport required in 1'
+    conditional = MiniscriptPolicy(
+        'Conditional', 'BTC', 'wsh(andor(pk(@0/**),pk(@1/**),pk(@2/**)))',
+        tuple(key_info(index) for index in range(3)), (0,))
+    assert conditional.format_confirmation() == '1 spending path\nReview Passport role in 1'
+
+
+def test_single_key_time_delay_keeps_encoding_in_technical_details():
+    policy = MiniscriptPolicy(
+        'Time delay', 'BTC', 'wsh(and_v(v:pk(@0/**),older(4194305)))',
+        (key_info(0),), (0,))
+    review = '\n'.join(plain_review_pages(policy))
+    assert '512 seconds' in review
+    assert 'x 512' not in review
+    assert 'This key must sign' in review
+    assert 'All 1 keys' not in review
+    assert 'older(4194305): 1 x 512 = 512 seconds' in policy.format_details()

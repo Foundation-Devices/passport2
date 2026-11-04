@@ -118,8 +118,7 @@ def describe_timelock(kind, value):
         if value & (1 << 22):
             units = value & 0xffff
             seconds = units * 512
-            exact = '{} seconds ({} x 512)'.format(
-                _group_number(seconds), _group_number(units))
+            exact = '{} seconds'.format(_group_number(seconds))
             if value != ((1 << 22) | units):
                 exact += ' (encoded as older({}))'.format(value)
             return (
@@ -378,6 +377,17 @@ def _path_requires_passport(policy, path):
     return not result
 
 
+def _passport_role(policy, path):
+    requires = _path_requires_passport(policy, path)
+    if requires is True:
+        return 'required'
+    if requires is None:
+        return 'review details'
+    if any(index in policy.owned_key_indexes for index in path['keys']):
+        return 'optional'
+    return 'not used'
+
+
 def _simple_path_pages(policy, simple):
     primary, recovery = simple
     owned = policy.keys[policy.owned_key_indexes[0]]
@@ -484,7 +494,9 @@ def _friendly_key_path(policy, path):
         return None
     required, indexes = threshold
 
-    if required == len(indexes) == 2:
+    if required == len(indexes) == 1:
+        summary = 'This key must sign'
+    elif required == len(indexes) == 2:
         summary = 'Both keys must sign'
     elif required == len(indexes):
         summary = 'All {} keys must sign'.format(len(indexes))
@@ -625,20 +637,9 @@ def format_review_pages(policy):
     if not simple and len(paths) > 1:
         lines = ['This Passport']
         for path in paths:
-            requires = _path_requires_passport(policy, path)
-            if requires is True:
+            role = _passport_role(policy, path)
+            if role == 'required':
                 role = 'must sign'
-            elif requires is False:
-                if any(key_index in policy.owned_key_indexes
-                       for key_index in path['keys']):
-                    role = 'optional'
-                else:
-                    role = 'not used'
-            else:
-                role = 'review details'
-            # MicroPython does not provide str.capitalize(). Keep this simple
-            # transformation within the subset shared by host Python and the
-            # firmware runtime.
             display_role = role[0].upper() + role[1:]
             lines.extend(['', _path_name(path), display_role])
         pages.append('\n'.join(lines))
@@ -663,10 +664,16 @@ def format_confirmation(policy):
             '{} {}\ncan spend by itself {} after each coin confirms.'
         ).format(_escape(policy.key_names[recovery['keys'][0]]) or 'Recovery',
                  format_fingerprint(key.fingerprint), short)
-    bypass = sum(1 for path in paths if _path_requires_passport(policy, path) is False)
+    roles = {'required': 0, 'optional': 0, 'not used': 0, 'review details': 0}
+    for path in paths:
+        role = _passport_role(policy, path)
+        roles[role] += 1
     text = _plural(len(paths), 'spending path')
-    if bypass:
-        text += '\n{} without Passport'.format(bypass)
+    for role in ('not used', 'optional', 'required'):
+        if roles[role]:
+            text += '\nPassport {} in {}'.format(role, roles[role])
+    if roles['review details']:
+        text += '\nReview Passport role in {}'.format(roles['review details'])
     return text
 
 
