@@ -27,10 +27,13 @@ class UpdateFirmwareFlow(Flow):
         self.filename = None
         self.error_message = None
         self.update_header = None
+        self.update_digest = None
 
-    async def on_done(self, error=None, message=None):
+    async def on_done(self, error=None, message=None, digest=None):
         self.error = error
         self.error_message = message
+        if digest is not None:
+            self.update_digest = bytes(digest)
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
@@ -139,7 +142,8 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Preparing Update', left_micron=None, right_micron=None)
 
         self.update_task = start_task(copy_firmware_to_spi_flash_task(
-            self.update_file_path, self.size, self.update_header, self.progress_page.set_progress, self.on_done))
+            self.update_file_path, self.size, self.update_header, self.update_digest,
+            self.progress_page.set_progress, self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()
