@@ -36,9 +36,11 @@ pub extern "C" fn secp256k1_public_key_schnorr(
     secret_key: &[u8; 32],
     public_key: &mut [u8; 32],
 ) {
-    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
-        .expect("invalid secret key");
+    let mut keypair =
+        Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+            .expect("invalid secret key");
     let compressed_key = keypair.public_key().serialize();
+    keypair.non_secure_erase();
     public_key.copy_from_slice(&compressed_key[1..]);
 }
 
@@ -53,11 +55,12 @@ pub extern "C" fn secp256k1_sign_ecdsa(
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
 ) {
-    let secret_key =
+    let mut secret_key =
         SecretKey::from_slice(secret_key).expect("invalid secret key");
 
     let msg = Message::from_digest_slice(data).unwrap();
     let sig = PRE_ALLOCATED_CTX.sign_ecdsa(&msg, &secret_key);
+    secret_key.non_secure_erase();
     signature.copy_from_slice(&sig.serialize_compact());
 }
 
@@ -72,11 +75,13 @@ pub extern "C" fn secp256k1_sign_schnorr(
     secret_key: &[u8; 32],
     signature: &mut [u8; 64],
 ) {
-    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
-        .expect("invalid secret key");
+    let mut keypair =
+        Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+            .expect("invalid secret key");
 
     let sig =
         PRE_ALLOCATED_CTX.sign_schnorr_with_rng(data, &keypair, &mut rng());
+    keypair.non_secure_erase();
     signature.copy_from_slice(sig.as_ref());
 }
 
@@ -112,8 +117,9 @@ fn taproot_tweak(
     secret_key: &[u8; 32],
     merkle_root: Option<&[u8; 32]>,
 ) -> Keypair {
-    let keypair = Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
-        .expect("invalid secret key");
+    let mut keypair =
+        Keypair::from_seckey_slice(&PRE_ALLOCATED_CTX, secret_key)
+            .expect("invalid secret key");
     let (internal_key, _) = keypair.x_only_public_key();
 
     let tag = sha256::Hash::hash(b"TapTweak");
@@ -127,9 +133,12 @@ fn taproot_tweak(
     let tweak = sha256::Hash::from_engine(engine).to_byte_array();
 
     let tweak = Scalar::from_be_bytes(tweak).expect("tweak is out of range");
-    keypair
+    // Keypair is Copy: the tweak consumes a copy and leaves this one behind.
+    let tweaked = keypair
         .add_xonly_tweak(&PRE_ALLOCATED_CTX, &tweak)
-        .expect("tweak produced an invalid key")
+        .expect("tweak produced an invalid key");
+    keypair.non_secure_erase();
+    tweaked
 }
 
 #[cfg(target_arch = "arm")]
@@ -145,7 +154,7 @@ fn rng() -> rand::rngs::ThreadRng {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use secp256k1::schnorr::Signature;
+    use secp256k1::{schnorr::Signature, XOnlyPublicKey};
 
     /// BIP-341 wallet test vectors, `keyPathSpending`: internal secret key,
     /// Merkle root, and the expected tweaked secret key.
@@ -194,6 +203,57 @@ mod tests {
             *byte = u8::from_str_radix(pair, 16).unwrap();
         }
         bytes
+    }
+
+    /// BIP-340 test vector 0: secret key and its x-only public key.
+    const BIP340_SECRET_KEY: &str =
+        "0000000000000000000000000000000000000000000000000000000000000003";
+    const BIP340_PUBLIC_KEY: &str =
+        "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9";
+
+    #[test]
+    fn public_key_schnorr_matches_bip340_vector() {
+        let mut public_key = [0; 32];
+        secp256k1_public_key_schnorr(
+            &hex32(BIP340_SECRET_KEY),
+            &mut public_key,
+        );
+        assert_eq!(public_key, hex32(BIP340_PUBLIC_KEY));
+    }
+
+    #[test]
+    fn schnorr_signature_verifies() {
+        let data = [0x42; 32];
+        let mut signature = [0; 64];
+        secp256k1_sign_schnorr(
+            &data,
+            &hex32(BIP340_SECRET_KEY),
+            &mut signature,
+        );
+
+        let public_key =
+            XOnlyPublicKey::from_slice(&hex32(BIP340_PUBLIC_KEY)).unwrap();
+        let signature = Signature::from_slice(&signature).unwrap();
+        PRE_ALLOCATED_CTX
+            .verify_schnorr(&signature, &data, &public_key)
+            .unwrap();
+    }
+
+    #[test]
+    fn ecdsa_signature_verifies() {
+        let data = [0x42; 32];
+        let mut signature = [0; 64];
+        secp256k1_sign_ecdsa(&data, &hex32(BIP340_SECRET_KEY), &mut signature);
+
+        let secret_key =
+            SecretKey::from_slice(&hex32(BIP340_SECRET_KEY)).unwrap();
+        let public_key = secret_key.public_key(&PRE_ALLOCATED_CTX);
+        let signature =
+            secp256k1::ecdsa::Signature::from_compact(&signature).unwrap();
+        let msg = Message::from_digest_slice(&data).unwrap();
+        PRE_ALLOCATED_CTX
+            .verify_ecdsa(&msg, &signature, &public_key)
+            .unwrap();
     }
 
     #[test]
