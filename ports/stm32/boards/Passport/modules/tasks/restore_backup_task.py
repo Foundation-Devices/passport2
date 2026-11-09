@@ -17,7 +17,7 @@ import ujson
 from files import CardSlot, CardMissingError
 from ubinascii import unhexlify as a2b_hex
 from errors import Error
-from constants import MAX_BACKUP_FILE_SIZE
+from constants import BACKUP_FILE_HEADER, MAX_BACKUP_FILE_SIZE
 from pincodes import SE_SECRET_LEN
 
 NON_RESTORABLE_BACKUP_SETTINGS = ('bip39_passphrase', 'root_xfp', 'xfp', 'xpub')
@@ -70,6 +70,11 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
         return
     except BaseException:
         await on_done(Error.FILE_READ_ERROR)
+        return
+
+    # Every backup Passport has written starts with this exact line.
+    if not contents.startswith(BACKUP_FILE_HEADER.encode()):
+        await on_done(Error.CORRUPT_BACKUP_FILE)
         return
 
     vals = {}
