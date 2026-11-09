@@ -9,12 +9,25 @@ import compat7z
 import export
 import flows.backup_common_flow as backup_module
 from flows.backup_common_flow import BackupCommonFlow
-from uio import BytesIO
+from uio import BytesIO, StringIO
 from utils import get_backup_code_as_password
 
 CODE = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5]
 PASSWORD = get_backup_code_as_password(CODE)
-TEXT = '# Passport backup file! DO NOT CHANGE.\nraw_secret = "00"\n'
+
+
+def render_text():
+    # Built at run time like render_backup_contents(), so the string is new
+    # and not shared with a literal: encode() shares its buffer, and the flow
+    # wipes that buffer.
+    out = StringIO()
+    out.write('# Passport backup file! DO NOT CHANGE.\n')
+    out.write('raw_secret = "%s"\n' % ('ab' * 16))
+    return out.getvalue()
+
+
+# An independent copy, since the flow wipes the text it is given.
+EXPECTED = bytes(bytearray(render_text().encode()))
 
 
 class MockNoise:
@@ -70,9 +83,13 @@ def check_write_fn_wipes():
             captured['key'] = self.key
             super().wipe_key()
 
+    def render():
+        captured['text'] = render_text()
+        return captured['text']
+
     original = (export.render_backup_contents, compat7z.Builder)
     try:
-        export.render_backup_contents = lambda: TEXT
+        export.render_backup_contents = render
         compat7z.Builder = CapturingBuilder
         backup_module.open = lambda filename, mode: output
         BackupCommonFlow.write_fn(Holder(), 'backup.7z')
@@ -82,9 +99,11 @@ def check_write_fn_wipes():
 
     # Check the bytes themselves: MicroPython caches a bytes object's hash,
     # which wiping in place leaves stale, so == against zeros would mislead.
-    assert len(captured['plaintext']) == len(TEXT) and not any(captured['plaintext'])
+    assert len(captured['plaintext']) == len(EXPECTED) and not any(captured['plaintext'])
     assert len(captured['key']) == 32 and not any(captured['key'])
-    assert decrypt(output.written.getvalue()) == ('passport-backup.txt', TEXT.encode())
+    # The rendered text shares the plaintext's buffer, so it is cleared too.
+    assert all(ord(c) == 0 for c in captured['text'])
+    assert decrypt(output.written.getvalue()) == ('passport-backup.txt', EXPECTED)
 
 
 original_noise = common.noise

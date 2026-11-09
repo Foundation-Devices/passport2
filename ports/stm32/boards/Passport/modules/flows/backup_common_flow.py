@@ -37,6 +37,9 @@ class BackupCommonFlow(SaveToMicroSDFlow):
             hdr, footer = zz.save('passport-backup.txt')
         finally:
             # Neither the plaintext nor the key is needed once encrypted.
+            # str.encode() shares the string's buffer, so this also clears the
+            # rendered text. That text holds this device's secrets, so it is
+            # never an interned string that other code shares.
             stash.blank_object(body)
             if zz is not None:
                 zz.wipe_key()
