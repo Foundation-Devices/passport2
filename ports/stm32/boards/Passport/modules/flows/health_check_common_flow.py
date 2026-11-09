@@ -5,17 +5,56 @@
 
 from flows import Flow
 from wallets.utils import get_addr_type_from_deriv, get_addr_type_from_string
-from public_constants import AF_CLASSIC
+from public_constants import AF_CLASSIC, AF_P2TR
+
+
+def _path_children(path):
+    # (index, hardened) for each component of a path from cleanup_deriv_path().
+    return [(int(part.rstrip("'")), part.endswith("'")) for part in path.split('/')[1:]]
+
+
+def _is_address_suffix(children):
+    # At most a chain (0 or 1) and an index, both unhardened.
+    return (len(children) <= 2 and not any(hardened for _, hardened in children) and
+            (not children or children[0][0] <= 1))
+
+
+def is_health_check_path(service, path):
+    """Whether a health check for `service` may sign with the key at `path`."""
+    if path in ('', 'm'):
+        # Casa's master-key challenge.
+        return service == 'Casa'
+
+    children = _path_children(path)
+    if service == 'Casa':
+        # Same rule as Passport Prime: m/49/coin/account (legacy vaults) or
+        # m/45'/coin/account, with coin 0 or 1, then an optional address suffix.
+        if len(children) < 3:
+            return False
+        purpose, (coin, coin_hardened), (_, account_hardened) = children[:3]
+        return (purpose in ((49, False), (45, True)) and not coin_hardened and coin <= 1 and
+                not account_hardened and _is_address_suffix(children[3:]))
+
+    if service == 'Theya':
+        # Theya vault keys are BIP48 multisig keys: m/48'/coin'/account'/script'.
+        if len(children) < 4:
+            return False
+        purpose, (coin, coin_hardened), (_, account_hardened), (script, script_hardened) = children[:4]
+        return (purpose == (48, True) and coin_hardened and coin <= 1 and account_hardened and
+                script_hardened and script in (1, 2) and _is_address_suffix(children[4:]))
+
+    return False
 
 
 class HealthCheckCommonFlow(Flow):
-    def __init__(self, data, normal_signing=False):
+    def __init__(self, data, normal_signing=False, service=None):
         super().__init__(initial_state=self.validate_lines, name='HealthCheckCommonFlow')
         self.data = data
         self.text = None
         self.subpath = None
         self.addr_type = AF_CLASSIC
         self.normal_signing = normal_signing
+        self.service = service
 
     async def validate_lines(self):
         from pages import ErrorPage
@@ -25,7 +64,8 @@ class HealthCheckCommonFlow(Flow):
 
         lines = self.data.splitlines()
         header = lines[0].split(' ', 2) if lines else []
-        electrum_format = self.data.startswith('signmessage ') and (
+        # Health checks only ever use the 2- or 3-line format.
+        electrum_format = self.normal_signing and self.data.startswith('signmessage ') and (
             len(lines) == 1 or (len(header) == 3 and header[2].startswith('ascii:')))
         if electrum_format:
             # Splitting the payload into lines would change the signed bytes.
@@ -81,6 +121,18 @@ class HealthCheckCommonFlow(Flow):
         # User Interaction for non-health check signing
         if self.normal_signing:
             self.goto(self.show_message)
+            return
+
+        # A health check signs only with the keys and address types its
+        # service uses.
+        if self.addr_type == AF_P2TR:
+            await ErrorPage(text='Health check address type is not supported.').show()
+            self.set_result(None)
+            return
+
+        if not is_health_check_path(self.service, self.subpath):
+            await ErrorPage(text='Health check derivation path is not allowed.').show()
+            self.set_result(None)
             return
 
         self.goto(self.sign_health_check)
