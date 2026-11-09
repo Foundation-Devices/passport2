@@ -49,6 +49,19 @@ class UpdateFirmwareFlow(Flow):
             self.goto(self.show_firmware_details)
 
     async def show_firmware_details(self):
+        from files import CardMissingError
+
+        try:
+            await self.check_firmware_file()
+        except CardMissingError:
+            # Retry this step once a card is inserted, or go back to the picker.
+            if not await InsertMicroSDPage().show():
+                self.back()
+        except OSError:
+            await ErrorPage(text='Could not read firmware file').show()
+            self.set_result(False)
+
+    async def check_firmware_file(self):
         import common
         with CardSlot() as card:
             with open(self.update_file_path, 'rb') as fp:
