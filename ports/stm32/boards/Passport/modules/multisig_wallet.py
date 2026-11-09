@@ -757,6 +757,13 @@ class MultisigWallet:
         # print('xpubs={}'.format(xpubs))
 
         # assert node.private_key() == None       # 'no privkeys plz'
+
+        # Each cosigner must be a different key, whatever fingerprint it is
+        # listed under. Compare x-coordinates, as Passport Prime does.
+        key = node.public_key()[1:]
+        for _, _, accepted in xpubs:
+            assert import_xpub(accepted)[0].public_key()[1:] != key, 'Duplicate cosigner key.'
+
         assert chain.ctype == expect_chain, \
             "The imported chain type doesn't match passport's current chain."  # 'wrong chain'
 

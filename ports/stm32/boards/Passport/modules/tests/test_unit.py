@@ -170,3 +170,7 @@ def test_microsd_message_length(test):
 
 def test_scv_challenge(test):
     assert test('scv_challenge.py') == b'OK'
+
+
+def test_multisig_distinct_cosigners(test):
+    assert test('multisig_distinct_cosigners.py') == b'OK'
