@@ -122,16 +122,6 @@ def tweak_internal_key(internal_key, h):
     return 0 if has_even_y(Q) else 1, bytes_from_int(x(Q))
 
 
-def taproot_tweak_seckey(seckey0, h):
-    seckey0 = int_from_bytes(seckey0)
-    P = scalar_multiply(seckey0)
-    seckey = seckey0 if has_even_y(P) else SECP256K1_ORDER - seckey0
-    t = int_from_bytes(hash_tap_tweak(bytes_from_int(x(P)) + h))
-    if t >= SECP256K1_ORDER:
-        raise ValueError
-    return bytes_from_int((seckey + t) % SECP256K1_ORDER)
-
-
 def taproot_tree_helper(script_tree):
     from serializations import ser_string
 
@@ -166,11 +156,10 @@ def taproot_sign_key(script_tree, internal_seckey, hash_type, sighash):
     from foundation import secp256k1
 
     if script_tree is None:
-        h = bytes()
+        merkle_root = None
     else:
-        _, h = taproot_tree_helper(script_tree)
-    output_seckey = taproot_tweak_seckey(internal_seckey, h)
-    sig = secp256k1.sign_schnorr(sighash, output_seckey)
+        _, merkle_root = taproot_tree_helper(script_tree)
+    sig = secp256k1.sign_schnorr_taproot(sighash, internal_seckey, merkle_root)
     if hash_type != 0:
         sig += bytes([hash_type])
     return sig

@@ -11,11 +11,12 @@ from uio import BytesIO
 from ustruct import pack
 
 from exceptions import FatalPSBTIssue
+from foundation import secp256k1
 from psbt import psbtInputProxy, psbtObject
 from serializations import (COutPoint, CTxIn, CTxOut, SIGHASH_ALL, SIGHASH_DEFAULT,
                             ser_compact_size, ser_string, sha256)
 from taproot import (bytes_from_int, int_from_bytes, output_script, scalar_multiply,
-                     tagged_hash, taproot_sign_key, taproot_tweak_seckey,
+                     tagged_hash, taproot_sign_key, taproot_tree_helper,
                      tweak_internal_key, x)
 
 # secp256k1, written out here rather than imported, so verification below does not
@@ -268,7 +269,6 @@ TWEAKED_PUBKEY = tweak_internal_key(INTERNAL_PUBKEY, b'')[1]
 
 # Key path signing uses the tweaked key, so the two must differ to begin with.
 assert TWEAKED_PUBKEY != INTERNAL_PUBKEY
-assert taproot_tweak_seckey(SECKEY, b'') != SECKEY
 
 signatures = {}
 for hash_type in (SIGHASH_DEFAULT, SIGHASH_ALL):
@@ -291,6 +291,27 @@ for hash_type in (SIGHASH_DEFAULT, SIGHASH_ALL):
 sig = signatures[SIGHASH_DEFAULT][0:64]
 assert not bip340_verify(INTERNAL_PUBKEY, digests[(SIGHASH_DEFAULT, 0)], sig)
 assert not bip340_verify(TWEAKED_PUBKEY, digests[(SIGHASH_ALL, 0)], sig)
+
+# With a script tree, the key is tweaked by the tree's Merkle root, so the signature
+# verifies under that output key and not under the key-only one.
+SCRIPT_TREE = [(0xc0, b'\x51'), (0xc0, b'\x52')]
+_, MERKLE_ROOT = taproot_tree_helper(SCRIPT_TREE)
+TREE_PUBKEY = tweak_internal_key(INTERNAL_PUBKEY, MERKLE_ROOT)[1]
+assert output_script(INTERNAL_PUBKEY, SCRIPT_TREE)[2:] == TREE_PUBKEY
+
+digest = digests[(SIGHASH_DEFAULT, 0)]
+sig = taproot_sign_key(SCRIPT_TREE, SECKEY, SIGHASH_DEFAULT, digest)
+assert bip340_verify(TREE_PUBKEY, digest, sig)
+assert not bip340_verify(TWEAKED_PUBKEY, digest, sig)
+
+# A Merkle root must be exactly 32 bytes.
+for merkle_root in (b'', MERKLE_ROOT[:31], MERKLE_ROOT + b'\x00'):
+    try:
+        secp256k1.sign_schnorr_taproot(digest, SECKEY, merkle_root)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('accepted a {} byte Merkle root'.format(len(merkle_root)))
 
 
 # -------------------------------------------------------------------- legacy digest

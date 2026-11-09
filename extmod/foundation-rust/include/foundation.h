@@ -568,6 +568,24 @@ void foundation_secp256k1_sign_schnorr(const uint8_t (*data)[32],
                                        uint8_t (*signature)[64]);
 
 /**
+ * Computes a BIP-341 Taproot key path signature over the message `data`.
+ *
+ * - `data` is the message hash.
+ * - `secret_key` is the internal secret key, before the Taproot tweak.
+ * - `merkle_root` is the Merkle root of the script tree, or null when the
+ *   output key commits to no script tree.
+ * - `signature` is the output of the resulting signature.
+ *
+ * See also:
+ *
+ * - https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs
+ */
+void foundation_secp256k1_sign_schnorr_taproot(const uint8_t (*data)[32],
+                                               const uint8_t (*secret_key)[32],
+                                               const uint8_t (*merkle_root)[32],
+                                               uint8_t (*signature)[64]);
+
+/**
  * Receive a Uniform Resource part.
  *
  * # Safety
