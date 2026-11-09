@@ -39,8 +39,8 @@ def flow_method(filename, class_name, method_name):
 
 @pytest.mark.parametrize('compatible_sets,expected', [
     ([], 'could not be checked'),
-    ([()], 'no spending path compatible'),
-    ([(0,), ()], 'no spending path compatible'),
+    ([()], 'The network will reject it'),
+    ([(0,), ()], 'The network will reject it'),
     ([(0,), (1,)], 'Inputs allow different spending paths'),
     ([(0,), (0,)], 'Spend now (1-of-1)'),
 ])

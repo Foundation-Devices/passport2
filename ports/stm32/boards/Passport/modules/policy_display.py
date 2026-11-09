@@ -685,8 +685,9 @@ def format_signing_pages(policy, compatible_indexes=None):
                          if 0 <= index < len(all_paths))
         if not filtered:
             return (('Wallet\n{}\n\n'
-                     'At least one input has no spending path compatible with this transaction.\n\n'
-                     'Signing does not make it spendable. Check the transaction in your wallet app.')
+                     "This transaction doesn't meet the timelock on any spending path "
+                     'for at least one input. The network will reject it even if you sign it.\n\n'
+                     'Rebuild the transaction in your wallet app.')
                     .format(_escape(policy.name)),)
         paths = filtered
     simple = _classify_simple_inheritance(policy, paths)
