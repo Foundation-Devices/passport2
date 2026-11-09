@@ -92,6 +92,13 @@ assert kept([wrong_count]) == []
 # Every xpub must parse.
 assert kept([record([mine, (cosigner_a[0], DERIVATION, 'xpub' + 'A' * 107)])]) == []
 
+# Each cosigner must be a different key, whatever fingerprint labels it and
+# however it is encoded.
+repeated = (0x44444444, DERIVATION, cosigner_a[2])
+assert kept([record([mine, cosigner_a, repeated])]) == []
+reencoded = (0x44444444, DERIVATION, chains.get_chain('BTC').serialize_public(derive(COSIGNER_A, PATH), AF_P2WSH))
+assert kept([record([mine, cosigner_a, reencoded])]) == []
+
 # Records that do not even deserialize, and a non-list, are dropped.
 assert kept(['garbage', None, ('name', (2, 2))]) == []
 assert kept('not a list') == []

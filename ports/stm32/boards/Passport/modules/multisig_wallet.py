@@ -1086,6 +1086,7 @@ def _backup_record_usable(record, root_xfp, derive_node):
     if not wallet.addr_fmt & AFC_SCRIPT:
         return False
 
+    keys = set()
     for xfp, deriv, xpub in wallet.xpubs:
         parsed = import_xpub(xpub) if isinstance(xpub, str) else None
         if parsed is None:
@@ -1093,6 +1094,12 @@ def _backup_record_usable(record, root_xfp, derive_node):
         node, chain, _ = parsed
         if chain.ctype != wallet.chain_type:
             return False
+
+        # Each cosigner must be a different key, as on import.
+        key = node.public_key()[1:]
+        if key in keys:
+            return False
+        keys.add(key)
         if not isinstance(deriv, str) or deriv[0:1] != 'm' or deriv.count('/') != node.depth():
             return False
 
