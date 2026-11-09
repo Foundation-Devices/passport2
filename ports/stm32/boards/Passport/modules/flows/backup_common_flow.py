@@ -24,21 +24,26 @@ class BackupCommonFlow(SaveToMicroSDFlow):
     def write_fn(self, filename):
         import gc
         import compat7z
+        import stash
         from utils import get_backup_code_as_password
         from export import render_backup_contents
 
         body = render_backup_contents().encode()
-        password = get_backup_code_as_password(self.backup_code)
-        zz = compat7z.Builder(password=password)
-        zz.add_data(body)
-        hdr, footer = zz.save('passport-backup.txt')
+        zz = None
+        try:
+            password = get_backup_code_as_password(self.backup_code)
+            zz = compat7z.Builder(password=password)
+            zz.add_data(body)
+            hdr, footer = zz.save('passport-backup.txt')
+        finally:
+            # Neither the plaintext nor the key is needed once encrypted.
+            stash.blank_object(body)
+            if zz is not None:
+                zz.wipe_key()
         del body
         gc.collect()
 
         with open(filename, 'wb') as fd:
-            if zz:
-                fd.write(hdr)
-                fd.write(zz.body)
-                fd.write(footer)
-            else:
-                fd.write(body)
+            fd.write(hdr)
+            fd.write(zz.body)
+            fd.write(footer)
