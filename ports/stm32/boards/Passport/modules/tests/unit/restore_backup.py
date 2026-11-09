@@ -45,8 +45,11 @@ import common
 import stash
 import trezorcrypto
 import uasyncio as asyncio
+import ujson
 
 import tasks.restore_backup_task as restore_module
+from multisig_wallet import MultisigWallet
+from public_constants import AF_P2SH, AF_P2WSH
 from tasks.restore_backup_task import restore_backup_task
 from ubinascii import hexlify as b2a_hex
 
@@ -67,6 +70,31 @@ expected_xpub = chains.get_chain('BTC').serialize_public(expected_node)
 
 assert expected_xfp != ATTACKER_XFP
 
+# One multisig record that belongs to the restored seed, and one whose key
+# claims the restored seed's fingerprint but is another seed's xpub.
+MULTISIG_DERIVATION = "m/48'/0'/0'/2'"
+MULTISIG_PATH = [0x80000000 | 48, 0x80000000, 0x80000000, 0x80000000 | 2]
+
+
+def multisig_xpub(root):
+    node = root.clone()
+    for element in MULTISIG_PATH:
+        node.derive(element)
+    return chains.get_chain('BTC').serialize_public(node, AF_P2SH)
+
+
+cosigner_root = trezorcrypto.bip32.from_seed(
+    trezorcrypto.bip39.seed(trezorcrypto.bip39.from_data(bytes(range(16, 32))), ''), 'secp256k1')
+own_key = (expected_xfp, MULTISIG_DERIVATION, multisig_xpub(expected_node))
+cosigner_key = (cosigner_root.my_fingerprint(), MULTISIG_DERIVATION, multisig_xpub(cosigner_root))
+impostor_key = (expected_xfp, MULTISIG_DERIVATION, multisig_xpub(cosigner_root))
+# The JSON round trip turns tuples into the lists a restored record contains.
+valid_multisig = ujson.loads(ujson.dumps(MultisigWallet(
+    'Vault', (1, 2), [own_key, cosigner_key], 1, addr_fmt=AF_P2WSH, deriv=MULTISIG_DERIVATION).serialize()))
+impostor_multisig = MultisigWallet(
+    'Swap', (1, 2), [impostor_key, (0x33333333, MULTISIG_DERIVATION, cosigner_key[2])], 2,
+    addr_fmt=AF_P2WSH, deriv=MULTISIG_DERIVATION).serialize()
+
 BACKUP_LINES = (
     '# Passport backup file',
     'raw_secret = "%s"' % b2a_hex(secret).decode(),
@@ -77,6 +105,7 @@ BACKUP_LINES = (
     'setting.bip39_passphrase = "runtime-only"',
     'setting.units = "sats"',
     'setting.backup_quiz = true',
+    'setting.multisig = %s' % ujson.dumps([valid_multisig, impostor_multisig]),
 )
 BACKUP_CONTENTS = ('\n'.join(BACKUP_LINES) + '\n').encode()
 
@@ -188,5 +217,9 @@ assert stored.persisted['units'] == 'sats'
 assert stored.persisted['backup_quiz'] is False
 assert 'root_xfp' not in stored.persisted
 assert 'bip39_passphrase' not in stored.persisted
+
+# The multisig record that belongs to the restored seed is restored; the one
+# whose key does not derive from it is dropped, and the restore still succeeds.
+assert stored.persisted['multisig'] == [valid_multisig]
 
 return_value.write(b'OK')

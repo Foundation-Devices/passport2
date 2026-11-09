@@ -1074,4 +1074,53 @@ def import_xpub(ln):
     # looked like one, but failed to deserialize
     return None
 
+
+def _backup_record_usable(record, root_xfp, derive_node):
+    try:
+        wallet = MultisigWallet.deserialize(record)
+    except Exception:
+        return False
+
+    if not (1 <= wallet.M <= wallet.N <= MAX_SIGNERS) or wallet.N != len(wallet.xpubs):
+        return False
+    if not wallet.addr_fmt & AFC_SCRIPT:
+        return False
+
+    for xfp, deriv, xpub in wallet.xpubs:
+        parsed = import_xpub(xpub) if isinstance(xpub, str) else None
+        if parsed is None:
+            return False
+        node, chain, _ = parsed
+        if chain.ctype != wallet.chain_type:
+            return False
+        if not isinstance(deriv, str) or deriv[0:1] != 'm' or deriv.count('/') != node.depth():
+            return False
+
+        # Keys under any other fingerprint, including a passphrase wallet's
+        # own key, cannot be checked against the backup's root here.
+        if xfp == root_xfp:
+            own = derive_node(wallet.xfp_paths[xfp][1:])
+            try:
+                if own.public_key() != node.public_key() or own.chain_code() != node.chain_code():
+                    return False
+            finally:
+                stash.blank_object(own)
+
+    return True
+
+
+def validate_backup_multisig_records(records, root_xfp, derive_node):
+    """Return the multisig records from a backup that this firmware can use.
+
+    A record is kept when it deserializes, its M-of-N and key count are in
+    range, it uses a script address format, every xpub parses on the record's
+    chain with a derivation path of matching depth, and any key claiming the
+    backup's root fingerprint derives from that root. Records that fail are
+    dropped instead of failing the restore: a multisig config can be imported
+    again, and the seed is still recovered.
+    """
+    if not isinstance(records, list):
+        return []
+    return [record for record in records if _backup_record_usable(record, root_xfp, derive_node)]
+
 # EOF

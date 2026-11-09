@@ -117,6 +117,12 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
                 await on_done(Error.CORRUPT_BACKUP_FILE)
                 return
 
+        def derive_backup_node(path):
+            child = node.clone()
+            for element in path:
+                child.derive(element)
+            return child
+
         # Wallet policies are security-critical and cannot be restored as
         # opaque settings.  Validate their identity, xpub encodings, network,
         # and declared Passport-owned key against the backup's root node before
@@ -127,18 +133,19 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
             from wallet_policy import validate_backup_policy_records
             expected_fingerprint = xfp2str(node.my_fingerprint()).lower()
 
-            def derive_policy_node(path):
-                child = node.clone()
-                for element in path:
-                    child.derive(element)
-                return child
-
             vals['setting.wallet_policies'] = validate_backup_policy_records(
-                policy_records, expected_fingerprint, derive_policy_node,
+                policy_records, expected_fingerprint, derive_backup_node,
                 chains.get_chain)
         elif not isinstance(policy_records, list):
             await on_done(Error.CORRUPT_BACKUP_FILE)
             return
+
+        # Multisig configs are checked too, but one that fails is dropped
+        # rather than failing the restore, since it can be imported again.
+        if 'setting.multisig' in vals:
+            from multisig_wallet import validate_backup_multisig_records
+            vals['setting.multisig'] = validate_backup_multisig_records(
+                vals['setting.multisig'], node.my_fingerprint(), derive_backup_node)
 
     except Exception as e:
         await on_done(Error.CORRUPT_BACKUP_FILE)
