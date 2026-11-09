@@ -80,8 +80,10 @@ def check_write_fn_wipes():
         export.render_backup_contents, compat7z.Builder = original
         del backup_module.open
 
-    assert captured['plaintext'] == bytes(len(TEXT))
-    assert len(captured['key']) == 32 and captured['key'] == bytes(32)
+    # Check the bytes themselves: MicroPython caches a bytes object's hash,
+    # which wiping in place leaves stale, so == against zeros would mislead.
+    assert len(captured['plaintext']) == len(TEXT) and not any(captured['plaintext'])
+    assert len(captured['key']) == 32 and not any(captured['key'])
     assert decrypt(output.written.getvalue()) == ('passport-backup.txt', TEXT.encode())
 
 
