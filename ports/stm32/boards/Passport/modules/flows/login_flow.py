@@ -15,6 +15,13 @@ import common
 _BRICK_WARNING_NUM_ATTEMPTS = const(5)
 
 
+def is_bricked():
+    # attempts_left stays 0 when the secure element refused PIN setup at boot.
+    # The bootloader confirms whether that is because the device is disabled.
+    import callgate
+    return common.pa is not None and common.pa.attempts_left == 0 and callgate.get_is_bricked()
+
+
 class LoginFlow(Flow):
     def __init__(self):
         self.pin = ''
@@ -23,7 +30,10 @@ class LoginFlow(Flow):
         if device_name is not None:
             device_name = device_name.upper()
         statusbar = {'title': (device_name or 'PASSPORT')}
-        super().__init__(initial_state=self.enter_pin, name='LoginFlow', statusbar=statusbar)
+
+        # A disabled device can no longer check a PIN, so say so straight away.
+        initial_state = self.show_bricked_message if is_bricked() else self.enter_pin
+        super().__init__(initial_state=initial_state, name='LoginFlow', statusbar=statusbar)
 
     async def enter_pin(self):
 
