@@ -28,6 +28,11 @@ from constants import SPI_FLASH_SECTOR_SIZE
 from passport import mem
 from public_constants import DEVICE_SETTINGS
 
+# Volatile values holding key material, zeroed whenever they are cleared,
+# replaced or dropped. blank_object() overwrites in place, so only list values
+# the settings own outright: a buffer created for the setting and not shared.
+SECRET_VOLATILE_KEYS = ('temporary_seed',)
+
 
 class SettingsOutOfSpace(RuntimeError):
     pass
@@ -264,10 +269,21 @@ class ExtSettings:
             return self.overrides.get(kn, default)
         return self.temporary_overrides.get(kn, default)
 
+    @staticmethod
+    def _blank_secret(overrides, kn, keep=None):
+        if kn not in SECRET_VOLATILE_KEYS:
+            return
+        value = overrides.get(kn)
+        if value is not None and value is not keep:
+            from stash import blank_object
+            blank_object(value)
+
     def set_volatile(self, kn, v):
         if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self._blank_secret(self.overrides, kn, keep=v)
             self.overrides[kn] = v
             return
+        self._blank_secret(self.temporary_overrides, kn, keep=v)
         self.temporary_overrides[kn] = v
 
     def in_current(self, kn):
@@ -283,9 +299,11 @@ class ExtSettings:
     def clear_volatile(self, kn):
         if not self.temporary_mode or kn in DEVICE_SETTINGS:
             if kn in self.overrides:
+                self._blank_secret(self.overrides, kn)
                 del self.overrides[kn]
             return
         if kn in self.temporary_overrides:
+            self._blank_secret(self.temporary_overrides, kn)
             del self.temporary_overrides[kn]
 
     def remove(self, kn):
@@ -497,6 +515,8 @@ class ExtSettings:
         self.temporary_settings = self.default_values()
 
     def exit_temporary_mode(self):
+        for kn in SECRET_VOLATILE_KEYS:
+            self._blank_secret(self.temporary_overrides, kn)
         self.temporary_mode = False
         self.temporary_settings = {}
         self.temporary_overrides = {}

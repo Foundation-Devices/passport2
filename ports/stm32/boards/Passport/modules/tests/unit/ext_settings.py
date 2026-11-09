@@ -91,4 +91,53 @@ assert oversized.my_pos == pos_before
 assert oversized.last_save_slots == slots_before
 assert oversized.is_dirty == dirty_before
 
+
+# The temporary seed is zeroed in place whenever the settings stop holding it.
+def temporary_settings_with_seed():
+    temp = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
+    temp.enter_temporary_mode()
+    seed = bytearray(range(1, 73))
+    temp.set_volatile('temporary_seed', seed)
+    assert temp.get('temporary_seed') is seed
+    return temp, seed
+
+
+ZEROED = bytearray(72)
+
+# Leaving temporary mode, which every clear and cancel path does.
+temp, seed = temporary_settings_with_seed()
+other = bytearray(b'not key material')
+temp.set_volatile('other', other)
+temp.exit_temporary_mode()
+assert seed == ZEROED
+assert temp.get('temporary_seed') is None
+# Other volatile values are dropped, not overwritten.
+assert other == bytearray(b'not key material')
+
+# Clearing the key while staying in temporary mode.
+temp, seed = temporary_settings_with_seed()
+temp.clear_volatile('temporary_seed')
+assert seed == ZEROED
+assert temp.get('temporary_seed') is None
+
+# Replacing it zeroes the old buffer and keeps the new one.
+temp, seed = temporary_settings_with_seed()
+replacement = bytearray(b'\x55' * 72)
+temp.set_volatile('temporary_seed', replacement)
+assert seed == ZEROED
+assert temp.get('temporary_seed') is replacement
+assert replacement == bytearray(b'\x55' * 72)
+
+# Setting the same buffer again must not zero it.
+temp.set_volatile('temporary_seed', replacement)
+assert replacement == bytearray(b'\x55' * 72)
+temp.exit_temporary_mode()
+assert replacement == ZEROED
+
+# Leaving temporary mode without a seed is still fine.
+temp = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
+temp.enter_temporary_mode()
+temp.exit_temporary_mode()
+assert temp.get('temporary_seed') is None
+
 return_value.write(b'OK')
