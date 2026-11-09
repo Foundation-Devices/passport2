@@ -283,6 +283,54 @@ int main(void) {
     subprocess.run([str(binary)], check=True)
 
 
+def test_bootloader_text_is_bounded_c(tmp_path):
+    source = (BOARD / 'bootloader/main.c').read_text()
+    start = source.index('// Appends at most')
+    helper = source[start:source.index('static void version(void)', start)]
+    harness = tmp_path / 'text.c'
+    harness.write_text('''
+#include <assert.h>
+#include <string.h>
+#include "fwheader.h"
+''' + helper + '''
+int main(void) {
+    passport_firmware_header_t header;
+    memset(&header, 'x', sizeof(header));
+
+    // Header text fields are not terminated, so they stop at their own size.
+    char version[22] = {0};
+    APPEND_TEXT(version, "Version ");
+    APPEND_FIELD(version, header.info.fwversion);
+    assert(strcmp(version, "Version xxxxxxxx") == 0);
+
+    // A terminated field stops at its NUL, and SET_TEXT starts over.
+    memcpy(header.info.fwversion, "2.4.0", 6);
+    SET_TEXT(version, "Version ");
+    APPEND_FIELD(version, header.info.fwversion);
+    assert(strcmp(version, "Version 2.4.0") == 0);
+
+    // Text that does not fit is cut short without writing past the buffer.
+    struct {
+        char text[16];
+        char guard[8];
+    } out;
+    memset(out.guard, 'G', sizeof(out.guard));
+    SET_TEXT(out.text, "Install this firmware? Version ");
+    APPEND_FIELD(out.text, header.info.fwdate);
+    assert(strcmp(out.text, "Install this fi") == 0);
+    APPEND_TEXT(out.text, "more");
+    assert(strcmp(out.text, "Install this fi") == 0);
+    assert(memcmp(out.guard, "GGGGGGGG", sizeof(out.guard)) == 0);
+    return 0;
+}
+''')
+    binary = tmp_path / 'text'
+    subprocess.run(shlex.split(os.environ.get('CC', 'cc')) +
+                   ['-std=gnu99', '-Wall', '-Werror', '-I', str(BOARD / 'include'), str(harness), '-o', str(binary)],
+                   check=True)
+    subprocess.run([str(binary)], check=True)
+
+
 @pytest.mark.parametrize('developer', [True, False])
 def test_key_removal_guard(monkeypatch, developer):
     events = []
