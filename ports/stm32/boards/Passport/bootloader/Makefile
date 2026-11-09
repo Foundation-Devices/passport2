@@ -42,6 +42,10 @@ VPATH += $(PASSPORT_PATH)/common
 VPATH += $(PASSPORT_PATH)/common/micro-ecc
 VPATH += $(CURDIR)/images/$(shell echo $(SCREEN_MODE) | tr A-Z a-z)
 
+# memzero() from the firmware's crypto library, for wiping secrets.
+TREZOR_CRYPTO_PATH = $(MPY_TOP)/extmod/trezor-firmware/crypto
+vpath memzero.c $(TREZOR_CRYPTO_PATH)
+
 # Basename of all targets
 TARGET_NAME = bootloader-$(SCREEN_MODE)-$(COLORWAY)
 TARGETDIR   = arm
@@ -113,6 +117,7 @@ SOURCES += sha256.c
 SOURCES += spiflash.c
 SOURCES += uECC.c
 SOURCES += utils.c
+SOURCES += memzero.c
 
 SOURCES += system_stm32h7xx.c
 
@@ -216,7 +221,8 @@ CC_SYMBOLS = -mcpu=cortex-m7
 INC_PATHS = $(LIB_PATH)/stm32lib/CMSIS/STM32H7xx/Include \
 			$(LIB_PATH)/stm32lib/STM32H7xx_HAL_Driver/Inc \
 			$(LIB_PATH)/cmsis/inc \
-			$(TOP)/boards/Passport
+			$(TOP)/boards/Passport \
+			$(TREZOR_CRYPTO_PATH)
 
 CFLAGS += $(foreach INC,$(INC_PATHS),-I$(INC))
 

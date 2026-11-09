@@ -15,6 +15,7 @@
 #include "stm32h7xx_hal_uart_ex.h"
 
 #include "delay.h"
+#include "memzero.h"
 #include "pprng.h"
 #include "se-config.h"
 #include "se.h"
