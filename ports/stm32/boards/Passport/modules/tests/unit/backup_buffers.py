@@ -55,8 +55,30 @@ class Holder:
     backup_code = CODE
 
 
+class FailingCipher:
+    # Keeps what it was asked to encrypt, then fails as an allocation would.
+    def __init__(self):
+        self.given = []
+
+    def encrypt(self, data):
+        self.given.append(data)
+        raise MemoryError
+
+
 def decrypt(data):
     return compat7z.Builder().read_file(BytesIO(data), PASSWORD, 10000)
+
+
+def run_write_fn(render, builder, output):
+    original = (export.render_backup_contents, compat7z.Builder)
+    try:
+        export.render_backup_contents = render
+        compat7z.Builder = builder
+        backup_module.open = lambda filename, mode: output
+        BackupCommonFlow.write_fn(Holder(), 'backup.7z')
+    finally:
+        export.render_backup_contents, compat7z.Builder = original
+        del backup_module.open
 
 
 def check_round_trips():
@@ -87,15 +109,7 @@ def check_write_fn_wipes():
         captured['text'] = render_text()
         return captured['text']
 
-    original = (export.render_backup_contents, compat7z.Builder)
-    try:
-        export.render_backup_contents = render
-        compat7z.Builder = CapturingBuilder
-        backup_module.open = lambda filename, mode: output
-        BackupCommonFlow.write_fn(Holder(), 'backup.7z')
-    finally:
-        export.render_backup_contents, compat7z.Builder = original
-        del backup_module.open
+    run_write_fn(render, CapturingBuilder, output)
 
     # Check the bytes themselves: MicroPython caches a bytes object's hash,
     # which wiping in place leaves stale, so == against zeros would mislead.
@@ -106,11 +120,56 @@ def check_write_fn_wipes():
     assert decrypt(output.written.getvalue()) == ('passport-backup.txt', EXPECTED)
 
 
+def check_scratch_block_wiped_on_failure():
+    # A partial last block is copied into a scratch block. If encrypting it
+    # fails, the scratch block must still be cleared.
+    zz = compat7z.Builder(password=PASSWORD)
+    cipher = FailingCipher()
+    zz.aes = cipher
+    try:
+        zz.add_data(bytes(range(1, 7)))
+    except MemoryError:
+        pass
+    else:
+        assert False, 'encrypting did not fail'
+    assert len(cipher.given) == 1 and len(cipher.given[0]) == 16
+    assert not any(cipher.given[0])
+
+
+def check_write_fn_wipes_on_failure():
+    # When encrypting fails, the plaintext and the key are still wiped, and
+    # the error reaches the caller.
+    captured = {}
+
+    class FailingBuilder(compat7z.Builder):
+        def add_data(self, raw):
+            captured['plaintext'] = raw
+            self.aes = FailingCipher()
+            super().add_data(raw)
+
+        def wipe_key(self):
+            captured['key'] = self.key
+            super().wipe_key()
+
+    output = Output()
+    try:
+        run_write_fn(render_text, FailingBuilder, output)
+    except MemoryError:
+        pass
+    else:
+        assert False, 'write_fn did not fail'
+    assert len(captured['plaintext']) == len(EXPECTED) and not any(captured['plaintext'])
+    assert len(captured['key']) == 32 and not any(captured['key'])
+    assert not output.written.getvalue()
+
+
 original_noise = common.noise
 try:
     common.noise = MockNoise
     check_round_trips()
     check_write_fn_wipes()
+    check_scratch_block_wiped_on_failure()
+    check_write_fn_wipes_on_failure()
 finally:
     common.noise = original_noise
 

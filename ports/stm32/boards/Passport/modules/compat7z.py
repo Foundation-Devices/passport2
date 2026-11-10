@@ -344,11 +344,14 @@ class Builder(object):
             self.body += self.aes.encrypt(memoryview(raw)[:whole])
         if whole != here:
             last = bytearray(16)
-            for i in range(here - whole):
-                last[i] = raw[whole + i]
-            self.body += self.aes.encrypt(last)
-            for i in range(len(last)):
-                last[i] = 0
+            try:
+                for i in range(here - whole):
+                    last[i] = raw[whole + i]
+                self.body += self.aes.encrypt(last)
+            finally:
+                # Encrypting or growing the body can raise MemoryError.
+                for i in range(len(last)):
+                    last[i] = 0
 
     def wipe_key(self):
         # The key is only needed to encrypt, and save() doesn't use it.
