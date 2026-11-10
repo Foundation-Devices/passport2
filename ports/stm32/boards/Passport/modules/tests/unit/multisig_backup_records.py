@@ -99,6 +99,15 @@ assert kept([record([mine, cosigner_a, repeated])]) == []
 reencoded = (0x44444444, DERIVATION, chains.get_chain('BTC').serialize_public(derive(COSIGNER_A, PATH), AF_P2WSH))
 assert kept([record([mine, cosigner_a, reencoded])]) == []
 
+# A field of the wrong type drops the record instead of raising out of the
+# validation, which would fail the whole restore.
+string_m = list(valid)
+string_m[1] = ['2', 3]
+string_format = list(valid)
+string_format[3] = dict(valid[3])
+string_format[3]['ft'] = 'p2wsh'
+assert kept([valid, string_m, string_format, passphrase_wallet]) == [valid, passphrase_wallet]
+
 # Records that do not even deserialize, and a non-list, are dropped.
 assert kept(['garbage', None, ('name', (2, 2))]) == []
 assert kept('not a list') == []

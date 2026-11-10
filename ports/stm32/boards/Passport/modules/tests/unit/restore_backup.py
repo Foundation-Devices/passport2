@@ -94,6 +94,15 @@ valid_multisig = ujson.loads(ujson.dumps(MultisigWallet(
 impostor_multisig = MultisigWallet(
     'Swap', (1, 2), [impostor_key, (0x33333333, MULTISIG_DERIVATION, cosigner_key[2])], 2,
     addr_fmt=AF_P2WSH, deriv=MULTISIG_DERIVATION).serialize()
+second_multisig = ujson.loads(ujson.dumps(MultisigWallet(
+    'Joint', (2, 2), [own_key, cosigner_key], 3, addr_fmt=AF_P2WSH, deriv=MULTISIG_DERIVATION).serialize()))
+
+# Records that deserialize but hold a field of the wrong type, so a check
+# raises partway through instead of returning False.
+string_m = ujson.loads(ujson.dumps(valid_multisig))
+string_m[1] = ['1', 2]
+string_format = ujson.loads(ujson.dumps(valid_multisig))
+string_format[3]['ft'] = 'p2wsh'
 
 BACKUP_LINES = (
     '# Passport backup file',
@@ -105,7 +114,8 @@ BACKUP_LINES = (
     'setting.bip39_passphrase = "runtime-only"',
     'setting.units = "sats"',
     'setting.backup_quiz = true',
-    'setting.multisig = %s' % ujson.dumps([valid_multisig, impostor_multisig]),
+    'setting.multisig = %s' % ujson.dumps(
+        [valid_multisig, string_m, impostor_multisig, string_format, second_multisig]),
 )
 BACKUP_CONTENTS = ('\n'.join(BACKUP_LINES) + '\n').encode()
 
@@ -218,8 +228,9 @@ assert stored.persisted['backup_quiz'] is False
 assert 'root_xfp' not in stored.persisted
 assert 'bip39_passphrase' not in stored.persisted
 
-# The multisig record that belongs to the restored seed is restored; the one
-# whose key does not derive from it is dropped, and the restore still succeeds.
-assert stored.persisted['multisig'] == [valid_multisig]
+# The multisig records that belong to the restored seed are restored. The one
+# whose key does not derive from it and the two with mistyped fields are
+# dropped, and the seed is still restored.
+assert stored.persisted['multisig'] == [valid_multisig, second_multisig]
 
 return_value.write(b'OK')
