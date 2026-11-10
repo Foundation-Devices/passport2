@@ -4,7 +4,13 @@
 #
 # Test backup restore settings filtering.
 
+from constants import BACKUP_FILE_HEADER
+from errors import Error
 from tasks.restore_backup_task import restore_settings_from_backup
+
+# Every backup Passport has written starts with this line, and restore relies
+# on it, so it must never change.
+assert BACKUP_FILE_HEADER == '# Passport backup file! DO NOT CHANGE.\n'
 
 
 class MockSettings:
@@ -68,7 +74,7 @@ expected_xpub = chains.get_chain('BTC').serialize_public(expected_node)
 assert expected_xfp != ATTACKER_XFP
 
 BACKUP_LINES = (
-    '# Passport backup file',
+    '# Passport backup file! DO NOT CHANGE.',
     'raw_secret = "%s"' % b2a_hex(secret).decode(),
     'chain = "BTC"',
     'setting.xfp = 286331153',           # 0x11111111
@@ -132,8 +138,10 @@ class MockFile:
 
 
 class MockBuilder:
+    contents = BACKUP_CONTENTS
+
     def read_file(self, fd, password, maxsize, progress_fcn=None):
-        return ('backup.txt', BACKUP_CONTENTS)
+        return ('backup.txt', self.contents)
 
 
 class MockCompat7z:
@@ -166,6 +174,16 @@ try:
     restore_module.compat7z = MockCompat7z
     restore_module.CardSlot = MockCardSlot
 
+    # A backup whose first line isn't the exact header is refused before the
+    # secret or any setting is touched, even though the rest is intact.
+    for first_bytes in (b'# Passport backup file\n', b'#\nsetting.a = 1\n'):
+        MockBuilder.contents = first_bytes + BACKUP_CONTENTS[len(first_bytes):]
+        assert MockBuilder.contents[0:1] == b'#' and MockBuilder.contents != BACKUP_CONTENTS
+        assert asyncio.run(run_restore()) == [Error.CORRUPT_BACKUP_FILE]
+        assert pa.calls == []
+        assert stored.persisted == {} and stored.volatile == {} and stored.saves == 0
+
+    MockBuilder.contents = BACKUP_CONTENTS
     assert asyncio.run(run_restore()) == [None]
 finally:
     common.settings, common.pa, restore_module.compat7z, restore_module.CardSlot = originals

@@ -111,6 +111,10 @@ TOTAL_BACKUP_CODE_DIGITS = NUM_BACKUP_CODE_SECTIONS * NUM_DIGITS_PER_BACKUP_CODE
 
 MAX_BACKUP_FILE_SIZE = const(10000)     # bytes
 
+# First line of every backup Passport writes. Restore requires it, so it must
+# never change, or existing backups would stop restoring.
+BACKUP_FILE_HEADER = '# Passport backup file! DO NOT CHANGE.\n'
+
 # Constants for legacy backup password
 NUM_BACKUP_PASSWORD_WORDS = 6
 

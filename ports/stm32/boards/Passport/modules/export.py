@@ -14,6 +14,7 @@ import chains
 import stash
 import trezorcrypto
 import ujson
+from constants import BACKUP_FILE_HEADER
 from ubinascii import hexlify as b2a_hex
 from uio import StringIO
 from utils import xfp2str
@@ -67,7 +68,7 @@ def render_backup_contents():
     def ADD(key, val):
         rv.write('%s = %s\n' % (key, ujson.dumps(val)))
 
-    rv.write('# Passport backup file! DO NOT CHANGE.\n')
+    rv.write(BACKUP_FILE_HEADER)
 
     chain = chains.current_chain()
 
