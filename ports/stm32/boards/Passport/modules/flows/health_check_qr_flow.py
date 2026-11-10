@@ -41,7 +41,7 @@ class HealthCheckQRFlow(Flow):
     async def common_flow(self):
         from flows import HealthCheckCommonFlow
 
-        self.signed_message = await HealthCheckCommonFlow(self.data).run()
+        self.signed_message = await HealthCheckCommonFlow(self.data, service=self.service_name).run()
         if self.signed_message is None:
             self.set_result(False)
             return
