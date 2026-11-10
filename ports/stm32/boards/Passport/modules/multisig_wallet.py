@@ -263,11 +263,12 @@ class MultisigWallet:
         # - xpfs_paths hsould already be sorted
         # - returns set of matches, of any M value
 
-        # we know N, but not M at this point.
+        # we know N, but not M at this point. A wallet with a different N
+        # only shares some cosigners, so it is a different wallet.
         N = len(xfp_paths)
 
         matches = []
-        for rv in cls.iter_wallets(M=M, addr_fmt=addr_fmt):
+        for rv in cls.iter_wallets(M=M, N=N, addr_fmt=addr_fmt):
             if rv.matching_subpaths(xfp_paths):
                 matches.append(rv)
 

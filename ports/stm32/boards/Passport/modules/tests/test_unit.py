@@ -84,6 +84,10 @@ def test_multisig_save_task(test):
     assert test('multisig_save_task.py') == b'OK'
 
 
+def test_multisig_candidates(test):
+    assert test('multisig_candidates.py') == b'OK'
+
+
 def test_ui(test):
     assert test('ui.py') == b'OK'
 
