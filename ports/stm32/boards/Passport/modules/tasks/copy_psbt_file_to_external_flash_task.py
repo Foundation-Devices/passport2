@@ -13,8 +13,23 @@ from public_constants import MAX_TXN_LEN
 
 
 async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, offset):
+    from errors import Error
+    from files import CardMissingError
+
+    # Report exactly once, whatever the file holds: the caller waits on a
+    # spinner until on_done() is called.
+    try:
+        result = await copy_psbt_file(filename, offset)
+    except CardMissingError:
+        result = (0, None, Error.MICROSD_CARD_MISSING)
+    except Exception:
+        result = (0, None, Error.PSBT_INVALID)
+
+    await on_done(*result)
+
+
+async def copy_psbt_file(filename, offset):
     # sign a PSBT file found on a microSD card
-    from passport import mem
     from sffile import SFFile
     from errors import Error
     from files import CardSlot
@@ -35,8 +50,7 @@ async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, 
             fd.seek(0)
 
             if psbt_len > MAX_TXN_LEN:
-                await on_done(0, None, Error.PSBT_TOO_LARGE)
-                return
+                return (0, None, Error.PSBT_TOO_LARGE)
 
             # determine encoding used, although we prefer binary
             taste = fd.read(10)
@@ -55,6 +69,8 @@ async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, 
                 decoder = Base64Streamer()
                 output_encoder = Base64Writer
                 psbt_len = (psbt_len * 3 // 4) + 10
+            else:
+                return (0, None, Error.PSBT_INVALID)
 
             total = 0
             with SFFile(offset, max_size=psbt_len) as out:
@@ -84,7 +100,6 @@ async def copy_psbt_file_to_external_flash_task(on_done, on_progress, filename, 
 
             # Might have been whitespace inflating initial estimate of PSBT size
             if total > psbt_len:
-                await on_done(0, output_encoder, Error.PSBT_INVALID)
-                return
+                return (0, output_encoder, Error.PSBT_INVALID)
 
-            await on_done(psbt_len, output_encoder, None)
+            return (psbt_len, output_encoder, None)
