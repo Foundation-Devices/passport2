@@ -1076,10 +1076,16 @@ def import_xpub(ln):
 
 
 def _backup_record_usable(record, root_xfp, derive_node):
+    # A field of the wrong type raises partway through the checks below. That
+    # must drop only this record, never fail the restore of the seed.
     try:
-        wallet = MultisigWallet.deserialize(record)
+        return _backup_record_checks_pass(record, root_xfp, derive_node)
     except Exception:
         return False
+
+
+def _backup_record_checks_pass(record, root_xfp, derive_node):
+    wallet = MultisigWallet.deserialize(record)
 
     if not (1 <= wallet.M <= wallet.N <= MAX_SIGNERS) or wallet.N != len(wallet.xpubs):
         return False
