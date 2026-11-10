@@ -218,7 +218,8 @@ int main(void) {
 def test_header_state_failure_is_recoverable(tmp_path, monkeypatch):
     source = ast.parse((BOARD / 'modules/flows/update_firmware_flow.py').read_text())
     flow_class = next(node for node in source.body if isinstance(node, ast.ClassDef))
-    method = next(node for node in flow_class.body if node.name == 'show_firmware_details')
+    # show_firmware_details() only adds card handling around this step.
+    method = next(node for node in flow_class.body if node.name == 'check_firmware_file')
     messages, results = [], []
 
     class ErrorPage:
@@ -245,7 +246,7 @@ def test_header_state_failure_is_recoverable(tmp_path, monkeypatch):
     }
     isolated = ast.Module(body=[method], type_ignores=[])
     exec(compile(isolated, 'update_firmware_flow.py', 'exec'), namespace)
-    asyncio.run(namespace['show_firmware_details'](flow))
+    asyncio.run(namespace['check_firmware_file'](flow))
     assert results == [False]
     assert messages == ['Firmware update cannot continue.\n\nUnable to read firmware timestamp.']
     assert not hasattr(flow, 'update_header')
