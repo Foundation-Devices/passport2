@@ -144,6 +144,10 @@ def test_multisig_xpub_validation(test):
     assert test('multisig_xpub_validation.py') == b'OK'
 
 
+def test_multisig_backup_records(test):
+    assert test('multisig_backup_records.py') == b'OK'
+
+
 def test_psbt_fee(test):
     assert test('psbt_fee.py') == b'OK'
 
