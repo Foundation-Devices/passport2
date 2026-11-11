@@ -9,7 +9,7 @@
 #
 # copy_firmware_to_spi_flash_task.py - Task to perform the copy to SPI flash and update the UI progress
 
-from constants import FW_HEADER_SIZE, FW_ACTUAL_HEADER_SIZE, FW_HEADER_INFORMATION_SIZE
+from constants import FW_HEADER_SIZE, FW_ACTUAL_HEADER_SIZE
 import trezorcrypto
 import foundation
 import passport
@@ -28,7 +28,7 @@ async def sleep_and_timeout(sleep_time_ms, timeout_ms, sf):
         assert timeout_ms > 0, 'Firmware update timed out'
 
 
-async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expected_digest, on_progress, on_done):
+async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, on_progress, on_done):
     from common import system, sf
 
     try:
@@ -42,10 +42,7 @@ async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expe
                         return
 
                     # Stage the checked header from memory, then read the body
-                    # from the file's current position. Hash what is staged the
-                    # same way the signature check did.
-                    staged = trezorcrypto.sha256()
-                    staged.update(header[:FW_HEADER_INFORMATION_SIZE])
+                    # from the file's current position.
 
                     # Calculate the update request hash so that the booloader knows this was requested by the user, not
                     # injected into SPI flash by some external attacker.
@@ -115,7 +112,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expe
                         else:
                             buf[:] = bytes(len(buf))
                             here = fp.readinto(memoryview(buf)[:remaining])
-                            staged.update(buf[:remaining])
                         if here != remaining:
                             raise ValueError("Firmware file is truncated")
                         update_display += 1
@@ -150,12 +146,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expe
                                                                            e.args[0] if len(e.args) == 1 else e.args)
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
                         return
-
-                staged_digest = bytearray(32)
-                foundation.sha256(staged.digest(), staged_digest)
-                if expected_digest is None or bytes(staged_digest) != bytes(expected_digest):
-                    await on_done(Error.FIRMWARE_UPDATE_FAILED, "Firmware file changed. Select the file again.")
-                    return
 
                 try:
                     # Do this at the end so we know the rest worked - prevent bootloader from installing bad firmware

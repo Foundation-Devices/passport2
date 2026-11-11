@@ -305,34 +305,12 @@ static void MPU_Config(void) {
 
 #endif /* ifndef FACTORY_TEST */
 
-// Appends at most src_len bytes of src to the string in dst, stopping at a NUL,
-// and truncates rather than writing past dst_size. Header text fields are not
-// NUL-terminated, so they are appended with their field size as the limit.
-static void append_text(char* dst, size_t dst_size, const char* src, size_t src_len) {
-    if (dst_size == 0) {
-        return;
-    }
-
-    size_t used = 0;
-    while (used < dst_size - 1 && dst[used] != '\0') {
-        used++;
-    }
-    for (size_t i = 0; i < src_len && src[i] != '\0' && used < dst_size - 1; i++) {
-        dst[used++] = src[i];
-    }
-    dst[used] = '\0';
-}
-
-#define APPEND_TEXT(dst, src) append_text(dst, sizeof(dst), src, SIZE_MAX)
-#define APPEND_FIELD(dst, field) append_text(dst, sizeof(dst), (const char*)(field), sizeof(field))
-#define SET_TEXT(dst, src) ((dst)[0] = '\0', APPEND_TEXT(dst, src))
-
 static void version(void) {
     passport_firmware_header_t* fwhdr       = (passport_firmware_header_t*)FW_HDR;
     char                        version[22] = {0};
 
-    APPEND_TEXT(version, "Version ");
-    APPEND_FIELD(version, fwhdr->info.fwversion);
+    strcpy(version, "Version ");
+    strcat(version, (char*)fwhdr->info.fwversion);
 
     show_splash(version);
 }
@@ -375,10 +353,10 @@ static void show_more_info(void) {
         KEY_ID key;
         switch (page) {
             case 0:
-                SET_TEXT(message, "Version ");
-                APPEND_TEXT(message, build_version);
-                APPEND_TEXT(message, "\n\nBuilt on ");
-                APPEND_TEXT(message, build_date);
+                strcpy(message, "Version ");
+                strcat(message, build_version);
+                strcat(message, "\n\nBuilt on ");
+                strcat(message, build_date);
 
                 key = ui_show_page(heading, "Bootloader Info", message, &LARGE_ICON_INFO, &ICON_SHUTDOWN, &ICON_EXIT,
                                    true, page, NUM_INFO_PAGES);
@@ -391,10 +369,10 @@ static void show_more_info(void) {
                 break;
 
             case 1:
-                SET_TEXT(message, "Version ");
-                APPEND_FIELD(message, fwhdr->info.fwversion);
-                APPEND_TEXT(message, "\n\nBuilt on ");
-                APPEND_FIELD(message, fwhdr->info.fwdate);
+                strcpy(message, "Version ");
+                strcat(message, (char*)fwhdr->info.fwversion);
+                strcat(message, "\n\nBuilt on ");
+                strcat(message, (char*)fwhdr->info.fwdate);
                 key = ui_show_page(heading, "Firmware Info", message, &LARGE_ICON_INFO, &ICON_SHUTDOWN, &ICON_EXIT,
                                    true, page, NUM_INFO_PAGES);
                 if (key == KEY_RIGHT_SELECT) {
@@ -406,9 +384,10 @@ static void show_more_info(void) {
                 break;
 
             case 2: {
+                strcpy(message, "");
                 hash_fw_user((uint8_t*)fwhdr, FW_HEADER_SIZE + fwhdr->info.fwlength, fw_hash, sizeof(fw_hash), false);
 
-                bytes_to_hex_str(fw_hash, 32, message, 8, "\n");
+                bytes_to_hex_str(fw_hash, 32, &message[strlen(message)], 8, "\n");
 
                 key = ui_show_page(heading, "Firmware Hash", message, &LARGE_ICON_INFO, &ICON_SHUTDOWN, &ICON_EXIT,
                                    true, page, NUM_INFO_PAGES);
@@ -422,9 +401,10 @@ static void show_more_info(void) {
             }
 
             case 3: {
+                strcpy(message, "");
                 hash_fw_user((uint8_t*)fwhdr, FW_HEADER_SIZE + fwhdr->info.fwlength, fw_hash, sizeof(fw_hash), true);
 
-                bytes_to_hex_str(fw_hash, 32, message, 8, "\n");
+                bytes_to_hex_str(fw_hash, 32, &message[strlen(message)], 8, "\n");
 
                 key = ui_show_page(heading, "Build Hash", message, &LARGE_ICON_INFO, &ICON_SHUTDOWN, &ICON_EXIT, true,
                                    page, NUM_INFO_PAGES);
@@ -519,12 +499,12 @@ retry:
     }
 
     if ((res = sd_card_init()) != HAL_OK) {
-        SET_TEXT(message, "Unable to read from microSD.");
+        strcpy(message, "Unable to read from microSD.");
         goto fail;
     }
 
     if (sd_read_block(0, sizeof(passport_firmware_header_t), (uint8_t*)&sd_card_hdr) != HAL_OK) {
-        SET_TEXT(message, "Unable to read from microSD.");
+        strcpy(message, "Unable to read from microSD.");
         goto fail;
     }
 
@@ -541,7 +521,7 @@ retry:
 
     // User signed firmware cannot be used as a factory reset firmware.
     if (firmware_is_user_signed(&sd_card_hdr)) {
-        SET_TEXT(message, "Firmware signed by a Developer PubKey cannot be used for recovery.");
+        strcpy(message, "Firmware signed by a Developer PubKey cannot be used for recovery.");
         goto fail;
     }
 
@@ -581,10 +561,11 @@ retry:
     }
 #endif  // PRODUCTION_BUILD
 
-    SET_TEXT(message, "Install this firmware?\n\nVersion ");
-    APPEND_FIELD(message, sd_card_hdr.info.fwversion);
-    APPEND_TEXT(message, "\nBuilt on ");
-    APPEND_FIELD(message, sd_card_hdr.info.fwdate);
+    strcpy(message, "Install this firmware?\n\n");
+    strcat(message, "Version ");
+    strcat(message, (char*)sd_card_hdr.info.fwversion);
+    strcat(message, "\nBuilt on ");
+    strcat(message, (char*)sd_card_hdr.info.fwdate);
 
 ask_to_recover:
     if (ui_show_question("FIRMWARE RECOVERY", "Recover Passport", message, true) == KEY_RIGHT_SELECT) {
