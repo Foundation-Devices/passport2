@@ -307,9 +307,30 @@ bool spi_set_scv_key(uint8_t* buf) {
     return false;
 }
 
+#define SPI_SCV_KEY_CLEAR_ATTEMPTS (3)
+
+// Erases the sector holding the SCV key and reads the key back to confirm it
+// is blank. Returns false if it still isn't after a few attempts.
 bool spi_clear_scv_key() {
-    if (spi_sector_erase(SPI_ADDR_SCV_KEY) == HAL_OK) {
-        return true;
+    for (int attempt = 0; attempt < SPI_SCV_KEY_CLEAR_ATTEMPTS; attempt++) {
+        uint8_t check[SPI_SCV_KEY_SIZE];
+
+        if (spi_sector_erase(SPI_ADDR_SCV_KEY) != HAL_OK) {
+            continue;
+        }
+        if (spi_read(SPI_ADDR_SCV_KEY, sizeof(check), check) != HAL_OK) {
+            continue;
+        }
+
+        bool is_blank = true;
+        for (size_t i = 0; i < sizeof(check); i++) {
+            if (check[i] != 0xFF) {
+                is_blank = false;
+            }
+        }
+        if (is_blank) {
+            return true;
+        }
     }
 
     return false;
