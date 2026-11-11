@@ -1129,9 +1129,8 @@ def validate_backup_multisig_records(records, root_xfp, derive_node):
     range, it uses a script address format, every xpub parses on the record's
     chain with a derivation path of matching depth, no two cosigners share a
     key, and any key claiming the backup's root fingerprint derives from that
-    root. Records that fail are
-    dropped instead of failing the restore: a multisig config can be imported
-    again, and the seed is still recovered.
+    root. Records that fail are dropped instead of failing the restore: a
+    multisig config can be imported again, and the seed is still recovered.
     """
     if not isinstance(records, list):
         return []
