@@ -60,6 +60,10 @@ def test_ur_derived_key(test):
     assert test('ur_derived_key.py') == b'OK'
 
 
+def test_ur_view_lifetime(test):
+    assert test('ur_view_lifetime.py') == b'OK'
+
+
 def test_multisig_qr_import(test):
     assert test('multisig_qr_import.py') == b'OK'
 
