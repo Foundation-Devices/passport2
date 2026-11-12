@@ -330,16 +330,37 @@ class Builder(object):
         here = len(raw)
         self.pt_crc = crc32(raw, self.pt_crc)
 
-        padded_len = (here + 15) & ~15
-        if padded_len != here:
+        # Whole blocks are encrypted straight from the caller's buffer. Only a
+        # final partial block is padded, in a scratch block that is wiped, so
+        # no padded copy of the plaintext is left behind.
+        whole = here & ~15
+        if whole != here:
             if self.padding is not None:
                 raise ValueError("can't do less than a block except at end")
-            self.padding = (padded_len - here)
-            raw += '\x00' * self.padding
+            self.padding = 16 - (here - whole)
         self.unpacked_size += here
 
-        assert len(raw) % 16 == 0, b2a_hex(raw)
-        self.body += self.aes.encrypt(raw)
+        if whole:
+            self.body += self.aes.encrypt(memoryview(raw)[:whole])
+        if whole != here:
+            last = bytearray(16)
+            try:
+                for i in range(here - whole):
+                    last[i] = raw[whole + i]
+                self.body += self.aes.encrypt(last)
+            finally:
+                # Encrypting or growing the body can raise MemoryError.
+                for i in range(len(last)):
+                    last[i] = 0
+
+    def wipe_key(self):
+        # The key is only needed to encrypt, and save() doesn't use it.
+        import stash
+
+        if getattr(self, 'key', None) is not None:
+            stash.blank_object(self.key)
+        self.key = None
+        self.aes = None
 
     def calculate_key(self, password, progress_fcn=None):
         # do the expected key-derivation

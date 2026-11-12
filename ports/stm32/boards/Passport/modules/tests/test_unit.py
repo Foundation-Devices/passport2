@@ -164,6 +164,10 @@ def test_restore_backup(test):
     assert test('restore_backup.py') == b'OK'
 
 
+def test_backup_buffers(test):
+    assert test('backup_buffers.py') == b'OK'
+
+
 def test_bip322(test):
     assert test('bip322.py') == b'OK'
 
