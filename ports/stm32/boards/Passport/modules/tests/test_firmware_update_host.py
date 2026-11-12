@@ -94,26 +94,35 @@ def environment(monkeypatch):
     return SimpleNamespace(flash=flash, errors=errors, verified=verified, device_hash=device_hash)
 
 
-def run_task(relative, function, path, size, header, progress=lambda _: None):
+VERIFY = 'verify_firmware_signature_task'
+COPY = 'copy_firmware_to_spi_flash_task'
+
+
+def run_task(function, path, size, header, progress=lambda _: None, digest=None):
     results = []
 
-    async def done(error, message):
-        results.append((error, message))
+    async def done(error, message, verified=None):
+        results.append((error, message) if verified is None else (error, message, bytes(verified)))
 
-    module = load_module(relative)
+    module = load_module('tasks/' + function + '.py')
     module.open = lambda file, mode: open(file, mode, buffering=0)
-    asyncio.run(getattr(module, function)(str(path), size, header, progress, done))
+    args = [str(path), size, header] + ([digest] if function == COPY else []) + [progress, done]
+    asyncio.run(getattr(module, function)(*args))
     return results
 
 
-@pytest.mark.parametrize('task', ['verify_firmware_signature_task', 'copy_firmware_to_spi_flash_task'])
+def image_digest(header, body):
+    return hashlib.sha256(hashlib.sha256(header[:34] + body).digest()).digest()
+
+
+@pytest.mark.parametrize('task', [VERIFY, COPY])
 def test_changed_header_rejected_before_staging(environment, tmp_path, task):
     expected = bytes(HEADER_SIZE)
     changed = bytearray(expected)
     changed[102] = 1  # Second public key index in the serialized header.
     path = tmp_path / 'firmware.bin'
     path.write_bytes(changed + bytes(2048))
-    results = run_task('tasks/' + task + '.py', task, path, 4096, expected)
+    results = run_task(task, path, 4096, expected, digest=image_digest(expected, bytes(2048)))
     assert len(results) == 1 and results[0][0] == environment.errors.FIRMWARE_UPDATE_FAILED
     assert not environment.flash.erases
     assert not environment.flash.writes
@@ -126,29 +135,28 @@ def test_checked_header_is_staged_without_rereading(environment, tmp_path):
     image = header + body
     path = tmp_path / 'firmware.bin'
     path.write_bytes(image)
-    verify = 'verify_firmware_signature_task'
-    assert run_task('tasks/' + verify + '.py', verify, path, len(image), header) == [(None, None)]
-    assert environment.verified == [(header, hashlib.sha256(hashlib.sha256(header[:34] + body).digest()).digest())]
+    digest = image_digest(header, body)
+    assert run_task(VERIFY, path, len(image), header) == [(None, None, digest)]
+    assert environment.verified == [(header, digest)]
 
     def change_source(_):
         with path.open('r+b') as fp:
             fp.seek(102)
             fp.write(b'\x01')
 
-    copy = 'copy_firmware_to_spi_flash_task'
-    assert run_task('tasks/' + copy + '.py', copy, path, len(image), header, change_source) == [(None, None)]
+    assert run_task(COPY, path, len(image), header, change_source, digest) == [(None, None)]
     assert environment.flash.data[256:256 + len(image)] == image
     assert environment.flash.writes[-1] == 0
     header_hash = hashlib.sha256(hashlib.sha256(header[:ACTUAL_HEADER_SIZE]).digest()).digest()
     assert environment.flash.data[:32] == hashlib.sha256(header_hash + environment.device_hash).digest()
 
 
-@pytest.mark.parametrize('task', ['verify_firmware_signature_task', 'copy_firmware_to_spi_flash_task'])
+@pytest.mark.parametrize('task', [VERIFY, COPY])
 def test_truncated_body_fails_once(environment, tmp_path, task):
     header = bytes(HEADER_SIZE)
     path = tmp_path / 'firmware.bin'
     path.write_bytes(header + b'short')
-    results = run_task('tasks/' + task + '.py', task, path, 4096, header)
+    results = run_task(task, path, 4096, header, digest=image_digest(header, bytes(2048)))
     assert len(results) == 1 and results[0][0] == environment.errors.FIRMWARE_UPDATE_FAILED
     assert 0 not in environment.flash.writes
     assert not environment.verified
@@ -159,10 +167,29 @@ def test_copy_failure_never_authorizes_update(environment, tmp_path):
     path = tmp_path / 'firmware.bin'
     path.write_bytes(header + bytes(2048))
     environment.flash.fail_at = 512
-    task = 'copy_firmware_to_spi_flash_task'
-    results = run_task('tasks/' + task + '.py', task, path, 4096, header)
+    results = run_task(COPY, path, 4096, header, digest=image_digest(header, bytes(2048)))
     assert results == [(environment.errors.MICROSD_CARD_MISSING, None)]
     assert 0 not in environment.flash.writes
+
+
+@pytest.mark.parametrize('change', ['body', 'digest'])
+def test_copy_stages_only_the_verified_body(environment, tmp_path, change):
+    header = bytes(HEADER_SIZE)
+    body = bytes(range(256)) * 8
+    path = tmp_path / 'firmware.bin'
+    path.write_bytes(header + body)
+    digest = image_digest(header, body)
+
+    def change_body(_):
+        if change == 'body':
+            with path.open('r+b') as fp:
+                fp.seek(HEADER_SIZE + 300)
+                fp.write(bytes(1))
+
+    results = run_task(COPY, path, len(header + body), header, change_body, None if change == 'digest' else digest)
+    assert len(results) == 1 and results[0][0] == environment.errors.FIRMWARE_UPDATE_FAILED
+    assert 0 not in environment.flash.writes
+    assert environment.flash.data[:32] == bytes([0xff]) * 32
 
 
 def test_installed_firmware_detection_c(tmp_path):
@@ -373,10 +400,10 @@ def test_update_flow_passes_selected_header_to_both_tasks(monkeypatch):
 
     async def verify(path, size, header, progress, done):
         calls.append(('verify', header))
-        await done(None, None)
+        await done(None, None, bytearray(b'v' * 32))
 
-    async def copy(path, size, header, progress, done):
-        calls.append(('copy', header))
+    async def copy(path, size, header, digest, progress, done):
+        calls.append(('copy', header, digest))
         await done(None, None)
 
     page_names = ['ErrorPage', 'ProgressPage', 'QuestionPage', 'SuccessPage', 'InsertMicroSDPage', 'InfoPage']
@@ -406,4 +433,4 @@ def test_update_flow_passes_selected_header_to_both_tasks(monkeypatch):
     flow.version = '2.4.0'
     asyncio.run(flow.verify_firmware_signature())
     asyncio.run(flow.copy_to_flash())
-    assert calls == [('verify', header), 'copy_to_flash', ('copy', header), True]
+    assert calls == [('verify', header), 'copy_to_flash', ('copy', header, b'v' * 32), True]

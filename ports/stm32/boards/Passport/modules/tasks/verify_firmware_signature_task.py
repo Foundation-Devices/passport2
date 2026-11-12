@@ -70,4 +70,5 @@ async def verify_firmware_signature_task(file_path, size, expected_header, on_pr
         await on_done(Error.FIRMWARE_UPDATE_FAILED, error_message)
         return
 
-    await on_done(None, None)
+    # The copy hashes what it stages and checks it against this digest.
+    await on_done(None, None, double_sha)
