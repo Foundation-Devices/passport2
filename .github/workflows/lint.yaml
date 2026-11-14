@@ -118,3 +118,10 @@ jobs:
           cargo test --manifest-path extmod/foundation-rust/Cargo.toml \
                      --locked \
                      --features std
+
+  runner-diagnostics:
+    name: Runner diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash scripts/ci/runner_diagnostics.sh
