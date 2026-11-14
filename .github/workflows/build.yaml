@@ -56,6 +56,7 @@ jobs:
         just hash signing_key.pem "${version}" build-Passport/v${version}-beta${{ matrix.build.suffix }}.bin ${{ matrix.build.screen}}
       env:
         SIGNING_KEY: ${{ secrets.UserSigningKey }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload firmware ELF
       uses: actions/upload-artifact@v7
