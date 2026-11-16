@@ -55,6 +55,7 @@ class MockFlow:
     sign_health_check = 'sign-microsd'
     show_signed = 'show-signed'
     format_signature = 'format-signature'
+    bip322_request = None
 
     def goto(self, state, **kwargs):
         self.next_state = state
