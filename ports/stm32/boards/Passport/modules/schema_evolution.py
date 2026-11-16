@@ -98,7 +98,11 @@ async def handle_foundational_evolutions():
     # to external flash.  This means that it will need to do "pre-initialization" of some systems that it needs.
 
     if passport.IS_COLOR and not passport.IS_SIMULATOR:
-        clear_internal_settings_flash()
+        try:
+            clear_internal_settings_flash()
+        except Exception as e:
+            # Never let this stop the device from booting. It is tried again on the next boot.
+            print('clear_internal_settings_flash() failed: {}'.format(e))
 
     # Only for mono device since color devices will have 2.0.0 as their factory firmware already with user settings
     # in external flash from the beginning.

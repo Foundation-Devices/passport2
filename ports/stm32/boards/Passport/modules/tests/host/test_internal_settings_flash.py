@@ -84,6 +84,20 @@ def test_color_device_leaves_erased_flash_alone(device):
     assert device.reads > 0
 
 
+@pytest.mark.parametrize('failure', ['unavailable', 'erase'])
+def test_color_device_still_boots_when_the_erase_fails(device, failure):
+    device.flash[0] = 0
+    if failure == 'unavailable':
+        del device.passport.SettingsFlash
+    else:
+        def erase(self):
+            raise OSError('flash error')
+        device.passport.SettingsFlash.erase = erase
+
+    device.boot()
+    assert device.flash[0] == 0
+
+
 def test_mono_device_keeps_its_settings(device):
     device.passport.IS_COLOR = False
     device.flash[0] = 0
