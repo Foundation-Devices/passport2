@@ -1697,6 +1697,12 @@ class psbtObject(psbtProxy):
                                   seq_to_str(self.presigned_inputs)))
             gc.collect()
 
+    def consider_timelocks(self):
+        # Warn about timelocks that delay when the transaction can confirm.
+        from psbt_display import timelock_warnings
+        sequences = [txi.nSequence for _, txi in self.input_iter()]
+        self.warnings.extend(timelock_warnings(self.txn_version, self.lock_time, sequences))
+
     def calculate_fee(self):
         # what miner's reward is included in txn?
         if self.total_value_in is None:

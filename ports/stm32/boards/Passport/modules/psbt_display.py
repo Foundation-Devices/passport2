@@ -93,3 +93,73 @@ def format_signed_psbt_message(updated_path, finalized_path=None, txid=None):
             'finalize, and broadcast.',
         ])
     return '\n'.join(lines)
+
+
+# nLockTime values at or above this are Unix times; below it, block heights.
+LOCKTIME_THRESHOLD = 500000000
+SEQUENCE_FINAL = 0xffffffff
+# BIP68 relative lock fields of an input's nSequence.
+SEQUENCE_DISABLE_FLAG = 1 << 31
+SEQUENCE_TYPE_FLAG = 1 << 22
+SEQUENCE_VALUE_MASK = 0xffff
+SEQUENCE_SECONDS_PER_UNIT = 512
+
+
+def timelock_warnings(txn_version, lock_time, sequences):
+    """Return review warnings for timelocks that delay when the transaction can confirm.
+
+    Wallets routinely set nLockTime to the current block height, and Passport
+    doesn't know the current height, so a height lock can't be told apart from
+    one far in the future. Only a lock to a date, and a relative lock on an
+    input, are flagged: wallets rarely set either.
+    """
+    warnings = []
+    if lock_time >= LOCKTIME_THRESHOLD and any(sequence != SEQUENCE_FINAL for sequence in sequences):
+        warnings.append(('Timelock', "This transaction can't be confirmed until after {} UTC.".format(
+            format_utc_time(lock_time))))
+
+    # Relative locks apply from version 2 on (BIP68).
+    lines = []
+    if txn_version >= 2:
+        for index, sequence in enumerate(sequences):
+            value = sequence & SEQUENCE_VALUE_MASK
+            if sequence & SEQUENCE_DISABLE_FLAG or not value:
+                continue
+            if sequence & SEQUENCE_TYPE_FLAG:
+                wait = format_duration(value * SEQUENCE_SECONDS_PER_UNIT)
+            else:
+                wait = '{} block{}'.format(value, '' if value == 1 else 's')
+            lines.append('Input {}: {}'.format(index + 1, wait))
+    if lines:
+        warnings.append(('Relative Timelock',
+                         "This transaction can't be confirmed until these inputs have waited this long "
+                         'after they were confirmed:\n\n' + '\n'.join(lines)))
+    return warnings
+
+
+def format_utc_time(timestamp):
+    """Format a Unix time as YYYY-MM-DD HH:MM.
+
+    utime counts from 2000 on this port, so the date is computed here
+    (Howard Hinnant's civil-from-days).
+    """
+    days, seconds = divmod(timestamp, 86400)
+    days += 719468
+    era = days // 146097
+    day_of_era = days - era * 146097
+    year_of_era = (day_of_era - day_of_era // 1460 + day_of_era // 36524 - day_of_era // 146096) // 365
+    day_of_year = day_of_era - (365 * year_of_era + year_of_era // 4 - year_of_era // 100)
+    month_index = (5 * day_of_year + 2) // 153
+    day = day_of_year - (153 * month_index + 2) // 5 + 1
+    month = month_index + 3 if month_index < 10 else month_index - 9
+    year = year_of_era + era * 400 + (1 if month <= 2 else 0)
+    return '{:04d}-{:02d}-{:02d} {:02d}:{:02d}'.format(year, month, day, seconds // 3600, seconds % 3600 // 60)
+
+
+def format_duration(seconds):
+    """Round seconds to the largest whole unit, e.g. 'about 2 days'."""
+    for unit, size in (('day', 86400), ('hour', 3600), ('minute', 60)):
+        if seconds >= size:
+            count = (seconds + size // 2) // size
+            return 'about {} {}{}'.format(count, unit, '' if count == 1 else 's')
+    return '{} seconds'.format(seconds)
