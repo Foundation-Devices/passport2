@@ -79,8 +79,10 @@ def taproot_signature_hash(message, message_challenge, hash_type=SIGHASH_DEFAULT
 def sign_taproot_simple(message, internal_pubkey, internal_seckey):
     """Create a textual BIP-322 simple signature for a P2TR key-path spend."""
     message_challenge = output_script(internal_pubkey, None)
-    sighash = taproot_signature_hash(message, message_challenge)
-    signature = taproot_sign_key(None, internal_seckey, SIGHASH_DEFAULT, sighash)
+    # BIP-322 lets P2TR use SIGHASH_DEFAULT, but every verifier has to accept SIGHASH_ALL, and Sparrow only
+    # accepts SIGHASH_ALL.
+    sighash = taproot_signature_hash(message, message_challenge, SIGHASH_ALL)
+    signature = taproot_sign_key(None, internal_seckey, SIGHASH_ALL, sighash)
     witness = ser_string_vector([signature])
 
     encoded_witness = b2a_base64(witness).decode('ascii').strip()
