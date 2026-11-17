@@ -6,8 +6,6 @@
 #include "py/runtime.h"
 #include "flash.h"
 
-#ifdef SCREEN_MODE_MONO
-
 #ifndef SETTINGS_FLASH_DEBUG
 #define SETTINGS_FLASH_DEBUG    0
 #endif
@@ -115,5 +113,3 @@ STATIC const mp_obj_type_t mod_passport_SettingsFlash_type = {
     .make_new    = mod_passport_SettingsFlash_make_new,
     .locals_dict = (void*)&mod_passport_SettingsFlash_locals_dict,
 };
-
-#endif

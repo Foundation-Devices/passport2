@@ -337,8 +337,8 @@ STATIC const mp_rom_map_elem_t passport_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_Noise), MP_ROM_PTR(&mod_passport_Noise_type)},
 #ifdef SCREEN_MODE_MONO
     {MP_ROM_QSTR(MP_QSTR_Powermon), MP_ROM_PTR(&mod_passport_Powermon_type)},
-    {MP_ROM_QSTR(MP_QSTR_SettingsFlash), MP_ROM_PTR(&mod_passport_SettingsFlash_type)},
 #endif
+    {MP_ROM_QSTR(MP_QSTR_SettingsFlash), MP_ROM_PTR(&mod_passport_SettingsFlash_type)},
     {MP_ROM_QSTR(MP_QSTR_mem), MP_ROM_PTR(&mod_passport_mem_module)},
     {MP_ROM_QSTR(MP_QSTR_System), MP_ROM_PTR(&mod_passport_System_type)}};
 STATIC MP_DEFINE_CONST_DICT(passport_module_globals, passport_module_globals_table);
