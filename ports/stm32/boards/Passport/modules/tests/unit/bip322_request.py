@@ -47,12 +47,14 @@ SCRIPT = output_script(INTERNAL_PUBKEY, None)
 MESSAGE = 'Proof of reserves for tb1p'
 
 
-def request_psbt(message=MESSAGE.encode(), path=PATH, script=SCRIPT):
+def request_psbt(message=MESSAGE.encode(), path=PATH, script=SCRIPT, derivation_value=None):
     _, to_sign = create_virtual_transactions(message, script)
+    if derivation_value is None:
+        derivation_value = b'\x00' + pack('<%dI' % (1 + len(path)), XFP, *path)
     entries = ((b'\x00', to_sign), (b'\x09', message), None,
                (b'\x01', pack('<q', 0) + ser_string(script)),
                (b'\x03', pack('<I', SIGHASH_ALL)),
-               (b'\x16' + INTERNAL_PUBKEY, b'\x00' + pack('<%dI' % (1 + len(path)), XFP, *path)),
+               (b'\x16' + INTERNAL_PUBKEY, derivation_value),
                (b'\x17', INTERNAL_PUBKEY), None, None)
     out = b'psbt\xff'
     for entry in entries:
@@ -150,6 +152,8 @@ async def run_task_tests():
         KeyNode.public_key_bytes = b'\x02' + INTERNAL_PUBKEY
 
     assert (await validate(b'psbt\xff'))[1] == INVALID_REQUEST
+    for derivation_value in (b'', b'\x00'):
+        assert await validate(request_psbt(derivation_value=derivation_value)) == (None, INVALID_REQUEST)
 
     # Signing returns the request's PSBT with the key-path signature added to its input.
     signed, address, error = await sign(request)

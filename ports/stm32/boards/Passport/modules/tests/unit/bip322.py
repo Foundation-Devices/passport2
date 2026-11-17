@@ -289,7 +289,7 @@ for hash_type in (2, 3, 0x81):
     rejected(serialize((global_map, input_map, output_map)), 'Unsupported signature hash type.')
 
 # Exactly one key-path derivation below a master fingerprint.
-for bad_derivation in (derivation(leaves=1), derivation(path=[]), derivation()[:-2]):
+for bad_derivation in (b'', b'\x00', derivation(leaves=1), derivation(path=[]), derivation()[:-2]):
     global_map, input_map, output_map = request_maps(message, message_challenge)
     input_map[2] = (input_map[2][0], bad_derivation)
     rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)

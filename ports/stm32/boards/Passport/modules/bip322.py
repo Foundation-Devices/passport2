@@ -181,7 +181,7 @@ def read_signing_request(psbt):
         raise ValueError(INVALID_REQUEST)
     derivation = derivations[0]
     count = (len(derivation) - 1) // 4
-    if derivation[0] != 0 or (len(derivation) - 1) % 4 or not 2 <= count <= MAX_PATH_DEPTH:
+    if not 2 <= count <= MAX_PATH_DEPTH or (len(derivation) - 1) % 4 or derivation[0] != 0:
         raise ValueError(INVALID_REQUEST)
     xfp_path = list(unpack_from('<%dI' % count, derivation, 1))
 
