@@ -129,27 +129,35 @@ assert taproot_signature_hash(message, message_challenge) == a2b_hex(
 signature = sign_taproot_simple(message, internal_pubkey, private_key)
 assert signature.startswith('smp')
 
+# Text signatures are SIGHASH_ALL, which every verifier must accept and the only type Sparrow accepts.
 witness = a2b_base64(signature[3:])
-assert len(witness) == 66
-assert witness[:2] == b'\x01\x40'
+assert len(witness) == 67
+assert witness[:2] == b'\x01\x41'
+assert witness[66] == SIGHASH_ALL
 
-# The encoding checks above pass for any 64-byte signature, so verify the
-# signature cryptographically as well.
-schnorr_signature = witness[2:]
-output_pubkey = message_challenge[2:]
+# SIGHASH_ALL changes the digest. The value comes from an implementation outside the firmware, checked against
+# the BIP-322 SIGHASH_DEFAULT vector above.
 sighash = taproot_signature_hash(message, message_challenge)
+sighash_all = taproot_signature_hash(message, message_challenge, SIGHASH_ALL)
+assert sighash_all == a2b_hex('f4ee2b0fa213cd562b51dcaa94cae4d16d39256ee52a754779222eaddf4184f3')
 
-assert bip340_verify(output_pubkey, schnorr_signature, sighash)
+# The encoding checks above pass for any 65-byte signature, so verify the
+# signature cryptographically as well.
+schnorr_signature = witness[2:66]
+output_pubkey = message_challenge[2:]
+
+assert bip340_verify(output_pubkey, schnorr_signature, sighash_all)
+assert not bip340_verify(output_pubkey, schnorr_signature, sighash)
 
 # It must bind to the message.
-tampered_sighash = taproot_signature_hash(b'Tampered message', message_challenge)
-assert tampered_sighash != sighash
+tampered_sighash = taproot_signature_hash(b'Tampered message', message_challenge, SIGHASH_ALL)
+assert tampered_sighash != sighash_all
 assert not bip340_verify(output_pubkey, schnorr_signature, tampered_sighash)
 
 # And it must be made with the tweaked output key, not the internal key. Both
 # are valid x-only keys, so only verification distinguishes them.
 assert internal_pubkey != output_pubkey
-assert not bip340_verify(internal_pubkey, schnorr_signature, sighash)
+assert not bip340_verify(internal_pubkey, schnorr_signature, sighash_all)
 
 
 # BIP-322 requests sent as a PSBT, built the way Sparrow builds them: the to_sign transaction as a PSBTv0,
@@ -221,11 +229,6 @@ assert request.xfp == XFP
 assert request.path == PATH
 assert request.hash_type == SIGHASH_ALL
 
-# SIGHASH_ALL changes the digest. The value comes from an implementation outside the firmware, checked against
-# the BIP-322 SIGHASH_DEFAULT vector above.
-sighash_all = taproot_signature_hash(message, message_challenge, SIGHASH_ALL)
-assert sighash_all == a2b_hex('f4ee2b0fa213cd562b51dcaa94cae4d16d39256ee52a754779222eaddf4184f3')
-
 # Signing adds the key-path signature to the input and changes nothing else.
 signed = read_maps(sign_taproot_request(request, internal_pubkey, private_key))
 assert signed[0] == maps[0]
@@ -239,7 +242,7 @@ assert bip340_verify(output_pubkey, tap_key_sig[:64], sighash_all)
 assert not bip340_verify(output_pubkey, tap_key_sig[:64], sighash)
 rejected(serialize(signed), 'This message request is already signed.')
 
-# Without a sighash type, the signature is SIGHASH_DEFAULT, like a signature made from a text message.
+# Without a sighash type, a request is signed with SIGHASH_DEFAULT, the Taproot default for PSBTs.
 global_map, input_map, output_map = request_maps(message, message_challenge)
 del input_map[1]
 request = read_signing_request(serialize((global_map, input_map, output_map)))
