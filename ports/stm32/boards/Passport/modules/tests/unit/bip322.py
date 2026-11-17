@@ -6,9 +6,12 @@
 from foundation import secp256k1
 from ubinascii import a2b_base64
 from ubinascii import unhexlify as a2b_hex
+from uio import BytesIO
+from ustruct import pack
 
-from bip322 import create_virtual_transactions, sign_taproot_simple, taproot_signature_hash
-from serializations import hash256
+from bip322 import INVALID_REQUEST, TAPROOT_ONLY, create_virtual_transactions, read_signing_request
+from bip322 import sign_taproot_request, sign_taproot_simple, taproot_signature_hash
+from serializations import SIGHASH_ALL, SIGHASH_DEFAULT, deser_compact_size, hash256, ser_string
 from taproot import output_script, tagged_hash
 
 
@@ -126,26 +129,191 @@ assert taproot_signature_hash(message, message_challenge) == a2b_hex(
 signature = sign_taproot_simple(message, internal_pubkey, private_key)
 assert signature.startswith('smp')
 
+# Text signatures are SIGHASH_ALL, which every verifier must accept and the only type Sparrow accepts.
 witness = a2b_base64(signature[3:])
-assert len(witness) == 66
-assert witness[:2] == b'\x01\x40'
+assert len(witness) == 67
+assert witness[:2] == b'\x01\x41'
+assert witness[66] == SIGHASH_ALL
 
-# The encoding checks above pass for any 64-byte signature, so verify the
-# signature cryptographically as well.
-schnorr_signature = witness[2:]
-output_pubkey = message_challenge[2:]
+# SIGHASH_ALL changes the digest. The value comes from an implementation outside the firmware, checked against
+# the BIP-322 SIGHASH_DEFAULT vector above.
 sighash = taproot_signature_hash(message, message_challenge)
+sighash_all = taproot_signature_hash(message, message_challenge, SIGHASH_ALL)
+assert sighash_all == a2b_hex('f4ee2b0fa213cd562b51dcaa94cae4d16d39256ee52a754779222eaddf4184f3')
 
-assert bip340_verify(output_pubkey, schnorr_signature, sighash)
+# The encoding checks above pass for any 65-byte signature, so verify the
+# signature cryptographically as well.
+schnorr_signature = witness[2:66]
+output_pubkey = message_challenge[2:]
+
+assert bip340_verify(output_pubkey, schnorr_signature, sighash_all)
+assert not bip340_verify(output_pubkey, schnorr_signature, sighash)
 
 # It must bind to the message.
-tampered_sighash = taproot_signature_hash(b'Tampered message', message_challenge)
-assert tampered_sighash != sighash
+tampered_sighash = taproot_signature_hash(b'Tampered message', message_challenge, SIGHASH_ALL)
+assert tampered_sighash != sighash_all
 assert not bip340_verify(output_pubkey, schnorr_signature, tampered_sighash)
 
 # And it must be made with the tweaked output key, not the internal key. Both
 # are valid x-only keys, so only verification distinguishes them.
 assert internal_pubkey != output_pubkey
-assert not bip340_verify(internal_pubkey, schnorr_signature, sighash)
+assert not bip340_verify(internal_pubkey, schnorr_signature, sighash_all)
+
+
+# BIP-322 requests sent as a PSBT, built the way Sparrow builds them: the to_sign transaction as a PSBTv0,
+# the message in global field 0x09, and an input carrying the zero-value UTXO, SIGHASH_ALL and the
+# key-path derivation.
+HARDENED = 0x80000000
+XFP = 0x78563412
+PATH = [86 | HARDENED, 1 | HARDENED, HARDENED, 0, 0]
+
+
+def derivation(path=PATH, leaves=0):
+    return bytes([leaves]) + b'\x11' * 32 * leaves + pack('<%dI' % (1 + len(path)), XFP, *path)
+
+
+def request_maps(message, script):
+    _, to_sign = create_virtual_transactions(message, script)
+    global_map = [(b'\x00', to_sign), (b'\x09', message)]
+    input_map = [(b'\x01', pack('<q', 0) + ser_string(script)),
+                 (b'\x03', pack('<I', SIGHASH_ALL)),
+                 (b'\x16' + internal_pubkey, derivation()),
+                 (b'\x17', internal_pubkey)]
+    return global_map, input_map, []
+
+
+def serialize(maps, tail=b''):
+    out = b'psbt\xff'
+    for entries in maps:
+        for key, value in entries:
+            out += ser_string(key) + ser_string(value)
+        out += b'\x00'
+    return out + tail
+
+
+def read_maps(data):
+    fd = BytesIO(data)
+    assert fd.read(5) == b'psbt\xff'
+    maps = []
+    for _ in range(3):
+        entries = []
+        while True:
+            key = fd.read(deser_compact_size(fd))
+            if not key:
+                break
+            entries.append((key, fd.read(deser_compact_size(fd))))
+        maps.append(entries)
+    assert fd.read(1) == b''
+    return maps
+
+
+def rejected(psbt, error):
+    try:
+        read_signing_request(psbt)
+    except ValueError as e:
+        assert str(e) == error, str(e)
+        return
+    assert False, 'request was accepted'
+
+
+other_key = a2b_hex('01' * 32)
+other_pubkey = secp256k1.public_key_schnorr(other_key)
+
+# A request reads back with its message, address, key derivation and sighash type.
+maps = request_maps(message, message_challenge)
+psbt = serialize(maps)
+request = read_signing_request(psbt)
+assert request.message == message
+assert request.script_pubkey == message_challenge
+assert request.xfp == XFP
+assert request.path == PATH
+assert request.hash_type == SIGHASH_ALL
+
+# Signing adds the key-path signature to the input and changes nothing else.
+signed = read_maps(sign_taproot_request(request, internal_pubkey, private_key))
+assert signed[0] == maps[0]
+assert signed[1][:-1] == maps[1]
+assert signed[2] == maps[2]
+key, tap_key_sig = signed[1][-1]
+assert key == b'\x13'
+assert len(tap_key_sig) == 65
+assert tap_key_sig[64] == SIGHASH_ALL
+assert bip340_verify(output_pubkey, tap_key_sig[:64], sighash_all)
+assert not bip340_verify(output_pubkey, tap_key_sig[:64], sighash)
+rejected(serialize(signed), 'This message request is already signed.')
+
+# Without a sighash type, a request is signed with SIGHASH_DEFAULT, the Taproot default for PSBTs.
+global_map, input_map, output_map = request_maps(message, message_challenge)
+del input_map[1]
+request = read_signing_request(serialize((global_map, input_map, output_map)))
+assert request.hash_type == SIGHASH_DEFAULT
+tap_key_sig = read_maps(sign_taproot_request(request, internal_pubkey, private_key))[1][-1][1]
+assert len(tap_key_sig) == 64
+assert bip340_verify(output_pubkey, tap_key_sig, sighash)
+
+# A key that does not own the address does not sign.
+try:
+    sign_taproot_request(request, other_pubkey, other_key)
+    assert False, 'signed with the wrong key'
+except ValueError:
+    pass
+
+# The message under review must be the one the transaction commits to, and so must the address.
+MISMATCH = 'The transaction in this request does not match its message.'
+global_map, input_map, output_map = request_maps(message, message_challenge)
+global_map[1] = (b'\x09', b'Tampered message')
+rejected(serialize((global_map, input_map, output_map)), MISMATCH)
+
+global_map, input_map, output_map = request_maps(message, message_challenge)
+input_map[0] = (b'\x01', pack('<q', 0) + ser_string(output_script(other_pubkey, None)))
+rejected(serialize((global_map, input_map, output_map)), MISMATCH)
+
+# The output being spent holds no value.
+global_map, input_map, output_map = request_maps(message, message_challenge)
+input_map[0] = (b'\x01', pack('<q', 1) + ser_string(message_challenge))
+rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
+
+# Other address types are pointed to the Electrum format.
+p2wpkh_request = serialize(request_maps(b'Hello World', a2b_hex('00142b05d564e6a7a33c087f16e0f730d1440123799d')))
+rejected(p2wpkh_request, TAPROOT_ONLY)
+
+# The message has to be in the request.
+global_map, input_map, output_map = request_maps(message, message_challenge)
+del global_map[1]
+rejected(serialize((global_map, input_map, output_map)), 'This request does not include the message to sign.')
+
+# Only SIGHASH_DEFAULT and SIGHASH_ALL commit to the whole virtual transaction.
+for hash_type in (2, 3, 0x81):
+    global_map, input_map, output_map = request_maps(message, message_challenge)
+    input_map[1] = (b'\x03', pack('<I', hash_type))
+    rejected(serialize((global_map, input_map, output_map)), 'Unsupported signature hash type.')
+
+# Exactly one key-path derivation below a master fingerprint.
+for bad_derivation in (b'', b'\x00', derivation(leaves=1), derivation(path=[]), derivation()[:-2]):
+    global_map, input_map, output_map = request_maps(message, message_challenge)
+    input_map[2] = (input_map[2][0], bad_derivation)
+    rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
+
+global_map, input_map, output_map = request_maps(message, message_challenge)
+input_map.append((b'\x16' + other_pubkey, derivation()))
+rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
+
+global_map, input_map, output_map = request_maps(message, message_challenge)
+del input_map[2]
+rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
+
+# Malformed PSBTs: a duplicate key, an extra map, a truncated or mislabelled stream, and a PSBTv2 with no
+# unsigned transaction.
+global_map, input_map, output_map = request_maps(message, message_challenge)
+global_map.append(global_map[1])
+rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
+
+rejected(serialize(request_maps(message, message_challenge), tail=b'\x00'), INVALID_REQUEST)
+rejected(psbt[:-3], INVALID_REQUEST)
+rejected(b'psbu' + psbt[4:], INVALID_REQUEST)
+
+global_map, input_map, output_map = request_maps(message, message_challenge)
+global_map[0] = (b'\xfb', pack('<I', 2))
+rejected(serialize((global_map, input_map, output_map)), INVALID_REQUEST)
 
 return_value.write(b'OK')

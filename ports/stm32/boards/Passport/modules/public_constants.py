@@ -82,6 +82,8 @@ DESCRIPTOR_CODES = {AF_P2WPKH: 'wpkh',
 #
 PSBT_GLOBAL_UNSIGNED_TX = const(0)
 PSBT_GLOBAL_XPUB = const(1)
+# Sparrow sends the message of a BIP-322 signing request in this global field.
+PSBT_GLOBAL_GENERIC_SIGNED_MESSAGE = const(9)
 PSBT_GLOBAL_VERSION = const(0xfb)
 
 PSBT_IN_NON_WITNESS_UTXO = const(0)
