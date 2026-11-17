@@ -152,6 +152,10 @@ def test_psbt_fee(test):
     assert test('psbt_fee.py') == b'OK'
 
 
+def test_psbt_timelock_warnings(test):
+    assert test('psbt_timelock_warnings.py') == b'OK'
+
+
 def test_psbt_history(test):
     assert test('psbt_history.py') == b'OK'
 

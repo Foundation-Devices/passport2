@@ -35,6 +35,8 @@ async def validate_psbt_task(on_done, psbt_len):
         gc.collect()
         psbt.consider_keys()
         gc.collect()
+        psbt.consider_timelocks()
+        gc.collect()
         psbt.consider_outputs()
 
         # All went well!
