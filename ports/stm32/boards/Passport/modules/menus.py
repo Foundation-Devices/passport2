@@ -471,7 +471,7 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow, ShowSecurityWordsSettingFlow
+    from flows import ViewSeedWordsFlow, ErasePassportFlow, ShowSecurityWordsSettingFlow
     from flows import ClearUTXOCacheFlow
 
     return [
@@ -485,8 +485,6 @@ def advanced_menu():
         {'icon': 'ICON_ERASE', 'label': 'Clear Saved Input Amounts', 'flow': ClearUTXOCacheFlow},
         {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow,
          'is_visible': lambda: not has_temporary_seed()},
-        {'icon': 'ICON_SHIELD', 'label': 'Security Check', 'flow': ScvFlow,
-         'args': {'envoy': False, 'ask_to_skip': False}},
     ]
 
 

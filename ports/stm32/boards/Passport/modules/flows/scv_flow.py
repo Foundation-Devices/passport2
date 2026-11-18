@@ -19,7 +19,7 @@ import common
 
 
 class ScvFlow(Flow):
-    def __init__(self, envoy=True, ask_to_skip=True):
+    def __init__(self, envoy=True):
         """
         :param envoy: True for Envoy App flow. False is manual Supply Chain Validation.
         """
@@ -29,7 +29,6 @@ class ScvFlow(Flow):
                          statusbar={'title': 'SECURITY CHECK', 'icon': 'ICON_SHIELD'})
         self.words = None
         self.envoy = envoy
-        self.ask_to_skip = ask_to_skip
         self.uuid = None
 
     async def show_intro(self):
@@ -178,12 +177,6 @@ foundation.xyz.''', left_micron=microns.Cancel, right_micron=microns.Retry).show
                 self.goto(self.prompt_skip)
 
     async def prompt_skip(self):
-
-        if not self.ask_to_skip:
-            common.settings.set('validated_ok', True)
-            self.set_result(True)
-            return
-
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))
