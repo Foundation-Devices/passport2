@@ -196,5 +196,9 @@ def test_scv_challenge(test):
     assert test('scv_challenge.py') == b'OK'
 
 
+def test_onboarding_saved_progress(test):
+    assert test('onboarding_saved_progress.py') == b'OK'
+
+
 def test_multisig_distinct_cosigners(test):
     assert test('multisig_distinct_cosigners.py') == b'OK'

@@ -4,14 +4,15 @@
 # envoy_setup_flow.py - The main overall flow for Envoy setup - controls the process
 
 import lvgl as lv
+from animations.constants import TRANSITION_DIR_POP
 from flows import (
     Flow,
     ConnectWalletFlow,
     SetInitialPINFlow,
     UpdateFirmwareFlow,
     InitialSeedSetupFlow,
-    ScvFlow,
 )
+import common
 import microns
 
 
@@ -39,15 +40,15 @@ class EnvoySetupFlow(Flow):
         if not result:
             self.set_result(False)
         else:
-            self.goto(self.scv_flow)
-
-    async def scv_flow(self):
-        result = await ScvFlow(envoy=True).run()
-        if result is None or not result:
-            # self.set_result(None, forget_state=True)
-            self.back()
-        elif result:
             self.goto(self.set_initial_pin)
+
+    # The Security Check is no longer part of onboarding, but progress saved by older firmware
+    # can still include this stage. Pass through it in the direction it was entered.
+    async def scv_flow(self):
+        if common.page_transition_dir == TRANSITION_DIR_POP:
+            self.back()
+        else:
+            self.goto(self.set_initial_pin, save_curr=False)
 
     async def set_initial_pin(self):
         result = await SetInitialPINFlow().run()
