@@ -87,9 +87,10 @@ def read_backup_file(decryption_password, backup_file_path, validate_only=False)
 
 
 def verify_backup_file(decryption_password, backup_file_path):
-    # This confirms the code decrypts the backup, the plaintext CRC matches and the backup header
-    # is Passport's. Restore still checks the settings themselves and can refuse a backup that
-    # passes here. Decryption necessarily materializes plaintext, so it is cleared before returning.
+    # This confirms the supplied code or password decrypts the archive, the plaintext CRC matches
+    # and the Passport backup header is valid. Restore still checks the contents afterwards,
+    # including that a valid raw_secret is present, so it can refuse a backup that passes here.
+    # Decryption necessarily materializes plaintext, so it is cleared before returning.
     _contents, error = read_backup_file(
         decryption_password, backup_file_path, validate_only=True)
     return error
