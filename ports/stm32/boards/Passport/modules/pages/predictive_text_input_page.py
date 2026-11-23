@@ -97,7 +97,9 @@ class PredictiveTextInputPage(Page):
             # print('Lookup words for {}'.format(prefix))
             set_list(self.prefixes, self.word_idx, prefix)
             self.predictions = get_words_matching_prefix(prefix, max=10, word_list=self.word_list)
-        elif self.word_idx == self.total_words - 1:
+        elif self.word_idx == self.total_words - 1 and self.word_list == 'bip39':
+            # Only a BIP-39 seed has a checksum word that can be generated. A backup password
+            # needs all of its words.
             self.predictions = [RANDOM_WORD_STRING]
         else:
             self.predictions = []

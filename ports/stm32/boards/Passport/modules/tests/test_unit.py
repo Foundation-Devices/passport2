@@ -32,6 +32,10 @@ def test_backup_verification(test):
     assert test('backup_verification.py') == b'OK'
 
 
+def test_backup_password_entry(test):
+    assert test('backup_password_entry.py') == b'OK'
+
+
 def test_passphrase_length(test):
     assert test('passphrase_length.py') == b'OK'
 
