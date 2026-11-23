@@ -77,10 +77,32 @@ def migrate_settings():
     # print('migrate_settings() END')
 
 
+def clear_internal_settings_flash():
+    # Color devices keep their settings in external flash and never use the internal settings flash. Erase
+    # anything left there so it holds nothing on a color device.
+    import uctypes
+    from settings import SETTINGS_FLASH_START, SETTINGS_FLASH_LENGTH
+
+    chunk_len = 1024
+    erased = b'\xff' * chunk_len
+    for offset in range(0, SETTINGS_FLASH_LENGTH, chunk_len):
+        if uctypes.bytearray_at(SETTINGS_FLASH_START + offset, chunk_len) != erased:
+            from passport import SettingsFlash
+            SettingsFlash().erase()
+            return
+
+
 async def handle_foundational_evolutions():
     # This function handles updates that need to be applied very early in the startup cycle before most 'common'
     # values have been configured.  These are "foundational" changes like moving user settings from internal
     # to external flash.  This means that it will need to do "pre-initialization" of some systems that it needs.
+
+    if passport.IS_COLOR and not passport.IS_SIMULATOR:
+        try:
+            clear_internal_settings_flash()
+        except Exception as e:
+            # Never let this stop the device from booting. It is tried again on the next boot.
+            print('clear_internal_settings_flash() failed: {}'.format(e))
 
     # Only for mono device since color devices will have 2.0.0 as their factory firmware already with user settings
     # in external flash from the beginning.

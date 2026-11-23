@@ -60,6 +60,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(
     mod_trezorcrypto_bip39_word_completion_mask_obj,
     mod_trezorcrypto_bip39_word_completion_mask);
 
+// py.mk asks for this to be off with -DUSE_BIP39_GENERATE=0, and nothing here read
+// the flag. Passport generates seeds in new_seed_task rather than through this.
+// Default to on where the flag is not set, so upstream builds are unaffected.
+#if !defined(USE_BIP39_GENERATE) || USE_BIP39_GENERATE
 /// def generate(strength: int) -> str:
 ///     """
 ///     Generate a mnemonic of given strength (128, 160, 192, 224 and 256 bits).
@@ -79,6 +83,7 @@ STATIC mp_obj_t mod_trezorcrypto_bip39_generate(mp_obj_t strength) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_bip39_generate_obj,
                                  mod_trezorcrypto_bip39_generate);
+#endif
 
 /// def from_data(data: bytes) -> str:
 ///     """
@@ -177,8 +182,10 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_bip39_globals_table[] = {
      MP_ROM_PTR(&mod_trezorcrypto_bip39_complete_word_obj)},
     {MP_ROM_QSTR(MP_QSTR_word_completion_mask),
      MP_ROM_PTR(&mod_trezorcrypto_bip39_word_completion_mask_obj)},
+#if !defined(USE_BIP39_GENERATE) || USE_BIP39_GENERATE
     {MP_ROM_QSTR(MP_QSTR_generate),
      MP_ROM_PTR(&mod_trezorcrypto_bip39_generate_obj)},
+#endif
     {MP_ROM_QSTR(MP_QSTR_from_data),
      MP_ROM_PTR(&mod_trezorcrypto_bip39_from_data_obj)},
     {MP_ROM_QSTR(MP_QSTR_check), MP_ROM_PTR(&mod_trezorcrypto_bip39_check_obj)},

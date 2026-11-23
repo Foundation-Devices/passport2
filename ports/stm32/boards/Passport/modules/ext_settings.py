@@ -28,6 +28,15 @@ from constants import SPI_FLASH_SECTOR_SIZE
 from passport import mem
 from public_constants import DEVICE_SETTINGS
 
+# Volatile values holding key material, zeroed whenever they are cleared,
+# replaced or dropped. blank_object() overwrites in place, so only list values
+# the settings own outright: a buffer created for the setting and not shared.
+SECRET_VOLATILE_KEYS = ('temporary_seed',)
+
+
+class SettingsOutOfSpace(RuntimeError):
+    pass
+
 
 class ExtSettings:
     """Settings stored in external flash, with a secondary backup"""
@@ -260,10 +269,21 @@ class ExtSettings:
             return self.overrides.get(kn, default)
         return self.temporary_overrides.get(kn, default)
 
+    @staticmethod
+    def _blank_secret(overrides, kn, keep=None):
+        if kn not in SECRET_VOLATILE_KEYS:
+            return
+        value = overrides.get(kn)
+        if value is not None and value is not keep:
+            from stash import blank_object
+            blank_object(value)
+
     def set_volatile(self, kn, v):
         if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self._blank_secret(self.overrides, kn, keep=v)
             self.overrides[kn] = v
             return
+        self._blank_secret(self.temporary_overrides, kn, keep=v)
         self.temporary_overrides[kn] = v
 
     def in_current(self, kn):
@@ -279,9 +299,11 @@ class ExtSettings:
     def clear_volatile(self, kn):
         if not self.temporary_mode or kn in DEVICE_SETTINGS:
             if kn in self.overrides:
+                self._blank_secret(self.overrides, kn)
                 del self.overrides[kn]
             return
         if kn in self.temporary_overrides:
+            self._blank_secret(self.temporary_overrides, kn)
             del self.temporary_overrides[kn]
 
     def remove(self, kn):
@@ -405,36 +427,39 @@ class ExtSettings:
         # print('do_save({})'.format(erase_old_pos))
         # render as JSON, encrypt and write it.
         self.current['_revision'] = self.current.get('_revision', 1) + 1
+        data = self._serialize_current()
 
         _, pos = self.find_spot(self.my_pos)
-        self.save_impl(pos, erase_old_pos=erase_old_pos)
+        self.save_impl(pos, data=data, erase_old_pos=erase_old_pos)
 
         # print('save(): sf={}, pos={}'.format(sf, pos))
 
-    def save_impl(self, pos, erase_old_pos=True):
+    def _serialize_current(self):
+        d = ujson.dumps(self.current).encode('utf8')
+        if len(d) > self.max_json_len:
+            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
+        return d
+
+    def save_impl(self, pos, data, erase_old_pos=True):
+        pad_len = self.max_json_len - len(data)
+        if pad_len < 0:
+            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
+
         aes = self.get_aes(pos)
 
         with SFFile(pos, pre_erased=True, max_size=self.slot_size) as fd:
             chk = trezorcrypto.sha256()
 
             # first the json data
-            d = ujson.dumps(self.current)
             # print('pos: {}'.format(pos))
             # print('current: {}'.format(self.current))
-            # print('data: {}'.format(bytes_to_hex_str(d)))
+            # print('data: {}'.format(bytes_to_hex_str(data)))
 
             # pad w/ zeros
-            data_len = len(d)
-            pad_len = self.max_json_len - data_len
-            if pad_len < 0:
-                # print('ERROR: JSON data is too big!')
-                return
+            fd.write(aes.encrypt(data))
+            chk.update(data)
 
-            fd.write(aes.encrypt(d))
-            chk.update(d)
-            del d
-
-            # print('data_len={} pad_len={}'.format(data_len, pad_len))
+            # print('pad_len={}'.format(pad_len))
 
             while pad_len > 0:
                 here = min(32, pad_len)
@@ -490,6 +515,8 @@ class ExtSettings:
         self.temporary_settings = self.default_values()
 
     def exit_temporary_mode(self):
+        for kn in SECRET_VOLATILE_KEYS:
+            self._blank_secret(self.temporary_overrides, kn)
         self.temporary_mode = False
         self.temporary_settings = {}
         self.temporary_overrides = {}

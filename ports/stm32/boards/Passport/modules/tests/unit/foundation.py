@@ -22,8 +22,8 @@ def should_fail(f):
 
 
 should_fail(lambda: foundation.qr.init())
-should_fail(lambda: foundation.qr.init(None, None, None))
-foundation.qr.init(HOR_RES, VER_RES, bytearray(HOR_RES * VER_RES))
+should_fail(lambda: foundation.qr.init(None, None))
+foundation.qr.init(HOR_RES, VER_RES)
 
 should_fail(lambda: foundation.convert_rgb565_to_grayscale())
 should_fail(lambda: foundation.convert_rgb565_to_grayscale(None, None, None, None))
@@ -38,6 +38,13 @@ should_fail(lambda: foundation.sha256(None, None))
 digest = bytearray(32)
 foundation.sha256('this is the message', digest)
 assert digest == bytearray(b'\x131qZ\x1f\xfd\x04\xe6`\x04\x93\x1a\x8d\xbc6U\xebJR>\xd5\xece\xecm\x1c\xed\x93x+\xd3\xbd')  # nopep8
+
+raw_ur = foundation.ur.new_raw('crypto-hdkey', b'\xa0')
+foundation.ur.encoder_start(raw_ur, 535)
+assert foundation.ur.encoder_next_part().startswith('ur:crypto-hdkey/')
+
+bad_raw_ur = foundation.ur.new_raw('CRYPTO-HDKEY', b'\xa0')
+should_fail(lambda: foundation.ur.encoder_start(bad_raw_ur, 535))
 
 SAMPLE_HOR_RES = 10
 SAMPLE_VER_RES = 10

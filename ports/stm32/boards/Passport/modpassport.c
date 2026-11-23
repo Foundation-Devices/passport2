@@ -40,6 +40,10 @@ STATIC mp_obj_t mod_passport_supply_chain_challenge(mp_obj_t challenge_obj, mp_o
     mp_get_buffer_raise(challenge_obj, &challenge_info, MP_BUFFER_READ);
     mp_get_buffer_raise(response_obj, &response_info, MP_BUFFER_WRITE);
 
+    if (challenge_info.len != 32 || response_info.len < 32) {
+        return mp_const_false;
+    }
+
     se_pair_unlock();
     int rc = se_hmac32(KEYNUM_supply_chain, challenge_info.buf, response_info.buf);
     if (rc == 0) {
@@ -62,12 +66,31 @@ STATIC mp_obj_t mod_passport_verify_supply_chain_server_signature(mp_obj_t hash_
     mp_get_buffer_raise(hash_obj, &hash_info, MP_BUFFER_READ);
     mp_get_buffer_raise(signature_obj, &signature_info, MP_BUFFER_READ);
 
+    // The SCV protocol signs a SHA-256 digest with a raw secp256k1 signature.
+    // micro-ecc assumes the signature buffer contains both 32-byte scalars.
+    if (hash_info.len != 32 || signature_info.len != 64) {
+        return mp_const_false;
+    }
+
     rc = uECC_verify(supply_chain_validation_server_pubkey, hash_info.buf, hash_info.len, signature_info.buf,
                      uECC_secp256k1());
     return rc == 0 ? mp_const_false : mp_const_true;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_passport_verify_supply_chain_server_signature_obj,
                                  mod_passport_verify_supply_chain_server_signature);
+
+STATIC uint32_t get_minimum_firmware_timestamp(void) {
+    uint8_t current_board_hash[HASH_LEN] = {0};
+    get_current_board_hash(current_board_hash);
+
+    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+#ifdef PRODUCTION_BUILD
+    if (firmware_timestamp == 0) {
+        mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Unable to read firmware timestamp."));
+    }
+#endif
+    return firmware_timestamp;
+}
 
 /// def verify_update_header(self, header: bytearray) -> None:
 ///     '''
@@ -80,12 +103,7 @@ STATIC mp_obj_t mod_passport_verify_update_header(mp_obj_t header) {
     mp_buffer_info_t header_info;
     mp_get_buffer_raise(header, &header_info, MP_BUFFER_READ);
 
-    // Build the current board hash so we can get the minimum firmware
-    // timestamp
-    uint8_t current_board_hash[HASH_LEN] = {0};
-    get_current_board_hash(current_board_hash);
-
-    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+    uint32_t firmware_timestamp = get_minimum_firmware_timestamp();
 
     FirmwareResult result = {0};
     foundation_firmware_verify_update_header(header_info.buf,
@@ -186,12 +204,7 @@ STATIC mp_obj_t mod_passport_verify_update_signatures(mp_obj_t header, mp_obj_t 
     mp_buffer_info_t validation_hash_info;
     mp_get_buffer_raise(validation_hash, &validation_hash_info, MP_BUFFER_READ);
 
-    // Build the current board hash so we can get the minimum firmware
-    // timestamp
-    uint8_t current_board_hash[HASH_LEN] = {0};
-    get_current_board_hash(current_board_hash);
-
-    uint32_t firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
+    uint32_t firmware_timestamp = get_minimum_firmware_timestamp();
 
     se_pair_unlock();
     bool has_user_key = false;
@@ -324,8 +337,8 @@ STATIC const mp_rom_map_elem_t passport_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_Noise), MP_ROM_PTR(&mod_passport_Noise_type)},
 #ifdef SCREEN_MODE_MONO
     {MP_ROM_QSTR(MP_QSTR_Powermon), MP_ROM_PTR(&mod_passport_Powermon_type)},
-    {MP_ROM_QSTR(MP_QSTR_SettingsFlash), MP_ROM_PTR(&mod_passport_SettingsFlash_type)},
 #endif
+    {MP_ROM_QSTR(MP_QSTR_SettingsFlash), MP_ROM_PTR(&mod_passport_SettingsFlash_type)},
     {MP_ROM_QSTR(MP_QSTR_mem), MP_ROM_PTR(&mod_passport_mem_module)},
     {MP_ROM_QSTR(MP_QSTR_System), MP_ROM_PTR(&mod_passport_System_type)}};
 STATIC MP_DEFINE_CONST_DICT(passport_module_globals, passport_module_globals_table);

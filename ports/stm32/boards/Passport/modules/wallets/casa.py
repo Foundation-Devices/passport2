@@ -11,6 +11,8 @@ from utils import xfp2str
 from data_codecs.qr_type import QRType
 from foundation import ur
 
+CASA_PATH = "m/45'"
+
 
 def create_casa_export(sw_wallet=None,
                        addr_type=None,
@@ -34,38 +36,32 @@ def create_casa_export(sw_wallet=None,
             is_mainnet = chain.ctype == 'BTC'
 
             network = ur.NETWORK_MAINNET if is_mainnet else ur.NETWORK_TESTNET
-            use_info = ur.CoinInfo(ur.CoinType.BTC, network)
-            origin = ur.Keypath(source_fingerprint=int(xfp2str(settings.get('xfp')), 16),
-                                depth=0)
+            casa_node = sv.derive_path(CASA_PATH)
+            account = ur.new_crypto_account(
+                sv.node.public_key(),
+                sv.node.chain_code(),
+                casa_node.public_key(),
+                casa_node.chain_code(),
+                master_fingerprint=int(xfp2str(settings.get('xfp')), 16),
+                network=network)
 
-            hdkey = ur.new_derived_key(sv.node.public_key(),
-                                       is_private=False,
-                                       chain_code=sv.node.chain_code(),
-                                       use_info=use_info,
-                                       origin=origin)
-
-            return (hdkey, None)
+            return (account, None)
     else:
         with stash.SensitiveValues() as sv:
             s = '''\
     # Passport Summary File
     # For wallet with master key fingerprint: {xfp}
 
-    Wallet operates on blockchain: {nb}
-
-    For BIP44, this is coin_type '{ct}', and internally we use
-    symbol {sym} for this blockchain.
-
-    # IMPORTANT WARNING
-
-    Do **not** deposit to any address in this file unless you have a working
-    wallet system that is ready to handle the funds at that address!
-
     # Top-level, 'master' extended public key ('m/'):
 
     {xpub}
-    '''.format(nb=chain.name, xpub=chain.serialize_public(sv.node),
-               sym=chain.ctype, ct=chain.b44_cointype, xfp=xfp2str(settings.get('xfp')))
+
+    # Casa extended public key ("m/45'"):
+
+    {casa_xpub}
+    '''.format(xpub=chain.serialize_public(sv.node),
+               casa_xpub=chain.serialize_public(sv.derive_path(CASA_PATH)),
+               xfp=xfp2str(settings.get('xfp')))
 
             return (s, None)  # No 'acct_info'
 

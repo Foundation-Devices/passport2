@@ -19,7 +19,7 @@ import common
 
 
 class ScvFlow(Flow):
-    def __init__(self, envoy=True, ask_to_skip=True):
+    def __init__(self, envoy=True):
         """
         :param envoy: True for Envoy App flow. False is manual Supply Chain Validation.
         """
@@ -29,7 +29,6 @@ class ScvFlow(Flow):
                          statusbar={'title': 'SECURITY CHECK', 'icon': 'ICON_SHIELD'})
         self.words = None
         self.envoy = envoy
-        self.ask_to_skip = ask_to_skip
         self.uuid = None
 
     async def show_intro(self):
@@ -61,11 +60,14 @@ class ScvFlow(Flow):
             return
 
         if self.envoy:
-            passport_request = result.unwrap_passport_request()
-
-            self.uuid = passport_request.uuid()
-            scv_id = passport_request.scv_challenge_id()
-            scv_signature = passport_request.scv_challenge_signature()
+            try:
+                passport_request = result.unwrap_passport_request()
+                self.uuid = passport_request.uuid()
+                scv_id = passport_request.scv_challenge_id()
+                scv_signature = passport_request.scv_challenge_signature()
+            except ValueError:
+                await self.show_error('Security Check QR code is invalid.')
+                return
         else:
             parts = result.split(' ')
             if len(parts) != 2:
@@ -79,6 +81,12 @@ class ScvFlow(Flow):
             except ValueError:
                 await self.show_error('Security Check QR code is invalid.\n')
                 return
+
+        # The secure element HMAC consumes 32 challenge bytes. Reject short
+        # inputs here as well as at the native boundary, with a useful error.
+        if len(scv_id) < 32:
+            await self.show_error('Security Check challenge is too short.')
+            return
 
         id_hash = bytearray(32)
         foundation.sha256(b2a_hex(scv_id), id_hash)
@@ -169,12 +177,6 @@ foundation.xyz.''', left_micron=microns.Cancel, right_micron=microns.Retry).show
                 self.goto(self.prompt_skip)
 
     async def prompt_skip(self):
-
-        if not self.ask_to_skip:
-            common.settings.set('validated_ok', True)
-            self.set_result(True)
-            return
-
         skip = await QuestionPage(
             text='Skip Security Check?\n\n{}'.format(
                 recolor(HIGHLIGHT_TEXT_HEX, '(Not recommended)'))

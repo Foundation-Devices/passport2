@@ -4,38 +4,100 @@
 # health_check_common_flow.py - Scan and process a health check QR code in `crypto-request` format
 
 from flows import Flow
-from wallets.utils import get_addr_type_from_string
-from public_constants import AF_CLASSIC
+from wallets.utils import get_addr_type_from_deriv, get_addr_type_from_string
+from public_constants import AF_CLASSIC, AF_P2TR
+
+
+def _path_children(path):
+    # (index, hardened) for each component of a path from cleanup_deriv_path().
+    return [(int(part.rstrip("'")), part.endswith("'")) for part in path.split('/')[1:]]
+
+
+def _is_address_suffix(children):
+    # At most a chain (0 or 1) and an index, both unhardened.
+    return (len(children) <= 2 and not any(hardened for _, hardened in children) and
+            (not children or children[0][0] <= 1))
+
+
+def is_health_check_path(service, path):
+    """Whether a health check for `service` may sign with the key at `path`."""
+    if path in ('', 'm'):
+        # Casa's master-key challenge.
+        return service == 'Casa'
+
+    children = _path_children(path)
+    if service == 'Casa':
+        # Same rule as Passport Prime: m/49/coin/account (legacy vaults) or
+        # m/45'/coin/account, with coin 0 or 1, then an optional address suffix.
+        if len(children) < 3:
+            return False
+        purpose, (coin, coin_hardened), (_, account_hardened) = children[:3]
+        return (purpose in ((49, False), (45, True)) and not coin_hardened and coin <= 1 and
+                not account_hardened and _is_address_suffix(children[3:]))
+
+    if service == 'Theya':
+        # Theya vault keys are BIP48 multisig keys: m/48'/coin'/account'/script'.
+        if len(children) < 4:
+            return False
+        purpose, (coin, coin_hardened), (_, account_hardened), (script, script_hardened) = children[:4]
+        return (purpose == (48, True) and coin_hardened and coin <= 1 and account_hardened and
+                script_hardened and script in (1, 2) and _is_address_suffix(children[4:]))
+
+    return False
 
 
 class HealthCheckCommonFlow(Flow):
-    def __init__(self, lines, normal_signing=False):
+    def __init__(self, data, normal_signing=False, service=None):
         super().__init__(initial_state=self.validate_lines, name='HealthCheckCommonFlow')
-        self.lines = lines
+        self.data = data
         self.text = None
         self.subpath = None
         self.addr_type = AF_CLASSIC
         self.normal_signing = normal_signing
+        self.service = service
 
     async def validate_lines(self):
         from pages import ErrorPage
         from utils import validate_sign_text
-        if len(self.lines) not in [2, 3]:
-            await ErrorPage('{} format is invalid.'.format('Message' if self.normal_signing else 'Health check')).show()
+
+        err_label = 'Message' if self.normal_signing else 'Health check'
+
+        lines = self.data.splitlines()
+        header = lines[0].split(' ', 2) if lines else []
+        # Health checks only ever use the 2- or 3-line format.
+        electrum_format = self.normal_signing and self.data.startswith('signmessage ') and (
+            len(lines) == 1 or (len(header) == 3 and header[2].startswith('ascii:')))
+        if electrum_format:
+            # Splitting the payload into lines would change the signed bytes.
+            parts = self.data.split(' ', 2)
+
+            if len(parts) != 3 or not parts[2].startswith('ascii:'):
+                await ErrorPage('{} format is invalid.'.format(err_label)).show()
+                self.set_result(None)
+                return
+
+            self.subpath = parts[1]
+            self.text = parts[2][len('ascii:'):]
+
+        else:
+            if len(lines) not in [2, 3]:
+                await ErrorPage('{} format is invalid.'.format(err_label)).show()
+                self.set_result(None)
+                return
+
+            self.text = lines[0]
+            self.subpath = lines[1]
+
+            if len(lines) == 3:
+                self.addr_type = get_addr_type_from_string(lines[2])
+
+        if not self.text:
+            await ErrorPage(text='Message is empty.').show()
             self.set_result(None)
             return
 
-        # Common function to validate the message
-        self.text = self.lines[0]
-        self.subpath = self.lines[1]
+        (subpath, error) = validate_sign_text(self.text, self.subpath, allow_newlines=electrum_format)
 
-        if len(self.lines) == 3:
-            self.addr_type = get_addr_type_from_string(self.lines[2])
-        # print('text={}'.format(self.text))
-        # print('subpath={}'.format(self.subpath))
-
-        # Validate
-        (subpath, error) = validate_sign_text(self.text, self.subpath)
         if error is not None:
             await ErrorPage(text=error).show()
             self.set_result(None)
@@ -43,16 +105,41 @@ class HealthCheckCommonFlow(Flow):
 
         self.subpath = subpath
 
+        if electrum_format:
+            # A root or missing path has no purpose component for address-type
+            # detection, even though the general path validator accepts it.
+            if not self.subpath or self.subpath == 'm':
+                await ErrorPage(text='Message derivation path is invalid.').show()
+                self.set_result(None)
+                return
+
+            derived = get_addr_type_from_deriv(self.subpath)
+
+            if derived is not None:
+                self.addr_type = derived
+
         # User Interaction for non-health check signing
         if self.normal_signing:
             self.goto(self.show_message)
+            return
+
+        # A health check signs only with the keys and address types its
+        # service uses.
+        if self.addr_type == AF_P2TR:
+            await ErrorPage(text='Health check address type is not supported.').show()
+            self.set_result(None)
+            return
+
+        if not is_health_check_path(self.service, self.subpath):
+            await ErrorPage(text='Health check derivation path is not allowed.').show()
+            self.set_result(None)
             return
 
         self.goto(self.sign_health_check)
 
     async def show_message(self):
         import stash
-        from utils import stylize_address
+        from utils import escape_text, message_review_warning, stylize_address
         from pages import LongTextPage, LongQuestionPage
         import microns
         from public_constants import MARGIN_FOR_ADDRESSES
@@ -64,7 +151,9 @@ class HealthCheckCommonFlow(Flow):
         display_address = stylize_address(self.address)
 
         result = await LongTextPage(centered=True,
-                                    text=('\n' + self.text),
+                                    text='\n' + escape_text(self.text),
+                                    footer=message_review_warning(self.text),
+                                    require_scroll_to_end=True,
                                     card_header={'title': 'Message'}).show()
 
         if not result:
@@ -105,10 +194,12 @@ class HealthCheckCommonFlow(Flow):
             return
 
     async def format_signature(self):
-        from ubinascii import b2a_base64
         from public_constants import RFC_SIGNATURE_TEMPLATE
 
-        sig = b2a_base64(self.signature).decode('ascii').strip()
-
-        signed_message = RFC_SIGNATURE_TEMPLATE.format(addr=self.address, msg=self.text, blockchain='BITCOIN', sig=sig)
+        signed_message = RFC_SIGNATURE_TEMPLATE.format(
+            addr=self.address,
+            msg=self.text,
+            blockchain='BITCOIN',
+            sig=self.signature,
+        )
         self.set_result(signed_message)

@@ -80,9 +80,9 @@ checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "critical-section"
-version = "1.1.2"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
+checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
 name = "either"
@@ -99,6 +99,12 @@ dependencies = [
  "nb 0.1.3",
  "void",
 ]
+
+[[package]]
+name = "faster-hex"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2a2b11eda1d40935b26cf18f6833c526845ae8c41e58d09af6adeb6f0269183"
 
 [[package]]
 name = "foundation"
@@ -121,15 +127,15 @@ dependencies = [
 
 [[package]]
 name = "foundation-arena"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e6bdea1eeaa5edb5355234d02f81c6dbdd4bc5146887990dd29a213029bbeae"
+checksum = "777e495443499419b935d80c5abffb7e7006859242c8a1d40b5831fea4911175"
 
 [[package]]
 name = "foundation-firmware"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3275fe6157eee489494fb148a173e0918181aacbd319c86e7d3fc3c221a241f"
+checksum = "3a758c0a99372a055268583d3cad1c4070334a3c955366da0499d5529f8431e1"
 dependencies = [
  "bitcoin_hashes",
  "heapless",
@@ -139,9 +145,9 @@ dependencies = [
 
 [[package]]
 name = "foundation-ur"
-version = "0.4.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de4d0b63162220b26a3a955478ebc02e51fe77aa38181d058c55f3d1d6664428"
+checksum = "82f5b324740d9ce0ebdf19f96c695ed2d1c27343a09e8a3e5f845a0c1c163f0a"
 dependencies = [
  "bitcoin_hashes",
  "crc",
@@ -154,13 +160,13 @@ dependencies = [
 
 [[package]]
 name = "foundation-urtypes"
-version = "0.4.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e40662e96946962894b2ff376b848af3e8beb2939be091358dfe2df9db8eaa55"
+checksum = "9c1d89bc1e19e34ae9c303d957c486bf17b956788fcb1c2ca5c413dbed90bea8"
 dependencies = [
+ "faster-hex",
  "foundation-arena",
  "heapless",
- "hex",
  "minicbor",
  "uuid",
 ]
@@ -194,12 +200,6 @@ dependencies = [
  "hash32",
  "stable_deref_trait",
 ]
-
-[[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hex-conservative"

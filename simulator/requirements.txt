@@ -11,6 +11,6 @@
 #   brew install sdl2
 #
 PySDL2
-Pillow
+Pillow>=13.0.0
 opencv-python
 imageio

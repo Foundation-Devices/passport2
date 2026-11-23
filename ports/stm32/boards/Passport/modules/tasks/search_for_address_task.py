@@ -19,7 +19,8 @@ async def search_for_address_task(
         multisig_wallet,
         is_change,
         max_to_check,
-        reverse):
+        reverse,
+        wallet_policy=None):
 
     import stash
     from errors import Error
@@ -27,7 +28,19 @@ async def search_for_address_task(
 
     try:
         with stash.SensitiveValues() as sv:
-            if multisig_wallet:
+            if wallet_policy:
+                import chains
+                chain = chains.current_chain()
+                indexes = range(start_address_idx, start_address_idx + max_to_check)
+                if reverse:
+                    indexes = reversed(indexes)
+                for curr_idx in indexes:
+                    derived = wallet_policy.derive(1 if is_change else 0, curr_idx, chain)
+                    if derived.address == address:
+                        await on_done(curr_idx, wallet_policy.name, None)
+                        return
+                    await sleep_ms(1)
+            elif multisig_wallet:
                 # NOTE: Can't easily reverse order here, so this is slightly less efficient
                 for (curr_idx, paths, curr_address, script) in multisig_wallet.yield_addresses(
                     start_address_idx,

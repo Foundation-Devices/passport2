@@ -66,9 +66,12 @@ int se_dispatch(
     }
 
         // Use these macros
-#define REQUIRE_OUT(x) \
-    if (len_in < x) {  \
-        goto fail;     \
+        // Set rv before jumping: fail: returns it as-is, and it starts at zero, so a
+        // guard that forgets reports the rejection as success.
+#define REQUIRE_OUT(x)  \
+    if (len_in < x) {   \
+        rv = ERANGE;    \
+        goto fail;      \
     }
 
     // printf("se_dispatch() method_num=%d\n", method_num);
@@ -115,7 +118,11 @@ int se_dispatch(
         }
 
         case CMD_GET_SUPPLY_CHAIN_VALIDATION_WORDS: {
-            // Provide a hash to use for the supply chain validation words'
+            // se_hmac32 reads and writes 32 bytes regardless of data_len.
+            if (len_in < 32 || arg2 < 32 || arg2 > (uint32_t)len_in) {
+                rv = ERANGE;
+                break;
+            }
             if (supply_chain_validation_words((char*)buf_io, arg2, (uint32_t*)buf_io)) {
                 rv = EIO;
             }
@@ -166,7 +173,6 @@ int se_dispatch(
             rv = ENOENT;
             break;
     }
-#undef REQUIRE_IN_ONLY
 #undef REQUIRE_OUT
 
 fail:

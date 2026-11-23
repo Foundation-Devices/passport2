@@ -14,6 +14,7 @@
 #include "spiflash.h"
 #include "flash.h"
 #include "hash.h"
+#include "memzero.h"
 #include "pprng.h"
 #include "se-atecc608a.h"
 #include "se-config.h"
@@ -204,6 +205,7 @@ int se_setup_config(rom_secrets_t* secrets) {
                     // It was written there by the factory test bootloader
                     uint8_t supply_chain_key[32] = {0xff,};
                     if (!spi_get_scv_key(&supply_chain_key[0])) {
+                        memzero(supply_chain_key, sizeof(supply_chain_key));
                         return -11;
                     }
 
@@ -220,11 +222,14 @@ int se_setup_config(rom_secrets_t* secrets) {
                     }
 
                     int rc = se_write_data_slot(kn, supply_chain_key, 32, false);
+                    memzero(supply_chain_key, sizeof(supply_chain_key));
 
-                    // Always erase the supply chain key, even if the write failed
-                    spi_clear_scv_key();
+                    // Always erase the supply chain key, even if the write failed,
+                    // and don't finish setup until it is confirmed gone from SPI flash.
+                    bool is_cleared = spi_clear_scv_key();
 
                     if (rc) return -7;
+                    if (!is_cleared) return -12;
                 } break;
 
                 case KEYNUM_seed:

@@ -11,10 +11,13 @@
 
 import stash
 import chains
+from ubinascii import b2a_base64
+from public_constants import AF_P2TR
 from utils import sign_message_digest_recoverable
 
 
-async def sign_text_file_task(on_done, text, subpath, addr_fmt, expected_address=None):
+async def sign_text_file_task(on_done, text, subpath, addr_fmt, expected_address=None, bip322_request=None):
+    # With a BIP-322 request read from a PSBT, the result is that PSBT, signed, instead of a text signature.
 
     with stash.SensitiveValues() as sv:
         node = sv.derive_path(subpath)
@@ -24,8 +27,28 @@ async def sign_text_file_task(on_done, text, subpath, addr_fmt, expected_address
         await on_done(None, None, 'Address mismatch: expected {}, got {}'.format(expected_address, address))
         return
 
-    digest = chains.current_chain().hash_message(text.encode())
-    # signature will be 65 bytes
-    signature = sign_message_digest_recoverable(digest, subpath)
+    message = text.encode()
+    if addr_fmt == AF_P2TR:
+        from bip322 import sign_taproot_request, sign_taproot_simple
+
+        try:
+            with stash.SensitiveValues() as sv:
+                node = sv.derive_path(subpath)
+                private_key = node.private_key()
+                sv.register(private_key)
+                if bip322_request is None:
+                    signature = sign_taproot_simple(message, node.public_key()[1:], private_key)
+                else:
+                    signature = sign_taproot_request(bip322_request, node.public_key()[1:], private_key)
+        except ValueError as e:
+            await on_done(None, None, str(e))
+            return
+    elif bip322_request is not None:
+        await on_done(None, None, 'BIP-322 requests can only be signed for Taproot addresses')
+        return
+    else:
+        digest = chains.current_chain().hash_message(message)
+        raw_signature = sign_message_digest_recoverable(digest, subpath)
+        signature = b2a_base64(raw_signature).decode('ascii').strip()
 
     await on_done(signature, address, None)

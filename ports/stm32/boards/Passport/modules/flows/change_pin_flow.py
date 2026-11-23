@@ -7,7 +7,6 @@ from flows import Flow
 from pages import PINEntryPage, ErrorPage, SuccessPage
 from tasks import change_pin_task
 from utils import spinner_task
-from translations import t, T
 import microns
 from common import settings
 from serializations import sha256

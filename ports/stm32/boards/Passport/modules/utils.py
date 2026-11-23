@@ -43,6 +43,27 @@ def read_user_firmware_pubkey():
 
     return result, pubkey
 
+
+def is_valid_firmware_pubkey(pubkey):
+    '''Is this a point on secp256k1, given as 64 bytes of x then y?
+
+    The all zero key is how "no developer key installed" is stored, so it is not
+    accepted here: removing a key goes through its own flow.
+    '''
+    from taproot import p as field_prime
+
+    if len(pubkey) != 64:
+        return False
+
+    x = int.from_bytes(pubkey[0:32], 'big')
+    y = int.from_bytes(pubkey[32:64], 'big')
+
+    if x >= field_prime or y >= field_prime:
+        return False
+
+    # y^2 == x^3 + 7, which also rejects the all zero key
+    return (y * y - x * x * x - 7) % field_prime == 0
+
 # We cache this here to avoid slowing down the menus, since the menu items in the Developer Pubkey
 # menu look up this value to decide when to become visible/hidden.
 
@@ -745,16 +766,6 @@ def to_str(o):
     return lines
 
 
-def random_hex(num_chars):
-    import urandom
-
-    rand = bytearray((num_chars + 1) // 2)
-    for i in range(len(rand)):
-        rand[i] = urandom.randint(0, 255)
-    s = b2a_hex(rand).decode('utf-8').upper()
-    return s[:num_chars]
-
-
 def recolor(color, text):
     # Recolor a fragment of text
     h = '{0:0{1}x}'.format(color, 6)
@@ -1292,7 +1303,7 @@ MSG_CHARSET = range(32, 127)
 MSG_MAX_SPACES = 4
 
 
-def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True, check_ascii=True):
+def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True, check_ascii=True, allow_newlines=False):
     # Check for leading or trailing whitespace
     if check_whitespace:
         if text[0] == ' ':
@@ -1304,9 +1315,9 @@ def validate_sign_text(text, subpath, space_limit=True, check_whitespace=True, c
     # Ensure characters are in range and not too many spaces
     run = 0
     # print('text="{}"'.format(text))
-    for ch in text:
-        # print('ch="{}"'.format(ch))
-        if check_ascii and ord(ch) not in MSG_CHARSET:
+    for index, ch in enumerate(text):
+        newline = allow_newlines and (ch == '\n' or (ch == '\r' and text[index + 1:index + 2] == '\n'))
+        if check_ascii and ord(ch) not in MSG_CHARSET and not newline:
             return (subpath, 'File contains non-ASCII character: 0x%02x' % ord(ch))
 
         if space_limit:
@@ -1474,6 +1485,13 @@ def is_key_hidden(key):
 
 def escape_text(text):
     return text.replace("#", "##")
+
+
+def message_review_warning(message):
+    if message and message[-1] in ' \r\n\t':
+        # TODO: localize
+        return ('This message ends with whitespace.', 'It will be included in the signature.')
+    return None
 
 
 def stylize_address(address):

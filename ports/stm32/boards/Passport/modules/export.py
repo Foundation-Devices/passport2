@@ -14,6 +14,7 @@ import chains
 import stash
 import trezorcrypto
 import ujson
+from constants import BACKUP_FILE_HEADER
 from ubinascii import hexlify as b2a_hex
 from uio import StringIO
 from utils import xfp2str
@@ -32,6 +33,19 @@ def ms_has_master_xfp(xpubs):
 
     # print('EXCLUDING this one')
     return False
+
+
+def policy_has_master_xfp(record):
+    from common import settings
+    from wallet_policy import MiniscriptPolicy
+    try:
+        policy = MiniscriptPolicy.deserialize(record)
+        owned = policy.keys[policy.owned_key_indexes[0]]
+        return owned.fingerprint == xfp2str(settings.get('xfp', None)).lower()
+    except BaseException:
+        # A malformed settings record must never be copied into a backup as if
+        # it were an approved wallet policy.
+        return False
 
 
 def render_backup_contents():
@@ -54,7 +68,7 @@ def render_backup_contents():
     def ADD(key, val):
         rv.write('%s = %s\n' % (key, ujson.dumps(val)))
 
-    rv.write('# Passport backup file! DO NOT CHANGE.\n')
+    rv.write(BACKUP_FILE_HEADER)
 
     chain = chains.current_chain()
 
@@ -113,6 +127,11 @@ def render_backup_contents():
             # "Passphrase wallets? I don't have any passphrase wallets!"
             # print('ms={}'.format(v))
             v = list(filter(lambda ms: ms_has_master_xfp(ms[2]), v))
+        elif k == 'wallet_policies':
+            # As with legacy multisig, exclude policies belonging to a
+            # passphrase wallet from the base wallet's plausible-deniability
+            # backup.
+            v = list(filter(policy_has_master_xfp, v))
 
         ADD('setting.' + k, v)
 

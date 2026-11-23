@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 
-class FakePin:
+class MockPin:
     def __init__(self) -> None:
         self.level = True
 
@@ -22,12 +22,12 @@ class FakePin:
         self.level = True
 
 
-class FakeSPIFlash:
+class MockSPIFlash:
     # 64 MBit memory - 8 KiB
     _MEMORY_SIZE = 8 * 1024 * 1024
 
     def __init__(self) -> None:
-        self.cs = FakePin()
+        self.cs = MockPin()
         self.write_enable = False
         self.write_in_progress = False
         self.addr = None
@@ -115,15 +115,15 @@ class FakeSPIFlash:
 
 
 @pytest.fixture
-def fake_spi_flash():
-    return FakeSPIFlash()
+def mock_spi_flash():
+    return MockSPIFlash()
 
 
 @pytest.fixture
-def spi_flash(fake_spi_flash):
+def spi_flash(mock_spi_flash):
     from sflash import SPIFlash
 
-    return SPIFlash(fake_spi_flash, fake_spi_flash.cs)
+    return SPIFlash(mock_spi_flash, mock_spi_flash.cs)
 
 
 def test_wait(spi_flash):

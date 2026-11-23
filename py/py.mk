@@ -148,7 +148,7 @@ LDFLAGS_MOD += -L$(shell dirname $(FOUNDATION_RUST_LIB)) -lfoundation
 
 $(FOUNDATION_RUST_LIB): $(FOUNDATION_RUST_SRC)
 	$(ECHO) "CARGO foundation-rust"
-	cargo build --manifest-path $(FOUNDATION_RUST)/Cargo.toml --target $(RUST_TARGET) $(RUST_FEATURES) --release
+	cargo build --manifest-path $(FOUNDATION_RUST)/Cargo.toml --locked --target $(RUST_TARGET) $(RUST_FEATURES) --release
 # FOUNDATION CHANGE: END
 
 

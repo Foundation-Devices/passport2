@@ -34,8 +34,9 @@ def blank_object(item):
         for i in range(ln):
             buf[i] = 0
     elif isinstance(item, trezorcrypto.bip32.HDNode):
-        pass
-        # item.blank()  # node.blank() elsewhere
+        # Wipes the key material and the curve with it, so the node is inert
+        # afterwards. Every caller drops it immediately.
+        item.blank()
     else:
         raise TypeError(item)
 
@@ -106,6 +107,10 @@ class SecretStash:
             ms = trezorcrypto.bip39.seed(trezorcrypto.bip39.from_data(seed_bits), _bip39pw)
 
             hd = trezorcrypto.bip32.from_seed(ms, 'secp256k1')
+
+            # The 64 byte master seed isn't returned to the caller, so nothing else
+            # will ever wipe it
+            blank_object(ms)
 
             return 'words', seed_bits, hd
 

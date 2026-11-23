@@ -17,9 +17,14 @@ import history
 import sys
 from sffile import SizerFile
 from passport import mem
-from public_constants import MAX_SIGNERS
+from public_constants import (
+    MAX_MONEY, MAX_SIGNERS, AF_CLASSIC, AF_P2WPKH_P2SH, AF_P2WPKH, AF_P2TR
+)
 from multisig_wallet import MultisigWallet, disassemble_multisig_mn
-from exceptions import FatalPSBTIssue, FraudulentChangeOutput
+from wallets.utils import get_addr_type_from_bip_numbers
+from exceptions import (FatalPSBTIssue, FraudulentChangeOutput,
+                        CHANGE_ADDRESS_NOT_OURS, CHANGE_MULTISIG_SETUP_MISMATCH,
+                        CHANGE_WRONG_ACCOUNT_TYPE)
 from serializations import ser_compact_size, deser_compact_size, hash160, deser_compact_size_bytes
 from serializations import CTxIn, CTxInWitness, CTxOut, SIGHASH_ALL, VALID_SIGHASHES, SIGHASH_DEFAULT
 from serializations import ser_push_data, uint256_from_bytes
@@ -28,7 +33,7 @@ from ubinascii import hexlify as b2a_hex
 from taproot import output_script, tagged_hash
 
 from public_constants import (
-    PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
+    PSBT_GLOBAL_UNSIGNED_TX, PSBT_GLOBAL_XPUB, PSBT_GLOBAL_VERSION, PSBT_IN_NON_WITNESS_UTXO, PSBT_IN_WITNESS_UTXO,
     PSBT_IN_PARTIAL_SIG, PSBT_IN_SIGHASH_TYPE, PSBT_IN_REDEEM_SCRIPT,
     PSBT_IN_WITNESS_SCRIPT, PSBT_IN_BIP32_DERIVATION, PSBT_IN_FINAL_SCRIPTSIG,
     PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
@@ -51,6 +56,18 @@ def seq_to_str(seq):
 
 def purpose_mismatch_allowed(purpose):
     return (purpose & 0x7fffffff) in [84, 86]
+
+
+def expected_single_sig_addr_format(subpath):
+    # Only standard full single-sig derivations have a script-family policy.
+    # Custom and incomplete paths remain visible outputs rather than aborting a
+    # signing operation merely because they cannot be classified as change.
+    # BIP45/BIP48 intentionally return None: those paths are validated against
+    # the registered script wallet below.
+    if not subpath or len(subpath) < 6:
+        return None
+
+    return get_addr_type_from_bip_numbers(subpath[1] & 0x7fffffff)
 
 
 def _skip_n_objs(fd, n, cls):
@@ -149,11 +166,11 @@ class psbtProxy:
     no_keys = ()
 
     # these fields will return None but are not stored unless a value is set
-    blank_flds = ('unknown', 'subpaths', 'tap_subpaths')
+    blank_flds = ('unknowns', 'subpaths', 'tap_subpaths')
 
     def __init__(self):
         self.fd = None
-        self.unknown = {}
+        self.unknowns = {}
 
     def __getattr__(self, nm):
         if nm in self.blank_flds:
@@ -196,14 +213,16 @@ class psbtProxy:
 
                 self.store(kt, bytes(key), proxy)
 
-    def write(self, out_fd, ktype, val, key=b''):
+    def write(self, out_fd, ktype, val, key=b'', raw=False):
         # serialize helper: write w/ size and key byte
         out_fd.write(ser_compact_size(1 + len(key)))
         out_fd.write(bytes([ktype]))
         out_fd.write(key)
 
         if isinstance(val, tuple):
-            if ktype in (PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION):
+            # Unknown fields always contain file offsets, even when their type
+            # number matches a known field in another PSBT map.
+            if not raw and ktype in (PSBT_IN_TAP_BIP32_DERIVATION, PSBT_OUT_TAP_BIP32_DERIVATION):
                 path, tap_hashes = val
                 output = ser_compact_size(len(tap_hashes))
                 for h in tap_hashes:
@@ -288,8 +307,12 @@ class psbtProxy:
                 # parse leaf hashes and path
                 v = self.get(self.tap_subpaths[pk])
                 (num_tap_hashes, compact_length) = deser_compact_size_bytes(v)
-                tap_hashes = [uint256_from_bytes(v[i * 32:(i + 1) * 32]) for i in range(0, num_tap_hashes)]
-                v = v[(num_tap_hashes * 32 + compact_length):]
+                hashes_start = compact_length
+                hashes_end = hashes_start + num_tap_hashes * 32
+                assert hashes_end <= len(v), 'corrupt taproot leaf hashes'
+                tap_hashes = [v[hashes_start + i * 32:hashes_start + (i + 1) * 32]
+                              for i in range(num_tap_hashes)]
+                v = v[hashes_end:]
                 vl = len(v)
 
                 # Master key can be used if there is no tapscript tree
@@ -317,10 +340,11 @@ class psbtProxy:
 # Track details of each output of PSBT
 #
 class psbtOutputProxy(psbtProxy):
-    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT}
-    blank_flds = ('unknown', 'subpaths', 'redeem_script', 'witness_script',
+    no_keys = {PSBT_OUT_REDEEM_SCRIPT, PSBT_OUT_WITNESS_SCRIPT,
+               PSBT_OUT_TAP_INTERNAL_KEY, PSBT_OUT_TAP_TREE}
+    blank_flds = ('unknowns', 'subpaths', 'redeem_script', 'witness_script',
                   'is_change', 'num_our_keys', 'tap_internal_key', 'tap_tree',
-                  'tap_subpaths')
+                  'tap_subpaths', 'policy_branch', 'policy_address_index')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -354,7 +378,7 @@ class psbtOutputProxy(psbtProxy):
                 self.tap_subpaths = {}
             self.tap_subpaths[key[1:]] = val
         else:
-            self.unknown[key] = val
+            self.unknowns[key] = val
 
     def serialize(self, out_fd, my_idx):
 
@@ -381,10 +405,10 @@ class psbtOutputProxy(psbtProxy):
             for k in self.tap_subpaths:
                 wr(PSBT_OUT_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
-        for k in self.unknown:
-            wr(k[0], self.unknown[k], k[1:])
+        for k in self.unknowns:
+            self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
-    def validate(self, out_idx, txo, my_xfp, active_multisig):
+    def validate(self, out_idx, txo, my_xfp, active_multisig, active_policy=None):
         # Do things make sense for this output?
 
         # NOTE: We might think it's a change output just because the PSBT
@@ -392,7 +416,8 @@ class psbtOutputProxy(psbtProxy):
         # careful and fully validate all the details.
         # - no output info is needed, in general, so
         #   any output info provided better be right, or fail as "fraud"
-        # - full key derivation and validation is done during signing, and critical.
+        # - before transaction review, double_check_psbt_change_task derives
+        #   every output classified as change and validates its public key.
         # - we raise fraud alarms, since these are not innocent errors
         #
 
@@ -406,23 +431,47 @@ class psbtOutputProxy(psbtProxy):
         # - must match expected address for this output, coming from unsigned txn
         addr_type, addr_or_pubkey, is_segwit = txo.get_address()
 
+        if active_policy and not (active_policy.context == 'wsh' and
+                                  addr_type == 'p2sh' and is_segwit):
+            # Owning a destination key does not preserve the policy's spending
+            # conditions. Only an exact policy match may be hidden as change.
+            self.is_change = False
+            return
+
         if self.subpaths and len(self.subpaths) == 1:
             # p2pk, p2pkh, p2wpkh cases
             expect_pubkey, = self.subpaths.keys()
+            single_key_path = next(iter(self.subpaths.values()))
+            expected_addr_format = expected_single_sig_addr_format(single_key_path)
+            is_script_wallet_path = len(single_key_path) >= 2 and \
+                (single_key_path[1] & 0x7fffffff) in (45, 48)
         elif self.tap_subpaths and len(self.tap_subpaths) == 1:
             expect_pubkey, = self.tap_subpaths.keys()
+            tap_path, _ = next(iter(self.tap_subpaths.values()))
+            expected_addr_format = expected_single_sig_addr_format(tap_path)
+            is_script_wallet_path = False
         else:
-            # p2wsh/p2sh cases need full set of pubkeys, and therefore redeem script
+            # P2WSH/P2SH cases need the full set of pubkeys.  Registered wallet
+            # policies can reconstruct the output script from those exact
+            # derivations; legacy multisig still needs the PSBT script field.
             expect_pubkey = None
+            expected_addr_format = None
+            is_script_wallet_path = False
+
+        if expect_pubkey and not expected_addr_format:
+            if active_multisig and addr_type == 'p2sh' and is_script_wallet_path:
+                # A registered 1-of-1 BIP45/BIP48 wallet can have only one of
+                # our derivation entries. Let its script validate below.
+                expect_pubkey = None
+            else:
+                # We cannot determine a script-family policy for this metadata.
+                # Do not hide the output as change, but preserve compatibility with
+                # custom derivation schemes by presenting it to the user.
+                return
 
         if addr_type == 'p2pk':
-            # output is public key (not a hash, much less common)
-            assert len(addr_or_pubkey) == 33
-
-            if addr_or_pubkey != expect_pubkey:
-                raise FraudulentChangeOutput(out_idx, "P2PK change output is fraudulent")
-
-            self.is_change = True
+            # Raw P2PK does not have a supported single-sig derivation policy.
+            # Keep it visible instead of classifying it as change.
             return
 
         # Figure out what the hashed addr should be
@@ -435,9 +484,31 @@ class psbtOutputProxy(psbtProxy):
             redeem_script = self.get(self.redeem_script) if self.redeem_script else None
             witness_script = self.get(self.witness_script) if self.witness_script else None
 
+            if is_segwit and active_policy:
+                # Registered wallet policies are authoritative.  Re-derive the
+                # complete script and every key path.  A coordinator may omit
+                # PSBT_OUT_WITNESS_SCRIPT for change; the stored policy plus the
+                # complete derivation map is sufficient to verify the output.
+                # If a witness script is present, match_derivations also checks
+                # it exactly.
+                from policy_errors import WalletPolicyError
+                try:
+                    import chains
+                    derived, _, _ = active_policy.match_derivations(
+                        self.subpaths, txo.scriptPubKey, witness_script,
+                        chains.current_chain(), my_xfp)
+                except (WalletPolicyError, ValueError, TypeError, KeyError) as exc:
+                    raise FraudulentChangeOutput(
+                        out_idx, "Wallet policy change output does not match: %s" % exc)
+                self.policy_branch = derived.branch
+                self.policy_address_index = derived.index
+                # branch is the multipath index, so /<2;3>/* uses 1 for change.
+                self.is_change = derived.branch == 1
+                return
+
             if not redeem_script and not witness_script:
-                # Perhaps an omission, so let's not call fraud on it
-                # But definitely required, else we don't know what script we're sending to.
+                # Legacy P2SH/P2WSH validation cannot reconstruct an arbitrary
+                # script from derivations alone.
                 raise FatalPSBTIssue("Missing redeem/witness script for output #%d" % out_idx)
 
             if not is_segwit and redeem_script and \
@@ -445,8 +516,15 @@ class psbtOutputProxy(psbtProxy):
                     redeem_script[0] == 0 and redeem_script[1] == 20:
 
                 # it's actually segwit p2pkh inside p2sh
-                pkh = redeem_script[2:22]
-                expect_pkh = hash160(expect_pubkey)
+                if expect_pubkey is None or \
+                        (expected_addr_format and expected_addr_format != AF_P2WPKH_P2SH):
+                    raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
+
+                expect_redeem_script = b'\x00\x14' + hash160(expect_pubkey)
+                if redeem_script != expect_redeem_script:
+                    raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
+
+                expect_pkh = hash160(expect_redeem_script)
 
             else:
                 # Multisig change output, for wallet we're supposed to be a part of.
@@ -471,9 +549,8 @@ class psbtOutputProxy(psbtProxy):
                 try:
                     active_multisig.validate_script(witness_script or redeem_script,
                                                     subpaths=self.subpaths)
-                except BaseException as exc:
-                    raise FraudulentChangeOutput(out_idx,
-                                                 "P2WSH or P2SH change output script: %s" % exc)
+                except BaseException:
+                    raise FraudulentChangeOutput(out_idx, CHANGE_MULTISIG_SETUP_MISMATCH)
 
                 if is_segwit:
                     # p2wsh case
@@ -481,7 +558,7 @@ class psbtOutputProxy(psbtProxy):
                     assert len(addr_or_pubkey) == 32
                     expect_wsh = trezorcrypto.sha256(witness_script).digest()
                     if expect_wsh != addr_or_pubkey:
-                        raise FraudulentChangeOutput(out_idx, "P2WSH witness script has wrong hash")
+                        raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
                     self.is_change = True
                     return
@@ -493,8 +570,7 @@ class psbtOutputProxy(psbtProxy):
                     if redeem_script and expect_rs != redeem_script:
                         # iff they provide a redeeem script, then it needs to match
                         # what we expect it to be
-                        raise FraudulentChangeOutput(out_idx,
-                                                     "P2SH-P2WSH redeem script provided, and doesn't match")
+                        raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
                     expect_pkh = hash160(expect_rs)
                 else:
@@ -504,15 +580,22 @@ class psbtOutputProxy(psbtProxy):
         elif addr_type == 'p2pkh':
             # input is hash160 of a single public key
             assert len(addr_or_pubkey) == 20
+
+            actual_addr_format = AF_P2WPKH if is_segwit else AF_CLASSIC
+            if expected_addr_format and actual_addr_format != expected_addr_format:
+                raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
+
             expect_pkh = hash160(expect_pubkey)
         elif addr_type == 'p2tr':
+            if expected_addr_format and expected_addr_format != AF_P2TR:
+                raise FraudulentChangeOutput(out_idx, CHANGE_WRONG_ACCOUNT_TYPE)
             expect_pkh = output_script(expect_pubkey, None)[2:]
         else:
             # we don't know how to "solve" this type of input
             return
 
         if pkh != expect_pkh:
-            raise FraudulentChangeOutput(out_idx, "Change output is fraudulent")
+            raise FraudulentChangeOutput(out_idx, CHANGE_ADDRESS_NOT_OURS)
 
         # We will check pubkey value at the last second, during signing.
         self.is_change = True
@@ -531,12 +614,14 @@ class psbtInputProxy(psbtProxy):
                PSBT_IN_FINAL_SCRIPTWITNESS, PSBT_IN_TAP_KEY_SIG, PSBT_IN_TAP_INTERNAL_KEY,
                PSBT_IN_TAP_MERKLE_ROOT}
 
-    blank_flds = ('unknown',
+    blank_flds = ('unknowns',
                   'utxo', 'witness_utxo', 'sighash',
                   'redeem_script', 'witness_script', 'fully_signed',
                   'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
                   'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root')
+                  'added_sigs',
+                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
+                  'policy_spend_plan')
 
     def __init__(self, fd, idx):
         super().__init__()
@@ -590,16 +675,20 @@ class psbtInputProxy(psbtProxy):
         self.parse_subpaths(my_xfp)
 
         # sighash, but we're probably going to ignore anyway.
+        is_taproot = len(self.tap_subpaths) > 0
+
         if self.sighash is None:
             # Taproot PSBTs can be built with no explicit sighash
-            if len(self.tap_subpaths) > 0:
-                self.sighash = SIGHASH_DEFAULT
-            else:
-                self.sighash = SIGHASH_ALL
+            self.sighash = SIGHASH_DEFAULT if is_taproot else SIGHASH_ALL
 
-        if self.sighash not in VALID_SIGHASHES:
-            # - someday we will expand to other types, but not yet
-            raise FatalPSBTIssue('Can only do SIGHASH_ALL')
+        # Which types are supported depends on how this input gets signed.
+        # SIGHASH_DEFAULT only exists for taproot (BIP-341); elsewhere zero is not a
+        # defined hash type, so the signers below have nothing to do with it.
+        # - someday we will expand to other types, but not yet
+        supported = VALID_SIGHASHES if is_taproot else (SIGHASH_ALL,)
+
+        if self.sighash not in supported:
+            raise FatalPSBTIssue('Input #%d: unsupported sighash type %d' % (idx, self.sighash))
 
         # How complete is the set of signatures so far?
         # - assuming PSBT creator doesn't give us extra data not required
@@ -643,19 +732,19 @@ class psbtInputProxy(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
+        witness_utxo = None
         if self.witness_utxo:
-            # Going forward? Just what we will witness; no other junk
-            # - prefer this format, altho does that imply segwit txn must be generated?
-            # - I don't know why we wouldn't always use this
-            # - once we use this partial utxo data, we must create witness data out
+            # Load the compact output. If the full previous transaction is also
+            # present, its hash-bound output is loaded below and must match.
             self.is_segwit = True
 
             fd.seek(self.witness_utxo[0])
-            utxo = CTxOut()
-            utxo.deserialize(fd)
-            fd.seek(old_pos)
+            witness_utxo = CTxOut()
+            witness_utxo.deserialize(fd)
 
-            return utxo
+            if not self.utxo:
+                fd.seek(old_pos)
+                return witness_utxo
 
         assert self.utxo, 'no utxo'
 
@@ -685,6 +774,11 @@ class psbtInputProxy(psbtProxy):
 
         fd.seek(old_pos)
 
+        if witness_utxo:
+            assert witness_utxo.nValue == utxo.nValue and \
+                witness_utxo.scriptPubKey == utxo.scriptPubKey, \
+                "witness/non-witness UTXO mismatch for input #%d" % idx
+
         return utxo
 
     def determine_my_signing_key(self, my_idx, utxo, my_xfp, psbt):
@@ -706,6 +800,7 @@ class psbtInputProxy(psbtProxy):
         self.is_multisig = False
         self.is_p2sh = False
         which_key = None
+        matched_policy = False
 
         addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
         if addr_is_segwit and not self.is_segwit:
@@ -779,38 +874,86 @@ class psbtInputProxy(psbtProxy):
 
         elif addr_type == 'p2tr':
             # input is an x-only public key or merkle tree root
-            # TODO: handle tapscript tree
             self.scriptSig = utxo.scriptPubKey
 
             if len(self.tap_subpaths) == 1:  # No script path
                 subpath = list(self.tap_subpaths.items())[0]
                 pubkey, (path, tap_hashes) = subpath
-                tweaked_pubkey = output_script(pubkey, None)[2:]
-                if path[0] == my_xfp and tweaked_pubkey == addr_or_pubkey:
+                tweaked_pubkey = output_script(pubkey, None)[2:] if not tap_hashes else None
+                if not self.tap_leaf_scripts and path and path[0] == my_xfp and \
+                        tweaked_pubkey == addr_or_pubkey:
                     which_key = pubkey
+
+            if self.tap_leaf_scripts or any(hashes for _, hashes in self.tap_subpaths.values()):
+                raise FatalPSBTIssue('Taproot script-path signing is not supported')
         else:
             # we don't know how to "solve" this type of input
             pass
 
-        if self.is_multisig and which_key:
+        if addr_is_segwit and self.witness_script and self.is_multisig and which_key:
+            # Native P2WSH registered policies are matched before the legacy
+            # CHECKMULTISIG disassembler.  Only an immutable SpendPlan crosses
+            # from policy parsing into the signing task.
+            from common import settings
+            policy_records = settings.get('wallet_policies', [])
+            if policy_records:
+                from wallet_policy import WalletPolicyRegistry
+                import chains
+                matches = []
+                for policy in WalletPolicyRegistry(settings).iter_policies(xfp2str(my_xfp).lower()):
+                    try:
+                        plan = policy.make_spend_plan(
+                            my_idx, self.subpaths, utxo.scriptPubKey,
+                            redeem_script, chains.current_chain(), my_xfp,
+                            self.sighash)
+                        matches.append((policy, plan))
+                    except MemoryError:
+                        raise
+                    except Exception:
+                        pass
+                if len(matches) > 1:
+                    raise FatalPSBTIssue('Input #%d matches multiple wallet policies' % my_idx)
+                if matches:
+                    policy, plan = matches[0]
+                    if psbt.active_multisig:
+                        raise FatalPSBTIssue('Cannot mix registered wallet policy and legacy multisig inputs')
+                    if psbt.active_policy and psbt.active_policy.policy_id != policy.policy_id:
+                        raise FatalPSBTIssue('Cannot sign inputs from multiple wallet policies')
+                    psbt.active_policy = policy
+                    self.policy_spend_plan = plan
+                    unsigned_keys = set(plan.expected_pubkeys) - set(self.part_sig)
+                    which_key = unsigned_keys or None
+                    matched_policy = True
+
+            if not matched_policy:
+                from opcodes import OP_CHECKMULTISIG
+                if not redeem_script or redeem_script[-1] != OP_CHECKMULTISIG:
+                    raise FatalPSBTIssue('Unknown registered wallet policy for input #%d' % my_idx)
+
+        if self.is_multisig and which_key and not matched_policy:
             # We will be signing this input, so
             # - find which wallet it is or
             # - check it's the right M/N to match redeem script
 
             # print("redeem: %s" % b2a_hex(redeem_script))
             M, N = disassemble_multisig_mn(redeem_script)
+            assert 1 <= M <= N <= MAX_SIGNERS, 'M/N range'
             xfp_paths = sorted(self.subpaths.values())
 
             if not psbt.active_multisig:
-                # search for multisig wallet
-                wal = MultisigWallet.find_match(M, N, xfp_paths)
-                if not wal:
+                if psbt.active_policy:
+                    raise FatalPSBTIssue('Cannot mix legacy multisig and registered wallet policy inputs')
+                # Only activate/import a legacy wallet after exact registered
+                # policy matching has declined this input.
+                if psbt.xpubs:
+                    psbt.handle_xpubs(M, N)
+                if not psbt.active_multisig:
+                    psbt.active_multisig = MultisigWallet.find_match(M, N, xfp_paths)
+                if not psbt.active_multisig:
                     raise FatalPSBTIssue('Unknown multisig wallet')
 
-                psbt.active_multisig = wal
-            else:
-                # check consistent w/ already selected wallet
-                psbt.active_multisig.assert_matching(M, N, xfp_paths)
+            # Check the actual input even when global XPUBs selected the wallet.
+            psbt.active_multisig.assert_matching(M, N, xfp_paths)
 
             # validate redeem script, by disassembling it and checking all pubkeys
             try:
@@ -852,6 +995,40 @@ class psbtInputProxy(psbtProxy):
         # Could probably free self.subpaths and self.redeem_script now, but only if we didn't
         # need to re-serialize as a PSBT.
 
+    def get_signing_node(self, sv, my_xfp, my_idx):
+        if self.is_multisig:
+            # The fingerprint is only a hint. Derive each candidate to prove
+            # that Passport owns one of the public keys required by the script.
+            for which_key in self.required_key:
+                skp = keypath_to_str(self.subpaths[which_key])
+                node = sv.derive_path(skp, register=True)
+                if node.public_key() == which_key:
+                    return node, which_key
+
+            raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
+
+        which_key = self.required_key
+
+        if self.subpaths and \
+                (self.subpaths[which_key][0] == my_xfp or
+                 self.subpaths[which_key][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.subpaths[which_key])
+            node = sv.derive_path(skp, register=True)
+            pubkey = node.public_key()
+        elif self.tap_subpaths and \
+                (self.tap_subpaths[which_key][0][0] == my_xfp or
+                 self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
+            skp = keypath_to_str(self.tap_subpaths[which_key][0])
+            node = sv.derive_path(skp, register=True)
+            pubkey = node.public_key()[1:]
+        else:
+            raise AssertionError("Input #%d has no Passport signing path." % my_idx)
+
+        if pubkey != which_key:
+            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, my_idx))
+
+        return node, which_key
+
     def store(self, kt, key, val):
         # Capture what we are interested in.
 
@@ -883,7 +1060,7 @@ class psbtInputProxy(psbtProxy):
             self.tap_merkle_root = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            self.unknown[key] = val
+            self.unknowns[key] = val
 
     def serialize(self, out_fd, my_idx):
         # Output this input's values; might include signatures that weren't there before
@@ -903,6 +1080,9 @@ class psbtInputProxy(psbtProxy):
         if self.added_sig:
             pubkey, sig = self.added_sig
             wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
+        if self.added_sigs:
+            for pubkey, sig in self.added_sigs.items():
+                wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
 
         if self.sighash is not None:
             wr(PSBT_IN_SIGHASH_TYPE, pack('<I', self.sighash))
@@ -919,14 +1099,24 @@ class psbtInputProxy(psbtProxy):
         if self.tap_key_sig:
             wr(PSBT_IN_TAP_KEY_SIG, self.tap_key_sig)
 
+        for k in self.tap_script_sigs:
+            wr(PSBT_IN_TAP_SCRIPT_SIG, self.tap_script_sigs[k], k)
+
+        for control_block in self.tap_leaf_scripts:
+            wr(PSBT_IN_TAP_LEAF_SCRIPT, self.tap_leaf_scripts[control_block],
+               control_block)
+
         for k in self.tap_subpaths:
             wr(PSBT_IN_TAP_BIP32_DERIVATION, self.tap_subpaths[k], k)
 
         if self.tap_internal_key:
             wr(PSBT_IN_TAP_INTERNAL_KEY, self.tap_internal_key)
 
-        for k in self.unknown:
-            wr(k[0], self.unknown[k], k[1:])
+        if self.tap_merkle_root:
+            wr(PSBT_IN_TAP_MERKLE_ROOT, self.tap_merkle_root)
+
+        for k in self.unknowns:
+            self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
 
 class psbtObject(psbtProxy):
@@ -939,6 +1129,7 @@ class psbtObject(psbtProxy):
 
         # global objects
         self.txn = None
+        self.psbt_version = None  # Absent means version 0; preserve explicit 0 on export.
         self.xpubs = []         # tuples(xfp_path, xpub)
 
         from common import settings
@@ -947,16 +1138,15 @@ class psbtObject(psbtProxy):
         # details that we discover as we go
         self.inputs = None
         self.outputs = None
-        self.had_witness = None
         self.num_inputs = None
         self.num_outputs = None
         self.vin_start = None
         self.vout_start = None
-        self.wit_start = None
         self.txn_version = None
         self.lock_time = None
         self.total_value_out = None
         self.total_value_in = None
+        self.fee_is_verified = True
         self.presigned_inputs = set()
         self.multisig_import_needs_approval = False
         self.self_send = False
@@ -976,6 +1166,7 @@ class psbtObject(psbtProxy):
         # this points to a MS wallet, during operation
         # - we are only supporting a single multisig wallet during signing
         self.active_multisig = None
+        self.active_policy = None
 
         self.warnings = []
 
@@ -988,6 +1179,16 @@ class psbtObject(psbtProxy):
             # list of tuples(xfp_path, xpub)
             self.xpubs.append((self.get(val), key[1:]))
             assert len(self.xpubs) <= MAX_SIGNERS
+        elif kt == PSBT_GLOBAL_VERSION:
+            if len(key) != 1 or val[1] != 4:
+                raise FatalPSBTIssue('Invalid PSBT version field')
+            if self.psbt_version is not None:
+                raise FatalPSBTIssue('Duplicate PSBT version field')
+            # BIP174: no key data and exactly four little-endian version bytes.
+            # This parser supports only v0, whether explicit or omitted.
+            if self.get(val) != b'\x00\x00\x00\x00':
+                raise FatalPSBTIssue('Unsupported PSBT version')
+            self.psbt_version = 0
         else:
             self.unknowns[key] = val
 
@@ -1004,7 +1205,12 @@ class psbtObject(psbtProxy):
 
             tx_out.deserialize(fd)
 
+            if not 0 <= tx_out.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for output #%d' % idx)
+
             total_out += tx_out.nValue
+            if total_out > MAX_MONEY:
+                raise FatalPSBTIssue('Total output amount exceeds maximum at output #%d' % idx)
 
             cont = fd.tell()
             yield idx, tx_out
@@ -1030,13 +1236,18 @@ class psbtObject(psbtProxy):
         # don't force that
 
         self.txn_version, marker, flags = unpack("<iBB", fd.read(6))
-        self.had_witness = (marker == 0 and flags != 0x0)
 
         assert self.txn_version in {1, 2}, "bad txn version"
 
-        if not self.had_witness:
-            # rewind back over marker+flags
-            fd.seek(-2, 1)
+        # BIP-174 requires the unsigned transaction to be serialized without witness
+        # data. A zero marker can only be the segwit marker here, since an input count
+        # of zero is rejected below. This already failed, but as a bare ValueError from
+        # _skip_n_objs(), which has no pattern for 'CTxInWitness'.
+        if marker == 0 and flags != 0x0:
+            raise FatalPSBTIssue('Unsigned transaction must not include witness data')
+
+        # rewind back over marker+flags
+        fd.seek(-2, 1)
 
         num_in = deser_compact_size(fd)
         assert num_in > 0, "no ins?"
@@ -1054,13 +1265,6 @@ class psbtObject(psbtProxy):
         self.vout_start = _skip_n_objs(fd, self.num_outputs, 'CTxOut')
 
         end_pos = sum(self.txn)
-
-        # remainder is the witness data, and then the lock time
-
-        if self.had_witness:
-            # we'll need to come back to this pos if we
-            # want to read the witness data later.
-            self.wit_start = _skip_n_objs(fd, num_in, 'CTxInWitness')
 
         # we are at end of outputs, and no witness data, so locktime is here
         self.lock_time = unpack("<I", fd.read(4))[0]
@@ -1093,51 +1297,16 @@ class psbtObject(psbtProxy):
             fd.seek(cont)
 
     def input_witness_iter(self):
-        # yield all the witness data, in order by input
-        if not self.had_witness:
-            # original txn had no witness data, so provide placeholder objs
-            for in_idx in range(self.num_inputs):
-                yield in_idx, CTxInWitness()
-            return
+        # yield a placeholder witness for each input: parse_txn() rejects a witness
+        # serialized unsigned txn, so there is never any witness data to preserve
+        for in_idx in range(self.num_inputs):
+            yield in_idx, CTxInWitness()
 
-        fd.seek(self.wit_start)
-        for idx in range(num_in):
-
-            wit = CTxInWitness()
-            wit.deserialize(fd)
-
-            cont = fd.tell()
-            yield idx, wit
-
-            fd.seek(cont)
-
-    def guess_M_of_N(self):
-        # Peek at the inputs to see if we can guess M/N value. Just takes
-        # first one it finds.
-        #
-        from opcodes import OP_CHECKMULTISIG
-        for i in self.inputs:
-            ks = i.witness_script or i.redeem_script
-            if not ks:
-                continue
-
-            rs = i.get(ks)
-            if rs[-1] != OP_CHECKMULTISIG:
-                continue
-
-            M, N = disassemble_multisig_mn(rs)
-            assert 1 <= M <= N <= MAX_SIGNERS
-
-            return (M, N)
-
-        # not multisig, probably
-        return None, None
-
-    async def handle_xpubs(self):
-        # Lookup correct wallet based on xpubs in globals
-        # - only happens if they volunteered this 'extra' data
-        # - do not assume multisig
+    def handle_xpubs(self, M, N):
+        # Discover a legacy wallet for an input that did not match a registered
+        # policy. Global metadata alone must never activate a legacy wallet.
         assert not self.active_multisig
+        assert not self.active_policy
 
         xfp_paths = []
         has_mine = 0
@@ -1158,15 +1327,6 @@ class psbtObject(psbtProxy):
             # exact match (by xfp+deriv set) .. normal case
             self.active_multisig = candidates[0]
         else:
-            # don't want to guess M if not needed, but we need it
-            M, N = self.guess_M_of_N()
-
-            if not N:
-                # not multisig, but we can still verify:
-                # - XFP should be one of ours (checked above).
-                # - too slow to re-derive it here, so nothing more to validate at this point
-                return
-
             assert N == len(xfp_paths)
 
             for c in candidates:
@@ -1224,12 +1384,6 @@ class psbtObject(psbtProxy):
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
 
-        # if multisig xpub details provided, they better be right and/or offer import
-        # print('self.xpubs={}'.format(self.xpubs))
-        if self.xpubs:
-            # print('calling self.handle_xpubs()')
-            await self.handle_xpubs()
-
         gc.collect()
 
         assert self.num_outputs >= 1, 'need outs'
@@ -1247,32 +1401,62 @@ class psbtObject(psbtProxy):
         # - mark change outputs, so perhaps we don't show them to users
 
         total_change = 0
+        total_burned = 0
         # print('len(self.outputs)={}'.format(len(self.outputs)))
         for idx, txo in self.output_iter():
-            self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig)
+            self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig,
+                                       self.active_policy)
 
             if self.outputs[idx].is_change:
                 total_change += txo.nValue
+
+            if txo.scriptPubKey[:1] == b'\x6a':
+                total_burned += txo.nValue
 
         if self.total_value_out is None:
             # this happens, but would expect this to have done already?
             for out_idx, txo in self.output_iter():
                 pass
 
+        # An OP_RETURN output can never be spent, so any value it carries is lost.
+        # Review shows the amount on the output itself, but nothing there says it's gone.
+        if total_burned:
+            import chains
+            amount = ' '.join(chains.current_chain().render_value(total_burned))
+            self.warnings.append(
+                ('Burned Amount',
+                 '{} is sent to OP_RETURN and can never be spent.'.format(amount)))
+
+        # A change script containing our key does not give us exclusive control
+        # when any one of several cosigners can spend it. Keep existing wallets
+        # usable, but disclose this on every spend, including self-sends and
+        # transactions with no change output.
+        if self.active_multisig and self.active_multisig.M == 1 and self.active_multisig.N > 1:
+            self.warnings.append(
+                ('1-of-{} Multisig'.format(self.active_multisig.N),
+                 'Any other cosigner can spend funds in this wallet, including change, '
+                 'without approval from this wallet.'))
+
         # check fee is reasonable
         total_non_change_out = self.total_value_out - total_change
         # print('total_non_change_out={} self.total_value_out={}  total_change={}'.format(total_non_change_out,
         #       self.total_value_out, total_change))
         fee = self.calculate_fee()
+        per_fee = None
         if self.total_value_out == 0:
             per_fee = 100
         elif total_non_change_out == 0:
             self.self_send = True
-        else:
+        elif self.fee_is_verified:
             # Calculate fee based on non-change output value
             per_fee = (fee / total_non_change_out) * 100
 
-        if self.self_send:
+        if not self.fee_is_verified:
+            self.warnings.append(
+                ('Unverified Fee',
+                 'One or more input amounts were supplied by another wallet, '
+                 'so Passport cannot verify the network fee.'))
+        elif self.self_send:
             # self.warnings.append(('Self-Send', 'All outputs are being sent back to this wallet.'))
             per_fee = (fee / self.total_value_out) * 100
             if per_fee >= 5:
@@ -1344,6 +1528,13 @@ class psbtObject(psbtProxy):
         for nout, out in enumerate(self.outputs):
             if not out.is_change:
                 continue
+            if self.active_policy is not None and out.policy_branch is not None:
+                # validate() has already reconstructed this output from the
+                # registered descriptor and compared its complete script and
+                # derivation map. That exact check is stronger than the legacy
+                # {0,1}/index-gap heuristic below and also supports multipath
+                # policies such as Liana's {0,1} and {2,3} branches.
+                continue
             # it's a change output, okay if a p2sh change; we're looking at paths
             paths = []
             if out.subpaths:
@@ -1394,9 +1585,18 @@ class psbtObject(psbtProxy):
         # Important: parse incoming UTXO to build total input value
         missing = 0
         total_in = 0
+        witness_inputs_to_verify = []
+        prevouts = set()
 
         for i, txi in self.input_iter():
             gc.collect()
+            # Reject repeated spends before review/signing, regardless of
+            # ownership or amount. Otherwise post-sign recording can persist
+            # the first claimed amount before a conflicting duplicate fails.
+            prevout = (txi.prevout.hash, txi.prevout.n)
+            if prevout in prevouts:
+                raise FatalPSBTIssue('Duplicate input #%d' % i)
+            prevouts.add(prevout)
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -1409,8 +1609,12 @@ class psbtObject(psbtProxy):
             # pull out just the CTXOut object (expensive)
             utxo = inp.get_utxo(txi.prevout.n)
 
-            assert utxo.nValue > 0
+            if not 0 < utxo.nValue <= MAX_MONEY:
+                raise FatalPSBTIssue('Invalid amount for input #%d' % i)
+
             total_in += utxo.nValue
+            if total_in > MAX_MONEY:
+                raise FatalPSBTIssue('Total input amount exceeds maximum at input #%d' % i)
 
             # Look at what kind of input this will be, and therefore what
             # type of signing will be required, and which key we need.
@@ -1418,15 +1622,33 @@ class psbtObject(psbtProxy):
             # - also finds appropriate multisig wallet to be used
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
 
+            if inp.witness_utxo and not inp.utxo:
+                # A false amount for an input we prove we sign makes our
+                # signature invalid, and the history cache catches changed
+                # amounts across attempts. Derivation proves the PSBT's
+                # ownership metadata before that argument is applied.
+                if inp.num_our_keys and inp.required_key:
+                    witness_inputs_to_verify.append(i)
+                else:
+                    self.fee_is_verified = False
+
             gc.collect()
 
-            # iff to UTXO is segwit, then check it's value, and also
-            # capture that value, since it's supposed to be immutable
+            del utxo
+
+        del prevouts
+        if witness_inputs_to_verify:
+            import stash
+            with stash.SensitiveValues() as sv:
+                for i in witness_inputs_to_verify:
+                    self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+
+        # Check known amounts without recording unapproved PSBT data.
+        for i, txi in self.input_iter():
+            inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
                 gc.collect()
-
-            del utxo
 
         gc.collect()
 
@@ -1474,6 +1696,12 @@ class psbtObject(psbtProxy):
                                   'Some input(s) provided were already signed by other parties: ' +
                                   seq_to_str(self.presigned_inputs)))
             gc.collect()
+
+    def consider_timelocks(self):
+        # Warn about timelocks that delay when the transaction can confirm.
+        from psbt_display import timelock_warnings
+        sequences = [txi.nSequence for _, txi in self.input_iter()]
+        self.warnings.extend(timelock_warnings(self.txn_version, self.lock_time, sequences))
 
     def calculate_fee(self):
         # what miner's reward is included in txn?
@@ -1567,9 +1795,12 @@ class psbtObject(psbtProxy):
             for v, k in self.xpubs:
                 wr(PSBT_GLOBAL_XPUB, v, k)
 
-        if self.unknown:
-            for k in self.unknown:
-                wr(k[0], self.unknown[k], k[1:])
+        if self.psbt_version is not None:
+            wr(PSBT_GLOBAL_VERSION, pack('<I', self.psbt_version))
+
+        if self.unknowns:
+            for k in self.unknowns:
+                self.write(out_fd, k[0], self.unknowns[k], k[1:], raw=True)
 
         # sep between globals and inputs
         out_fd.write(b'\0')
@@ -1617,9 +1848,10 @@ class psbtObject(psbtProxy):
         # locktime
         rv.update(pack('<I', self.lock_time))
 
-        assert sighash_type in VALID_SIGHASHES  # "only SIGHASH_ALL supported"
-        # SIGHASH_ALL==1 value
-        rv.update(b'\x01\x00\x00\x00')
+        # Commit to the type we are about to serialize beside the signature, so the
+        # digest and the trailing DER flag byte cannot disagree
+        assert sighash_type == SIGHASH_ALL, 'Unsupported sighash type for legacy input'
+        rv.update(pack('<I', sighash_type))
 
         fd.seek(old_pos)
 
@@ -1634,7 +1866,8 @@ class psbtObject(psbtProxy):
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_ALL  # add support for others here
+        # add support for others here
+        assert sighash_type == SIGHASH_ALL, 'Unsupported sighash type for segwit v0 input'
 
         if self.hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1692,14 +1925,19 @@ class psbtObject(psbtProxy):
         # double SHA256
         return trezorcrypto.sha256(rv.digest()).digest()
 
-    def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None, ext_flag=0):
+    def make_txn_taproot_sighash(self, input_idx, sighash_type, annex=None,
+                                 ext_flag=0):
         # Implement BIP 341 hashing algo for signature of segwit programs.
         # see <https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules>
 
         fd = self.fd
         old_pos = fd.tell()
 
-        assert sighash_type == SIGHASH_DEFAULT
+        # Both documented ALL modes are supported: the type goes into the message as
+        # its leading hash_type byte below, and taproot_sign_key() appends it to the
+        # signature for anything but SIGHASH_DEFAULT (BIP-341)
+        assert sighash_type in VALID_SIGHASHES, 'Unsupported sighash type for taproot input'
+        assert ext_flag == 0, 'Taproot script-path signing is not supported'
 
         if self.tap_hashPrevouts is None:
             # First time thru, we'll need to hash up this stuff.
@@ -1751,9 +1989,6 @@ class psbtObject(psbtProxy):
         if annex is not None:
             data += trezorcrypto.sha256(ser_string(annex)).digest()
 
-        # TODO: support bip342 script extensions:
-        # see <https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension>
-
         fd.seek(old_pos)
         return tagged_hash('TapSighash', bytes([0]) + data)
 
@@ -1784,9 +2019,8 @@ class psbtObject(psbtProxy):
         fd.write(pack('<i', self.txn_version))           # nVersion
 
         # does this txn require witness data to be included?
-        # - yes, if the original txn had some
         # - yes, if we did a segwit signature on any input
-        needs_witness = self.had_witness or any(i.is_segwit for i in self.inputs if i)
+        needs_witness = any(i.is_segwit for i in self.inputs if i)
 
         if needs_witness:
             # zero marker, and flags=0x01

@@ -13,18 +13,18 @@ generate:
 
 # Build the crate.
 build:
-    cargo build --target thumbv7em-none-eabihf --release
+    cargo build --locked --target thumbv7em-none-eabihf --release
 
 # Lint the crate.
 lint:
-    cargo clippy --target thumbv7em-none-eabihf
+    cargo clippy --locked --target thumbv7em-none-eabihf
     cargo fmt --check
     cbindgen --config cbindgen.toml \
              --crate foundation \
              --output include/foundation.h \
              --verify
-    cargo test --features std
+    cargo test --locked --features std
 
 # Print size information
 sizes:
-    cargo run --features std
+    cargo run --locked --features std

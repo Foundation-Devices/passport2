@@ -13,7 +13,7 @@ from .data_encoder import DataEncoder
 from .data_decoder import DataDecoder
 from .data_sampler import DataSampler
 from .qr_type import QRType
-from public_constants import SEED_LENGTHS
+from public_constants import SEED_LENGTHS, SEED_WORD_LIST_LENGTH
 
 
 class SeedQRDecoder(DataDecoder):
@@ -33,16 +33,28 @@ class SeedQRDecoder(DataDecoder):
         import trezorcrypto
 
         try:
+            if len(self.data) % 4 != 0:
+                return None
+
+            num_words = len(self.data) // 4
+            if num_words not in SEED_LENGTHS:
+                return None
+
+            if any(c < '0' or c > '9' for c in self.data):
+                return None
+
             seed_phrase = []
-            num_words = int(len(self.data) / 4)
             for i in range(0, num_words):
                 index = int(self.data[i * 4: (i * 4) + 4])
+                if index >= SEED_WORD_LIST_LENGTH:
+                    return None
+
                 word = trezorcrypto.bip39.get_word(index)
+                if word is None:
+                    return None
+
                 seed_phrase.append(word)
-            if len(seed_phrase) in SEED_LENGTHS:
-                return seed_phrase
-            else:
-                return None
+            return seed_phrase
         except Exception as e:
             return None
 

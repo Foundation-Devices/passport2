@@ -29,6 +29,7 @@ from .apply_passphrase_flow import *
 from .auto_backup_flow import *
 from .backup_flow import *
 from .change_pin_flow import *
+from .clear_utxo_cache_flow import *
 from .delete_account_flow import *
 from .delete_multisig_flow import *
 from .erase_passport_flow import *

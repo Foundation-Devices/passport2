@@ -26,10 +26,14 @@ class UpdateFirmwareFlow(Flow):
         self.statusbar = statusbar
         self.filename = None
         self.error_message = None
+        self.update_header = None
+        self.update_digest = None
 
-    async def on_done(self, error=None, message=None):
+    async def on_done(self, error=None, message=None, digest=None):
         self.error = error
         self.error_message = message
+        if digest is not None:
+            self.update_digest = bytes(digest)
         self.progress_page.set_result(error is None)
 
     async def choose_file(self):
@@ -48,6 +52,19 @@ class UpdateFirmwareFlow(Flow):
             self.goto(self.show_firmware_details)
 
     async def show_firmware_details(self):
+        from files import CardMissingError
+
+        try:
+            await self.check_firmware_file()
+        except CardMissingError:
+            # Retry this step once a card is inserted, or go back to the picker.
+            if not await InsertMicroSDPage().show():
+                self.back()
+        except OSError:
+            await ErrorPage(text='Could not read firmware file').show()
+            self.set_result(False)
+
+    async def check_firmware_file(self):
         import common
         with CardSlot() as card:
             with open(self.update_file_path, 'rb') as fp:
@@ -81,8 +98,13 @@ class UpdateFirmwareFlow(Flow):
                 try:
                     version, is_user_signed = passport.verify_update_header(header)
                     self.version = version
+                    self.update_header = header
                 except passport.InvalidFirmwareUpdate as e:
                     await ErrorPage(text='Firmware update is invalid.\n\n{}'.format(str(e))).show()
+                    self.set_result(False)
+                    return
+                except RuntimeError as e:
+                    await ErrorPage(text='Firmware update cannot continue.\n\n{}'.format(str(e))).show()
                     self.set_result(False)
                     return
 
@@ -109,7 +131,7 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Verifying signatures', left_micron=None, right_micron=None)
 
         self.verify_task = start_task(verify_firmware_signature_task(
-            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+            self.update_file_path, self.size, self.update_header, self.progress_page.set_progress, self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()
@@ -133,7 +155,8 @@ class UpdateFirmwareFlow(Flow):
         self.progress_page = ProgressPage(text='Preparing Update', left_micron=None, right_micron=None)
 
         self.update_task = start_task(copy_firmware_to_spi_flash_task(
-            self.update_file_path, self.size, self.progress_page.set_progress, self.on_done))
+            self.update_file_path, self.size, self.update_header, self.update_digest,
+            self.progress_page.set_progress, self.on_done))
 
         prev_top_level = ui.set_is_top_level(False)
         result = await self.progress_page.show()

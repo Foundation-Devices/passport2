@@ -66,4 +66,28 @@ def descriptor_checksum(desc):
 def append_checksum(desc):
     return desc + "#" + descriptor_checksum(desc)
 
+
+def split_checksum(desc, require=True):
+    """Split and verify a descriptor checksum.
+
+    The returned descriptor never includes the ``#checksum`` suffix.  A
+    checksum mismatch is always an error; callers may opt into accepting a
+    missing checksum only for already-integrity-protected transports.
+    """
+    if not isinstance(desc, str):
+        raise ValueError('Descriptor must be text')
+    if desc.count('#') > 1:
+        raise ValueError('Descriptor contains multiple checksums')
+    if '#' not in desc:
+        if require:
+            raise ValueError('Descriptor checksum is required')
+        return desc, None
+    body, checksum = desc.rsplit('#', 1)
+    if len(checksum) != 8:
+        raise ValueError('Descriptor checksum must be 8 characters')
+    expected = descriptor_checksum(body)
+    if checksum != expected:
+        raise ValueError('Descriptor checksum does not match')
+    return body, checksum
+
 # EOF

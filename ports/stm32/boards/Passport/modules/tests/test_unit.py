@@ -16,6 +16,14 @@ def test(exec_file):
     return doit
 
 
+def test_error_codes(test):
+    assert test('error_codes.py') == b'OK'
+
+
+def test_ecdsa_bindings(test):
+    assert test('ecdsa_bindings.py') == b'OK'
+
+
 def test_ext_settings(test):
     assert test('ext_settings.py') == b'OK'
 
@@ -24,9 +32,177 @@ def test_backup_verification(test):
     assert test('backup_verification.py') == b'OK'
 
 
+def test_passphrase_length(test):
+    assert test('passphrase_length.py') == b'OK'
+
+
+def test_crypto_api_surface(test):
+    assert test('crypto_api_surface.py') == b'OK'
+
+
+def test_firmware_pubkey(test):
+    assert test('firmware_pubkey.py') == b'OK'
+
+
+def test_psbt_sighash(test):
+    assert test('psbt_sighash.py') == b'OK'
+
+
+def test_bip39_prefix_matching(test):
+    assert test('bip39_prefix_matching.py') == b'OK'
+
+
+def test_hdnode_blank(test):
+    assert test('hdnode_blank.py') == b'OK'
+
+
+def test_psbt_unsigned_txn(test):
+    assert test('psbt_unsigned_txn.py') == b'OK'
+
+
+def test_ur_derived_key(test):
+    assert test('ur_derived_key.py') == b'OK'
+
+
+def test_ur_view_lifetime(test):
+    assert test('ur_view_lifetime.py') == b'OK'
+
+
+def test_multisig_qr_import(test):
+    assert test('multisig_qr_import.py') == b'OK'
+
+
+def test_binding_argument_checks(test):
+    assert test('binding_argument_checks.py') == b'OK'
+
+
+def test_psbt_multisig_approval(test):
+    assert test('psbt_multisig_approval.py') == b'OK'
+
+
+def test_one_of_n_warning(test):
+    assert test('one_of_n_warning.py') == b'OK'
+
+
+def test_seedqr_codec(test):
+    assert test('seedqr_codec.py') == b'OK'
+
+
+def test_multisig_save_task(test):
+    assert test('multisig_save_task.py') == b'OK'
+
+
+def test_multisig_candidates(test):
+    assert test('multisig_candidates.py') == b'OK'
+
+
 def test_ui(test):
     assert test('ui.py') == b'OK'
 
 
+def test_blockstream(test):
+    assert test('blockstream.py') == b'OK'
+
+
+def test_sign_psbt(test):
+    assert test('sign_psbt.py') == b'OK'
+
+
+def test_transaction_review(test):
+    assert test('transaction_review.py') == b'OK'
+
+
+def test_op_return_rendering(test):
+    assert test('op_return_rendering.py') == b'OK'
+
+
+def test_op_return_burn_warning(test):
+    assert test('op_return_burn_warning.py') == b'OK'
+
+
+def test_message_display(test):
+    assert test('message_display.py') == b'OK'
+
+
+def test_electrum_message_validation(test):
+    assert test('electrum_message_validation.py') == b'OK'
+
+
 def test_foundation(test):
     assert test('foundation.py') == b'OK'
+
+
+def test_psbt_amounts(test):
+    assert test('psbt_amounts.py') == b'OK'
+
+
+def test_psbt_unknown_globals(test):
+    assert test('psbt_unknown_globals.py') == b'OK'
+
+
+def test_psbt_versions(test):
+    assert test('psbt_versions.py') == b'OK'
+
+
+def test_multisig_xpub_validation(test):
+    assert test('multisig_xpub_validation.py') == b'OK'
+
+
+def test_multisig_backup_records(test):
+    assert test('multisig_backup_records.py') == b'OK'
+
+
+def test_psbt_fee(test):
+    assert test('psbt_fee.py') == b'OK'
+
+
+def test_psbt_timelock_warnings(test):
+    assert test('psbt_timelock_warnings.py') == b'OK'
+
+
+def test_psbt_history(test):
+    assert test('psbt_history.py') == b'OK'
+
+
+def test_unchained(test):
+    assert test('unchained.py') == b'OK'
+
+
+def test_restore_backup(test):
+    assert test('restore_backup.py') == b'OK'
+
+
+def test_backup_buffers(test):
+    assert test('backup_buffers.py') == b'OK'
+
+
+def test_bip322(test):
+    assert test('bip322.py') == b'OK'
+
+
+def test_bip322_request(test):
+    assert test('bip322_request.py') == b'OK'
+
+
+def test_psbt_change_validation(test):
+    assert test('psbt_change_validation.py') == b'OK'
+
+
+def test_single_line_message(test):
+    assert test('single_line_message.py') == b'OK'
+
+
+def test_microsd_message_length(test):
+    assert test('microsd_message_length.py') == b'OK'
+
+
+def test_scv_challenge(test):
+    assert test('scv_challenge.py') == b'OK'
+
+
+def test_onboarding_saved_progress(test):
+    assert test('onboarding_saved_progress.py') == b'OK'
+
+
+def test_multisig_distinct_cosigners(test):
+    assert test('multisig_distinct_cosigners.py') == b'OK'

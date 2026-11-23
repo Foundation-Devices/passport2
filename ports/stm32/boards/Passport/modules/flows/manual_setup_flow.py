@@ -4,13 +4,14 @@
 # manual_setup_flow.py - The main overall flow for manual setup - controls the process
 
 import lvgl as lv
+from animations.constants import TRANSITION_DIR_POP
 from flows import (
     Flow,
     SetInitialPINFlow,
     UpdateFirmwareFlow,
     InitialSeedSetupFlow,
-    ScvFlow,
 )
+import common
 
 
 class ManualSetupFlow(Flow):
@@ -47,14 +48,15 @@ class ManualSetupFlow(Flow):
         if not result:
             self.back()
         else:
-            self.goto(self.show_scv)
+            self.goto(self.set_initial_pin)
 
+    # The Security Check is no longer part of onboarding, but progress saved by older firmware
+    # can still include this stage. Pass through it in the direction it was entered.
     async def show_scv(self):
-        result = await ScvFlow(envoy=False).run()
-        if not result:
+        if common.page_transition_dir == TRANSITION_DIR_POP:
             self.back()
         else:
-            self.goto(self.set_initial_pin)
+            self.goto(self.set_initial_pin, save_curr=False)
 
     async def set_initial_pin(self):
         result = await SetInitialPINFlow().run()
