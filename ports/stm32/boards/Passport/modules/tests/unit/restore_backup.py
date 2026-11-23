@@ -180,7 +180,8 @@ class MockBuilder:
     contents = BACKUP_CONTENTS
 
     def read_file(self, fd, password, maxsize, progress_fcn=None):
-        return ('backup.txt', self.contents)
+        # compat7z decrypts into a bytearray.
+        return ('backup.txt', bytearray(self.contents))
 
 
 class MockCompat7z:

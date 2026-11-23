@@ -42,8 +42,10 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
         await on_done(error)
         return
 
-    # Every backup Passport has written starts with this exact line.
-    if not contents.startswith(BACKUP_FILE_HEADER.encode()):
+    # Every backup Passport has written starts with this exact line. The contents are a bytearray,
+    # which has no startswith() in MicroPython.
+    header = BACKUP_FILE_HEADER.encode()
+    if contents[:len(header)] != header:
         await on_done(Error.CORRUPT_BACKUP_FILE)
         return
 
