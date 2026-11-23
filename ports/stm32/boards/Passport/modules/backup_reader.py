@@ -71,8 +71,10 @@ def read_backup_file(decryption_password, backup_file_path, validate_only=False)
         if validate_only:
             return None, None
 
+        # Building the tuple allocates, so it must happen while the finally would still clear.
+        result = (contents, None)
         caller_owns_contents = True
-        return contents, None
+        return result
     except CardMissingError:
         return None, Error.MICROSD_CARD_MISSING
     except MemoryError:
