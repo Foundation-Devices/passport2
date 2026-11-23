@@ -16,7 +16,6 @@ import ujson
 from backup_reader import read_backup_file
 from ubinascii import unhexlify as a2b_hex
 from errors import Error
-from constants import BACKUP_FILE_HEADER
 from pincodes import SE_SECRET_LEN
 
 NON_RESTORABLE_BACKUP_SETTINGS = ('bip39_passphrase', 'root_xfp', 'xfp', 'xpub')
@@ -40,13 +39,6 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
     contents, error = read_backup_file(decryption_password, backup_file_path)
     if error is not None:
         await on_done(error)
-        return
-
-    # Every backup Passport has written starts with this exact line. The contents are a bytearray,
-    # which has no startswith() in MicroPython.
-    header = BACKUP_FILE_HEADER.encode()
-    if contents[:len(header)] != header:
-        await on_done(Error.CORRUPT_BACKUP_FILE)
         return
 
     vals = {}

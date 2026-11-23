@@ -306,7 +306,7 @@ def test_legacy_entry_cancellation(monkeypatch, cancel):
 @pytest.mark.parametrize('error', [
     Error.INVALID_BACKUP_CODE, Error.FILE_READ_ERROR,
     Error.INVALID_BACKUP_FILE_HEADER, Error.MICROSD_CARD_MISSING,
-    Error.OUT_OF_MEMORY_ERROR])
+    Error.OUT_OF_MEMORY_ERROR, Error.CORRUPT_BACKUP_FILE])
 def test_terminal_failure_clears_legacy_credentials(monkeypatch, error):
     flow, _calls, _task = load_flow(monkeypatch, is_color=True, spinner_error=error)
     flow.backup_file_path = '/backups/backup.7z'
@@ -324,6 +324,7 @@ def test_terminal_failure_clears_legacy_credentials(monkeypatch, error):
     ('error', 'message'),
     (
         (Error.OUT_OF_MEMORY_ERROR, 'Not enough memory to verify this backup.'),
+        (Error.CORRUPT_BACKUP_FILE, 'Corrupt data in backup file. The backup may have been modified.'),
         (object(), 'Unable to verify backup.'),
     ))
 def test_unexpected_and_out_of_memory_errors_are_terminal(monkeypatch, error, message):

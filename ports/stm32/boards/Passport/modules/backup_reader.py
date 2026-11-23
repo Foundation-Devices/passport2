@@ -8,7 +8,7 @@
 
 import compat7z
 
-from constants import MAX_BACKUP_FILE_SIZE
+from constants import BACKUP_FILE_HEADER, MAX_BACKUP_FILE_SIZE
 from errors import Error
 from files import CardMissingError, CardSlot
 
@@ -48,6 +48,14 @@ def read_backup_file(decryption_password, backup_file_path, validate_only=False)
                     if contents[0:1] != b'#' or contents[-1:] != b'\n':
                         _clear_contents(contents)
                         return None, Error.INVALID_BACKUP_CODE
+
+                    # Every backup Passport has written starts with this exact line. Checking it
+                    # here means Verify passes exactly what Restore accepts. The contents are a
+                    # bytearray, which has no startswith() in MicroPython.
+                    header = BACKUP_FILE_HEADER.encode()
+                    if contents[:len(header)] != header:
+                        _clear_contents(contents)
+                        return None, Error.CORRUPT_BACKUP_FILE
                 except MemoryError:
                     return None, Error.OUT_OF_MEMORY_ERROR
                 except OSError:

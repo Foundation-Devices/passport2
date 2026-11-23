@@ -17,6 +17,10 @@ sys.path.insert(1, MODULES_DIR)
 from errors import Error
 
 
+BACKUP_FILE_HEADER = '# Passport backup file! DO NOT CHANGE.\n'
+BACKUP = (BACKUP_FILE_HEADER + 'setting.a = 1\n').encode()
+
+
 class CardMissingError(Exception):
     pass
 
@@ -56,7 +60,7 @@ def load_reader(monkeypatch, check_headers=None, read_file=None, card_slot=CardS
             calls.reads.append((fd, password, max_size, progress_fcn))
             if read_file is not None:
                 return read_file(fd, password, max_size, progress_fcn)
-            return 'passport-backup.txt', bytearray(b'# Passport backup\n')
+            return 'passport-backup.txt', bytearray(BACKUP)
 
     compat7z.Builder = Builder
 
@@ -65,6 +69,7 @@ def load_reader(monkeypatch, check_headers=None, read_file=None, card_slot=CardS
     files.CardMissingError = CardMissingError
 
     constants = types.ModuleType('constants')
+    constants.BACKUP_FILE_HEADER = BACKUP_FILE_HEADER
     constants.MAX_BACKUP_FILE_SIZE = 4096
 
     monkeypatch.setitem(sys.modules, 'compat7z', compat7z)
@@ -85,7 +90,7 @@ def test_reads_and_validates_backup_without_accessing_device_state(monkeypatch):
 
     contents, error = module.read_backup_file('backup-code', 'backup.7z')
 
-    assert contents == b'# Passport backup\n'
+    assert contents == BACKUP
     assert error is None
     assert calls.header == 1
     assert calls.reads == [(fd, 'backup-code', 4096, None)]
@@ -94,7 +99,7 @@ def test_reads_and_validates_backup_without_accessing_device_state(monkeypatch):
 
 def test_verify_clears_plaintext_before_returning(monkeypatch):
     fd = FakeFile()
-    plaintext = bytearray(b'# Passport backup\n')
+    plaintext = bytearray(BACKUP)
     monkeypatch.setattr(builtins, 'open', lambda *_args, **_kwargs: fd)
 
     def return_plaintext(_fd, _password, _max_size, _progress_fcn):
@@ -161,6 +166,29 @@ def test_rejects_plaintext_that_is_not_a_passport_backup(monkeypatch):
     assert fd.closed
 
 
+# The same cases as tests/unit/restore_backup.py: they decrypt, and start with '#' and end with a
+# newline, but don't start with the exact header. Verify must refuse what Restore refuses.
+@pytest.mark.parametrize('first_bytes', (b'# Passport backup file\n', b'#\nsetting.a = 1\n'))
+@pytest.mark.parametrize('verify', (False, True))
+def test_restore_and_verify_both_require_the_exact_header(monkeypatch, first_bytes, verify):
+    fd = FakeFile()
+    plaintext = bytearray(first_bytes + BACKUP[len(first_bytes):])
+    assert plaintext[0:1] == b'#' and plaintext[-1:] == b'\n' and plaintext != BACKUP
+    monkeypatch.setattr(builtins, 'open', lambda *_args, **_kwargs: fd)
+
+    def return_plaintext(_fd, _password, _max_size, _progress_fcn):
+        return 'passport-backup.txt', plaintext
+
+    module, _calls = load_reader(monkeypatch, read_file=return_plaintext)
+
+    if verify:
+        assert module.verify_backup_file('backup-code', 'backup.7z') == Error.CORRUPT_BACKUP_FILE
+    else:
+        assert module.read_backup_file('backup-code', 'backup.7z') == (None, Error.CORRUPT_BACKUP_FILE)
+    assert plaintext == bytearray(len(plaintext))
+    assert fd.closed
+
+
 def test_classifies_card_removal_and_open_failures(monkeypatch):
     class MissingCardSlot:
         def __enter__(self):
@@ -189,7 +217,7 @@ def test_classifies_card_removal_and_open_failures(monkeypatch):
 
 
 def test_close_failure_clears_plaintext(monkeypatch):
-    plaintext = bytearray(b'# Passport backup\n')
+    plaintext = bytearray(BACKUP)
 
     class CloseFailure(FakeFile):
         def close(self):

@@ -115,6 +115,10 @@ class VerifyBackupFlow(Flow):
             self.clear_credentials()
             await ErrorPage(text='Unable to read backup file header. The backup may have been modified.').show()
             self.set_result(False)
+        elif error is Error.CORRUPT_BACKUP_FILE:
+            self.clear_credentials()
+            await ErrorPage(text='Corrupt data in backup file. The backup may have been modified.').show()
+            self.set_result(False)
         elif error is Error.OUT_OF_MEMORY_ERROR:
             self.clear_credentials()
             await ErrorPage(text='Not enough memory to verify this backup.').show()
