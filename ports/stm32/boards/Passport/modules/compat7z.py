@@ -149,7 +149,7 @@ def check_file_headers(f):
         # faked-out but good enough for now
         if b'\x24\x06\xf1\x07\x01' not in th:
             raise RuntimeError("Not marked as AES+SHA encrypted?")
-    except OSError:
+    except (OSError, MemoryError):
         raise
     except Exception as e:
         raise ValueError("Confused file? %s" % e)
@@ -272,6 +272,8 @@ class Builder(object):
     def read_file(self, fd, password, max_size, progress_fcn=None):
         # read a file we wrote; unlikely to work on anything else.
         # assuming single file contained inside
+        import stash
+
         fhdr = FileHeader.read(fd)
         assert fhdr.has_good_magic()
 
@@ -293,10 +295,15 @@ class Builder(object):
 
             try:
                 for blk in range(0, len(body), 16):
+                    # Each block decrypts into a new bytes object. Copy it without slicing, which
+                    # would make another copy, then wipe it.
                     decrypted = aes.decrypt(body[blk:blk + 16])
-                    end = min(blk + 16, unpacked_size)
-                    if blk < end:
-                        out[blk:end] = decrypted[0:end - blk]
+                    try:
+                        end = min(blk + 16, unpacked_size)
+                        if blk < end:
+                            out[blk:end] = memoryview(decrypted)[0:end - blk]
+                    finally:
+                        stash.blank_object(decrypted)
 
                 # Check the plaintext CRC after omitting block padding.
                 if masked_crc(out) != expect_crc:

@@ -5,8 +5,10 @@
 # crypto implementation.
 
 import compat7z
+import trezorcrypto
 
 from uio import BytesIO
+from ustruct import unpack
 
 
 PASSWORD = '1111-2222-3333-4444-5555'
@@ -113,5 +115,58 @@ try:
         expect_failure(ValueError, lambda: validate(hostile), 'Unsupported backup key derivation work factor')
 finally:
     compat7z.sha256 = original_sha256
+
+
+# Running out of memory while reading the trailing header is reported as such, not as a damaged file.
+class FailingTrailerRead:
+    def __init__(self, data, trailer_size):
+        self.fd = BytesIO(data)
+        self.trailer_size = trailer_size
+
+    def read(self, size=-1):
+        if size == self.trailer_size:
+            raise MemoryError
+        return self.fd.read(size)
+
+    def seek(self, *args):
+        return self.fd.seek(*args)
+
+    def tell(self):
+        return self.fd.seek(0, 1)
+
+
+_offset, trailer_size, _crc = unpack('<QQL', archive[12:32])
+expect_failure(MemoryError, lambda: compat7z.check_file_headers(FailingTrailerRead(archive, trailer_size)))
+
+# Every block aes.decrypt() returns is wiped, whether the password is right or not.
+decrypted_blocks = []
+
+
+class RecordingAES:
+    CBC = trezorcrypto.aes.CBC
+
+    def __init__(self, mode, key, iv):
+        self.aes = trezorcrypto.aes(mode, key, iv)
+
+    def decrypt(self, data):
+        block = self.aes.decrypt(data)
+        decrypted_blocks.append(block)
+        return block
+
+
+class RecordingCrypto:
+    aes = RecordingAES
+
+
+compat7z.trezorcrypto = RecordingCrypto
+try:
+    assert validate(archive)[1] == CONTENTS
+    assert decrypted_blocks and all(not any(block) for block in decrypted_blocks)
+
+    del decrypted_blocks[:]
+    expect_failure(ValueError, lambda: validate(archive, password='0000-0000-0000-0000-0000'))
+    assert decrypted_blocks and all(not any(block) for block in decrypted_blocks)
+finally:
+    compat7z.trezorcrypto = trezorcrypto
 
 return_value.write(b'OK')
