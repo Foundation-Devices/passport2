@@ -189,6 +189,30 @@ def test_restore_and_verify_both_require_the_exact_header(monkeypatch, first_byt
     assert fd.closed
 
 
+def test_running_out_of_memory_checking_the_header_clears_plaintext(monkeypatch):
+    fd = FakeFile()
+    header_length = len(BACKUP_FILE_HEADER.encode())
+
+    # Slicing allocates, so the header check itself can run out of memory.
+    class HeaderSliceFails(bytearray):
+        def __getitem__(self, key):
+            if isinstance(key, slice) and key.stop == header_length:
+                raise MemoryError
+            return super().__getitem__(key)
+
+    plaintext = HeaderSliceFails(BACKUP)
+    monkeypatch.setattr(builtins, 'open', lambda *_args, **_kwargs: fd)
+
+    def return_plaintext(_fd, _password, _max_size, _progress_fcn):
+        return 'passport-backup.txt', plaintext
+
+    module, _calls = load_reader(monkeypatch, read_file=return_plaintext)
+
+    assert module.read_backup_file('backup-code', 'backup.7z') == (None, Error.OUT_OF_MEMORY_ERROR)
+    assert plaintext == bytearray(len(plaintext))
+    assert fd.closed
+
+
 def test_classifies_card_removal_and_open_failures(monkeypatch):
     class MissingCardSlot:
         def __enter__(self):

@@ -21,6 +21,9 @@ def _clear_contents(contents):
 
 def read_backup_file(decryption_password, backup_file_path, validate_only=False):
     contents = None
+    # Only a successful Restore read hands the plaintext to the caller. Every other way out,
+    # including an exception raised by the checks below, clears it in the finally.
+    caller_owns_contents = False
 
     try:
         with CardSlot():
@@ -46,15 +49,13 @@ def read_backup_file(decryption_password, backup_file_path, validate_only=False)
 
                     # Match Restore's existing plaintext sanity check.
                     if contents[0:1] != b'#' or contents[-1:] != b'\n':
-                        _clear_contents(contents)
                         return None, Error.INVALID_BACKUP_CODE
 
-                    # Every backup Passport has written starts with this exact line. Checking it
-                    # here means Verify passes exactly what Restore accepts. The contents are a
-                    # bytearray, which has no startswith() in MicroPython.
+                    # Restore refuses a backup that doesn't start with this exact line, so Verify
+                    # checks it too. The contents are a bytearray, which has no startswith() in
+                    # MicroPython.
                     header = BACKUP_FILE_HEADER.encode()
                     if contents[:len(header)] != header:
-                        _clear_contents(contents)
                         return None, Error.CORRUPT_BACKUP_FILE
                 except MemoryError:
                     return None, Error.OUT_OF_MEMORY_ERROR
@@ -66,28 +67,29 @@ def read_backup_file(decryption_password, backup_file_path, validate_only=False)
                     return None, Error.INVALID_BACKUP_CODE
             finally:
                 fd.close()
+
+        if validate_only:
+            return None, None
+
+        caller_owns_contents = True
+        return contents, None
     except CardMissingError:
         return None, Error.MICROSD_CARD_MISSING
     except MemoryError:
-        _clear_contents(contents)
         return None, Error.OUT_OF_MEMORY_ERROR
     except OSError:
-        _clear_contents(contents)
         return None, Error.FILE_READ_ERROR
     except Exception:
-        _clear_contents(contents)
         return None, Error.FILE_READ_ERROR
-
-    if validate_only:
-        _clear_contents(contents)
-        return None, None
-
-    return contents, None
+    finally:
+        if not caller_owns_contents:
+            _clear_contents(contents)
 
 
 def verify_backup_file(decryption_password, backup_file_path):
-    # Decryption necessarily materializes plaintext. Keep it inside this
-    # validation boundary and clear the mutable buffer before returning.
+    # This confirms the code decrypts the backup, the plaintext CRC matches and the backup header
+    # is Passport's. Restore still checks the settings themselves and can refuse a backup that
+    # passes here. Decryption necessarily materializes plaintext, so it is cleared before returning.
     _contents, error = read_backup_file(
         decryption_password, backup_file_path, validate_only=True)
     return error
