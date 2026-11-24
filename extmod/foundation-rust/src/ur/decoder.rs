@@ -284,11 +284,14 @@ pub unsafe extern "C" fn ur_decode_single_part(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ur::UR_ErrorKind;
+    use crate::ur::{UR_ErrorKind, UR_ERROR_TEST_LOCK};
     use foundation_ur::fountain::part::Part;
 
     #[test]
     fn decoding_a_ur_without_a_type_is_unsupported() {
+        // A test that failed while holding the lock leaves nothing to undo.
+        let _ur_error =
+            UR_ERROR_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         for ur in [
             "ur:/1-1/lpadadadcyaatygsihfpnbutaofnfh",
             "ur:/1-1/lpadadbzcyhewmkomugooeadgdaeadaoaxaaahamatayasbkbdbnbtbabsaoykfptpcaem",
@@ -302,7 +305,8 @@ mod tests {
                 len: 0,
             };
             let mut frames = 0;
-            // SAFETY: Test the FFI with a live string; no other test writes UR_ERROR.
+            // SAFETY: `ur` is a live string, and the lock keeps other tests
+            // off UR_ERROR.
             unsafe {
                 assert!(ur_validate(ur.as_ptr(), ur.len()));
                 assert!(ur_decoder_receive(
@@ -333,6 +337,9 @@ mod tests {
 
     #[test]
     fn rejected_metadata_does_not_poison_next_scan() {
+        // A test that failed while holding the lock leaves nothing to undo.
+        let _ur_error =
+            UR_ERROR_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let mut decoder = UR_Decoder {
             inner: HeaplessDecoder::new(),
         };
@@ -355,7 +362,8 @@ mod tests {
             len: 0,
         };
         let mut frames = 0;
-        // SAFETY: Test the FFI with a live string; no other test writes UR_ERROR.
+        // SAFETY: `serialized` is a live string, and the lock keeps other
+        // tests off UR_ERROR.
         assert!(!unsafe {
             ur_decoder_receive(
                 &mut decoder,
@@ -376,7 +384,8 @@ mod tests {
                 },
             }
             .to_string();
-            // SAFETY: Test the FFI with a live string; no other test writes UR_ERROR.
+            // SAFETY: `serialized` is a live string, and the lock keeps other
+            // tests off UR_ERROR.
             assert!(unsafe {
                 ur_decoder_receive(
                     &mut decoder,
