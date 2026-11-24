@@ -5,6 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 ## Head
+- Backup verification now decrypts backup contents and checks their integrity using the Backup Code or legacy six-word password
 - Improve firmware-update state validation
 - Clarify the error when change-address ownership cannot be verified
 - Complete change-address verification before transaction review

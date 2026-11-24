@@ -53,7 +53,7 @@ import trezorcrypto
 import uasyncio as asyncio
 import ujson
 
-import tasks.restore_backup_task as restore_module
+import backup_reader as reader_module
 from multisig_wallet import MultisigWallet
 from public_constants import AF_P2SH, AF_P2WSH
 from tasks.restore_backup_task import restore_backup_task
@@ -180,7 +180,8 @@ class MockBuilder:
     contents = BACKUP_CONTENTS
 
     def read_file(self, fd, password, maxsize, progress_fcn=None):
-        return ('backup.txt', self.contents)
+        # compat7z decrypts into a bytearray.
+        return ('backup.txt', bytearray(self.contents))
 
 
 class MockCompat7z:
@@ -205,13 +206,13 @@ stored = StoredSettings()
 pa = MockPa()
 
 # Set the module-level open() before the try, so the finally can always undo it.
-restore_module.open = lambda path, mode: MockFile()
-originals = (common.settings, common.pa, restore_module.compat7z, restore_module.CardSlot)
+reader_module.open = lambda path, mode: MockFile()
+originals = (common.settings, common.pa, reader_module.compat7z, reader_module.CardSlot)
 try:
     common.settings = stored
     common.pa = pa
-    restore_module.compat7z = MockCompat7z
-    restore_module.CardSlot = MockCardSlot
+    reader_module.compat7z = MockCompat7z
+    reader_module.CardSlot = MockCardSlot
 
     # A backup whose first line isn't the exact header is refused before the
     # secret or any setting is touched, even though the rest is intact.
@@ -225,8 +226,8 @@ try:
     MockBuilder.contents = BACKUP_CONTENTS
     assert asyncio.run(run_restore()) == [None]
 finally:
-    common.settings, common.pa, restore_module.compat7z, restore_module.CardSlot = originals
-    del restore_module.open
+    common.settings, common.pa, reader_module.compat7z, reader_module.CardSlot = originals
+    del reader_module.open
 
 assert pa.calls == ['change', 'new_main_secret']
 
