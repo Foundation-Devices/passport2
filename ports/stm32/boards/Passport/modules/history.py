@@ -155,7 +155,10 @@ class OutptValueCache:
                     added = True
         finally:
             if added:
-                flash_cache.set(cls.KEY, cls.runtime_cache[-_HISTORY_SAVED:])
+                # The list never holds more than _HISTORY_SAVED entries, so save it as it
+                # is: a copy needs one free block for every entry, and the new entries
+                # have just fragmented the heap.
+                flash_cache.set(cls.KEY, cls.runtime_cache)
 
     @classmethod
     def add(cls, prevout, amount, save=True):

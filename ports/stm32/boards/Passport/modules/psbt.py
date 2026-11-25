@@ -717,6 +717,10 @@ _REC_SIZE = const(20)
 # Inputs between explicit garbage collections in the per-input loops. Each one takes
 # about 18 ms on the device, and the loops no longer keep anything per input.
 _GC_EVERY = const(10)
+
+# Bits in consider_inputs()'s table of outpoints seen (2 KB). With 500 inputs, about
+# 8 of them share a bit with an earlier input and get the exact check.
+_PREVOUT_BITS = const(16384)
 _RECS_PER_CHUNK = const(51)
 
 # Record layout: map offset <I, amount <q, flags B, key bits <H, signature <I, pad.
@@ -2052,9 +2056,10 @@ class psbtObject(psbtProxy):
         missing = 0
         total_in = 0
         witness_inputs_to_verify = []
-        # Small-int digests of the outpoints seen so far: a full outpoint per input
-        # costs about 100 bytes of heap. A repeated digest is checked exactly.
-        prevouts = set()
+        # One bit per digest of each outpoint seen so far, in a table of fixed size: a
+        # set grows by reallocating, and the heap may have no free block big enough
+        # for it. A digest already marked is checked exactly against earlier inputs.
+        prevouts = bytearray(_PREVOUT_BITS // 8)
 
         for i, txi in self.input_iter():
             if i % _GC_EVERY == 0:
@@ -2062,10 +2067,10 @@ class psbtObject(psbtProxy):
             # Reject repeated spends before review/signing, regardless of
             # ownership or amount. Otherwise post-sign recording can persist
             # the first claimed amount before a conflicting duplicate fails.
-            prevout = (txi.prevout.hash ^ (txi.prevout.n << 7)) & 0x3fffffff
-            if prevout in prevouts and _spent_before(self, i, txi.prevout):
+            bit = ((txi.prevout.hash & 0x3fffffff) ^ (txi.prevout.n * 40503)) % _PREVOUT_BITS
+            if prevouts[bit >> 3] & (1 << (bit & 7)) and _spent_before(self, i, txi.prevout):
                 raise FatalPSBTIssue('Duplicate input #%d' % i)
-            prevouts.add(prevout)
+            prevouts[bit >> 3] |= 1 << (bit & 7)
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
