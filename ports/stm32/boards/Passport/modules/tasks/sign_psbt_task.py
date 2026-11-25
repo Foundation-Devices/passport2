@@ -19,7 +19,7 @@ async def sign_psbt_task(on_done, psbt):
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
-    from psbt import derive_from_parent
+    from psbt import derive_from_parent, _InputTable, _F_SEGWIT
     import history
     import heaplog
     import progress
@@ -189,9 +189,17 @@ async def sign_psbt_task(on_done, psbt):
         progress.count(psbt.num_inputs)
 
         def signed_amounts():
+            # The input table already holds each input's checked amount and type, so
+            # read them there rather than parsing every input from flash again.
+            table = psbt.inputs if isinstance(psbt.inputs, _InputTable) else None
             for in_idx, txi in psbt.input_iter():
                 progress.step()
-                if success[in_idx >> 3] & (1 << (in_idx & 7)):
+                if not success[in_idx >> 3] & (1 << (in_idx & 7)):
+                    continue
+                if table is not None:
+                    if table.get_flag(in_idx, _F_SEGWIT):
+                        yield txi.prevout, table.get_amount(in_idx), in_idx
+                else:
                     inp = psbt.inputs[in_idx]
                     if inp.is_segwit:
                         yield txi.prevout, inp.amount, in_idx
@@ -218,7 +226,7 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     except MemoryError as e:
         # print('MemoryError: {}'.format(e))
-        heaplog.mark('sign_out_of_memory', str(e))
+        heaplog.error('sign_out_of_memory', e)
         error_msg = 'Transaction is too complex.'
         error_code = Error.OUT_OF_MEMORY_ERROR
     except BaseException as e:

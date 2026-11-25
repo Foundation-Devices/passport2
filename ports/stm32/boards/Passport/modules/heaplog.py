@@ -89,6 +89,19 @@ def mark(label, extra='', flush=True):
     _spent_us += utime.ticks_diff(utime.ticks_us(), began)
 
 
+def error(label, e):
+    # mark() with the exception and where it was raised, on one line.
+    try:
+        import uio
+        import sys
+        buf = uio.StringIO()
+        sys.print_exception(e, buf)
+        text = buf.getvalue().strip().replace(chr(10), ' | ').replace(',', ';')
+    except BaseException:
+        text = str(e)
+    mark(label, text)
+
+
 def flush():
     try:
         _write()

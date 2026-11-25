@@ -67,7 +67,7 @@ async def validate_psbt_task(on_done, psbt_len):
         error_code = Error.PSBT_FATAL_ERROR
     except MemoryError as e:
         # print('validate_psbt_task 3')
-        heaplog.mark('validate_out_of_memory', str(e))
+        heaplog.error('validate_out_of_memory', e)
         error_msg = 'Transaction is too complex: {}'.format(e)
         error_code = Error.OUT_OF_MEMORY_ERROR
     except BaseException as e:
