@@ -22,6 +22,7 @@ async def sign_psbt_task(on_done, psbt):
     from psbt import derive_from_parent
     import history
     import heaplog
+    import progress
 
     heaplog.reset()
     heaplog.mark('sign_start', 'inputs=%d' % psbt.num_inputs)
@@ -34,9 +35,12 @@ async def sign_psbt_task(on_done, psbt):
 
             # Inputs are parsed from flash again below, so flash must still hold the
             # PSBT that was validated and reviewed.
+            # Shares of the progress shown, from timings on the device.
+            progress.phase(0, 3)
             heaplog.start('digest')
             psbt.check_unchanged()
             heaplog.stop('digest')
+            progress.phase(3, 4)
             heaplog.start('reserve')
             await psbt.reserve_signatures()
             heaplog.stop('reserve')
@@ -44,7 +48,10 @@ async def sign_psbt_task(on_done, psbt):
             # Sign individual inputs
             # One bit per input we signed.
             success = bytearray((psbt.num_inputs + 7) // 8)
+            progress.phase(4, 94)
+            progress.count(psbt.num_inputs)
             for in_idx, txi in psbt.input_iter():
+                progress.step()
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
                 if in_idx % 10 == 0:
                     if in_idx:
@@ -169,6 +176,7 @@ async def sign_psbt_task(on_done, psbt):
                 del inp
 
             # And again once every signature is made, before any of them is used.
+            progress.phase(94, 97)
             heaplog.start('digest')
             psbt.check_unchanged()
             heaplog.stop('digest')
@@ -177,9 +185,12 @@ async def sign_psbt_task(on_done, psbt):
         # includes inputs whose signing keys we derived and verified above.
         heaplog.mark('signed')
         heaplog.start('record')
+        progress.phase(97, 100)
+        progress.count(psbt.num_inputs)
 
         def signed_amounts():
             for in_idx, txi in psbt.input_iter():
+                progress.step()
                 if success[in_idx >> 3] & (1 << (in_idx & 7)):
                     inp = psbt.inputs[in_idx]
                     if inp.is_segwit:

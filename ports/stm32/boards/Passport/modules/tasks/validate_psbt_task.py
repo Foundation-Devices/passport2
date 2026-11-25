@@ -18,6 +18,7 @@ async def validate_psbt_task(on_done, psbt_len):
     from sffile import SFFile
     import gc
     import heaplog
+    import progress
 
     error_msg = None
     error_code = None
@@ -28,23 +29,30 @@ async def validate_psbt_task(on_done, psbt_len):
     # Do the main validation
     psbt = None
     try:
+        # Shares of the progress shown, from timings on the device: checking the
+        # inputs' previous transactions and keys takes most of the time.
+        progress.phase(0, 6)
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
             psbt = psbtObject.read_psbt(fd)
         heaplog.mark('read', 'inputs=%d outputs=%d' % (psbt.num_inputs, psbt.num_outputs))
 
         gc.collect()
+        progress.phase(6, 24)
         await psbt.validate()
         heaplog.mark('validate')
         gc.collect()
+        progress.phase(24, 90)
         psbt.consider_inputs()
         heaplog.mark('consider_inputs')
         gc.collect()
+        progress.phase(90, 91)
         psbt.consider_keys()
         heaplog.mark('consider_keys')
         gc.collect()
         psbt.consider_timelocks()
         gc.collect()
+        progress.phase(91, 100)
         psbt.consider_outputs()
         heaplog.mark('consider_outputs')
 

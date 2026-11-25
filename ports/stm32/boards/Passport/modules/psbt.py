@@ -15,6 +15,7 @@ import trezorcrypto
 import gc
 import heaplog
 import history
+import progress
 import sys
 from sffile import SizerFile
 from passport import mem
@@ -171,6 +172,7 @@ def flash_digest(fd):
         if not here:
             break
         md.update(memoryview(mem.psbt_tmp256)[0:here])
+        progress.refresh()
     fd.seek(old_pos)
     return md.digest()
 
@@ -192,6 +194,7 @@ def _spent_before(psbt, idx, prevout):
     for i, txi in psbt.input_iter():
         if i >= idx:
             break
+        progress.refresh()
         if txi.prevout.hash == prevout.hash and txi.prevout.n == prevout.n:
             return True
     return False
@@ -204,6 +207,7 @@ class _Sequences:
 
     def __iter__(self):
         for _, txi in self.psbt.input_iter():
+            progress.refresh()
             yield txi.nSequence
 
 
@@ -718,10 +722,14 @@ _REC_SIZE = const(20)
 # about 18 ms on the device, and the loops no longer keep anything per input.
 _GC_EVERY = const(10)
 
-# Bits in consider_inputs()'s table of outpoints seen (2 KB). With 500 inputs, about
-# 8 of them share a bit with an earlier input and get the exact check.
+# Bits in consider_inputs()'s table of outpoints seen (2 KB, in 256-byte pieces). With
+# 500 inputs, about 8 of them share a bit with an earlier input and get the exact check.
 _PREVOUT_BITS = const(16384)
-_RECS_PER_CHUNK = const(51)
+_PREVOUT_PIECE_BITS = const(2048)
+
+# Input records per chunk of the table (240 bytes). After other work the heap can
+# have plenty free but no large block, so nothing here asks for one.
+_RECS_PER_CHUNK = const(12)
 
 # Record layout: map offset <I, amount <q, flags B, key bits <H, signature <I, pad.
 _F_FULLY_SIGNED = const(0x01)
@@ -841,15 +849,15 @@ class _InputTable:
         self.fd = fd
         self.count = count
         self.my_xfp = my_xfp
-        self.chunks = []
+        self.chunks = [None] * ((count + _RECS_PER_CHUNK - 1) // _RECS_PER_CHUNK)
         left = count
-        while left > 0:
+        for i in range(len(self.chunks)):
             n = min(left, _RECS_PER_CHUNK)
             chunk = bytearray(n * _REC_SIZE)
             for off in range(0, n * _REC_SIZE, _REC_SIZE):
                 pack_into('<q', chunk, off + 4, _NO_AMOUNT)
                 pack_into('<I', chunk, off + 15, _NO_SIG)
-            self.chunks.append(chunk)
+            self.chunks[i] = chunk
             left -= n
         self.other_keys = {}
         self.plans = {}
@@ -1833,12 +1841,14 @@ class psbtObject(psbtProxy):
         assert self.txn[1] > 63, 'too short'
 
         # this parses the input TXN in-place
+        progress.count(self.num_inputs)
         for idx, txin in self.input_iter():
             if idx % _GC_EVERY == 0:
                 heaplog.start('gc')
                 gc.collect()
                 heaplog.stop('gc')
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+            progress.step()
 
         if isinstance(self.inputs, _InputTable):
             # Inputs parsed from here on get what validate() worked out for them.
@@ -1865,9 +1875,11 @@ class psbtObject(psbtProxy):
         total_change = 0
         total_burned = 0
         # print('len(self.outputs)={}'.format(len(self.outputs)))
+        progress.count(len(self.outputs))
         for idx, txo in self.output_iter():
             self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig,
                                        self.active_policy)
+            progress.step()
 
             if self.outputs[idx].is_change:
                 total_change += txo.nValue
@@ -1946,6 +1958,7 @@ class psbtObject(psbtProxy):
         first_path = None
         shortest = longest = last_max = 0
         for inp in self.inputs:
+            progress.refresh()
             if inp.fully_signed:
                 continue
             if not inp.required_key:
@@ -2055,22 +2068,28 @@ class psbtObject(psbtProxy):
         # Important: parse incoming UTXO to build total input value
         missing = 0
         total_in = 0
-        witness_inputs_to_verify = []
+        # One bit per input whose ownership is proven below.
+        witness_inputs_to_verify = bytearray((self.num_inputs + 7) // 8)
         # One bit per digest of each outpoint seen so far, in a table of fixed size: a
         # set grows by reallocating, and the heap may have no free block big enough
         # for it. A digest already marked is checked exactly against earlier inputs.
-        prevouts = bytearray(_PREVOUT_BITS // 8)
+        prevouts = [bytearray(_PREVOUT_PIECE_BITS // 8)
+                    for _ in range(_PREVOUT_BITS // _PREVOUT_PIECE_BITS)]
 
+        progress.count(self.num_inputs)
         for i, txi in self.input_iter():
             if i % _GC_EVERY == 0:
                 gc.collect()
+            progress.step()
             # Reject repeated spends before review/signing, regardless of
             # ownership or amount. Otherwise post-sign recording can persist
             # the first claimed amount before a conflicting duplicate fails.
             bit = ((txi.prevout.hash & 0x3fffffff) ^ (txi.prevout.n * 40503)) % _PREVOUT_BITS
-            if prevouts[bit >> 3] & (1 << (bit & 7)) and _spent_before(self, i, txi.prevout):
+            piece = prevouts[bit // _PREVOUT_PIECE_BITS]
+            byte, mask = (bit % _PREVOUT_PIECE_BITS) >> 3, 1 << (bit & 7)
+            if piece[byte] & mask and _spent_before(self, i, txi.prevout):
                 raise FatalPSBTIssue('Duplicate input #%d' % i)
-            prevouts[bit >> 3] |= 1 << (bit & 7)
+            piece[byte] |= mask
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -2106,20 +2125,23 @@ class psbtObject(psbtProxy):
                 # amounts across attempts. Derivation proves the PSBT's
                 # ownership metadata before that argument is applied.
                 if inp.num_our_keys and inp.required_key:
-                    witness_inputs_to_verify.append(i)
+                    witness_inputs_to_verify[i >> 3] |= 1 << (i & 7)
                 else:
                     self.fee_is_verified = False
 
             del utxo, inp
 
         del prevouts
-        if witness_inputs_to_verify:
+        if any(witness_inputs_to_verify):
             import stash
             with stash.SensitiveValues() as sv:
                 heaplog.start('ownership')
                 # Parent nodes are derived once and wiped when this session ends.
                 parents = {}
-                for i in witness_inputs_to_verify:
+                for i in range(self.num_inputs):
+                    if not witness_inputs_to_verify[i >> 3] & (1 << (i & 7)):
+                        continue
+                    progress.refresh()
                     # Deriving the key is the proof; wipe it straight away.
                     node, _ = self.inputs[i].get_signing_node(sv, self.my_xfp, i, parents)
                     stash.blank_object(node)
@@ -2128,6 +2150,7 @@ class psbtObject(psbtProxy):
 
         # Check known amounts without recording unapproved PSBT data.
         for i, txi in self.input_iter():
+            progress.refresh()
             inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
@@ -2158,8 +2181,12 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
-        no_keys = set(n for n, inp in enumerate(self.inputs)
-                      if inp.required_key is None and not inp.fully_signed)
+        no_keys = False
+        for inp in self.inputs:
+            progress.refresh()
+            if inp.required_key is None and not inp.fully_signed:
+                no_keys = True
+                break
 
         gc.collect()
 
@@ -2245,9 +2272,11 @@ class psbtObject(psbtProxy):
 
         # Only note where each input's map starts. Passes parse inputs from flash.
         rv.inputs = _InputTable(fd, rv.num_inputs, rv.my_xfp)
+        progress.count(rv.num_inputs)
         for idx in range(rv.num_inputs):
             rv.inputs.set_pos(idx, fd.tell())
             _skip_map(fd)
+            progress.step()
         gc.collect()
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
         gc.collect()
@@ -2294,6 +2323,7 @@ class psbtObject(psbtProxy):
         out_fd.write(b'\0')
 
         for idx, inp in enumerate(self.inputs):
+            progress.refresh()
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
@@ -2519,6 +2549,7 @@ class psbtObject(psbtProxy):
         # inputs
         fd.write(ser_compact_size(self.num_inputs))
         for in_idx, txi in self.input_iter():
+            progress.refresh()
             inp = self.inputs[in_idx]
 
             if inp.is_segwit:
