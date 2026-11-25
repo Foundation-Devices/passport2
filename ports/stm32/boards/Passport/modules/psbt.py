@@ -13,6 +13,7 @@ from ustruct import unpack_from, unpack, pack
 from utils import xfp2str, B2A, keypath_to_str, swab32
 import trezorcrypto
 import gc
+import heaplog
 import history
 import sys
 from sffile import SizerFile
@@ -713,7 +714,9 @@ class psbtInputProxy(psbtProxy):
             # - challenge: it's a straight dsha256() for old serializations, but not for newer
             #   segwit txn's... plus I don't want to deserialize it here.
             try:
+                heaplog.start('txid')
                 observed = uint256_from_bytes(calc_txid(self.fd, self.utxo))
+                heaplog.stop('txid')
             except BaseException:
                 raise AssertionError("Trouble parsing UTXO given for input #%d" % idx)
 
@@ -1377,7 +1380,9 @@ class psbtObject(psbtProxy):
 
         # this parses the input TXN in-place
         for idx, txin in self.input_iter():
+            heaplog.start('gc')
             gc.collect()
+            heaplog.stop('gc')
             self.inputs[idx].validate(idx, txin, self.my_xfp)
 
         gc.collect()
@@ -1607,7 +1612,9 @@ class psbtObject(psbtProxy):
                 continue
 
             # pull out just the CTXOut object (expensive)
+            heaplog.start('get_utxo')
             utxo = inp.get_utxo(txi.prevout.n)
+            heaplog.stop('get_utxo')
 
             if not 0 < utxo.nValue <= MAX_MONEY:
                 raise FatalPSBTIssue('Invalid amount for input #%d' % i)
@@ -1620,7 +1627,9 @@ class psbtObject(psbtProxy):
             # type of signing will be required, and which key we need.
             # - also validates redeem_script when present
             # - also finds appropriate multisig wallet to be used
+            heaplog.start('signing_key')
             inp.determine_my_signing_key(i, utxo, self.my_xfp, self)
+            heaplog.stop('signing_key')
 
             if inp.witness_utxo and not inp.utxo:
                 # A false amount for an input we prove we sign makes our
@@ -1640,8 +1649,10 @@ class psbtObject(psbtProxy):
         if witness_inputs_to_verify:
             import stash
             with stash.SensitiveValues() as sv:
+                heaplog.start('ownership')
                 for i in witness_inputs_to_verify:
                     self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+                heaplog.stop('ownership')
 
         # Check known amounts without recording unapproved PSBT data.
         for i, txi in self.input_iter():

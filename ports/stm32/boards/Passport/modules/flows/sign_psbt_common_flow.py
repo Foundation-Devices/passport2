@@ -229,6 +229,8 @@ class SignPsbtCommonFlow(Flow):
             else:
                 self.back()
         else:
+            import heaplog
+            heaplog.mark('review_done')
             (error_msg, error) = await spinner_task('Signing Transaction',
                                                     sign_psbt_task, args=[self.psbt])
             gc.collect()

@@ -20,7 +20,10 @@ async def sign_psbt_task(on_done, psbt):
     from foundation import secp256k1
     from taproot import taproot_sign_key
     import history
+    import heaplog
 
+    heaplog.reset()
+    heaplog.mark('sign_start', 'inputs=%d' % psbt.num_inputs)
     try:
         with stash.SensitiveValues() as sv:
             error_msg = None
@@ -31,7 +34,11 @@ async def sign_psbt_task(on_done, psbt):
             success = set()
             for in_idx, txi in psbt.input_iter():
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
+                if in_idx and in_idx % 10 == 0:
+                    heaplog.mark('signing', 'input=%d' % in_idx)
+                heaplog.start('gc')
                 gc.collect()
+                heaplog.stop('gc')
 
                 inp = psbt.inputs[in_idx]
 
@@ -57,7 +64,9 @@ async def sign_psbt_task(on_done, psbt):
                     raise AssertionError('No scriptsig?')
 
                 if inp.is_segwit:
+                    heaplog.start('amount')
                     history.verify_amount(txi.prevout, inp.amount, in_idx)
+                    heaplog.stop('amount')
 
                 if inp.policy_spend_plan:
                     utxo = inp.get_utxo(txi.prevout.n)
@@ -67,6 +76,7 @@ async def sign_psbt_task(on_done, psbt):
                         inp.required_key, inp.part_sig)
                     del utxo
 
+                heaplog.start('sighash')
                 if not inp.is_segwit:
                     # Hash by serializing/blanking various subparts of the transaction
                     digest = psbt.make_txn_sighash(in_idx, txi, inp.sighash)
@@ -77,6 +87,7 @@ async def sign_psbt_task(on_done, psbt):
                     # Hash the inputs and such in totally new ways, based on BIP-143
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
                                                           inp.amount, inp.scriptCode, inp.sighash)
+                heaplog.stop('sighash')
 
                 policy_multisig = inp.is_multisig and inp.policy_spend_plan is not None
                 if policy_multisig:
@@ -86,12 +97,14 @@ async def sign_psbt_task(on_done, psbt):
                     signing_keys = (None,)
 
                 for which_key in signing_keys:
+                    heaplog.start('derive')
                     if policy_multisig:
                         # The spend plan above binds every required key to its path.
                         skp = keypath_to_str(inp.subpaths[which_key])
                         node = sv.derive_path(skp, register=True)
                     else:
                         node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
+                    heaplog.stop('derive')
 
                     try:
                         if policy_multisig and node.public_key() != which_key:
@@ -105,7 +118,9 @@ async def sign_psbt_task(on_done, psbt):
                                 inp.tap_key_sig = taproot_sign_key(
                                     None, pk, inp.sighash, digest)
                             else:
+                                heaplog.start('ecdsa')
                                 result = secp256k1.sign_ecdsa(digest, pk)
+                                heaplog.stop('ecdsa')
                                 try:
                                     if len(result) != 64:
                                         raise AssertionError('Incorrect signature length.')
@@ -134,10 +149,15 @@ async def sign_psbt_task(on_done, psbt):
 
         # No cache writes until every signature succeeds. The success set only
         # includes inputs whose signing keys we derived and verified above.
+        heaplog.mark('signed')
+        heaplog.start('record')
         for in_idx, txi in psbt.input_iter():
             inp = psbt.inputs[in_idx]
             if in_idx in success and inp.is_segwit:
                 history.OutptValueCache.record_amount(txi.prevout, inp.amount, in_idx)
+
+        heaplog.stop('record')
+        heaplog.mark('sign_done')
 
         # All went well, so just fall through and call on_done()
 
@@ -156,10 +176,12 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     except MemoryError as e:
         # print('MemoryError: {}'.format(e))
+        heaplog.mark('sign_out_of_memory', str(e))
         error_msg = 'Transaction is too complex.'
         error_code = Error.OUT_OF_MEMORY_ERROR
     except BaseException as e:
         # print('BaseException: {}'.format(e))
+        heaplog.mark('sign_error', '%s: %s' % (type(e).__name__, e))
         error_msg = 'Invalid PSBT.'
         error_code = Error.PSBT_FATAL_ERROR
     finally:

@@ -65,6 +65,9 @@ class SignPsbtMicroSDFlow(Flow):
 
         gc.collect()  # Try to avoid excessive fragmentation
 
+        import heaplog
+        heaplog.mark('flow_start')
+
         # TODO: Pass on_progress function as the first argument if we want progress or remove it
         (self.psbt_len, self.output_encoder, error) = await spinner_task(
             'Parsing transaction',
@@ -139,14 +142,20 @@ class SignPsbtMicroSDFlow(Flow):
                 return
 
         securely_blank_file(self.file_path)
+        import heaplog
+        heaplog.flush()
         self.goto(self.show_success)
 
     def write_psbt_fn(self, filename):
+        import heaplog
+        # Inside the save's CardSlot, so buffer rather than write the log here.
+        heaplog.mark('save_start', flush=False)
         # Attempt to write-out the transaction
         with self.output_encoder(open(filename, 'wb')) as fd:
             # save as updated PSBT
             self.psbt.serialize(fd)
         self.out_fn = filename
+        heaplog.mark('save_done', flush=False)
 
     def write_final_fn(self, filename):
         from utils import HexWriter
