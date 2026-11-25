@@ -136,6 +136,17 @@ class OutptValueCache:
     def record_amounts(cls, entries):
         # record_amount() for each (prevout, amount, in_idx), updating the saved copy
         # once at the end rather than after every input.
+        #
+        # Give the list its full size before the new entries are made. They fill the
+        # heap's free space with small blocks, after which growing the list could find
+        # no free block big enough. MicroPython keeps a list's room when its end is
+        # deleted.
+        cls.load_cache()
+        cache = cls.runtime_cache
+        used = len(cache)
+        cache.extend([None] * (_HISTORY_MAX_MEM - used))
+        del cache[used:]
+
         added = False
         try:
             for prevout, amount, in_idx in entries:
