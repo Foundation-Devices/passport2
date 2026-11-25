@@ -55,6 +55,13 @@ class MockNode:
     def public_key(self):
         return PUBKEY
 
+    # Signing derives each input's key from a cached parent.
+    def clone(self):
+        return MockNode()
+
+    def derive(self, index):
+        assert index == 0
+
     def private_key(self):
         return b'\x00' * 31 + b'\x01'
 
@@ -67,9 +74,9 @@ class MockSensitiveValues:
         pass
 
     def derive_path(self, path, register=True):
-        assert path == 'm/0'
-        # Nodes are wiped where they are used, not left for SensitiveValues to wipe.
-        assert not register
+        # Only a cached parent is left for SensitiveValues to wipe. Every other
+        # node is wiped where it is used.
+        assert path == ('m' if register else 'm/0')
         return MockNode()
 
 

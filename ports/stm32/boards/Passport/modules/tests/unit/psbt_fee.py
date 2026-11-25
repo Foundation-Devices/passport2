@@ -86,11 +86,20 @@ class MockTxIn:
 
 
 class MockNode:
-    def __init__(self, public_key):
+    def __init__(self, public_key=None):
         self._public_key = public_key
 
     def public_key(self):
         return self._public_key
+
+    # Signing and the ownership proof derive each input's key from a cached parent.
+    def clone(self):
+        node = MockNode()
+        derived_nodes.append(node)
+        return node
+
+    def derive(self, index):
+        self._public_key = DERIVED_PUBKEYS['m/%d' % index]
 
 
 class MockSensitiveValues:
@@ -102,8 +111,11 @@ class MockSensitiveValues:
 
     @staticmethod
     def derive_path(path, register=True):
-        # Nodes are wiped where they are used, not left for SensitiveValues to wipe.
-        assert not register
+        if register:
+            # Only a cached parent is left for SensitiveValues to wipe.
+            assert path == 'm'
+            return MockNode()
+        # Every other node is wiped where it is used.
         node = MockNode(DERIVED_PUBKEYS[path])
         derived_nodes.append(node)
         return node

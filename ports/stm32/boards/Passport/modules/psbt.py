@@ -850,6 +850,8 @@ class _InputTable:
         self.other_keys = {}
         self.plans = {}
         self.sigs = _SigStore()
+        # Set once psbtObject.validate() has seen every input.
+        self.validated = False
 
     def __len__(self):
         return self.count
@@ -989,7 +991,7 @@ class psbtInputProxy(psbtProxy):
 
         self.parse(fd)
 
-        if table.fd is not None:
+        if table.validated:
             # Parsed again for a later pass: redo what validate() derives from the
             # PSBT itself, which isn't stored.
             self.parse_subpaths(table.my_xfp)
@@ -1492,6 +1494,11 @@ class psbtInputProxy(psbtProxy):
         def wr(*a):
             self.write(out_fd, *a)
 
+        if self.num_our_keys is None:
+            # write() takes Taproot derivations in parsed form. validate() parses
+            # them; without it (tests), parse them here.
+            self.parse_subpaths(self._tbl.my_xfp or 0)
+
         if self.utxo:
             wr(PSBT_IN_NON_WITNESS_UTXO, self.utxo)
         if self.witness_utxo:
@@ -1828,6 +1835,10 @@ class psbtObject(psbtProxy):
                 gc.collect()
                 heaplog.stop('gc')
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+
+        if isinstance(self.inputs, _InputTable):
+            # Inputs parsed from here on get what validate() worked out for them.
+            self.inputs.validated = True
 
         gc.collect()
 
