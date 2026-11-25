@@ -38,6 +38,50 @@ class SettingsOutOfSpace(RuntimeError):
     pass
 
 
+class _JSONWriter:
+    # Writes the same JSON as ujson.dumps() into a fixed buffer, one value at a time.
+    # The text can be several KB, and after a big transaction the heap may have that
+    # much free but in no single block.
+    #
+    # Besides what ujson handles, a value can be an object with json_items(), saved
+    # as a list of what that yields: storage that isn't a list of objects.
+    def __init__(self, buf, limit):
+        self.buf = buf
+        self.limit = limit
+        self.pos = 0
+
+    def write(self, data):
+        end = self.pos + len(data)
+        if end > self.limit:
+            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.limit))
+        self.buf[self.pos:end] = data
+        self.pos = end
+
+    def value(self, v):
+        if isinstance(v, dict):
+            self.write(b'{')
+            first = True
+            for k, item in v.items():
+                if not first:
+                    self.write(b', ')
+                first = False
+                self.write(ujson.dumps(k).encode('utf8'))
+                self.write(b': ')
+                self.value(item)
+            self.write(b'}')
+        elif isinstance(v, (list, tuple)) or hasattr(v, 'json_items'):
+            self.write(b'[')
+            first = True
+            for item in (v if isinstance(v, (list, tuple)) else v.json_items()):
+                if not first:
+                    self.write(b', ')
+                first = False
+                self.value(item)
+            self.write(b']')
+        else:
+            self.write(ujson.dumps(v).encode('utf8'))
+
+
 class ExtSettings:
     """Settings stored in external flash, with a secondary backup"""
 
@@ -435,10 +479,10 @@ class ExtSettings:
         # print('save(): sf={}, pos={}'.format(sf, pos))
 
     def _serialize_current(self):
-        d = ujson.dumps(self.current).encode('utf8')
-        if len(d) > self.max_json_len:
-            raise SettingsOutOfSpace('JSON data is larger than {} bytes.'.format(self.max_json_len))
-        return d
+        # Into the buffer load() reads through. Saves and loads never overlap.
+        out = _JSONWriter(mem.ext_settings_buf, self.max_json_len)
+        out.value(self.current)
+        return memoryview(mem.ext_settings_buf)[0:out.pos]
 
     def save_impl(self, pos, data, erase_old_pos=True):
         pad_len = self.max_json_len - len(data)
@@ -455,9 +499,13 @@ class ExtSettings:
             # print('current: {}'.format(self.current))
             # print('data: {}'.format(bytes_to_hex_str(data)))
 
+            # In pieces, so no copy of the whole text is made.
+            for i in range(0, len(data), 256):
+                piece = data[i:i + 256]
+                fd.write(aes.encrypt(piece))
+                chk.update(piece)
+
             # pad w/ zeros
-            fd.write(aes.encrypt(data))
-            chk.update(data)
 
             # print('pad_len={}'.format(pad_len))
 
