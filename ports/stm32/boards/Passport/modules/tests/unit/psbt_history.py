@@ -110,6 +110,13 @@ class TestPSBT:
             txi.prevout = self.prevouts[idx]
             yield idx, txi
 
+    def check_unchanged(self):
+        # The inputs here aren't stored in flash, so there is nothing to re-check.
+        pass
+
+    async def reserve_signatures(self):
+        pass
+
     def make_txn_segwit_sighash(self, idx, *_args):
         if idx == self.fail_at:
             raise AssertionError('Simulated signing failure')

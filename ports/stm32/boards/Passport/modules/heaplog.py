@@ -10,7 +10,18 @@
 # card, so writing from there would pull it out from under the save.
 
 import gc
-import utime
+
+try:
+    import utime
+except ImportError:
+    # The host tests run the PSBT code under CPython. mark() can't measure the heap
+    # there and gives up quietly; start() and stop() still need a clock.
+    import time
+
+    class utime:
+        ticks_ms = staticmethod(lambda: int(time.monotonic() * 1000))
+        ticks_us = staticmethod(lambda: int(time.monotonic() * 1000000))
+        ticks_diff = staticmethod(lambda end, begin: end - begin)
 
 _FILE = 'heaplog.csv'
 
@@ -94,25 +105,3 @@ def _write():
             for line in _pending:
                 f.write(line)
     _pending.clear()
-
-
-def time_flash_hash(start, length):
-    # What an integrity check would cost: SHA-256 over the PSBT as stored in SPI flash,
-    # read the same way the PSBT code reads it.
-    import trezorcrypto
-    from passport import mem
-    from sffile import SFFile
-
-    began = utime.ticks_ms()
-    try:
-        digest = trezorcrypto.sha256()
-        with SFFile(start, length=length) as fd:
-            while True:
-                n = fd.readinto(mem.tmp_buf)
-                if not n:
-                    break
-                digest.update(memoryview(mem.tmp_buf)[:n])
-        digest.digest()
-        mark('flash_hash', 'ms=%d bytes=%d' % (utime.ticks_diff(utime.ticks_ms(), began), length))
-    except BaseException as e:
-        mark('flash_hash_failed', repr(e))

@@ -67,7 +67,8 @@ def psbt_module(monkeypatch):
     module('chains')
     module('common')
     module('history', verify_amount=lambda *args: None,
-           OutptValueCache=types.SimpleNamespace(record_amount=lambda *args: None))
+           OutptValueCache=types.SimpleNamespace(record_amount=lambda *args: None,
+                                                 record_amounts=lambda entries: list(entries)))
     module('sffile', SizerFile=object)
     module('passport', mem=types.SimpleNamespace())
     module('constants', PSBT_MAX_SIZE=1024 * 1024)
@@ -307,6 +308,13 @@ def test_legacy_multisig_ignores_a_nonowned_fingerprint_collision(monkeypatch, p
         def private_key(self):
             return bytearray(owned.secret)
 
+        # The signer derives each input's key from a cached parent node.
+        def clone(self):
+            return Node()
+
+        def derive(self, index):
+            pass
+
     class Values:
         def __enter__(self):
             return self
@@ -332,12 +340,15 @@ def test_legacy_multisig_ignores_a_nonowned_fingerprint_collision(monkeypatch, p
         scriptSig=b'script', policy_spend_plan=None, is_segwit=True, is_multisig=True,
         tap_subpaths={}, amount=10000, scriptCode=b'script', sighash=1,
         subpaths={owned_pub: [xfp, 0], foreign_pub: [xfp, 0]}, added_sigs=None,
-        added_sig=None, tap_key_sig=None)
+        added_sig=None, tap_key_sig=None,
+        get_utxo=lambda n: types.SimpleNamespace(nValue=10000),
+        signing_scripts=lambda utxo, idx: (b'script', b'script'))
     # The integrated signer delegates legacy candidate selection to this helper.
     inp.get_signing_node = types.MethodType(psbt_module.psbtInputProxy.get_signing_node, inp)
     psbt = types.SimpleNamespace(
-        inputs=[inp], my_xfp=xfp,
-        input_iter=lambda: iter([(0, types.SimpleNamespace(prevout=object()))]),
+        inputs=[inp], my_xfp=xfp, num_inputs=1, check_unchanged=lambda: None,
+        reserve_signatures=lambda: asyncio.sleep(0),
+        input_iter=lambda: iter([(0, types.SimpleNamespace(prevout=types.SimpleNamespace(n=0)))]),
         make_txn_segwit_sighash=lambda *args: bytes(32))
     results = []
 

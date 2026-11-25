@@ -133,7 +133,21 @@ class OutptValueCache:
             cls.add(prevout, amount)
 
     @classmethod
-    def add(cls, prevout, amount):
+    def record_amounts(cls, entries):
+        # record_amount() for each (prevout, amount, in_idx), updating the saved copy
+        # once at the end rather than after every input.
+        added = False
+        try:
+            for prevout, amount, in_idx in entries:
+                if cls.verify_amount(prevout, amount, in_idx) is None:
+                    cls.add(prevout, amount, save=False)
+                    added = True
+        finally:
+            if added:
+                flash_cache.set(cls.KEY, cls.runtime_cache[-_HISTORY_SAVED:])
+
+    @classmethod
+    def add(cls, prevout, amount, save=True):
         # protect privacy, compress a little, and save it.
         # - we know it's not yet in our lists
         key = cls.encode_key(prevout)
@@ -158,9 +172,10 @@ class OutptValueCache:
         cls.runtime_cache.append(entry)
 
         # update what we're going to save long-term
-        saved_entries = cls.runtime_cache[-depth:]
-        # print('Saving cache: {}'.format(saved_entries))
-        flash_cache.set(cls.KEY, saved_entries)
+        if save:
+            saved_entries = cls.runtime_cache[-depth:]
+            # print('Saving cache: {}'.format(saved_entries))
+            flash_cache.set(cls.KEY, saved_entries)
 
 
 # As we build a new transaction, track what we need to capture

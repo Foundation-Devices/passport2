@@ -24,7 +24,6 @@ async def validate_psbt_task(on_done, psbt_len):
 
     heaplog.reset()
     heaplog.mark('validate_start', 'psbt_len=%d' % psbt_len)
-    heaplog.time_flash_hash(TXN_INPUT_OFFSET, psbt_len)
 
     # Do the main validation
     psbt = None

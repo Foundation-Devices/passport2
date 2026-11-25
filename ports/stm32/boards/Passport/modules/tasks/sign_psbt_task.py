@@ -32,16 +32,26 @@ async def sign_psbt_task(on_done, psbt):
             # Account-level nodes, derived once and wiped when the session ends.
             parents = {}
 
+            # Inputs are parsed from flash again below, so flash must still hold the
+            # PSBT that was validated and reviewed.
+            heaplog.start('digest')
+            psbt.check_unchanged()
+            heaplog.stop('digest')
+            heaplog.start('reserve')
+            await psbt.reserve_signatures()
+            heaplog.stop('reserve')
+
             # Sign individual inputs
-            sigs = 0
-            success = set()
+            # One bit per input we signed.
+            success = bytearray((psbt.num_inputs + 7) // 8)
             for in_idx, txi in psbt.input_iter():
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
-                if in_idx and in_idx % 10 == 0:
-                    heaplog.mark('signing', 'input=%d' % in_idx)
-                heaplog.start('gc')
-                gc.collect()
-                heaplog.stop('gc')
+                if in_idx % 10 == 0:
+                    if in_idx:
+                        heaplog.mark('signing', 'input=%d' % in_idx)
+                    heaplog.start('gc')
+                    gc.collect()
+                    heaplog.stop('gc')
 
                 inp = psbt.inputs[in_idx]
 
@@ -62,7 +72,13 @@ async def sign_psbt_task(on_done, psbt):
                     assert not (inp.added_sig or inp.tap_key_sig), \
                         "This transaction has already been signed"
 
-                txi.scriptSig = inp.scriptSig
+                # Rebuild the scripts this signature commits to from the validated
+                # bytes, and sign for the amount the user reviewed.
+                utxo = inp.get_utxo(txi.prevout.n)
+                if utxo.nValue != inp.amount:
+                    raise AssertionError('Input #%d changed after it was checked' % in_idx)
+                script_sig, script_code = inp.signing_scripts(utxo, in_idx)
+                txi.scriptSig = script_sig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
 
@@ -72,12 +88,11 @@ async def sign_psbt_task(on_done, psbt):
                     heaplog.stop('amount')
 
                 if inp.policy_spend_plan:
-                    utxo = inp.get_utxo(txi.prevout.n)
                     inp.policy_spend_plan.assert_p2wsh_scope(
                         in_idx, inp.subpaths, utxo.scriptPubKey,
                         inp.get(inp.witness_script), inp.sighash,
                         inp.required_key, inp.part_sig)
-                    del utxo
+                del utxo
 
                 heaplog.start('sighash')
                 if not inp.is_segwit:
@@ -89,12 +104,13 @@ async def sign_psbt_task(on_done, psbt):
                 else:
                     # Hash the inputs and such in totally new ways, based on BIP-143
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
-                                                          inp.amount, inp.scriptCode, inp.sighash)
+                                                          inp.amount, script_code, inp.sighash)
                 heaplog.stop('sighash')
 
                 policy_multisig = inp.is_multisig and inp.policy_spend_plan is not None
                 if policy_multisig:
                     signing_keys = tuple(sorted(inp.required_key))
+                    added_sigs = {}
                 else:
                     # Existing wallet types keep their ownership-based key selection.
                     signing_keys = (None,)
@@ -130,12 +146,10 @@ async def sign_psbt_task(on_done, psbt):
                                     der_sig = ser_sig_der(
                                         result[0:32], result[32:64], inp.sighash)
                                     if policy_multisig:
-                                        if not inp.added_sigs:
-                                            inp.added_sigs = {}
-                                        if which_key in inp.added_sigs:
+                                        if which_key in added_sigs:
                                             raise AssertionError(
                                                 'This multisig key has already been signed')
-                                        inp.added_sigs[which_key] = der_sig
+                                        added_sigs[which_key] = der_sig
                                     else:
                                         inp.added_sig = (which_key, der_sig)
                                 finally:
@@ -146,18 +160,32 @@ async def sign_psbt_task(on_done, psbt):
                         stash.blank_object(node)
                     del pk, node
 
+                if policy_multisig:
+                    inp.added_sigs = added_sigs
+
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
-                success.add(in_idx)
+                success[in_idx >> 3] |= 1 << (in_idx & 7)
+                del inp
+
+            # And again once every signature is made, before any of them is used.
+            heaplog.start('digest')
+            psbt.check_unchanged()
+            heaplog.stop('digest')
 
         # No cache writes until every signature succeeds. The success set only
         # includes inputs whose signing keys we derived and verified above.
         heaplog.mark('signed')
         heaplog.start('record')
-        for in_idx, txi in psbt.input_iter():
-            inp = psbt.inputs[in_idx]
-            if in_idx in success and inp.is_segwit:
-                history.OutptValueCache.record_amount(txi.prevout, inp.amount, in_idx)
+
+        def signed_amounts():
+            for in_idx, txi in psbt.input_iter():
+                if success[in_idx >> 3] & (1 << (in_idx & 7)):
+                    inp = psbt.inputs[in_idx]
+                    if inp.is_segwit:
+                        yield txi.prevout, inp.amount, in_idx
+
+        history.OutptValueCache.record_amounts(signed_amounts())
 
         heaplog.stop('record')
         heaplog.mark('sign_done')
