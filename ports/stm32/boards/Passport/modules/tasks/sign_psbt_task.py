@@ -19,7 +19,7 @@ async def sign_psbt_task(on_done, psbt):
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
-    from psbt import derive_from_parent, _InputTable, _F_SEGWIT
+    from psbt import derive_from_parent, _InputTable
     import history
     import heaplog
     import progress
@@ -197,8 +197,9 @@ async def sign_psbt_task(on_done, psbt):
                 if not success[in_idx >> 3] & (1 << (in_idx & 7)):
                     continue
                 if table is not None:
-                    if table.get_flag(in_idx, _F_SEGWIT):
-                        yield txi.prevout, table.get_amount(in_idx), in_idx
+                    amount = table.segwit_amount(in_idx)
+                    if amount is not None:
+                        yield txi.prevout, amount, in_idx
                 else:
                     inp = psbt.inputs[in_idx]
                     if inp.is_segwit:

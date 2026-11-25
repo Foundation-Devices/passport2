@@ -928,6 +928,12 @@ class _InputTable:
         chunk, off = self._rec(idx)
         return bool(chunk[off + _REC_FLAGS] & bit)
 
+    def segwit_amount(self, idx):
+        # The checked amount of a segwit input, or None, without parsing it again.
+        if self.get_flag(idx, _F_SEGWIT):
+            return self.get_amount(idx)
+        return None
+
     def set_flag(self, idx, bit, on):
         chunk, off = self._rec(idx)
         if on:
