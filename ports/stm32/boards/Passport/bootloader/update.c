@@ -338,19 +338,6 @@ void update_firmware(void) {
         }
     }
 
-    /*
-     * Hash the staged image once. Recovery checks this digest with the SE below, and
-     * the signature check uses the same one. A failed read may be temporary, so keep
-     * the staged update and offer to retry.
-     */
-hash_update:
-    if (calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) != SEC_TRUE) {
-        if (ui_show_error("PASSPORT", "Update Error", "Unable to read the firmware update.", &ICON_SHUTDOWN,
-                          &ICON_RETRY, true) != KEY_RIGHT_SELECT)
-            ui_ask_shutdown();
-        goto hash_update;
-    }
-
     bool      is_spi_fw_user_signed = firmware_is_user_signed(&spihdr);
     secresult current_firmware_result;
 
@@ -370,6 +357,27 @@ hash_update:
     printf("Verifying current firmware before update\r\n");
 #endif
     current_firmware_result = verify_current_firmware(true);
+
+    /*
+     * Hash the staged image once. Recovery checks this digest with the SE below, and
+     * the signature check uses the same one. A failed read may be temporary, so offer
+     * to retry. If the installed firmware works, the user can instead drop the update
+     * and start it. If not, the staged update is the only way to recover, so keep it.
+     */
+hash_update:
+    if (calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) != SEC_TRUE) {
+        if (current_firmware_result == SEC_TRUE) {
+            if (ui_show_error("PASSPORT", "Update Error",
+                              "Unable to read the firmware update.\n\nRetry, or cancel to keep the current firmware.",
+                              &ICON_CANCEL, &ICON_RETRY, true) != KEY_RIGHT_SELECT)
+                goto out;
+        } else if (ui_show_error("PASSPORT", "Update Error", "Unable to read the firmware update.", &ICON_SHUTDOWN,
+                                 &ICON_RETRY, true) != KEY_RIGHT_SELECT) {
+            ui_ask_shutdown();
+        }
+        goto hash_update;
+    }
+
     if (current_firmware_result == SEC_TRUE) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
         printf("  Current firmware is valid, so doing more checks.\r\n");
