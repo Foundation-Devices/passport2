@@ -31,7 +31,8 @@ def begin(page=None):
     _page = page
     _shown = -1
     _last = ticks_ms()
-    phase(0, 0)
+    # One pass from 0 to 100% unless the task splits it up.
+    phase(0, 100)
 
 
 def end():

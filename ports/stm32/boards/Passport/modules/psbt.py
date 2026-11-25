@@ -713,10 +713,9 @@ class psbtOutputProxy(psbtProxy):
 #
 # Per-input state that has to outlive one pass over the inputs lives in fixed-size
 # records instead of Python objects. Every pass parses the inputs it needs again from
-# flash, so each input only adds its record and, once signed, its signature to the
-# heap. Both are kept in chunks of about 1 KB, which still fit once the heap is
-# fragmented.
-_REC_SIZE = const(20)
+# flash, so each input only adds its record to the heap; on the device its signature
+# goes to flash.
+_REC_SIZE = const(16)
 
 # Inputs between explicit garbage collections in the per-input loops. Each one takes
 # about 18 ms on the device, and the loops no longer keep anything per input.
@@ -727,11 +726,19 @@ _GC_EVERY = const(10)
 _PREVOUT_BITS = const(16384)
 _PREVOUT_PIECE_BITS = const(2048)
 
-# Input records per chunk of the table (240 bytes). After other work the heap can
+# Input records per chunk of the table (256 bytes). After other work the heap can
 # have plenty free but no large block, so nothing here asks for one.
-_RECS_PER_CHUNK = const(12)
+_RECS_PER_CHUNK = const(16)
 
-# Record layout: map offset <I, amount <q, flags B, key bits <H, signature <I, pad.
+# Record layout, little-endian: map offset (3 bytes), amount (7), flags (1), key bits
+# (2), signature reference (3). The PSBT area and the signature store are both under
+# 16 MB, and 7 bytes hold more than 30 times MAX_MONEY. A value that doesn't fit is an
+# error, never cut short.
+_REC_POS = const(0)
+_REC_AMOUNT = const(3)
+_REC_FLAGS = const(10)
+_REC_KEYS = const(11)
+_REC_SIG = const(13)
 _F_FULLY_SIGNED = const(0x01)
 _F_SEGWIT = const(0x02)
 _F_MULTISIG = const(0x04)
@@ -743,12 +750,27 @@ _F_KEY_OTHER = const(0x40)      # ... and is kept in _InputTable.other_keys
 # Key bits index the input's derivation keys in the order they appear in the PSBT.
 _MAX_KEY_BITS = const(16)
 
-_NO_AMOUNT = const(-1)
-_NO_SIG = 0xffffffff
+_NO_AMOUNT = 0xffffffffffffff
+_NO_SIG = 0xffffff
 
 _SIG_ONE = const(1)             # added_sig: (pubkey, signature)
 _SIG_MANY = const(2)            # added_sigs: {pubkey: signature}
 _SIG_TAP = const(3)             # tap_key_sig
+
+
+def _get_uint(buf, off, size):
+    value = 0
+    for i in range(off + size - 1, off - 1, -1):
+        value = (value << 8) | buf[i]
+    return value
+
+
+def _set_uint(buf, off, size, value):
+    if not 0 <= value < (1 << (8 * size)):
+        raise ValueError('%d does not fit in %d bytes' % (value, size))
+    for i in range(off, off + size):
+        buf[i] = value & 0xff
+        value >>= 8
 
 
 def _flag(bit):
@@ -855,8 +877,8 @@ class _InputTable:
             n = min(left, _RECS_PER_CHUNK)
             chunk = bytearray(n * _REC_SIZE)
             for off in range(0, n * _REC_SIZE, _REC_SIZE):
-                pack_into('<q', chunk, off + 4, _NO_AMOUNT)
-                pack_into('<I', chunk, off + 15, _NO_SIG)
+                _set_uint(chunk, off + _REC_AMOUNT, 7, _NO_AMOUNT)
+                _set_uint(chunk, off + _REC_SIG, 3, _NO_SIG)
             self.chunks[i] = chunk
             left -= n
         self.other_keys = {}
@@ -883,40 +905,44 @@ class _InputTable:
 
     def get_pos(self, idx):
         chunk, off = self._rec(idx)
-        return unpack_from('<I', chunk, off)[0]
+        return _get_uint(chunk, off + _REC_POS, 3)
 
     def set_pos(self, idx, pos):
         chunk, off = self._rec(idx)
-        pack_into('<I', chunk, off, pos)
+        _set_uint(chunk, off + _REC_POS, 3, pos)
 
     def get_amount(self, idx):
         chunk, off = self._rec(idx)
-        value = unpack_from('<q', chunk, off + 4)[0]
+        value = _get_uint(chunk, off + _REC_AMOUNT, 7)
         return None if value == _NO_AMOUNT else value
 
     def set_amount(self, idx, value):
+        if value is None:
+            value = _NO_AMOUNT
+        elif not 0 <= value < _NO_AMOUNT:
+            raise ValueError('Input #%d: amount out of range' % idx)
         chunk, off = self._rec(idx)
-        pack_into('<q', chunk, off + 4, _NO_AMOUNT if value is None else value)
+        _set_uint(chunk, off + _REC_AMOUNT, 7, value)
 
     def get_flag(self, idx, bit):
         chunk, off = self._rec(idx)
-        return bool(chunk[off + 12] & bit)
+        return bool(chunk[off + _REC_FLAGS] & bit)
 
     def set_flag(self, idx, bit, on):
         chunk, off = self._rec(idx)
         if on:
-            chunk[off + 12] |= bit
+            chunk[off + _REC_FLAGS] |= bit
         else:
-            chunk[off + 12] &= ~bit
+            chunk[off + _REC_FLAGS] &= ~bit
 
     def get_key(self, idx, inp):
         chunk, off = self._rec(idx)
-        flags = chunk[off + 12]
+        flags = chunk[off + _REC_FLAGS]
         if not flags & _F_KEY:
             return None
         if flags & _F_KEY_OTHER:
             return self.other_keys[idx]
-        bits = unpack_from('<H', chunk, off + 13)[0]
+        bits = unpack_from('<H', chunk, off + _REC_KEYS)[0]
         keys = [inp._key_order[i] for i in range(_MAX_KEY_BITS) if bits & (1 << i)]
         if flags & _F_KEY_SET:
             return set(keys)
@@ -924,7 +950,7 @@ class _InputTable:
 
     def set_key(self, idx, value, inp):
         chunk, off = self._rec(idx)
-        flags = chunk[off + 12] & ~(_F_KEY | _F_KEY_SET | _F_KEY_OTHER)
+        flags = chunk[off + _REC_FLAGS] & ~(_F_KEY | _F_KEY_SET | _F_KEY_OTHER)
         self.other_keys.pop(idx, None)
         bits = 0
         if value is not None:
@@ -944,19 +970,22 @@ class _InputTable:
                     bits = 0
                     break
                 bits |= 1 << i
-        chunk[off + 12] = flags
-        pack_into('<H', chunk, off + 13, bits)
+        chunk[off + _REC_FLAGS] = flags
+        pack_into('<H', chunk, off + _REC_KEYS, bits)
 
     def get_sig(self, idx):
         chunk, off = self._rec(idx)
-        ref = unpack_from('<I', chunk, off + 15)[0]
+        ref = _get_uint(chunk, off + _REC_SIG, 3)
         if ref == _NO_SIG:
             return 0, None
         return self.sigs.get(ref)
 
     def set_sig(self, idx, kind, items):
+        ref = self.sigs.add(kind, items)
+        if not 0 <= ref < _NO_SIG:
+            raise ValueError('Input #%d: signature store full' % idx)
         chunk, off = self._rec(idx)
-        pack_into('<I', chunk, off + 15, self.sigs.add(kind, items))
+        _set_uint(chunk, off + _REC_SIG, 3, ref)
 
 
 class psbtInputProxy(psbtProxy):
@@ -2322,8 +2351,9 @@ class psbtObject(psbtProxy):
         # sep between globals and inputs
         out_fd.write(b'\0')
 
+        progress.count(self.num_inputs)
         for idx, inp in enumerate(self.inputs):
-            progress.refresh()
+            progress.step()
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
@@ -2548,8 +2578,9 @@ class psbtObject(psbtProxy):
 
         # inputs
         fd.write(ser_compact_size(self.num_inputs))
+        progress.count(self.num_inputs)
         for in_idx, txi in self.input_iter():
-            progress.refresh()
+            progress.step()
             inp = self.inputs[in_idx]
 
             if inp.is_segwit:
