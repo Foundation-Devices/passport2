@@ -395,12 +395,32 @@ void update_firmware(void) {
             }
         }
 #endif
-    }
+    } else {
 #ifdef DEBUG_PRINT_UPDATE_HASH
-    else {
-        printf("  Current firmware is INVALID - fall through to try the update.\r\n");
-    }
+        printf("  Current firmware is INVALID - only the update in progress can be installed.\r\n");
 #endif
+#ifdef PRODUCTION_BUILD
+        /*
+         * The installed firmware doesn't verify, usually because an update was interrupted.
+         * Before copying, the path above stored that update's board hash in the SE, after
+         * its timestamp check, so only that exact image may be installed now. The timestamp
+         * reads back only with a board hash the SE holds, so a failed read means it isn't.
+         */
+        calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
+        hash_board(spi_fw_hash, sizeof(spi_fw_hash), new_board_hash, sizeof(new_board_hash));
+        if (se_get_firmware_timestamp(new_board_hash) == 0) {
+        error8:
+            if (ui_show_error("PASSPORT", "Update Error",
+                              "This firmware does not match the update in progress and will not be installed.",
+                              &ICON_SHUTDOWN, &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT)
+                goto out;
+            else {
+                ui_ask_shutdown();
+                goto error8;
+            }
+        }
+#endif
+    }
 
     calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
 #ifdef DEBUG_PRINT_UPDATE_HASH
