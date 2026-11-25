@@ -76,7 +76,8 @@ void clear_update_from_spi_flash(uint32_t total_size) {
     spi_write(total_size - sizeof(zeros), sizeof(zeros), zeros);
 }
 
-static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
+// Returns SEC_FALSE, leaving hash unset, if any part of the image can't be read.
+static secresult calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
     SHA256_CTX ctx;
     uint32_t   pos       = FW_HEADER_SIZE + 256;  // Skip over the update hash page
     uint32_t   remaining = hdr->info.fwlength;
@@ -98,7 +99,7 @@ static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, u
         else
             bufsize = remaining;
 
-        if (spi_read(pos, bufsize, spi_data_buf) != HAL_OK) goto out;
+        if (spi_read(pos, bufsize, spi_data_buf) != HAL_OK) return SEC_FALSE;
 
         sha256_update(&ctx, spi_data_buf, bufsize);
         remaining -= bufsize;
@@ -112,8 +113,7 @@ static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, u
     sha256_update(&ctx, hash, hashlen);
     sha256_final(&ctx, hash);
 
-out:
-    return;
+    return SEC_TRUE;
 }
 
 static void calculate_spi_hdr_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
@@ -338,6 +338,19 @@ void update_firmware(void) {
         }
     }
 
+    /*
+     * Hash the staged image once. Recovery checks this digest with the SE below, and
+     * the signature check uses the same one. A failed read may be temporary, so keep
+     * the staged update and offer to retry.
+     */
+hash_update:
+    if (calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) != SEC_TRUE) {
+        if (ui_show_error("PASSPORT", "Update Error", "Unable to read the firmware update.", &ICON_SHUTDOWN,
+                          &ICON_RETRY, true) != KEY_RIGHT_SELECT)
+            ui_ask_shutdown();
+        goto hash_update;
+    }
+
     bool      is_spi_fw_user_signed = firmware_is_user_signed(&spihdr);
     secresult current_firmware_result;
 
@@ -404,25 +417,24 @@ void update_firmware(void) {
          * The installed firmware doesn't verify, usually because an update was interrupted.
          * Before copying, the path above stored that update's board hash in the SE, after
          * its timestamp check, so only that exact image may be installed now. The timestamp
-         * reads back only with a board hash the SE holds, so a failed read means it isn't.
+         * reads back only with a board hash the SE holds.
+         *
+         * A failed read can also be a temporary SE error. Nothing is copied either way, but
+         * the staged update is kept: with the installed firmware incomplete, it's the only
+         * way to recover, so it must still be there to retry.
          */
-        calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
         hash_board(spi_fw_hash, sizeof(spi_fw_hash), new_board_hash, sizeof(new_board_hash));
+    check_update_in_progress:
         if (se_get_firmware_timestamp(new_board_hash) == 0) {
-        error8:
             if (ui_show_error("PASSPORT", "Update Error",
-                              "This firmware does not match the update in progress and will not be installed.",
-                              &ICON_SHUTDOWN, &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT)
-                goto out;
-            else {
+                              "Unable to confirm this is the update in progress. It has not been installed.",
+                              &ICON_SHUTDOWN, &ICON_RETRY, true) != KEY_RIGHT_SELECT)
                 ui_ask_shutdown();
-                goto error8;
-            }
+            goto check_update_in_progress;
         }
 #endif
     }
 
-    calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
 #ifdef DEBUG_PRINT_UPDATE_HASH
     printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
     bytes_to_hex_str((void*)&spihdr, sizeof(spihdr), str_buf, 64, "\r\n");
