@@ -68,7 +68,8 @@ class MockSensitiveValues:
 
     def derive_path(self, path, register=True):
         assert path == 'm/0'
-        assert register
+        # Nodes are wiped where they are used, not left for SensitiveValues to wipe.
+        assert not register
         return MockNode()
 
 

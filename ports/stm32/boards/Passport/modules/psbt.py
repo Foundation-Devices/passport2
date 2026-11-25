@@ -161,6 +161,63 @@ def get_hash256(fd, poslen, hasher=None):
     return trezorcrypto.sha256(rv.digest()).digest()
 
 
+def derive_from_parent(sv, path, parents):
+    # path is [xfp, *indices] as in a PSBT. Without a parents cache, derive the whole
+    # path from the master key. With one, derive each parent path once, keep the node
+    # in the SensitiveValues session (which wipes it when the session ends) and derive
+    # only the last level per input, so a run of inputs from one account costs one
+    # child derivation each. The caller wipes the returned node either way.
+    if parents is None or len(path) < 2:
+        return sv.derive_path(keypath_to_str(path), register=False)
+    key = tuple(path[1:-1])
+    parent = parents.get(key)
+    if parent is None:
+        parent = sv.derive_path(keypath_to_str(path[:-1]), register=True)
+        # Computed once here, the parent's public key is copied into every clone, so
+        # deriving a non-hardened child doesn't recompute it.
+        parent.public_key()
+        parents[key] = parent
+    node = parent.clone()
+    node.derive(path[-1])
+    return node
+
+
+class _NoEntries:
+    # Shared stand-in for an input's empty key-to-value maps. Most inputs carry no
+    # partial signatures, Taproot data or unknown fields, and a dict per map per input
+    # adds up when every input stays in memory. store() swaps in a real dict on the
+    # first entry, so nothing ever writes to this one.
+    def __len__(self):
+        return 0
+
+    def __iter__(self):
+        return iter(())
+
+    def __contains__(self, key):
+        return False
+
+    def __getitem__(self, key):
+        raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        raise TypeError('read-only empty map')
+
+    def get(self, key, default=None):
+        return default
+
+    def keys(self):
+        return ()
+
+    def values(self):
+        return ()
+
+    def items(self):
+        return ()
+
+
+_NO_ENTRIES = _NoEntries()
+
+
 class psbtProxy:
     # store offsets to values, but track the keys in-memory.
     short_values = ()
@@ -605,6 +662,11 @@ class psbtOutputProxy(psbtProxy):
 # Track details of each input of PSBT
 #
 class psbtInputProxy(psbtProxy):
+    part_sig = _NO_ENTRIES
+    tap_subpaths = _NO_ENTRIES
+    tap_script_sigs = _NO_ENTRIES
+    tap_leaf_scripts = _NO_ENTRIES
+    unknowns = _NO_ENTRIES
 
     # just need to store a simple number for these
     short_values = {PSBT_IN_SIGHASH_TYPE}
@@ -625,16 +687,13 @@ class psbtInputProxy(psbtProxy):
                   'policy_spend_plan')
 
     def __init__(self, fd, idx):
-        super().__init__()
+        # Not super().__init__(): unknowns stays the shared empty map until used.
+        self.fd = None
 
         # self.utxo = None
         # self.witness_utxo = None
-        self.part_sig = {}
         # self.sighash = None
         self.subpaths = {}          # will typically be non-empty for all inputs
-        self.tap_subpaths = {}
-        self.tap_script_sigs = {}
-        self.tap_leaf_scripts = {}
         # self.redeem_script = None
         # self.witness_script = None
 
@@ -700,12 +759,19 @@ class psbtInputProxy(psbtProxy):
 
         if len(self.tap_subpaths) > 0:
             # For key-path taproot signing, presence of tap_key_sig means the input is signed.
-            self.fully_signed = self.tap_key_sig is not None
+            fully_signed = self.tap_key_sig is not None
         elif num_subpaths > 0:
-            self.fully_signed = len(self.part_sig) >= num_subpaths
+            fully_signed = len(self.part_sig) >= num_subpaths
         else:
             # No signatures at all yet for this input (typical non multisig)
-            self.fully_signed = False
+            fully_signed = False
+
+        # Only stored when true: an unset flag reads as None, which every caller treats
+        # as false, and each stored attribute grows the input's attribute table.
+        if fully_signed:
+            self.fully_signed = True
+        elif self.fully_signed:
+            del self.fully_signed
 
         if self.utxo:
             # Important: they might be trying to trick us with an un-related
@@ -800,8 +866,12 @@ class psbtInputProxy(psbtProxy):
             self.required_key = None
             return
 
-        self.is_multisig = False
-        self.is_p2sh = False
+        # is_multisig and is_p2sh are only stored when true (see fully_signed above), so
+        # clear any left from an earlier pass rather than storing False.
+        if self.is_multisig:
+            del self.is_multisig
+        if self.is_p2sh:
+            del self.is_p2sh
         which_key = None
         matched_policy = False
 
@@ -998,15 +1068,21 @@ class psbtInputProxy(psbtProxy):
         # Could probably free self.subpaths and self.redeem_script now, but only if we didn't
         # need to re-serialize as a PSBT.
 
-    def get_signing_node(self, sv, my_xfp, my_idx):
+    def get_signing_node(self, sv, my_xfp, my_idx, parents=None):
+        # The caller wipes the returned node. Any other node derived here is wiped
+        # before returning or raising, since SensitiveValues doesn't keep them.
+        # parents: see derive_from_parent.
+        import stash
+
         if self.is_multisig:
             # The fingerprint is only a hint. Derive each candidate to prove
             # that Passport owns one of the public keys required by the script.
             for which_key in self.required_key:
-                skp = keypath_to_str(self.subpaths[which_key])
-                node = sv.derive_path(skp, register=True)
+                node = derive_from_parent(sv, self.subpaths[which_key], parents)
                 if node.public_key() == which_key:
                     return node, which_key
+                # Not the key this input needs. Nothing else will wipe it.
+                stash.blank_object(node)
 
             raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
 
@@ -1015,22 +1091,31 @@ class psbtInputProxy(psbtProxy):
         if self.subpaths and \
                 (self.subpaths[which_key][0] == my_xfp or
                  self.subpaths[which_key][0] == swab32(my_xfp)):
-            skp = keypath_to_str(self.subpaths[which_key])
-            node = sv.derive_path(skp, register=True)
+            path = self.subpaths[which_key]
+            node = derive_from_parent(sv, path, parents)
             pubkey = node.public_key()
         elif self.tap_subpaths and \
                 (self.tap_subpaths[which_key][0][0] == my_xfp or
                  self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
-            skp = keypath_to_str(self.tap_subpaths[which_key][0])
-            node = sv.derive_path(skp, register=True)
+            path = self.tap_subpaths[which_key][0]
+            node = derive_from_parent(sv, path, parents)
             pubkey = node.public_key()[1:]
         else:
             raise AssertionError("Input #%d has no Passport signing path." % my_idx)
 
         if pubkey != which_key:
-            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, my_idx))
+            stash.blank_object(node)
+            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (keypath_to_str(path), my_idx))
 
         return node, which_key
+
+    def _map(self, name):
+        # The real dict for one of the maps above, created on its first entry.
+        m = getattr(self, name)
+        if m is _NO_ENTRIES:
+            m = {}
+            setattr(self, name, m)
+        return m
 
     def store(self, kt, key, val):
         # Capture what we are interested in.
@@ -1040,7 +1125,7 @@ class psbtInputProxy(psbtProxy):
         elif kt == PSBT_IN_WITNESS_UTXO:
             self.witness_utxo = val
         elif kt == PSBT_IN_PARTIAL_SIG:
-            self.part_sig[key[1:]] = val
+            self._map('part_sig')[key[1:]] = val
         elif kt == PSBT_IN_BIP32_DERIVATION:
             self.subpaths[key[1:]] = val
         elif kt == PSBT_IN_REDEEM_SCRIPT:
@@ -1052,18 +1137,18 @@ class psbtInputProxy(psbtProxy):
         elif kt == PSBT_IN_TAP_KEY_SIG:
             self.tap_key_sig = val
         elif kt == PSBT_IN_TAP_SCRIPT_SIG:
-            self.tap_script_sigs[key[1:]] = val
+            self._map('tap_script_sigs')[key[1:]] = val
         elif kt == PSBT_IN_TAP_LEAF_SCRIPT:
-            self.tap_leaf_scripts[key[1:]] = val
+            self._map('tap_leaf_scripts')[key[1:]] = val
         elif kt == PSBT_IN_TAP_BIP32_DERIVATION:
-            self.tap_subpaths[key[1:]] = val
+            self._map('tap_subpaths')[key[1:]] = val
         elif kt == PSBT_IN_TAP_INTERNAL_KEY:
             self.tap_internal_key = val
         elif kt == PSBT_IN_TAP_MERKLE_ROOT:
             self.tap_merkle_root = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            self.unknowns[key] = val
+            self._map('unknowns')[key] = val
 
     def serialize(self, out_fd, my_idx):
         # Output this input's values; might include signatures that weren't there before
@@ -1650,8 +1735,13 @@ class psbtObject(psbtProxy):
             import stash
             with stash.SensitiveValues() as sv:
                 heaplog.start('ownership')
+                # Parent nodes are derived once and wiped when this session ends.
+                parents = {}
                 for i in witness_inputs_to_verify:
-                    self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+                    # Deriving the key is the proof; wipe it straight away.
+                    node, _ = self.inputs[i].get_signing_node(sv, self.my_xfp, i, parents)
+                    stash.blank_object(node)
+                    del node
                 heaplog.stop('ownership')
 
         # Check known amounts without recording unapproved PSBT data.

@@ -19,6 +19,7 @@ async def sign_psbt_task(on_done, psbt):
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
+    from psbt import derive_from_parent
     import history
     import heaplog
 
@@ -28,6 +29,8 @@ async def sign_psbt_task(on_done, psbt):
         with stash.SensitiveValues() as sv:
             error_msg = None
             error_code = None
+            # Account-level nodes, derived once and wiped when the session ends.
+            parents = {}
 
             # Sign individual inputs
             sigs = 0
@@ -101,9 +104,9 @@ async def sign_psbt_task(on_done, psbt):
                     if policy_multisig:
                         # The spend plan above binds every required key to its path.
                         skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=True)
+                        node = derive_from_parent(sv, inp.subpaths[which_key], parents)
                     else:
-                        node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
+                        node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx, parents)
                     heaplog.stop('derive')
 
                     try:
