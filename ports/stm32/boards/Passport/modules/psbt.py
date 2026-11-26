@@ -189,8 +189,38 @@ def _skip_map(fd):
         fd.seek(vs, 1)
 
 
-def _spent_before(psbt, idx, prevout):
-    # True if an input before idx spends the same outpoint.
+# Each input's 16-bit outpoint tag, in 256-byte pieces. Only inputs whose tags match
+# need the exact check from flash.
+_TAGS_PER_PIECE = const(128)
+
+
+def _prevout_tag(prevout):
+    # 16 bits of an outpoint, independent of the bit it marks in consider_inputs()'s
+    # table: the txid's middle bits, and the output index.
+    return ((prevout.hash >> 128) ^ prevout.n) & 0xffff
+
+
+def _tag_before(tags, idx, tag):
+    # True if an input before idx has this tag. Reads only the tags in memory.
+    lo, hi = tag & 0xff, tag >> 8
+    left = idx
+    for piece in tags:
+        if left <= 0:
+            break
+        end = min(left, _TAGS_PER_PIECE) * 2
+        left -= _TAGS_PER_PIECE
+        for off in range(0, end, 2):
+            if piece[off] == lo and piece[off + 1] == hi:
+                return True
+    return False
+
+
+def _spent_before(psbt, idx, prevout, tags):
+    # True if an input before idx spends the same outpoint. Only an input with the
+    # same tag can, so most of the time nothing is read from flash: re-reading every
+    # earlier input on each shared bit made the check grow with the cube of the inputs.
+    if not _tag_before(tags, idx, _prevout_tag(prevout)):
+        return False
     for i, txi in psbt.input_iter():
         if i >= idx:
             break
@@ -2110,6 +2140,8 @@ class psbtObject(psbtProxy):
         # for it. A digest already marked is checked exactly against earlier inputs.
         prevouts = [bytearray(_PREVOUT_PIECE_BITS // 8)
                     for _ in range(_PREVOUT_BITS // _PREVOUT_PIECE_BITS)]
+        tags = [bytearray(_TAGS_PER_PIECE * 2)
+                for _ in range((self.num_inputs + _TAGS_PER_PIECE - 1) // _TAGS_PER_PIECE)]
 
         progress.count(self.num_inputs)
         for i, txi in self.input_iter():
@@ -2122,9 +2154,14 @@ class psbtObject(psbtProxy):
             bit = ((txi.prevout.hash & 0x3fffffff) ^ (txi.prevout.n * 40503)) % _PREVOUT_BITS
             piece = prevouts[bit // _PREVOUT_PIECE_BITS]
             byte, mask = (bit % _PREVOUT_PIECE_BITS) >> 3, 1 << (bit & 7)
-            if piece[byte] & mask and _spent_before(self, i, txi.prevout):
+            if piece[byte] & mask and _spent_before(self, i, txi.prevout, tags):
                 raise FatalPSBTIssue('Duplicate input #%d' % i)
             piece[byte] |= mask
+            tag = _prevout_tag(txi.prevout)
+            tag_piece = tags[i // _TAGS_PER_PIECE]
+            tag_off = (i % _TAGS_PER_PIECE) * 2
+            tag_piece[tag_off] = tag & 0xff
+            tag_piece[tag_off + 1] = tag >> 8
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
