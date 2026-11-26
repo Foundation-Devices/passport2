@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import common
+import gc
 import history
 import pages
 import stash
@@ -37,7 +38,15 @@ class MockFlashCache:
         self.saves = 0
 
     def get(self, key):
-        return self.data.get(key)
+        value = self.data.get(key)
+        # A packed value comes back as it would be loaded from flash.
+        if hasattr(value, 'json_items'):
+            return list(value.json_items())
+        return value
+
+    def replace(self, key, value):
+        # In memory only: nothing is written.
+        self.data[key] = value
 
     def set(self, key, value):
         self.writes += 1
@@ -131,6 +140,18 @@ class TestPSBT:
         return b'\x42' * 32
 
     make_txn_taproot_sighash = make_txn_segwit_sighash
+
+
+def miss_allocation(entries, key):
+    # Bytes allocated by a lookup that finds nothing.
+    gc.collect()
+    gc.disable()
+    try:
+        before = gc.mem_alloc()
+        assert entries.find(key) is None
+        return gc.mem_alloc() - before
+    finally:
+        gc.enable()
 
 
 def assert_raises(exc_type, callback):
@@ -318,15 +339,48 @@ async def run_tests():
         saved = flash.data[Cache.KEY]
         assert len(saved) == 234
         assert all(len(entry) == 31 for entry in saved)
-        flash.data[Cache.KEY] = [17, 'short'] + saved[1:]
+        # 31 characters but not 31 bytes.
+        flash.data[Cache.KEY] = [17, 'short', '\u00e9' * 31] + saved[2:]
         Cache.entries = None
-        assert Cache.fetch_amount(outpoints[66]) is None
-        assert Cache.fetch_amount(outpoints[67]) == 68
+        assert Cache.fetch_amount(outpoints[67]) is None
+        assert Cache.fetch_amount(outpoints[68]) == 69
         assert Cache.fetch_amount(outpoints[299]) == 300
         Cache.add(COutPoint(5, 5), 5)
-        assert len(Cache.entries) == 234
-        assert flash.data[Cache.KEY][0] == saved[1]
+        assert len(Cache.entries) == 233
+        assert flash.data[Cache.KEY][0] == saved[2]
         assert Cache.fetch_amount(COutPoint(5, 5)) == 5
+
+        # Loading replaces the saved list with the packed entries, and writes nothing.
+        writes, saves = flash.writes, flash.saves
+        Cache.entries = None
+        assert Cache.fetch_amount(COutPoint(5, 5)) == 5
+        assert flash.data[Cache.KEY] is Cache.entries
+        assert (flash.writes, flash.saves) == (writes, saves)
+
+        # An entry that can't be written leaves a full ring's entries and order as they were.
+        ring = history._Entries()
+        for idx in range(239):
+            ring.append(('%031d' % idx).encode())
+        before = list(ring.json_items())
+        assert len(before) == 234 and before[0] == '%031d' % 5
+        state = (ring.first, ring.count)
+        assert_raises(ValueError, lambda: ring.append(b'0' * 30))
+        assert (ring.first, ring.count) == state
+        assert list(ring.json_items()) == before
+
+        # A miss allocates no more with 234 entries than with none, even where most of
+        # the key matches.
+        miss = ('%031d' % 7).encode()[:19] + b'#'
+        assert miss_allocation(ring, miss) == miss_allocation(history._Entries(), miss)
+
+        # Clearing a saved history that isn't loaded doesn't load it.
+        Cache.entries = None
+        saves = flash.saves
+        Cache.clear()
+        assert Cache.entries is None
+        assert Cache.KEY not in flash.data
+        assert flash.saves == saves + 1
+        assert Cache.fetch_amount(COutPoint(5, 5)) is None
         return_value.write(b'OK')
     finally:
         for module, name, original in originals:

@@ -63,22 +63,34 @@ class _Entries:
         return self.chunks[pos // _ENTRIES_PER_CHUNK], (pos % _ENTRIES_PER_CHUNK) * _ENTRY_LEN
 
     def append(self, entry):
-        if self.count < _HISTORY_MAX_MEM:
-            pos = self.count
-            self.count += 1
-        else:
-            pos = self.first
-            self.first = (self.first + 1) % _HISTORY_MAX_MEM
+        # The entry is written before the ring moves on, so one that can't be written
+        # leaves the others and their order as they were.
+        if len(entry) != _ENTRY_LEN:
+            raise ValueError('History entry of %d bytes' % len(entry))
+        full = self.count == _HISTORY_MAX_MEM
+        pos = self.first if full else self.count
         chunk, off = self._slot(pos)
         chunk[off:off + _ENTRY_LEN] = entry
+        if full:
+            self.first = (pos + 1) % _HISTORY_MAX_MEM
+        else:
+            self.count = pos + 1
 
     def find(self, key):
-        # The value text stored with key (the encoded key, as bytes), or None.
-        k0 = key[0]
-        for pos in range(self.count):
-            chunk, off = self._slot(pos)
-            if chunk[off] == k0 and memoryview(chunk)[off:off + _ENCKEY_LEN] == key:
-                return bytes(chunk[off + _ENCKEY_LEN:off + _ENTRY_LEN])
+        # The value text stored with key (the encoded key, as bytes), or None. A miss
+        # allocates nothing, so the lookups for a PSBT's inputs leave no garbage.
+        left = self.count
+        for chunk in self.chunks:
+            if left <= 0:
+                break
+            end = min(left, _ENTRIES_PER_CHUNK) * _ENTRY_LEN
+            left -= _ENTRIES_PER_CHUNK
+            for off in range(0, end, _ENTRY_LEN):
+                i = 0
+                while i < _ENCKEY_LEN and chunk[off + i] == key[i]:
+                    i += 1
+                if i == _ENCKEY_LEN:
+                    return bytes(chunk[off + _ENCKEY_LEN:off + _ENTRY_LEN])
         return None
 
     def clear(self):
@@ -104,8 +116,10 @@ class OutptValueCache:
 
     @classmethod
     def clear(cls):
-        cls.load_cache()
-        cls.entries.clear()
+        # Without loading the history first: with little memory left, loading could
+        # fail before the saved copy is removed.
+        if cls.entries is not None:
+            cls.entries.clear()
         flash_cache.remove(cls.KEY)
         flash_cache.save()
 
@@ -114,12 +128,19 @@ class OutptValueCache:
         # first time: read saved value, but rest of time; use what's in memory
         if cls.entries is None:
             entries = _Entries()
-            saved = flash_cache.get(cls.KEY) or []
-            # By index: a slice would be one more copy of the list.
-            for i in range(max(0, len(saved) - _HISTORY_MAX_MEM), len(saved)):
-                entry = saved[i]
-                if isinstance(entry, str) and len(entry) == _ENTRY_LEN:
-                    entries.append(entry.encode())
+            saved = flash_cache.get(cls.KEY)
+            if isinstance(saved, list):
+                # By index: a slice would be one more copy of the list.
+                for i in range(max(0, len(saved) - _HISTORY_MAX_MEM), len(saved)):
+                    entry = saved[i]
+                    if isinstance(entry, str):
+                        entry = entry.encode()
+                        if len(entry) == _ENTRY_LEN:
+                            entries.append(entry)
+                # The loaded list would otherwise stay in memory beside the entries.
+                # They save as the same list, less any entry skipped above, so there
+                # is nothing to write yet.
+                flash_cache.replace(cls.KEY, entries)
             cls.entries = entries
 
     @classmethod

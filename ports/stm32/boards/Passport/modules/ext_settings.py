@@ -303,6 +303,14 @@ class ExtSettings:
             return
         self.temporary_settings[kn] = v
 
+    def replace(self, kn, v):
+        # Like set(), for a value that saves the same as the one held, such as a compact
+        # form of what was loaded, so there is nothing to write.
+        if not self.temporary_mode or kn in DEVICE_SETTINGS:
+            self.current[kn] = v
+        else:
+            self.temporary_settings[kn] = v
+
     def get_from_current(self, kn, default):
         if not self.temporary_mode or kn in DEVICE_SETTINGS:
             return self.current.get(kn, default)
