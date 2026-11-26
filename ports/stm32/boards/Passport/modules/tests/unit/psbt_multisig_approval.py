@@ -106,7 +106,7 @@ class MockQuestionPage:
         return True
 
 
-async def mock_spinner_task(_text, task, args=()):
+async def mock_spinner_task(_text, task, args=(), **_options):
     results = []
 
     async def on_done(*result):

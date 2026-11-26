@@ -18,6 +18,7 @@ async def validate_psbt_task(on_done, psbt_len):
     from sffile import SFFile
     import gc
     import history
+    import progress
 
     error_msg = None
     error_code = None
@@ -25,20 +26,28 @@ async def validate_psbt_task(on_done, psbt_len):
     # Do the main validation
     psbt = None
     try:
+        # Shares of the progress shown, from timings on the device: checking the
+        # inputs' previous transactions and keys takes most of the time.
+        progress.phase(0, 6)
         history.load()
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
             psbt = psbtObject.read_psbt(fd)
 
         gc.collect()
+        progress.phase(6, 24)
         await psbt.validate()
         gc.collect()
+        progress.phase(24, 84)
         psbt.consider_inputs()
         gc.collect()
+        progress.phase(84, 85)
         psbt.consider_keys()
         gc.collect()
+        progress.phase(85, 88)
         psbt.consider_timelocks()
         gc.collect()
+        progress.phase(88, 100)
         psbt.consider_outputs()
 
         # All went well!

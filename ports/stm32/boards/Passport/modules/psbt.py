@@ -14,6 +14,7 @@ from utils import xfp2str, B2A, keypath_to_str, swab32
 import trezorcrypto
 import gc
 import history
+import progress
 import sys
 from sffile import SizerFile
 from passport import mem
@@ -96,11 +97,12 @@ def _skip_n_objs(fd, n, cls):
     return rv
 
 
-def calc_txid(fd, poslen, body_poslen=None):
+def calc_txid(fd, poslen, body_poslen=None, steps=False):
     # Given the (pos,len) of a transaction in a file, return the txid for that txn.
     # - doesn't validate data
     # - does detect witness txn vs. old style
     # - simple double-sha256() if old style txn, otherwise witness data must be carefully skipped
+    # - steps: see get_hash256()
 
     # see if witness encoding in effect
     fd.seek(poslen[0])
@@ -110,7 +112,7 @@ def calc_txid(fd, poslen, body_poslen=None):
 
     if not has_witness:
         # txn does not have witness data, so txid==wtxix
-        return get_hash256(fd, poslen)
+        return get_hash256(fd, poslen, steps=steps)
 
     rv = trezorcrypto.sha256()
 
@@ -129,7 +131,7 @@ def calc_txid(fd, poslen, body_poslen=None):
         body_poslen = (body_start, fd.tell() - body_start)
 
     # hash the bulk of txn
-    get_hash256(fd, body_poslen, hasher=rv)
+    get_hash256(fd, body_poslen, hasher=rv, steps=steps)
 
     # assume last 4 bytes are the lock_time
     fd.seek(sum(poslen) - 4)
@@ -139,13 +141,20 @@ def calc_txid(fd, poslen, body_poslen=None):
     return trezorcrypto.sha256(rv.digest()).digest()
 
 
-def get_hash256(fd, poslen, hasher=None):
+def get_hash256(fd, poslen, hasher=None, steps=False):
     # return the double-sha256 of a value, without loading it into memory
+    # - steps: count one progress step per 256-byte block, for a caller that counted
+    #   them (a finalized transaction read back for its ID). Otherwise the read only
+    #   keeps the screen moving, inside a pass that counts something else.
     pos, ll = poslen
     rv = hasher or trezorcrypto.sha256()
 
     fd.seek(pos)
     while ll:
+        if steps:
+            progress.step()
+        else:
+            progress.refresh()
         here = fd.readinto(mem.psbt_tmp256)
         if not here:
             break
@@ -160,16 +169,24 @@ def get_hash256(fd, poslen, hasher=None):
     return trezorcrypto.sha256(rv.digest()).digest()
 
 
-def flash_digest(fd):
+def flash_digest(fd, steps=False):
     # SHA-256 of a whole stored PSBT, read in small pieces. Keeps the file position.
+    # - steps: the read is a pass of its own, one progress step per 256-byte block
     old_pos = fd.tell()
     md = trezorcrypto.sha256()
+    if steps:
+        fd.seek(0, 2)
+        progress.count((fd.tell() + 255) // 256)
     fd.seek(0)
     while True:
         here = fd.readinto(mem.psbt_tmp256)
         if not here:
             break
         md.update(memoryview(mem.psbt_tmp256)[0:here])
+        if steps:
+            progress.step()
+        else:
+            progress.refresh()
     fd.seek(old_pos)
     return md.digest()
 
@@ -221,18 +238,21 @@ def _spent_before(psbt, idx, prevout, tags):
     for i, txi in psbt.input_iter():
         if i >= idx:
             break
+        progress.refresh()
         if txi.prevout.hash == prevout.hash and txi.prevout.n == prevout.n:
             return True
     return False
 
 
 class _Sequences:
-    # The inputs' nSequence values, read from flash each time they're iterated.
+    # The inputs' nSequence values, read from flash each time they're iterated. Each
+    # one read is a progress step; the caller counts them.
     def __init__(self, psbt):
         self.psbt = psbt
 
     def __iter__(self):
         for _, txi in self.psbt.input_iter():
+            progress.step()
             yield txi.nSequence
 
 
@@ -1854,7 +1874,7 @@ class psbtObject(psbtProxy):
         # Signing parses the inputs from flash again. Before signing, and again before
         # the signatures are used, confirm flash still holds exactly the PSBT that
         # was validated and reviewed.
-        if self.validated_digest is None or flash_digest(self.fd) != self.validated_digest:
+        if self.validated_digest is None or flash_digest(self.fd, steps=True) != self.validated_digest:
             raise FatalPSBTIssue('Transaction data changed after it was checked, so it was not signed.')
 
     def handle_xpubs(self, M, N):
@@ -1931,10 +1951,12 @@ class psbtObject(psbtProxy):
         assert self.txn[1] > 63, 'too short'
 
         # this parses the input TXN in-place
+        progress.count(self.num_inputs)
         for idx, txin in self.input_iter():
             if idx % _GC_EVERY == 0:
                 gc.collect()
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+            progress.step()
 
         if isinstance(self.inputs, _InputTable):
             # Inputs parsed from here on get what validate() worked out for them.
@@ -1961,9 +1983,13 @@ class psbtObject(psbtProxy):
         total_change = 0
         total_burned = 0
         # print('len(self.outputs)={}'.format(len(self.outputs)))
+        # The outputs are few; the change check after them reads every input.
+        progress.part(0, 10)
+        progress.count(len(self.outputs))
         for idx, txo in self.output_iter():
             self.outputs[idx].validate(idx, txo, self.my_xfp, self.active_multisig,
                                        self.active_policy)
+            progress.step()
 
             if self.outputs[idx].is_change:
                 total_change += txo.nValue
@@ -2041,7 +2067,10 @@ class psbtObject(psbtProxy):
         # are used below, so track those instead of keeping every input's path.
         first_path = None
         shortest = longest = last_max = 0
+        progress.part(10, 100)
+        progress.count(len(self.inputs))
         for inp in self.inputs:
+            progress.step()
             if inp.fully_signed:
                 continue
             if not inp.required_key:
@@ -2161,9 +2190,13 @@ class psbtObject(psbtProxy):
         tags = [bytearray(_TAGS_PER_PIECE * 2)
                 for _ in range((self.num_inputs + _TAGS_PER_PIECE - 1) // _TAGS_PER_PIECE)]
 
+        # Shares of this phase for the passes over the inputs below.
+        progress.part(0, 70)
+        progress.count(self.num_inputs)
         for i, txi in self.input_iter():
             if i % _GC_EVERY == 0:
                 gc.collect()
+            progress.step()
             # Reject repeated spends before review/signing, regardless of
             # ownership or amount. Otherwise post-sign recording can persist
             # the first claimed amount before a conflicting duplicate fails.
@@ -2221,7 +2254,10 @@ class psbtObject(psbtProxy):
             with stash.SensitiveValues() as sv:
                 # Parent nodes are derived once and wiped when this session ends.
                 parents = {}
+                progress.part(70, 76)
+                progress.count(self.num_inputs)
                 for i in range(self.num_inputs):
+                    progress.step()
                     if not witness_inputs_to_verify[i >> 3] & (1 << (i & 7)):
                         continue
                     # Deriving the key is the proof; wipe it straight away.
@@ -2230,7 +2266,10 @@ class psbtObject(psbtProxy):
                     del node
 
         # Check known amounts without recording unapproved PSBT data.
+        progress.part(76, 88)
+        progress.count(self.num_inputs)
         for i, txi in self.input_iter():
+            progress.step()
             inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
@@ -2262,7 +2301,10 @@ class psbtObject(psbtProxy):
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
         no_keys = False
+        progress.part(88, 100)
+        progress.count(self.num_inputs)
         for inp in self.inputs:
+            progress.step()
             if inp.required_key is None and not inp.fully_signed:
                 no_keys = True
                 break
@@ -2288,7 +2330,9 @@ class psbtObject(psbtProxy):
     def consider_timelocks(self):
         # Warn about timelocks that delay when the transaction can confirm.
         from psbt_display import timelock_warnings
-        # Read from flash on each pass over them, rather than listed up front.
+        # Read from flash on each pass over them, rather than listed up front. Counted
+        # once: a second pass, when there is one, finishes at the end of this phase.
+        progress.count(self.num_inputs)
         self.warnings.extend(timelock_warnings(self.txn_version, self.lock_time, _Sequences(self)))
 
     def calculate_fee(self):
@@ -2351,9 +2395,11 @@ class psbtObject(psbtProxy):
 
         # Only note where each input's map starts. Passes parse inputs from flash.
         rv.inputs = _InputTable(fd, rv.num_inputs, rv.my_xfp)
+        progress.count(rv.num_inputs)
         for idx in range(rv.num_inputs):
             rv.inputs.set_pos(idx, fd.tell())
             _skip_map(fd)
+            progress.step()
         gc.collect()
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
         gc.collect()
@@ -2399,7 +2445,9 @@ class psbtObject(psbtProxy):
         # sep between globals and inputs
         out_fd.write(b'\0')
 
+        progress.count(self.num_inputs)
         for idx, inp in enumerate(self.inputs):
+            progress.step()
             inp.serialize(out_fd, idx)
             out_fd.write(b'\0')
 
@@ -2614,7 +2662,13 @@ class psbtObject(psbtProxy):
 
         # does this txn require witness data to be included?
         # - yes, if we did a segwit signature on any input
-        needs_witness = any(i.is_segwit for i in self.inputs if i)
+        # Each input is parsed from flash, so a legacy-only transaction reads them all.
+        needs_witness = False
+        for inp in self.inputs:
+            progress.refresh()
+            if inp and inp.is_segwit:
+                needs_witness = True
+                break
 
         if needs_witness:
             # zero marker, and flags=0x01
@@ -2622,9 +2676,16 @@ class psbtObject(psbtProxy):
 
         body_start = fd.tell()
 
+        # Shares of the progress shown. With witness data, the inputs are read a second
+        # time for the witnesses, and the transaction is read back for its ID. 100% is
+        # left for the end.
+        progress.phase(0, 45 if needs_witness else 99)
+
         # inputs
         fd.write(ser_compact_size(self.num_inputs))
+        progress.count(self.num_inputs)
         for in_idx, txi in self.input_iter():
+            progress.step()
             inp = self.inputs[in_idx]
 
             if inp.is_segwit:
@@ -2670,7 +2731,10 @@ class psbtObject(psbtProxy):
         if needs_witness:
             # witness values
             # - preserve any given ones, add ours
+            progress.phase(45, 90)
+            progress.count(self.num_inputs)
             for in_idx, wit in self.input_witness_iter():
+                progress.step()
                 inp = self.inputs[in_idx]
 
                 if inp.is_segwit and (inp.added_sig or inp.tap_key_sig):
@@ -2696,7 +2760,9 @@ class psbtObject(psbtProxy):
             txid = trezorcrypto.sha256(fd.checksum.digest()).digest()
         else:
             # legacy cost here for segwit: re-read what we just wrote
-            txid = calc_txid(fd, (0, fd.tell()), (body_start, body_end - body_start))
+            progress.phase(90, 99)
+            progress.count((body_end - body_start + 255) // 256)
+            txid = calc_txid(fd, (0, fd.tell()), (body_start, body_end - body_start), steps=True)
 
         # print('Calling add_segwit_utxos_finalize for txid:\n  {}'.format(txid))
         history.add_segwit_utxos_finalize(txid)

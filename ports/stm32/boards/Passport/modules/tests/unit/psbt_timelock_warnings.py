@@ -13,6 +13,7 @@ class MockPSBT:
         self.txn_version = txn_version
         self.lock_time = lock_time
         self.sequences = sequences
+        self.num_inputs = len(sequences)
         self.warnings = []
 
     def input_iter(self):

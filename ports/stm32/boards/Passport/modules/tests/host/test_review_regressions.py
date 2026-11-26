@@ -542,3 +542,154 @@ def test_uncached_leaf_is_wiped_when_its_derivation_fails(psbt_module, monkeypat
     session = Session(Node())
     leaf = psbt_module.derive_from_parent(session, path, parents)
     assert leaf.path == path[1:] and wiped == [] and session.spots == []
+
+
+def test_finalized_save_progress_climbs_through_every_pass(psbt_module, monkeypatch):
+    # The real progress module, with a clock that moves 150 ms per reading so every
+    # refresh draws. The page must see the percentage climb through the inputs, the
+    # witnesses and the transaction ID read back, and never reach 100 before the end.
+    clock = types.SimpleNamespace(now=0)
+
+    def ticks_ms():
+        clock.now += 150
+        return clock.now
+
+    monkeypatch.setitem(sys.modules, 'utime',
+                        types.SimpleNamespace(ticks_ms=ticks_ms, ticks_diff=lambda end, begin: end - begin))
+    lvgl_task = types.SimpleNamespace(draw=lambda: None)
+    monkeypatch.setitem(sys.modules, 'tasks', types.SimpleNamespace(lvgl_task=lvgl_task))
+    monkeypatch.setitem(sys.modules, 'tasks.lvgl_task', lvgl_task)
+    monkeypatch.setattr(sys.modules['constants'], 'PSBT_MAX_INPUTS', 1000, raising=False)
+
+    psbt_class = psbt_module.psbtObject
+    module_globals = psbt_class.finalize.__globals__
+    progress = module_globals['progress']
+    monkeypatch.setitem(module_globals, 'mem', types.SimpleNamespace(psbt_tmp256=bytearray(256)))
+    monkeypatch.setattr(module_globals['history'], 'add_segwit_utxos_finalize', lambda txid: None,
+                        raising=False)
+
+    ser = sys.modules['serializations']
+    inputs = 100
+    raw = struct.pack('<i', 2) + ser.ser_compact_size(inputs)
+    for idx in range(inputs):
+        raw += ser.CTxIn(ser.COutPoint(idx + 1, 0)).serialize()
+    raw += ser.ser_compact_size(1) + ser.CTxOut(1000, b'\x00\x14' + b'\x11' * 20).serialize()
+    raw += struct.pack('<I', 0)
+
+    class PSBT:
+        input_iter = psbt_class.input_iter
+        output_iter = psbt_class.output_iter
+        input_witness_iter = psbt_class.input_witness_iter
+
+        def __init__(self):
+            self.fd = io.BytesIO(raw)
+            self.txn = (0, len(raw))
+            self.total_value_out = None
+
+    psbt = PSBT()
+    psbt_class.parse_txn(psbt)
+    signed = types.SimpleNamespace(is_segwit=True, is_p2sh=False, is_multisig=False, tap_key_sig=None,
+                                   added_sig=(b'\x02' + b'\x22' * 32, b'\x30' * 71))
+    psbt.inputs = [signed] * inputs
+    psbt.outputs = [types.SimpleNamespace(is_change=False, witness_script=None)]
+
+    shown = []
+    progress.begin(types.SimpleNamespace(set_progress=shown.append))
+    clock.now += 5000   # past the spinner's first seconds
+    try:
+        psbt_class.finalize(psbt, io.BytesIO())
+    finally:
+        progress.end()
+
+    assert shown == sorted(shown) and max(shown) <= 99, shown
+    assert any(0 < value < 45 for value in shown), shown
+    assert any(45 < value < 90 for value in shown), shown
+    # The transaction ID is read back in 17 blocks; the page sees it move, up to 99.
+    assert len({value for value in shown if value > 90}) >= 5 and max(shown) == 99, shown
+
+
+def test_signed_psbt_check_steps_through_its_flash_read(psbt_module, monkeypatch):
+    # After signing, the whole PSBT is read from flash again and hashed. The page must
+    # see that read move the percentage, rather than wait at the start of its share.
+    clock = types.SimpleNamespace(now=0)
+
+    def ticks_ms():
+        clock.now += 150
+        return clock.now
+
+    monkeypatch.setitem(sys.modules, 'utime',
+                        types.SimpleNamespace(ticks_ms=ticks_ms, ticks_diff=lambda end, begin: end - begin))
+    lvgl_task = types.SimpleNamespace(draw=lambda: None)
+    monkeypatch.setitem(sys.modules, 'tasks', types.SimpleNamespace(lvgl_task=lvgl_task))
+    monkeypatch.setitem(sys.modules, 'tasks.lvgl_task', lvgl_task)
+    psbt_class = psbt_module.psbtObject
+    module_globals = psbt_class.finalize.__globals__
+    progress = module_globals['progress']
+    monkeypatch.setitem(module_globals, 'mem', types.SimpleNamespace(psbt_tmp256=bytearray(256)))
+
+    psbt = types.SimpleNamespace(fd=io.BytesIO(b'Z' * 20 * 256))
+    psbt.validated_digest = module_globals['flash_digest'](psbt.fd)
+
+    shown = []
+    progress.begin(types.SimpleNamespace(set_progress=shown.append))
+    clock.now += 5000
+    try:
+        progress.phase(94, 97)
+        psbt_class.check_unchanged(psbt)
+    finally:
+        progress.end()
+    assert shown == sorted(shown) and {95, 96} <= set(shown) and max(shown) == 97, shown
+
+
+def test_progress_parts_share_a_phase_between_passes(psbt_module, monkeypatch):
+    # A phase made of several passes over the inputs moves through all of them: the
+    # later passes don't sit at the point where the first one stopped.
+    clock = types.SimpleNamespace(now=0)
+
+    def ticks_ms():
+        clock.now += 150
+        return clock.now
+
+    monkeypatch.setitem(sys.modules, 'utime',
+                        types.SimpleNamespace(ticks_ms=ticks_ms, ticks_diff=lambda end, begin: end - begin))
+    lvgl_task = types.SimpleNamespace(draw=lambda: None)
+    monkeypatch.setitem(sys.modules, 'tasks', types.SimpleNamespace(lvgl_task=lvgl_task))
+    monkeypatch.setitem(sys.modules, 'tasks.lvgl_task', lvgl_task)
+    progress = psbt_module.psbtObject.finalize.__globals__['progress']
+
+    shown = []
+    progress.begin(types.SimpleNamespace(set_progress=shown.append))
+    clock.now += 5000
+    try:
+        progress.phase(24, 84)
+        for lo, hi in ((0, 70), (70, 76), (76, 88), (88, 100)):
+            progress.part(lo, hi)
+            progress.count(10)
+            for _ in range(10):
+                progress.step()
+            assert shown[-1] == 24 + 60 * hi // 100, (lo, hi, shown)
+    finally:
+        progress.end()
+    assert shown == sorted(shown) and shown[-1] == 84
+
+
+def test_timelock_and_change_checks_step_once_per_input(psbt_module, monkeypatch):
+    # These passes read every input; each input read is a progress step, so the
+    # percentage moves through them instead of waiting at the start of their share.
+    module_globals = psbt_module.psbtObject.finalize.__globals__
+    steps = []
+    fake_progress = types.SimpleNamespace(step=lambda: steps.append(1), refresh=lambda: None,
+                                          count=lambda total: None, part=lambda lo, hi: None)
+    monkeypatch.setitem(module_globals, 'progress', fake_progress)
+
+    inputs = 12
+    psbt = types.SimpleNamespace(
+        num_inputs=inputs, txn_version=2, lock_time=0, warnings=[],
+        inputs=[types.SimpleNamespace(fully_signed=True) for _ in range(inputs)],
+        input_iter=lambda: iter([(idx, types.SimpleNamespace(nSequence=0xffffffff))
+                                 for idx in range(inputs)]))
+    psbt_module.psbtObject.consider_timelocks(psbt)
+    assert len(steps) >= inputs
+    del steps[:]
+    psbt_module.psbtObject.consider_dangerous_change(psbt, 0x12345678)
+    assert len(steps) == inputs

@@ -103,11 +103,14 @@ def start_task(task):
     return loop.create_task(task)
 
 
-async def spinner_task(text, task, args=(), left_micron=None, right_micron=None, min_duration_ms=1000, no_anim=False):
-    from pages import SpinnerPage, StatusPage
+async def spinner_task(text, task, args=(), left_micron=None, right_micron=None, min_duration_ms=1000, no_anim=False,
+                       show_progress=False):
+    # show_progress: show the task's progress (see progress.py) instead of a spinner.
+    from pages import ProgressPage, SpinnerPage, StatusPage
     from uasyncio import sleep_ms
     from utime import ticks_ms
     from common import ui
+    import progress
 
     # Disable left/right navigation and icons
     prev_top_level = ui.set_is_top_level(False)
@@ -116,6 +119,8 @@ async def spinner_task(text, task, args=(), left_micron=None, right_micron=None,
     if no_anim:
         spinner = StatusPage(text, left_micron=left_micron, right_micron=right_micron,
                              icon=lv.LARGE_ICON_STATIC_PIN_SPINNER, icon_color=DEFAULT_LARGE_ICON_COLOR)
+    elif show_progress:
+        spinner = ProgressPage(text, left_micron=left_micron, right_micron=right_micron, spinner_first=True)
     else:
         spinner = SpinnerPage(text, left_micron=left_micron, right_micron=right_micron)
 
@@ -125,6 +130,7 @@ async def spinner_task(text, task, args=(), left_micron=None, right_micron=None,
     async def on_done(*args):
         # print('on_done() args="{}"'.format(args))
         nonlocal task_result
+        progress.end()
         task_result = args
 
         # The last arg is always the error
@@ -139,6 +145,7 @@ async def spinner_task(text, task, args=(), left_micron=None, right_micron=None,
 
         spinner.set_result(error is None)
 
+    progress.begin(spinner if show_progress else None)
     start_task(task(on_done, *args))
 
     # Can handle the user pressing a key here by just showing the spinner again

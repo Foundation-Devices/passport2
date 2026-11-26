@@ -41,7 +41,7 @@ class SignPsbtCommonFlow(Flow):
 
     async def validate_psbt(self):
         (self.psbt, error_msg, error) = await spinner_task('Validating transaction', validate_psbt_task,
-                                                           args=[self.psbt_len])
+                                                           args=[self.psbt_len], show_progress=True)
         # print('psbt={} error_msg={} error={}'.format(self.psbt, error_msg, error))
         if error is not None:
             await self.show_psbt_error(error_msg)
@@ -230,7 +230,7 @@ class SignPsbtCommonFlow(Flow):
                 self.back()
         else:
             (error_msg, error) = await spinner_task('Signing Transaction',
-                                                    sign_psbt_task, args=[self.psbt])
+                                                    sign_psbt_task, args=[self.psbt], show_progress=True)
             gc.collect()
             if error is not None:
                 await self.show_psbt_error(error_msg)

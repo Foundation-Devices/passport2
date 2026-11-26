@@ -21,6 +21,7 @@ async def sign_psbt_task(on_done, psbt):
     from taproot import taproot_sign_key
     from psbt import derive_from_parent, _InputTable
     import history
+    import progress
 
     try:
         with stash.SensitiveValues() as sv:
@@ -31,13 +32,19 @@ async def sign_psbt_task(on_done, psbt):
 
             # Inputs are parsed from flash again below, so flash must still hold the
             # PSBT that was validated and reviewed.
+            # Shares of the progress shown, from timings on the device.
+            progress.phase(0, 3)
             psbt.check_unchanged()
+            progress.phase(3, 4)
             await psbt.reserve_signatures()
 
             # Sign individual inputs
             # One bit per input we signed.
             success = bytearray((psbt.num_inputs + 7) // 8)
+            progress.phase(4, 94)
+            progress.count(psbt.num_inputs)
             for in_idx, txi in psbt.input_iter():
+                progress.step()
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
                 # Every 10 inputs: nothing is kept per input, so collecting after each
                 # one costs time without saving memory.
@@ -152,16 +159,20 @@ async def sign_psbt_task(on_done, psbt):
                 del inp
 
             # And again once every signature is made, before any of them is used.
+            progress.phase(94, 97)
             psbt.check_unchanged()
 
         # No cache writes until every signature succeeds. The success set only
         # includes inputs whose signing keys we derived and verified above.
+        progress.phase(97, 100)
+        progress.count(psbt.num_inputs)
 
         def signed_amounts():
             # The input table already holds each input's checked amount and type, so
             # read them there rather than parsing every input from flash again.
             table = psbt.inputs if isinstance(psbt.inputs, _InputTable) else None
             for in_idx, txi in psbt.input_iter():
+                progress.step()
                 if not success[in_idx >> 3] & (1 << (in_idx & 7)):
                     continue
                 if table is not None:

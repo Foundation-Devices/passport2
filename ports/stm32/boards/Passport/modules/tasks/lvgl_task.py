@@ -27,23 +27,28 @@ async def lvgl_task():
 async def async_loop():
     """Asynchronous loop used to increment LVGL tick counter"""
 
-    global thread_lock
-
     # Give a short time for the card_task to perform the first render to avoid flicker at startup
     await sleep_ms(100)
 
-    if passport.IS_SIMULATOR:
-        last_tick = ticks_ms()
-    else:
-        last_tick = 0
-
     while True:
-        if passport.IS_SIMULATOR:
-            new_tick = ticks_ms()
-            elapsed = new_tick - last_tick
-            lv.tick_inc(elapsed)
-            last_tick = new_tick
-
-        lv.timer_handler()
-
+        draw()
         await sleep_ms(1)
+
+
+_last_tick = None
+
+
+def draw():
+    """Run LVGL's timers and redraw what changed. Also called by code that keeps the
+    loop busy for a long time (see progress.py)."""
+
+    global _last_tick
+
+    # On the device a hardware timer advances LVGL's clock.
+    if passport.IS_SIMULATOR:
+        new_tick = ticks_ms()
+        if _last_tick is not None:
+            lv.tick_inc(new_tick - _last_tick)
+        _last_tick = new_tick
+
+    lv.timer_handler()

@@ -15,7 +15,8 @@ class SaveToMicroSDFlow(Flow):
                  path=None,
                  mode='',
                  automatic=False,
-                 auto_prompt=None):
+                 auto_prompt=None,
+                 show_progress=False):  # write_fn reports progress (see progress.py)
         import microns
         from utils import bind, show_card_missing
 
@@ -25,6 +26,7 @@ class SaveToMicroSDFlow(Flow):
         self.success_text = success_text
         self.path = path
         self.mode = mode
+        self.show_progress = show_progress
         self.out_full = None
         # If auto_prompt isn't specified, use automatic value
         auto_prompt = auto_prompt or automatic
@@ -73,7 +75,8 @@ class SaveToMicroSDFlow(Flow):
                     self.out_full, _ = card.pick_filename(self.filename, path)
                     error = await spinner_task("Writing {}".format(self.success_text),
                                                custom_microsd_write_task,
-                                               args=[self.out_full, self.write_fn])
+                                               args=[self.out_full, self.write_fn],
+                                               show_progress=self.show_progress)
                     if error is Error.MICROSD_CARD_MISSING:
                         raise CardMissingError()
                     elif error is Error.FILE_WRITE_ERROR:
