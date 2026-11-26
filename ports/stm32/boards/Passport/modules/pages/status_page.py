@@ -13,6 +13,15 @@ import common
 import passport
 
 
+def _spacer():
+    # An equal share of the free space above or below a status page's content.
+    spacer = View()
+    spacer.set_size(lv.pct(100), 0)
+    with Stylize(spacer) as default:
+        default.flex_grow(1)
+    return spacer
+
+
 class StatusPage(Page):
     CENTER_SIZE = 100
 
@@ -50,10 +59,13 @@ class StatusPage(Page):
         # need to be able to scroll.
         self.container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
         self.container.set_size(lv.pct(100), lv.pct(100))
+        # The content is centered by a spacer above and below it (see update()), not by
+        # centering the column: with more content than fits, a centered column puts half
+        # of the overflow above the top, where it can't be scrolled to.
         with Stylize(self.container) as default:
             default.pad(left=self.margins, right=self.margins)
-            default.pad_row(20)
-            default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
+            default.pad_row(0)
+            default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
         self.set_children([self.container])
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
@@ -79,6 +91,10 @@ class StatusPage(Page):
 
             common.ui.set_left_micron(self.left_micron)
             common.ui.set_right_micron(self.right_micron)
+
+        # The spacers share the free space, which centers the content. When the content
+        # doesn't fit they shrink to nothing, so it starts at the top and scrolls down.
+        self.container.add_child(_spacer())
 
         # center container so we can center the icon or progress in it
         self.center_container = View()
@@ -128,7 +144,12 @@ class StatusPage(Page):
             with Stylize(self.text_view) as default:
                 if self.centered:
                     default.text_align(lv.TEXT_ALIGN.CENTER)
+                if self.center_content is not None:
+                    # The gap below the icon, which the column's row padding used to give.
+                    default.pad(top=20)
             self.container.add_child(self.text_view)
+
+        self.container.add_child(_spacer())
 
         if self.is_mounted():
             self.container.mount_children()
