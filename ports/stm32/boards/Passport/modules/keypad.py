@@ -148,6 +148,12 @@ class Keypad:
             # print('--------------------- Consume key check_pending_keys 3: key={}'.format(key))
             if self.is_global_nav_key(key):
                 # print('------------------------------------ check_pending_keys 4: {}'.format(key))
+                # A select button pressed while the screen was changing was meant for a
+                # screen the user hadn't seen yet, so drop the press. Its release still
+                # goes through, so the micron doesn't stay pressed, and the UI ignores it
+                # because no page got the press.
+                if is_pressed and (key == lv.KEY.ESC or key == lv.KEY.ENTER):
+                    continue
                 self.key_cb(key, is_pressed)
             else:
                 # print('check_pending_keys 5: {} (other key)'.format(key))

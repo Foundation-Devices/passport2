@@ -156,6 +156,10 @@ def test_status_page_layout(test):
     assert test('status_page_layout.py') == b'OK'
 
 
+def test_select_keys(test):
+    assert test('select_keys.py') == b'OK'
+
+
 def test_multisig_xpub_validation(test):
     assert test('multisig_xpub_validation.py') == b'OK'
 
