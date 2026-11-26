@@ -148,6 +148,10 @@ def test_psbt_versions(test):
     assert test('psbt_versions.py') == b'OK'
 
 
+def test_psbt_input_limit(test):
+    assert test('psbt_input_limit.py') == b'OK'
+
+
 def test_multisig_xpub_validation(test):
     assert test('multisig_xpub_validation.py') == b'OK'
 
