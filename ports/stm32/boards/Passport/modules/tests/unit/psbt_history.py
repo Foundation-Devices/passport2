@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import common
+import gc
 import history
 import pages
 import stash
@@ -37,11 +38,20 @@ class MockFlashCache:
         self.saves = 0
 
     def get(self, key):
-        return self.data.get(key)
+        value = self.data.get(key)
+        # A packed value comes back as it would be loaded from flash.
+        if hasattr(value, 'json_items'):
+            return list(value.json_items())
+        return value
+
+    def replace(self, key, value):
+        # In memory only: nothing is written.
+        self.data[key] = value
 
     def set(self, key, value):
         self.writes += 1
-        self.data[key] = value[:]
+        # As saved and loaded again.
+        self.data[key] = list(value.json_items())
 
     def remove(self, key):
         self.writes += 1
@@ -117,6 +127,18 @@ class TestPSBT:
     make_txn_taproot_sighash = make_txn_segwit_sighash
 
 
+def miss_allocation(entries, key):
+    # Bytes allocated by a lookup that finds nothing.
+    gc.collect()
+    gc.disable()
+    try:
+        before = gc.mem_alloc()
+        assert entries.find(key) is None
+        return gc.mem_alloc() - before
+    finally:
+        gc.enable()
+
+
 def assert_raises(exc_type, callback):
     try:
         callback()
@@ -174,13 +196,11 @@ async def run_tests():
         (pages, 'SuccessPage', MockSuccessPage),
     )
     originals = [(module, name, getattr(module, name)) for module, name, _ in replacements]
-    original_runtime = Cache.runtime_cache
-    original_loaded = Cache._cache_loaded
+    original_entries = Cache.entries
     try:
         for module, name, replacement in replacements:
             setattr(module, name, replacement)
-        Cache.runtime_cache = []
-        Cache._cache_loaded = False
+        Cache.entries = None
         prevout = COutPoint(1, 0)
 
         # Duplicate outpoints must fail before signing, even with matching amounts,
@@ -198,8 +218,7 @@ async def run_tests():
                     raise AssertionError('Duplicate input accepted')
                 assert all(inp.added_sig is None for inp in duplicate.inputs)
                 assert flash.writes == 0
-                Cache.runtime_cache = []
-                Cache._cache_loaded = False
+                Cache.entries = None
                 assert Cache.fetch_amount(prevout) is None
 
         # Different output indexes in the same transaction are distinct outpoints.
@@ -256,11 +275,10 @@ async def run_tests():
         psbtObject.consider_inputs(repeated)
         await sign(repeated)
         assert flash.writes == 1
-        assert len(Cache.runtime_cache) == 1
+        assert len(Cache.entries) == 1
 
         # Reload the saved representation and retain the SegWit fee-attack defense.
-        Cache.runtime_cache = []
-        Cache._cache_loaded = False
+        Cache.entries = None
         changed = TestPSBT([make_input(1001)])
         assert_raises(IncorrectUTXOAmount, lambda: psbtObject.consider_inputs(changed))
         await sign(changed, success=False)
@@ -276,8 +294,8 @@ async def run_tests():
         assert await ClearUTXOCacheFlow().run() is True
         assert flash.saves == 1
         assert Cache.KEY not in flash.data
-        assert Cache.runtime_cache == []
-        Cache._cache_loaded = False
+        assert len(Cache.entries) == 0
+        Cache.entries = None
         assert Cache.fetch_amount(prevout) is None
 
         recovered = TestPSBT([make_input(1001)])
@@ -293,12 +311,67 @@ async def run_tests():
         await sign(taproot)
         assert taproot.inputs[0].tap_key_sig
         assert Cache.fetch_amount(prevout) == 4000
+
+        # The newest 234 entries are kept and saved, oldest first. Saved entries that
+        # can't be ours are skipped on loading.
+        Cache.clear()
+        outpoints = [COutPoint(idx + 100, idx % 3) for idx in range(300)]
+        for idx, outpoint in enumerate(outpoints):
+            Cache.record_amount(outpoint, idx + 1, idx)
+        assert len(Cache.entries) == 234
+        assert Cache.fetch_amount(outpoints[65]) is None
+        assert Cache.fetch_amount(outpoints[66]) == 67
+        assert Cache.fetch_amount(outpoints[299]) == 300
+        saved = flash.data[Cache.KEY]
+        assert len(saved) == 234
+        assert all(len(entry) == 31 for entry in saved)
+        # 31 characters but not 31 bytes.
+        flash.data[Cache.KEY] = [17, 'short', '\u00e9' * 31] + saved[2:]
+        Cache.entries = None
+        assert Cache.fetch_amount(outpoints[67]) is None
+        assert Cache.fetch_amount(outpoints[68]) == 69
+        assert Cache.fetch_amount(outpoints[299]) == 300
+        Cache.add(COutPoint(5, 5), 5)
+        assert len(Cache.entries) == 233
+        assert flash.data[Cache.KEY][0] == saved[2]
+        assert Cache.fetch_amount(COutPoint(5, 5)) == 5
+
+        # Loading replaces the saved list with the packed entries, and writes nothing.
+        writes, saves = flash.writes, flash.saves
+        Cache.entries = None
+        assert Cache.fetch_amount(COutPoint(5, 5)) == 5
+        assert flash.data[Cache.KEY] is Cache.entries
+        assert (flash.writes, flash.saves) == (writes, saves)
+
+        # An entry that can't be written leaves a full ring's entries and order as they were.
+        ring = history._Entries()
+        for idx in range(239):
+            ring.append(('%031d' % idx).encode())
+        before = list(ring.json_items())
+        assert len(before) == 234 and before[0] == '%031d' % 5
+        state = (ring.first, ring.count)
+        assert_raises(ValueError, lambda: ring.append(b'0' * 30))
+        assert (ring.first, ring.count) == state
+        assert list(ring.json_items()) == before
+
+        # A miss allocates no more with 234 entries than with none, even where most of
+        # the key matches.
+        miss = ('%031d' % 7).encode()[:19] + b'#'
+        assert miss_allocation(ring, miss) == miss_allocation(history._Entries(), miss)
+
+        # Clearing a saved history that isn't loaded doesn't load it.
+        Cache.entries = None
+        saves = flash.saves
+        Cache.clear()
+        assert Cache.entries is None
+        assert Cache.KEY not in flash.data
+        assert flash.saves == saves + 1
+        assert Cache.fetch_amount(COutPoint(5, 5)) is None
         return_value.write(b'OK')
     finally:
         for module, name, original in originals:
             setattr(module, name, original)
-        Cache.runtime_cache = original_runtime
-        Cache._cache_loaded = original_loaded
+        Cache.entries = original_entries
 
 
 asyncio.run(run_tests())

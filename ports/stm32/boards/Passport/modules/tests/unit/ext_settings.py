@@ -92,6 +92,27 @@ assert oversized.last_save_slots == slots_before
 assert oversized.is_dirty == dirty_before
 
 
+# Saving writes the same JSON as ujson.dumps(), and saves a value with json_items()
+# as a list of what it yields.
+class Items:
+    def json_items(self):
+        for i in range(3):
+            yield 'item %d' % i
+
+
+common.sf = MockFlash(FLASH_SIZE)
+nested = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
+nested.current.update({'a': [1, {'b': None, 'c': True}], 't': ('x', 2.5), 'q': '"\u00e9\n'})
+assert bytes(nested._serialize_current()) == ujson.dumps(nested.current).encode('utf8')
+nested.current['items'] = Items()
+nested.save()
+loaded = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)
+loaded.load()
+assert loaded.get('items') == ['item 0', 'item 1', 'item 2']
+assert loaded.get('a') == [1, {'b': None, 'c': True}]
+assert loaded.get('q') == '"\u00e9\n'
+
+
 # The temporary seed is zeroed in place whenever the settings stop holding it.
 def temporary_settings_with_seed():
     temp = ExtSettings(slots=SLOTS, slot_size=SLOT_SIZE)

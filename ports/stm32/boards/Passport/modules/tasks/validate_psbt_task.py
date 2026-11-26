@@ -17,6 +17,7 @@ async def validate_psbt_task(on_done, psbt_len):
     from public_constants import TXN_INPUT_OFFSET
     from sffile import SFFile
     import gc
+    import history
 
     error_msg = None
     error_code = None
@@ -24,6 +25,7 @@ async def validate_psbt_task(on_done, psbt_len):
     # Do the main validation
     psbt = None
     try:
+        history.load()
         # Read TXN from SPI Flash (we put it there whether it came from a QR code or an SD card)
         with SFFile(TXN_INPUT_OFFSET, length=psbt_len) as fd:
             psbt = psbtObject.read_psbt(fd)
