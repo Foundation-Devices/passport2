@@ -86,11 +86,20 @@ class MockTxIn:
 
 
 class MockNode:
-    def __init__(self, public_key):
+    def __init__(self, public_key=None):
         self._public_key = public_key
 
     def public_key(self):
         return self._public_key
+
+    # Signing and the ownership proof derive each input's key from a cached parent.
+    def clone(self):
+        node = MockNode()
+        derived_nodes.append(node)
+        return node
+
+    def derive(self, index):
+        self._public_key = DERIVED_PUBKEYS['m/%d' % index]
 
 
 class MockSensitiveValues:
@@ -102,8 +111,14 @@ class MockSensitiveValues:
 
     @staticmethod
     def derive_path(path, register=True):
-        assert register
-        return MockNode(DERIVED_PUBKEYS[path])
+        if register:
+            # Only a cached parent is left for SensitiveValues to wipe.
+            assert path == 'm'
+            return MockNode()
+        # Every other node is wiped where it is used.
+        node = MockNode(DERIVED_PUBKEYS[path])
+        derived_nodes.append(node)
+        return node
 
 
 class MockSigningInput:
@@ -124,11 +139,21 @@ class MockInputPSBT:
         yield 0, MockTxIn()
 
 
+derived_nodes = []
+wiped_nodes = []
+
+
+def wiped(node):
+    return any(node is w for w in wiped_nodes)
+
+
 verified_amounts = []
 original_verify_amount = history.verify_amount
 original_sensitive_values = stash.SensitiveValues
+original_blank_object = stash.blank_object
 history.verify_amount = lambda _prevout, amount, idx: verified_amounts.append((amount, idx))
 stash.SensitiveValues = MockSensitiveValues
+stash.blank_object = wiped_nodes.append
 try:
     external_input_psbt = MockInputPSBT(make_input(CTxOut(2000, P2WPKH_SCRIPT)))
     psbtObject.consider_inputs(external_input_psbt)
@@ -141,25 +166,34 @@ try:
     assert owned_input_psbt.fee_is_verified
     assert owned_input.num_our_keys == 1
     assert owned_input.required_key == OWNED_PUBKEY
+    # The key derived to prove ownership is wiped as soon as the proof is done.
+    assert derived_nodes and all(wiped(n) for n in derived_nodes)
 
     forged_input = make_owned_input(FORGED_PUBKEY)
     forged_input.validate(0, MockTxIn(), MY_XFP)
     forged_input_psbt = MockInputPSBT(forged_input, MY_XFP)
     assert_raises(AssertionError, lambda: psbtObject.consider_inputs(forged_input_psbt))
+    # A key that turns out not to match is wiped before the error is raised.
+    assert all(wiped(n) for n in derived_nodes)
+
+    # A node handed back for signing is left for the signer to wipe after use.
+    derived_nodes.clear()
+    wiped_nodes.clear()
+    multisig_input = MockSigningInput()
+    multisig_input.is_multisig = True
+    multisig_input.required_key = {OWNED_PUBKEY}
+    multisig_input.subpaths = {OWNED_PUBKEY: [MY_XFP, 0]}
+    node, which_key = psbtInputProxy.get_signing_node(
+        multisig_input, MockSensitiveValues(), MY_XFP, 0)
+    assert node.public_key() == OWNED_PUBKEY
+    assert which_key == OWNED_PUBKEY
+    assert not wiped(node)
 finally:
     history.verify_amount = original_verify_amount
     stash.SensitiveValues = original_sensitive_values
+    stash.blank_object = original_blank_object
 
 assert verified_amounts == [(2000, 0), (2000, 0)]
-
-multisig_input = MockSigningInput()
-multisig_input.is_multisig = True
-multisig_input.required_key = {OWNED_PUBKEY}
-multisig_input.subpaths = {OWNED_PUBKEY: [MY_XFP, 0]}
-node, which_key = psbtInputProxy.get_signing_node(
-    multisig_input, MockSensitiveValues(), MY_XFP, 0)
-assert node.public_key() == OWNED_PUBKEY
-assert which_key == OWNED_PUBKEY
 
 taproot_input = MockSigningInput()
 taproot_input.is_multisig = False

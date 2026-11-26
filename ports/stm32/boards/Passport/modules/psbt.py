@@ -9,7 +9,7 @@
 #
 # psbt.py - understand PSBT file format: verify and generate them
 #
-from ustruct import unpack_from, unpack, pack
+from ustruct import unpack_from, unpack, pack, pack_into
 from utils import xfp2str, B2A, keypath_to_str, swab32
 import trezorcrypto
 import gc
@@ -158,6 +158,153 @@ def get_hash256(fd, poslen, hasher=None):
         return
 
     return trezorcrypto.sha256(rv.digest()).digest()
+
+
+def flash_digest(fd):
+    # SHA-256 of a whole stored PSBT, read in small pieces. Keeps the file position.
+    old_pos = fd.tell()
+    md = trezorcrypto.sha256()
+    fd.seek(0)
+    while True:
+        here = fd.readinto(mem.psbt_tmp256)
+        if not here:
+            break
+        md.update(memoryview(mem.psbt_tmp256)[0:here])
+    fd.seek(old_pos)
+    return md.digest()
+
+
+def _skip_map(fd):
+    # Move past one PSBT key-value map without keeping any of it.
+    while True:
+        ks = deser_compact_size(fd)
+        if not ks:
+            break
+        fd.seek(ks, 1)
+        vs = deser_compact_size(fd)
+        assert vs is not None, 'eof'
+        fd.seek(vs, 1)
+
+
+# Each input's 16-bit outpoint tag, in 256-byte pieces. Only inputs whose tags match
+# need the exact check from flash.
+_TAGS_PER_PIECE = const(128)
+
+
+def _prevout_tag(prevout):
+    # 16 bits of an outpoint, independent of the bit it marks in consider_inputs()'s
+    # table: the txid's middle bits, and the output index.
+    return ((prevout.hash >> 128) ^ prevout.n) & 0xffff
+
+
+def _tag_before(tags, idx, tag):
+    # True if an input before idx has this tag. Reads only the tags in memory.
+    lo, hi = tag & 0xff, tag >> 8
+    left = idx
+    for piece in tags:
+        if left <= 0:
+            break
+        end = min(left, _TAGS_PER_PIECE) * 2
+        left -= _TAGS_PER_PIECE
+        for off in range(0, end, 2):
+            if piece[off] == lo and piece[off + 1] == hi:
+                return True
+    return False
+
+
+def _spent_before(psbt, idx, prevout, tags):
+    # True if an input before idx spends the same outpoint. Only an input with the
+    # same tag can, so most of the time nothing is read from flash: re-reading every
+    # earlier input on each shared bit made the check grow with the cube of the inputs.
+    if not _tag_before(tags, idx, _prevout_tag(prevout)):
+        return False
+    for i, txi in psbt.input_iter():
+        if i >= idx:
+            break
+        if txi.prevout.hash == prevout.hash and txi.prevout.n == prevout.n:
+            return True
+    return False
+
+
+class _Sequences:
+    # The inputs' nSequence values, read from flash each time they're iterated.
+    def __init__(self, psbt):
+        self.psbt = psbt
+
+    def __iter__(self):
+        for _, txi in self.psbt.input_iter():
+            yield txi.nSequence
+
+
+# Most parent nodes derive_from_parent() keeps per session. An account's inputs need one
+# or two (receive and change). Past the limit an input derives its whole path instead,
+# so a PSBT spread over many accounts can't fill the heap or the session's wipe list.
+_MAX_PARENTS = const(8)
+
+
+def derive_from_parent(sv, path, parents):
+    # path is [xfp, *indices] as in a PSBT. Without a parents cache, derive the whole
+    # path from the master key. With one, derive each parent path once, keep the node
+    # in the SensitiveValues session (which wipes it when the session ends) and derive
+    # only the last level per input, so a run of inputs from one account costs one
+    # child derivation each. The caller wipes the returned node either way.
+    if parents is None or len(path) < 2:
+        return sv.derive_path(keypath_to_str(path), register=False)
+    key = tuple(path[1:-1])
+    parent = parents.get(key)
+    if parent is None:
+        if len(parents) >= _MAX_PARENTS:
+            return sv.derive_path(keypath_to_str(path), register=False)
+        parent = sv.derive_path(keypath_to_str(path[:-1]), register=True)
+        # Computed once here, the parent's public key is copied into every clone, so
+        # deriving a non-hardened child doesn't recompute it.
+        parent.public_key()
+        parents[key] = parent
+    node = parent.clone()
+    try:
+        node.derive(path[-1])
+    except BaseException:
+        # The caller never gets this node, so nothing else would wipe it.
+        import stash
+        stash.blank_object(node)
+        raise
+    return node
+
+
+class _NoEntries:
+    # Shared stand-in for an input's empty key-to-value maps. Most inputs carry no
+    # partial signatures, Taproot data or unknown fields, and a dict per map per input
+    # adds up when every input stays in memory. store() swaps in a real dict on the
+    # first entry, so nothing ever writes to this one.
+    def __len__(self):
+        return 0
+
+    def __iter__(self):
+        return iter(())
+
+    def __contains__(self, key):
+        return False
+
+    def __getitem__(self, key):
+        raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        raise TypeError('read-only empty map')
+
+    def get(self, key, default=None):
+        return default
+
+    def keys(self):
+        return ()
+
+    def values(self):
+        return ()
+
+    def items(self):
+        return ()
+
+
+_NO_ENTRIES = _NoEntries()
 
 
 class psbtProxy:
@@ -603,7 +750,298 @@ class psbtOutputProxy(psbtProxy):
 
 # Track details of each input of PSBT
 #
+# Per-input state that has to outlive one pass over the inputs lives in fixed-size
+# records instead of Python objects. Every pass parses the inputs it needs again from
+# flash, so each input only adds its record to the heap; on the device its signature
+# goes to flash.
+_REC_SIZE = const(16)
+
+# Inputs between explicit garbage collections in the per-input loops. Each one takes
+# about 18 ms on the device, and the loops no longer keep anything per input.
+_GC_EVERY = const(10)
+
+# Bits in consider_inputs()'s table of outpoints seen (2 KB, in 256-byte pieces). With
+# 500 inputs, about 8 of them share a bit with an earlier input and get the exact check.
+_PREVOUT_BITS = const(16384)
+_PREVOUT_PIECE_BITS = const(2048)
+
+# Input records per chunk of the table (256 bytes). After other work the heap can
+# have plenty free but no large block, so nothing here asks for one.
+_RECS_PER_CHUNK = const(16)
+
+# Record layout, little-endian: map offset (3 bytes), amount (7), flags (1), key bits
+# (2), signature reference (3). The PSBT area and the signature store are both under
+# 16 MB, and 7 bytes hold more than 30 times MAX_MONEY. A value that doesn't fit is an
+# error, never cut short.
+_REC_POS = const(0)
+_REC_AMOUNT = const(3)
+_REC_FLAGS = const(10)
+_REC_KEYS = const(11)
+_REC_SIG = const(13)
+_F_FULLY_SIGNED = const(0x01)
+_F_SEGWIT = const(0x02)
+_F_MULTISIG = const(0x04)
+_F_P2SH = const(0x08)
+_F_KEY = const(0x10)            # required_key is set
+_F_KEY_SET = const(0x20)        # ... and is a set of keys
+_F_KEY_OTHER = const(0x40)      # ... and is kept in _InputTable.other_keys
+
+# Key bits index the input's derivation keys in the order they appear in the PSBT.
+_MAX_KEY_BITS = const(16)
+
+_NO_AMOUNT = 0xffffffffffffff
+_NO_SIG = 0xffffff
+
+_SIG_ONE = const(1)             # added_sig: (pubkey, signature)
+_SIG_MANY = const(2)            # added_sigs: {pubkey: signature}
+_SIG_TAP = const(3)             # tap_key_sig
+
+
+def _get_uint(buf, off, size):
+    value = 0
+    for i in range(off + size - 1, off - 1, -1):
+        value = (value << 8) | buf[i]
+    return value
+
+
+def _set_uint(buf, off, size, value):
+    if not 0 <= value < (1 << (8 * size)):
+        raise ValueError('%d does not fit in %d bytes' % (value, size))
+    for i in range(off, off + size):
+        buf[i] = value & 0xff
+        value >>= 8
+
+
+def _flag(bit):
+    return property(lambda self: self._tbl.get_flag(self._idx, bit),
+                    lambda self, on: self._tbl.set_flag(self._idx, bit, on))
+
+
+class _SigStore:
+    # Signatures added while signing, appended to 1 KB chunks. A reference is the
+    # chunk index in the top 16 bits and the offset in the bottom 16.
+    CHUNK = 1024
+
+    def __init__(self):
+        self.chunks = []
+        self.used = 0
+
+    def add(self, kind, items):
+        size = 2 + sum(2 + len(pk) + len(sig) for pk, sig in items)
+        if not self.chunks or self.used + size > len(self.chunks[-1]):
+            self.chunks.append(bytearray(max(self.CHUNK, size)))
+            self.used = 0
+        buf = self.chunks[-1]
+        start = self.used
+        buf[start] = kind
+        buf[start + 1] = len(items)
+        pos = start + 2
+        for pk, sig in items:
+            for part in (pk, sig):
+                buf[pos] = len(part)
+                buf[pos + 1:pos + 1 + len(part)] = part
+                pos += 1 + len(part)
+        self.used = pos
+        return ((len(self.chunks) - 1) << 16) | start
+
+    def get(self, ref):
+        buf = self.chunks[ref >> 16]
+        pos = ref & 0xffff
+        kind, count = buf[pos], buf[pos + 1]
+        pos += 2
+        items = []
+        for _ in range(count):
+            parts = []
+            for _ in range(2):
+                ll = buf[pos]
+                parts.append(bytes(buf[pos + 1:pos + 1 + ll]))
+                pos += 1 + ll
+            items.append(tuple(parts))
+        return kind, items
+
+
+class _FlashSigStore:
+    # The same store in the outgoing half of the PSBT area in SPI flash, which
+    # nothing else uses while signing, so signatures take no heap at all. A reference
+    # is the entry's offset. Signatures aren't secret, and one changed in flash only
+    # makes the transaction invalid.
+    def __init__(self, count):
+        from sffile import SFFile
+        from public_constants import TXN_OUTPUT_OFFSET
+        # Room for one entry per input: two keys and two signatures at most each
+        # for the common cases; add() fails cleanly if it runs out.
+        self.fd = SFFile(TXN_OUTPUT_OFFSET, max_size=count * 220 + 256)
+
+    async def erase(self):
+        await self.fd.erase()
+
+    def add(self, kind, items):
+        entry = bytearray([kind, len(items)])
+        for pk, sig in items:
+            for part in (pk, sig):
+                entry.append(len(part))
+                entry.extend(part)
+        ref = self.fd.tell()
+        self.fd.write(entry)
+        # write() returns once the last page program has started. The next input is
+        # read from the same chip, and a read while it is still programming fails.
+        self.fd.sf.wait_done()
+        return ref
+
+    def get(self, ref):
+        fd = self.fd
+        end = fd.tell()
+        try:
+            fd.seek(ref)
+            kind, count = fd.read(2)
+            items = []
+            for _ in range(count):
+                pk = fd.read(fd.read(1)[0])
+                sig = fd.read(fd.read(1)[0])
+                items.append((pk, sig))
+        finally:
+            # Writes only append, at the end.
+            fd.seek(end)
+        return kind, items
+
+
+class _InputTable:
+    # Sequence of the PSBT's inputs. Indexing parses that input from flash and returns
+    # a new psbtInputProxy whose learned state (flags, amount, chosen key, signatures)
+    # reads and writes this table, so it survives the proxy.
+    def __init__(self, fd, count, my_xfp):
+        self.fd = fd
+        self.count = count
+        self.my_xfp = my_xfp
+        self.chunks = [None] * ((count + _RECS_PER_CHUNK - 1) // _RECS_PER_CHUNK)
+        left = count
+        for i in range(len(self.chunks)):
+            n = min(left, _RECS_PER_CHUNK)
+            chunk = bytearray(n * _REC_SIZE)
+            for off in range(0, n * _REC_SIZE, _REC_SIZE):
+                _set_uint(chunk, off + _REC_AMOUNT, 7, _NO_AMOUNT)
+                _set_uint(chunk, off + _REC_SIG, 3, _NO_SIG)
+            self.chunks[i] = chunk
+            left -= n
+        self.other_keys = {}
+        self.plans = {}
+        self.sigs = _SigStore()
+        # Set once psbtObject.validate() has seen every input.
+        self.validated = False
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, idx):
+        if not 0 <= idx < self.count:
+            raise IndexError(idx)
+        self.fd.seek(self.get_pos(idx))
+        return psbtInputProxy(self.fd, idx, self)
+
+    def __iter__(self):
+        for idx in range(self.count):
+            yield self[idx]
+
+    def _rec(self, idx):
+        return self.chunks[idx // _RECS_PER_CHUNK], (idx % _RECS_PER_CHUNK) * _REC_SIZE
+
+    def get_pos(self, idx):
+        chunk, off = self._rec(idx)
+        return _get_uint(chunk, off + _REC_POS, 3)
+
+    def set_pos(self, idx, pos):
+        chunk, off = self._rec(idx)
+        _set_uint(chunk, off + _REC_POS, 3, pos)
+
+    def get_amount(self, idx):
+        chunk, off = self._rec(idx)
+        value = _get_uint(chunk, off + _REC_AMOUNT, 7)
+        return None if value == _NO_AMOUNT else value
+
+    def set_amount(self, idx, value):
+        if value is None:
+            value = _NO_AMOUNT
+        elif not 0 <= value < _NO_AMOUNT:
+            raise ValueError('Input #%d: amount out of range' % idx)
+        chunk, off = self._rec(idx)
+        _set_uint(chunk, off + _REC_AMOUNT, 7, value)
+
+    def get_flag(self, idx, bit):
+        chunk, off = self._rec(idx)
+        return bool(chunk[off + _REC_FLAGS] & bit)
+
+    def segwit_amount(self, idx):
+        # The checked amount of a segwit input, or None, without parsing it again.
+        if self.get_flag(idx, _F_SEGWIT):
+            return self.get_amount(idx)
+        return None
+
+    def set_flag(self, idx, bit, on):
+        chunk, off = self._rec(idx)
+        if on:
+            chunk[off + _REC_FLAGS] |= bit
+        else:
+            chunk[off + _REC_FLAGS] &= ~bit
+
+    def get_key(self, idx, inp):
+        chunk, off = self._rec(idx)
+        flags = chunk[off + _REC_FLAGS]
+        if not flags & _F_KEY:
+            return None
+        if flags & _F_KEY_OTHER:
+            return self.other_keys[idx]
+        bits = unpack_from('<H', chunk, off + _REC_KEYS)[0]
+        keys = [inp._key_order[i] for i in range(_MAX_KEY_BITS) if bits & (1 << i)]
+        if flags & _F_KEY_SET:
+            return set(keys)
+        return keys[0]
+
+    def set_key(self, idx, value, inp):
+        chunk, off = self._rec(idx)
+        flags = chunk[off + _REC_FLAGS] & ~(_F_KEY | _F_KEY_SET | _F_KEY_OTHER)
+        self.other_keys.pop(idx, None)
+        bits = 0
+        if value is not None:
+            flags |= _F_KEY
+            is_set = isinstance(value, set)
+            if is_set:
+                flags |= _F_KEY_SET
+            for key in (value if is_set else (value,)):
+                try:
+                    i = inp._key_order.index(key)
+                except ValueError:
+                    i = _MAX_KEY_BITS
+                if i >= _MAX_KEY_BITS:
+                    # Not one of the input's first 16 derivation keys: keep it as is.
+                    flags |= _F_KEY_OTHER
+                    self.other_keys[idx] = value
+                    bits = 0
+                    break
+                bits |= 1 << i
+        chunk[off + _REC_FLAGS] = flags
+        pack_into('<H', chunk, off + _REC_KEYS, bits)
+
+    def get_sig(self, idx):
+        chunk, off = self._rec(idx)
+        ref = _get_uint(chunk, off + _REC_SIG, 3)
+        if ref == _NO_SIG:
+            return 0, None
+        return self.sigs.get(ref)
+
+    def set_sig(self, idx, kind, items):
+        ref = self.sigs.add(kind, items)
+        if not 0 <= ref < _NO_SIG:
+            raise ValueError('Input #%d: signature store full' % idx)
+        chunk, off = self._rec(idx)
+        _set_uint(chunk, off + _REC_SIG, 3, ref)
+
+
 class psbtInputProxy(psbtProxy):
+    part_sig = _NO_ENTRIES
+    tap_subpaths = _NO_ENTRIES
+    tap_script_sigs = _NO_ENTRIES
+    tap_leaf_scripts = _NO_ENTRIES
+    unknowns = _NO_ENTRIES
 
     # just need to store a simple number for these
     short_values = {PSBT_IN_SIGHASH_TYPE}
@@ -616,49 +1054,90 @@ class psbtInputProxy(psbtProxy):
 
     blank_flds = ('unknowns',
                   'utxo', 'witness_utxo', 'sighash',
-                  'redeem_script', 'witness_script', 'fully_signed',
-                  'is_segwit', 'is_multisig', 'is_p2sh', 'num_our_keys',
-                  'required_key', 'scriptSig', 'amount', 'scriptCode', 'added_sig',
-                  'added_sigs',
-                  'tap_internal_key', 'tap_key_sig', 'tap_merkle_root',
-                  'policy_spend_plan')
+                  'redeem_script', 'witness_script', 'num_our_keys',
+                  'scriptSig', 'scriptCode',
+                  'tap_internal_key', '_tap_key_sig_raw', 'tap_merkle_root')
 
-    def __init__(self, fd, idx):
-        super().__init__()
+    # What validation and signing learn about the input is kept in the input table
+    # (see _InputTable), not on this object, which only lives for one pass.
+    fully_signed = _flag(_F_FULLY_SIGNED)
+    is_segwit = _flag(_F_SEGWIT)
+    is_multisig = _flag(_F_MULTISIG)
+    is_p2sh = _flag(_F_P2SH)
 
-        # self.utxo = None
-        # self.witness_utxo = None
-        self.part_sig = {}
-        # self.sighash = None
+    def __init__(self, fd, idx, table=None):
+        # Not super().__init__(): unknowns stays the shared empty map until used.
+        self.fd = None
         self.subpaths = {}          # will typically be non-empty for all inputs
-        self.tap_subpaths = {}
-        self.tap_script_sigs = {}
-        self.tap_leaf_scripts = {}
-        # self.redeem_script = None
-        # self.witness_script = None
+        self._key_order = []        # derivation keys in PSBT order, for the input table
 
-        # Non-zero if one or more of our signing keys involved in input
-        # self.num_our_keys = None
-
-        # things we've learned
-        # self.fully_signed = False
-
-        # we can't really learn this until we take apart the UTXO's scriptPubKey
-        # self.is_segwit = None
-        # self.is_multisig = None
-        # self.is_p2sh = False
-
-        # self.required_key = None    # which of our keys will be used to sign input
-        # self.scriptSig = None
-        # self.amount = None
-        # self.scriptCode = None      # only expected for segwit inputs
-
-        # after signing, we'll have a signature to add to output PSBT
-        # self.added_sig = None
-        # self.tap_key_sig = None
+        if table is None:
+            # A stand-alone input (tests) keeps its state in a table of its own.
+            table = _InputTable(None, 1, None)
+            idx = 0
+        self._tbl = table
+        self._idx = idx
 
         self.parse(fd)
-        gc.collect()
+
+        if table.validated:
+            # Parsed again for a later pass: redo what validate() derives from the
+            # PSBT itself, which isn't stored.
+            self.parse_subpaths(table.my_xfp)
+            if self.sighash is None:
+                self.sighash = SIGHASH_DEFAULT if len(self.tap_subpaths) > 0 else SIGHASH_ALL
+
+    @property
+    def amount(self):
+        return self._tbl.get_amount(self._idx)
+
+    @amount.setter
+    def amount(self, value):
+        self._tbl.set_amount(self._idx, value)
+
+    @property
+    def required_key(self):
+        return self._tbl.get_key(self._idx, self)
+
+    @required_key.setter
+    def required_key(self, value):
+        self._tbl.set_key(self._idx, value, self)
+
+    @property
+    def policy_spend_plan(self):
+        return self._tbl.plans.get(self._idx)
+
+    @policy_spend_plan.setter
+    def policy_spend_plan(self, plan):
+        self._tbl.plans[self._idx] = plan
+
+    @property
+    def added_sig(self):
+        kind, items = self._tbl.get_sig(self._idx)
+        return items[0] if kind == _SIG_ONE else None
+
+    @added_sig.setter
+    def added_sig(self, value):
+        self._tbl.set_sig(self._idx, _SIG_ONE, [value])
+
+    @property
+    def added_sigs(self):
+        kind, items = self._tbl.get_sig(self._idx)
+        return dict(items) if kind == _SIG_MANY else None
+
+    @added_sigs.setter
+    def added_sigs(self, value):
+        self._tbl.set_sig(self._idx, _SIG_MANY, list(value.items()))
+
+    @property
+    def tap_key_sig(self):
+        # The signature we added, or else the one the PSBT came with.
+        kind, items = self._tbl.get_sig(self._idx)
+        return items[0][1] if kind == _SIG_TAP else self._tap_key_sig_raw
+
+    @tap_key_sig.setter
+    def tap_key_sig(self, value):
+        self._tbl.set_sig(self._idx, _SIG_TAP, [(b'', value)])
 
     def validate(self, idx, txin, my_xfp):
         # Validate this txn input: given deserialized CTxIn and maybe witness
@@ -781,6 +1260,81 @@ class psbtInputProxy(psbtProxy):
 
         return utxo
 
+    def _script_info(self, utxo, my_idx):
+        # The input's script type and the scripts its signature commits to, worked out
+        # from its UTXO and the scripts in the PSBT. Validation uses this to choose the
+        # key, and the signer calls it again on the same bytes (after checking the
+        # PSBT's hash), so what gets signed is what was validated.
+        # Returns (addr_type, addr, addr_is_segwit, redeem_script, scriptSig,
+        # scriptCode, flags), where flags holds _F_SEGWIT, _F_MULTISIG and _F_P2SH.
+        addr_type, addr, addr_is_segwit = utxo.get_address()
+        flags = _F_SEGWIT if addr_is_segwit or self.witness_utxo else 0
+        redeem_script = None
+
+        if addr_type == 'p2sh':
+            flags |= _F_P2SH
+
+            # we must have the redeem script already (else fail)
+            ks = self.witness_script or self.redeem_script
+            if not ks:
+                raise FatalPSBTIssue("Missing redeem/witness script for input #%d" % my_idx)
+
+            redeem_script = self.get(ks)
+            script_sig = redeem_script
+
+            if not addr_is_segwit and \
+                    len(redeem_script) == 22 and \
+                    redeem_script[0] == 0 and redeem_script[1] == 20:
+                # it's actually segwit p2pkh inside p2sh
+                addr_type = 'p2sh-p2wpkh'
+                addr = redeem_script[2:22]
+                flags |= _F_SEGWIT
+            else:
+                # multiple keys involved, we probably can't do the finalize step
+                flags |= _F_MULTISIG
+
+            if self.witness_script and not flags & _F_SEGWIT and flags & _F_MULTISIG:
+                # bugfix
+                addr_type = 'p2sh-p2wsh'
+                flags |= _F_SEGWIT
+        else:
+            # p2pkh, p2pk and p2tr: get_address() rejects every other script
+            script_sig = utxo.scriptPubKey
+
+        script_code = None
+        if flags & _F_SEGWIT:
+            if 'pkh' in addr_type:
+                # This comment from <https://bitcoincore.org/en/segwit_wallet_dev/>:
+                #
+                #   Please note that for a P2SH-P2WPKH, the scriptCode is always 26
+                #   bytes including the leading size byte, as 0x1976a914{20-byte keyhash}88ac,
+                #   NOT the redeemScript nor scriptPubKey
+                #
+                # Also need this scriptCode for native segwit p2pkh
+                #
+                assert not flags & _F_MULTISIG
+                script_code = b'\x19\x76\xa9\x14' + addr + b'\x88\xac'
+            elif addr_type != 'p2tr':
+                # Segwit P2SH. We need the witness script to be provided.
+                if not self.witness_script:
+                    raise FatalPSBTIssue('Need witness script for input #%d' % my_idx)
+
+                # "scriptCode is witnessScript preceeded by a
+                #  compactSize integer for the size of witnessScript"
+                script_code = ser_string(self.get(self.witness_script))
+
+        return addr_type, addr, addr_is_segwit, redeem_script, script_sig, script_code, flags
+
+    def signing_scripts(self, utxo, my_idx):
+        # scriptSig and scriptCode for signing, rebuilt from the bytes that were
+        # validated. The script type has to come out as validation stored it.
+        _, _, _, _, script_sig, script_code, flags = self._script_info(utxo, my_idx)
+        stored = (_F_SEGWIT if self.is_segwit else 0) | \
+            (_F_MULTISIG if self.is_multisig else 0) | (_F_P2SH if self.is_p2sh else 0)
+        if flags != stored:
+            raise AssertionError('Input #%d changed after it was checked' % my_idx)
+        return script_sig, script_code
+
     def determine_my_signing_key(self, my_idx, utxo, my_xfp, psbt):
         # See what it takes to sign this particular input
         # - type of script
@@ -797,27 +1351,18 @@ class psbtInputProxy(psbtProxy):
             self.required_key = None
             return
 
-        self.is_multisig = False
-        self.is_p2sh = False
+        addr_type, addr_or_pubkey, addr_is_segwit, redeem_script, script_sig, script_code, flags = \
+            self._script_info(utxo, my_idx)
+        self.is_segwit = flags & _F_SEGWIT
+        self.is_multisig = flags & _F_MULTISIG
+        self.is_p2sh = flags & _F_P2SH
+        self.scriptSig = script_sig
+        self.scriptCode = script_code
+
         which_key = None
         matched_policy = False
 
-        addr_type, addr_or_pubkey, addr_is_segwit = utxo.get_address()
-        if addr_is_segwit and not self.is_segwit:
-            self.is_segwit = True
-
-        if addr_type == 'p2sh':
-            # multisig input
-            self.is_p2sh = True
-
-            # we must have the redeem script already (else fail)
-            ks = self.witness_script or self.redeem_script
-            if not ks:
-                raise FatalPSBTIssue("Missing redeem/witness script for input #%d" % my_idx)
-
-            redeem_script = self.get(ks)
-            self.scriptSig = redeem_script
-
+        if flags & _F_P2SH:
             # new cheat: psbt creator probably telling us exactly what key
             # to use, by providing exactly one. This is ideal for p2sh wrapped p2pkh
             if len(self.subpaths) == 1:
@@ -838,35 +1383,15 @@ class psbtInputProxy(psbtProxy):
 
                         which_key.add(pubkey)
 
-            if not addr_is_segwit and \
-                    len(redeem_script) == 22 and \
-                    redeem_script[0] == 0 and redeem_script[1] == 20:
-                # it's actually segwit p2pkh inside p2sh
-                addr_type = 'p2sh-p2wpkh'
-                addr = redeem_script[2:22]
-                self.is_segwit = True
-            else:
-                # multiple keys involved, we probably can't do the finalize step
-                self.is_multisig = True
-
-            if self.witness_script and not self.is_segwit and self.is_multisig:
-                # bugfix
-                addr_type = 'p2sh-p2wsh'
-                self.is_segwit = True
-
         elif addr_type == 'p2pkh':
             # input is hash160 of a single public key
-            self.scriptSig = utxo.scriptPubKey
-            addr = addr_or_pubkey
-
             for pubkey in self.subpaths:
-                if hash160(pubkey) == addr:
+                if hash160(pubkey) == addr_or_pubkey:
                     which_key = pubkey
                     break
 
         elif addr_type == 'p2pk':
             # input is single public key (less common)
-            self.scriptSig = utxo.scriptPubKey
             assert len(addr_or_pubkey) == 33
 
             if addr_or_pubkey in self.subpaths:
@@ -874,8 +1399,6 @@ class psbtInputProxy(psbtProxy):
 
         elif addr_type == 'p2tr':
             # input is an x-only public key or merkle tree root
-            self.scriptSig = utxo.scriptPubKey
-
             if len(self.tap_subpaths) == 1:  # No script path
                 subpath = list(self.tap_subpaths.items())[0]
                 pubkey, (path, tap_hashes) = subpath
@@ -886,9 +1409,6 @@ class psbtInputProxy(psbtProxy):
 
             if self.tap_leaf_scripts or any(hashes for _, hashes in self.tap_subpaths.values()):
                 raise FatalPSBTIssue('Taproot script-path signing is not supported')
-        else:
-            # we don't know how to "solve" this type of input
-            pass
 
         if addr_is_segwit and self.witness_script and self.is_multisig and which_key:
             # Native P2WSH registered policies are matched before the legacy
@@ -958,6 +1478,8 @@ class psbtInputProxy(psbtProxy):
             # validate redeem script, by disassembling it and checking all pubkeys
             try:
                 psbt.active_multisig.validate_script(redeem_script, subpaths=self.subpaths)
+            except MemoryError:
+                raise
             except BaseException as exc:
                 sys.print_exception(exc)
                 raise FatalPSBTIssue('Input #%d: %s' % (my_idx, exc))
@@ -969,65 +1491,61 @@ class psbtInputProxy(psbtProxy):
 
         self.required_key = which_key
 
-        if self.is_segwit:
-            if ('pkh' in addr_type):
-                # This comment from <https://bitcoincore.org/en/segwit_wallet_dev/>:
-                #
-                #   Please note that for a P2SH-P2WPKH, the scriptCode is always 26
-                #   bytes including the leading size byte, as 0x1976a914{20-byte keyhash}88ac,
-                #   NOT the redeemScript nor scriptPubKey
-                #
-                # Also need this scriptCode for native segwit p2pkh
-                #
-                assert not self.is_multisig
-                self.scriptCode = b'\x19\x76\xa9\x14' + addr + b'\x88\xac'
-            elif addr_type == 'p2tr':
-                pass
-            elif not self.scriptCode:
-                # Segwit P2SH. We need the witness script to be provided.
-                if not self.witness_script:
-                    raise FatalPSBTIssue('Need witness script for input #%d' % my_idx)
+    def get_signing_node(self, sv, my_xfp, my_idx, parents=None):
+        # The caller wipes the returned node. Until then a node derived here is ours to
+        # wipe, on every way out, since SensitiveValues doesn't keep it: a mismatch, or
+        # an exception such as running out of memory computing its public key.
+        # parents: see derive_from_parent.
+        import stash
 
-                # "scriptCode is witnessScript preceeded by a
-                #  compactSize integer for the size of witnessScript"
-                self.scriptCode = ser_string(self.get(self.witness_script))
+        node = None
+        try:
+            if self.is_multisig:
+                # The fingerprint is only a hint. Derive each candidate to prove
+                # that Passport owns one of the public keys required by the script.
+                for which_key in self.required_key:
+                    node = derive_from_parent(sv, self.subpaths[which_key], parents)
+                    if node.public_key() == which_key:
+                        return node, which_key
+                    # Not the key this input needs.
+                    stash.blank_object(node)
+                    node = None
 
-        # Could probably free self.subpaths and self.redeem_script now, but only if we didn't
-        # need to re-serialize as a PSBT.
+                raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
 
-    def get_signing_node(self, sv, my_xfp, my_idx):
-        if self.is_multisig:
-            # The fingerprint is only a hint. Derive each candidate to prove
-            # that Passport owns one of the public keys required by the script.
-            for which_key in self.required_key:
-                skp = keypath_to_str(self.subpaths[which_key])
-                node = sv.derive_path(skp, register=True)
-                if node.public_key() == which_key:
-                    return node, which_key
+            which_key = self.required_key
 
-            raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % my_idx)
+            if self.subpaths and \
+                    (self.subpaths[which_key][0] == my_xfp or
+                     self.subpaths[which_key][0] == swab32(my_xfp)):
+                path = self.subpaths[which_key]
+                node = derive_from_parent(sv, path, parents)
+                pubkey = node.public_key()
+            elif self.tap_subpaths and \
+                    (self.tap_subpaths[which_key][0][0] == my_xfp or
+                     self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
+                path = self.tap_subpaths[which_key][0]
+                node = derive_from_parent(sv, path, parents)
+                pubkey = node.public_key()[1:]
+            else:
+                raise AssertionError("Input #%d has no Passport signing path." % my_idx)
 
-        which_key = self.required_key
+            if pubkey != which_key:
+                raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (keypath_to_str(path), my_idx))
 
-        if self.subpaths and \
-                (self.subpaths[which_key][0] == my_xfp or
-                 self.subpaths[which_key][0] == swab32(my_xfp)):
-            skp = keypath_to_str(self.subpaths[which_key])
-            node = sv.derive_path(skp, register=True)
-            pubkey = node.public_key()
-        elif self.tap_subpaths and \
-                (self.tap_subpaths[which_key][0][0] == my_xfp or
-                 self.tap_subpaths[which_key][0][0] == swab32(my_xfp)):
-            skp = keypath_to_str(self.tap_subpaths[which_key][0])
-            node = sv.derive_path(skp, register=True)
-            pubkey = node.public_key()[1:]
-        else:
-            raise AssertionError("Input #%d has no Passport signing path." % my_idx)
+            return node, which_key
+        except BaseException:
+            if node is not None:
+                stash.blank_object(node)
+            raise
 
-        if pubkey != which_key:
-            raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, my_idx))
-
-        return node, which_key
+    def _map(self, name):
+        # The real dict for one of the maps above, created on its first entry.
+        m = getattr(self, name)
+        if m is _NO_ENTRIES:
+            m = {}
+            setattr(self, name, m)
+        return m
 
     def store(self, kt, key, val):
         # Capture what we are interested in.
@@ -1037,9 +1555,10 @@ class psbtInputProxy(psbtProxy):
         elif kt == PSBT_IN_WITNESS_UTXO:
             self.witness_utxo = val
         elif kt == PSBT_IN_PARTIAL_SIG:
-            self.part_sig[key[1:]] = val
+            self._map('part_sig')[key[1:]] = val
         elif kt == PSBT_IN_BIP32_DERIVATION:
             self.subpaths[key[1:]] = val
+            self._key_order.append(key[1:])
         elif kt == PSBT_IN_REDEEM_SCRIPT:
             self.redeem_script = val
         elif kt == PSBT_IN_WITNESS_SCRIPT:
@@ -1047,26 +1566,32 @@ class psbtInputProxy(psbtProxy):
         elif kt == PSBT_IN_SIGHASH_TYPE:
             self.sighash = unpack('<I', val)[0]
         elif kt == PSBT_IN_TAP_KEY_SIG:
-            self.tap_key_sig = val
+            self._tap_key_sig_raw = val
         elif kt == PSBT_IN_TAP_SCRIPT_SIG:
-            self.tap_script_sigs[key[1:]] = val
+            self._map('tap_script_sigs')[key[1:]] = val
         elif kt == PSBT_IN_TAP_LEAF_SCRIPT:
-            self.tap_leaf_scripts[key[1:]] = val
+            self._map('tap_leaf_scripts')[key[1:]] = val
         elif kt == PSBT_IN_TAP_BIP32_DERIVATION:
-            self.tap_subpaths[key[1:]] = val
+            self._map('tap_subpaths')[key[1:]] = val
+            self._key_order.append(key[1:])
         elif kt == PSBT_IN_TAP_INTERNAL_KEY:
             self.tap_internal_key = val
         elif kt == PSBT_IN_TAP_MERKLE_ROOT:
             self.tap_merkle_root = val
         else:
             # including: PSBT_IN_FINAL_SCRIPTSIG, PSBT_IN_FINAL_SCRIPTWITNESS
-            self.unknowns[key] = val
+            self._map('unknowns')[key] = val
 
     def serialize(self, out_fd, my_idx):
         # Output this input's values; might include signatures that weren't there before
 
         def wr(*a):
             self.write(out_fd, *a)
+
+        if self.num_our_keys is None:
+            # write() takes Taproot derivations in parsed form. validate() parses
+            # them; without it (tests), parse them here.
+            self.parse_subpaths(self._tbl.my_xfp or 0)
 
         if self.utxo:
             wr(PSBT_IN_NON_WITNESS_UTXO, self.utxo)
@@ -1077,11 +1602,13 @@ class psbtInputProxy(psbtProxy):
             for pk in self.part_sig:
                 wr(PSBT_IN_PARTIAL_SIG, self.part_sig[pk], pk)
 
-        if self.added_sig:
-            pubkey, sig = self.added_sig
+        added_sig = self.added_sig
+        if added_sig:
+            pubkey, sig = added_sig
             wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
-        if self.added_sigs:
-            for pubkey, sig in self.added_sigs.items():
+        added_sigs = self.added_sigs
+        if added_sigs:
+            for pubkey, sig in added_sigs.items():
                 wr(PSBT_IN_PARTIAL_SIG, sig, pubkey)
 
         if self.sighash is not None:
@@ -1096,8 +1623,9 @@ class psbtInputProxy(psbtProxy):
         if self.witness_script:
             wr(PSBT_IN_WITNESS_SCRIPT, self.witness_script)
 
-        if self.tap_key_sig:
-            wr(PSBT_IN_TAP_KEY_SIG, self.tap_key_sig)
+        tap_key_sig = self.tap_key_sig
+        if tap_key_sig:
+            wr(PSBT_IN_TAP_KEY_SIG, tap_key_sig)
 
         for k in self.tap_script_sigs:
             wr(PSBT_IN_TAP_SCRIPT_SIG, self.tap_script_sigs[k], k)
@@ -1169,6 +1697,9 @@ class psbtObject(psbtProxy):
         self.active_policy = None
 
         self.warnings = []
+
+        # SHA-256 of the PSBT as read_psbt() found it (see check_unchanged)
+        self.validated_digest = None
 
     def store(self, kt, key, val):
         # capture the values we care about
@@ -1310,6 +1841,22 @@ class psbtObject(psbtProxy):
         for in_idx in range(self.num_inputs):
             yield in_idx, CTxInWitness()
 
+    async def reserve_signatures(self):
+        # Keep this session's signatures in SPI flash, not the heap. Only for a PSBT
+        # read from SPI flash itself: tests read theirs from memory.
+        from sffile import SFFile
+        if isinstance(self.inputs, _InputTable) and isinstance(self.fd, SFFile):
+            sigs = _FlashSigStore(self.num_inputs)
+            await sigs.erase()
+            self.inputs.sigs = sigs
+
+    def check_unchanged(self):
+        # Signing parses the inputs from flash again. Before signing, and again before
+        # the signatures are used, confirm flash still holds exactly the PSBT that
+        # was validated and reviewed.
+        if self.validated_digest is None or flash_digest(self.fd) != self.validated_digest:
+            raise FatalPSBTIssue('Transaction data changed after it was checked, so it was not signed.')
+
     def handle_xpubs(self, M, N):
         # Discover a legacy wallet for an input that did not match a registered
         # policy. Global metadata alone must never activate a legacy wallet.
@@ -1385,14 +1932,17 @@ class psbtObject(psbtProxy):
 
         # this parses the input TXN in-place
         for idx, txin in self.input_iter():
-            gc.collect()
+            if idx % _GC_EVERY == 0:
+                gc.collect()
             self.inputs[idx].validate(idx, txin, self.my_xfp)
+
+        if isinstance(self.inputs, _InputTable):
+            # Inputs parsed from here on get what validate() worked out for them.
+            self.inputs.validated = True
 
         gc.collect()
 
         assert len(self.inputs) == self.num_inputs, 'ni mismatch'
-
-        gc.collect()
 
         assert self.num_outputs >= 1, 'need outs'
 
@@ -1487,7 +2037,10 @@ class psbtObject(psbtProxy):
         # - same pattern of hard/not hardened components
         # - MAX_PATH_DEPTH already enforced before this point
         #
-        in_paths = []
+        # Only the first path, the range of path lengths and the largest last index
+        # are used below, so track those instead of keeping every input's path.
+        first_path = None
+        shortest = longest = last_max = 0
         for inp in self.inputs:
             if inp.fully_signed:
                 continue
@@ -1502,15 +2055,20 @@ class psbtObject(psbtProxy):
                 paths.extend([path for (path, tap_hash) in inp.tap_subpaths.values()])
             for path in paths:
                 if path[0] == my_xfp:
-                    in_paths.append(path[1:])
+                    path = path[1:]
+                    if first_path is None:
+                        first_path = path
+                        shortest = longest = len(path)
+                    shortest = min(shortest, len(path))
+                    longest = max(longest, len(path))
+                    if path:
+                        last_max = max(last_max, path[-1] & 0x7fffffff)
 
-        if not in_paths:
+        if first_path is None:
             # We aren't adding any signatures? Can happen but we're going to be
             # showing a warning about that elsewhere.
             return
 
-        shortest = min(len(i) for i in in_paths)
-        longest = max(len(i) for i in in_paths)
         if shortest != longest or shortest <= 2:
             # We aren't seeing shared input path lengths.
             # They are probbably doing weird stuff, so leave them alone.
@@ -1527,10 +2085,10 @@ class psbtObject(psbtProxy):
         # accounts of the same account index, the purpose (index 0)
         # can mismatch and still be part of the same super-account.
         path_len = shortest
-        full_path_prefix = in_paths[0][0:-2]
-        partial_path_prefix = in_paths[0][1:-2]
-        idx_max = max(i[-1] & 0x7fffffff for i in in_paths) + 200
-        hard_pattern = hard_bits(in_paths[0])
+        full_path_prefix = first_path[0:-2]
+        partial_path_prefix = first_path[1:-2]
+        idx_max = last_max + 200
+        hard_pattern = hard_bits(first_path)
 
         probs = []
         for nout, out in enumerate(self.outputs):
@@ -1593,18 +2151,33 @@ class psbtObject(psbtProxy):
         # Important: parse incoming UTXO to build total input value
         missing = 0
         total_in = 0
-        witness_inputs_to_verify = []
-        prevouts = set()
+        # One bit per input whose ownership is proven below.
+        witness_inputs_to_verify = bytearray((self.num_inputs + 7) // 8)
+        # One bit per digest of each outpoint seen so far, in a table of fixed size: a
+        # set grows by reallocating, and the heap may have no free block big enough
+        # for it. A digest already marked is checked exactly against earlier inputs.
+        prevouts = [bytearray(_PREVOUT_PIECE_BITS // 8)
+                    for _ in range(_PREVOUT_BITS // _PREVOUT_PIECE_BITS)]
+        tags = [bytearray(_TAGS_PER_PIECE * 2)
+                for _ in range((self.num_inputs + _TAGS_PER_PIECE - 1) // _TAGS_PER_PIECE)]
 
         for i, txi in self.input_iter():
-            gc.collect()
+            if i % _GC_EVERY == 0:
+                gc.collect()
             # Reject repeated spends before review/signing, regardless of
             # ownership or amount. Otherwise post-sign recording can persist
             # the first claimed amount before a conflicting duplicate fails.
-            prevout = (txi.prevout.hash, txi.prevout.n)
-            if prevout in prevouts:
+            bit = ((txi.prevout.hash & 0x3fffffff) ^ (txi.prevout.n * 40503)) % _PREVOUT_BITS
+            piece = prevouts[bit // _PREVOUT_PIECE_BITS]
+            byte, mask = (bit % _PREVOUT_PIECE_BITS) >> 3, 1 << (bit & 7)
+            if piece[byte] & mask and _spent_before(self, i, txi.prevout, tags):
                 raise FatalPSBTIssue('Duplicate input #%d' % i)
-            prevouts.add(prevout)
+            piece[byte] |= mask
+            tag = _prevout_tag(txi.prevout)
+            tag_piece = tags[i // _TAGS_PER_PIECE]
+            tag_off = (i % _TAGS_PER_PIECE) * 2
+            tag_piece[tag_off] = tag & 0xff
+            tag_piece[tag_off + 1] = tag >> 8
             inp = self.inputs[i]
             if inp.fully_signed:
                 self.presigned_inputs.add(i)
@@ -1636,27 +2209,31 @@ class psbtObject(psbtProxy):
                 # amounts across attempts. Derivation proves the PSBT's
                 # ownership metadata before that argument is applied.
                 if inp.num_our_keys and inp.required_key:
-                    witness_inputs_to_verify.append(i)
+                    witness_inputs_to_verify[i >> 3] |= 1 << (i & 7)
                 else:
                     self.fee_is_verified = False
 
-            gc.collect()
-
-            del utxo
+            del utxo, inp
 
         del prevouts
-        if witness_inputs_to_verify:
+        if any(witness_inputs_to_verify):
             import stash
             with stash.SensitiveValues() as sv:
-                for i in witness_inputs_to_verify:
-                    self.inputs[i].get_signing_node(sv, self.my_xfp, i)
+                # Parent nodes are derived once and wiped when this session ends.
+                parents = {}
+                for i in range(self.num_inputs):
+                    if not witness_inputs_to_verify[i >> 3] & (1 << (i & 7)):
+                        continue
+                    # Deriving the key is the proof; wipe it straight away.
+                    node, _ = self.inputs[i].get_signing_node(sv, self.my_xfp, i, parents)
+                    stash.blank_object(node)
+                    del node
 
         # Check known amounts without recording unapproved PSBT data.
         for i, txi in self.input_iter():
             inp = self.inputs[i]
             if inp.is_segwit:
                 history.verify_amount(txi.prevout, inp.amount, i)
-                gc.collect()
 
         gc.collect()
 
@@ -1684,8 +2261,11 @@ class psbtObject(psbtProxy):
         # We should know pubkey required for each input now.
         # - but we may not be the signer for those inputs, which is fine.
         # - TODO: but what if not SIGHASH_ALL
-        no_keys = set(n for n, inp in enumerate(self.inputs)
-                      if inp.required_key is None and not inp.fully_signed)
+        no_keys = False
+        for inp in self.inputs:
+            if inp.required_key is None and not inp.fully_signed:
+                no_keys = True
+                break
 
         gc.collect()
 
@@ -1708,8 +2288,8 @@ class psbtObject(psbtProxy):
     def consider_timelocks(self):
         # Warn about timelocks that delay when the transaction can confirm.
         from psbt_display import timelock_warnings
-        sequences = [txi.nSequence for _, txi in self.input_iter()]
-        self.warnings.extend(timelock_warnings(self.txn_version, self.lock_time, sequences))
+        # Read from flash on each pass over them, rather than listed up front.
+        self.warnings.extend(timelock_warnings(self.txn_version, self.lock_time, _Sequences(self)))
 
     def calculate_fee(self):
         # what miner's reward is included in txn?
@@ -1721,8 +2301,7 @@ class psbtObject(psbtProxy):
 
     def consider_keys(self):
         # check we possess the right keys for the inputs
-        cnt = sum(1 for i in self.inputs if i.num_our_keys)
-        if cnt:
+        if any(i.num_our_keys for i in self.inputs):
             return
 
         # collect a list of XFP's given in file that aren't ours
@@ -1745,6 +2324,8 @@ class psbtObject(psbtProxy):
     @classmethod
     def read_psbt(cls, fd):
         # read in a PSBT file. Captures fd and keeps it open.
+        # Hash it before reading any of it: signing checks fd still holds these bytes.
+        digest = flash_digest(fd)
         hdr = fd.read(5)
         if hdr != _MAGIC:
             raise ValueError("bad hdr")
@@ -1752,6 +2333,7 @@ class psbtObject(psbtProxy):
         gc.collect()
 
         rv = cls()
+        rv.validated_digest = digest
 
         gc.collect()
 
@@ -1767,7 +2349,11 @@ class psbtObject(psbtProxy):
 
         gc.collect()
 
-        rv.inputs = [psbtInputProxy(fd, idx) for idx in range(rv.num_inputs)]
+        # Only note where each input's map starts. Passes parse inputs from flash.
+        rv.inputs = _InputTable(fd, rv.num_inputs, rv.my_xfp)
+        for idx in range(rv.num_inputs):
+            rv.inputs.set_pos(idx, fd.tell())
+            _skip_map(fd)
         gc.collect()
         rv.outputs = [psbtOutputProxy(fd, idx) for idx in range(rv.num_outputs)]
         gc.collect()
@@ -2045,7 +2631,8 @@ class psbtObject(psbtProxy):
 
                 if inp.is_p2sh:
                     # multisig (p2sh) segwit still requires the script here.
-                    txi.scriptSig = ser_string(inp.scriptSig)
+                    # (the script _script_info() uses as the scriptSig)
+                    txi.scriptSig = ser_string(inp.get(inp.witness_script or inp.redeem_script))
                 else:
                     # major win for segwit (p2pkh): no redeem script bloat anymore
                     txi.scriptSig = b''

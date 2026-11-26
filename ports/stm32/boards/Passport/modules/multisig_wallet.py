@@ -24,6 +24,12 @@ from exceptions import FatalPSBTIssue
 from opcodes import OP_CHECKMULTISIG
 import trezorcrypto
 
+# Most nodes MultisigWallet._cosigner_node() keeps: each cosigner's xpub, and the node
+# above the leaf for each branch in use. That's 3 per cosigner for receive and change,
+# 45 at the 15-cosigner maximum. Past the limit a node is derived without being kept,
+# so a PSBT spread over many branches can't fill the heap.
+_MAX_COSIGNER_NODES = const(48)
+
 
 def disassemble_multisig_mn(redeem_script):
     # pull out just M and N from script. Simple, faster, no memory.
@@ -514,25 +520,16 @@ class MultisigWallet:
             too_shallow = False
             for xp_idx, path in check_these:
                 # matched fingerprint, try to make pubkey that needs to match
-                # print('xpubs={}'.format(self.xpubs))
-                xpub = self.xpubs[xp_idx][-1]
-
-                node = ch.deserialize_node(xpub, AF_P2SH)
-                assert node, "Missing node"
-                dp = node.depth()
+                node, dp = self._cosigner_node(ch, xp_idx, path)
 
                 # print("%s => deriv=%s dp=%d len(path)=%d path=%s" %
                 #        (xfp2str(xfp), self.xpubs[xp_idx][1], dp, len(path), path))
 
-                if not (0 <= dp <= len(path)):
+                if node is None:
                     # obscure case: xpub isn't deep enough to represent
                     # indicated path... not wrong really.
                     too_shallow = True
                     continue
-
-                for sp in path[dp:]:
-                    assert not (sp & 0x80000000), 'hard deriv'
-                    node.derive(sp, True)     # works in-place
 
                 found_pk = node.public_key()
 
@@ -572,6 +569,45 @@ class MultisigWallet:
         assert len(used) == self.N, 'not all keys used: %d of %d' % (len(used), self.N)
 
         return subpath_help
+
+    def _cosigner_node(self, ch, xp_idx, path):
+        # Public node for this cosigner's key at path, or (None, depth) when the xpub
+        # is deeper than the path. The decoded xpub and the node one level above the
+        # leaf are cached on this wallet, so each further input on the same branch
+        # costs one public derivation per cosigner instead of decoding the xpub and
+        # deriving every level again. These are public keys; nothing secret is kept.
+        cache = getattr(self, '_cosigner_nodes', None)
+        if cache is None:
+            cache = {}
+            self._cosigner_nodes = cache
+
+        base = cache.get(xp_idx)
+        if base is None:
+            base = ch.deserialize_node(self.xpubs[xp_idx][-1], AF_P2SH)
+            assert base, "Missing node"
+            if len(cache) < _MAX_COSIGNER_NODES:
+                cache[xp_idx] = base
+        dp = base.depth()
+        if not (0 <= dp <= len(path)):
+            return None, dp
+
+        rest = path[dp:]
+        for sp in rest:
+            assert not (sp & 0x80000000), 'hard deriv'
+        if not rest:
+            return base.clone(), dp
+
+        key = (xp_idx, tuple(rest[:-1]))
+        parent = cache.get(key)
+        if parent is None:
+            parent = base.clone()
+            for sp in rest[:-1]:
+                parent.derive(sp, True)     # works in-place
+            if len(cache) < _MAX_COSIGNER_NODES:
+                cache[key] = parent
+        node = parent.clone()
+        node.derive(rest[-1], True)
+        return node, dp
 
     @classmethod
     def from_file(cls, config, name=None):

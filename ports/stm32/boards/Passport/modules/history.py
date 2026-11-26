@@ -204,13 +204,23 @@ class OutptValueCache:
         return exp
 
     @classmethod
-    def record_amount(cls, prevout, amount, in_idx):
-        # Only call for inputs whose ownership was verified and which we signed.
-        if cls.verify_amount(prevout, amount, in_idx) is None:
-            cls.add(prevout, amount)
+    def record_amounts(cls, entries):
+        # Record each (prevout, amount, in_idx) not seen before. Only pass inputs whose
+        # ownership was verified and which we signed. The saved copy is updated once
+        # at the end rather than after every input.
+        cls.load_cache()
+        added = False
+        try:
+            for prevout, amount, in_idx in entries:
+                if cls.verify_amount(prevout, amount, in_idx) is None:
+                    cls.add(prevout, amount, save=False)
+                    added = True
+        finally:
+            if added:
+                flash_cache.set(cls.KEY, cls.entries)
 
     @classmethod
-    def add(cls, prevout, amount):
+    def add(cls, prevout, amount, save=True):
         # protect privacy, compress a little, and save it.
         # - we know it's not yet in our lists
         key = cls._key(prevout)
@@ -225,7 +235,8 @@ class OutptValueCache:
         cls.entries.append(key + cls.encode_value(prevout, amount).encode())
 
         # update what we're going to save long-term
-        flash_cache.set(cls.KEY, cls.entries)
+        if save:
+            flash_cache.set(cls.KEY, cls.entries)
 
 
 # As we build a new transaction, track what we need to capture

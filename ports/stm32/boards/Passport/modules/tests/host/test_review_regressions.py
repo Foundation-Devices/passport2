@@ -67,7 +67,7 @@ def psbt_module(monkeypatch):
     module('chains')
     module('common')
     module('history', verify_amount=lambda *args: None,
-           OutptValueCache=types.SimpleNamespace(record_amount=lambda *args: None))
+           OutptValueCache=types.SimpleNamespace(record_amounts=lambda entries: list(entries)))
     module('sffile', SizerFile=object)
     module('passport', mem=types.SimpleNamespace())
     module('constants', PSBT_MAX_SIZE=1024 * 1024)
@@ -307,6 +307,13 @@ def test_legacy_multisig_ignores_a_nonowned_fingerprint_collision(monkeypatch, p
         def private_key(self):
             return bytearray(owned.secret)
 
+        # The signer derives each input's key from a cached parent node.
+        def clone(self):
+            return Node()
+
+        def derive(self, index):
+            pass
+
     class Values:
         def __enter__(self):
             return self
@@ -332,12 +339,15 @@ def test_legacy_multisig_ignores_a_nonowned_fingerprint_collision(monkeypatch, p
         scriptSig=b'script', policy_spend_plan=None, is_segwit=True, is_multisig=True,
         tap_subpaths={}, amount=10000, scriptCode=b'script', sighash=1,
         subpaths={owned_pub: [xfp, 0], foreign_pub: [xfp, 0]}, added_sigs=None,
-        added_sig=None, tap_key_sig=None)
+        added_sig=None, tap_key_sig=None,
+        get_utxo=lambda n: types.SimpleNamespace(nValue=10000),
+        signing_scripts=lambda utxo, idx: (b'script', b'script'))
     # The integrated signer delegates legacy candidate selection to this helper.
     inp.get_signing_node = types.MethodType(psbt_module.psbtInputProxy.get_signing_node, inp)
     psbt = types.SimpleNamespace(
-        inputs=[inp], my_xfp=xfp,
-        input_iter=lambda: iter([(0, types.SimpleNamespace(prevout=object()))]),
+        inputs=[inp], my_xfp=xfp, num_inputs=1, check_unchanged=lambda: None,
+        reserve_signatures=lambda: asyncio.sleep(0),
+        input_iter=lambda: iter([(0, types.SimpleNamespace(prevout=types.SimpleNamespace(n=0)))]),
         make_txn_segwit_sighash=lambda *args: bytes(32))
     results = []
 
@@ -371,3 +381,164 @@ def test_liana_simulator_descriptor_fixture_is_loadable():
 def test_liana_simulator_psbt_fixture_is_strict_base64():
     encoded = _liana_fixture_constants()['LIANA_PSBT_BASE64']
     assert base64.b64decode(encoded, validate=True).startswith(b'psbt\xff')
+
+
+def test_flash_signature_store_waits_for_its_last_write(psbt_module, monkeypatch):
+    # The next input is read from the same flash chip, so add() must not return while
+    # the chip is still programming the signature it just wrote.
+    class Chip:
+        busy = False
+
+        def wait_done(self):
+            self.busy = False
+
+    chip = Chip()
+
+    class File:
+        def __init__(self, start, max_size=0):
+            self.sf = chip
+            self.data = bytearray()
+
+        def tell(self):
+            return len(self.data)
+
+        def write(self, data):
+            # Like SFFile.write(): returns with the last page program still running.
+            self.data += data
+            chip.busy = True
+
+    monkeypatch.setitem(sys.modules, 'sffile', types.SimpleNamespace(SFFile=File, SizerFile=object))
+    store = psbt_module._FlashSigStore(2)
+    assert store.add(1, [(b'\x02' * 33, b'\x30' * 71)]) == 0
+    assert not chip.busy
+    assert store.add(1, [(b'\x03' * 33, b'\x30' * 70)]) > 0
+    assert not chip.busy
+
+
+@pytest.mark.parametrize('fail_in', ['public_key', 'derive'])
+def test_signing_node_is_wiped_when_deriving_it_fails(psbt_module, monkeypatch, fail_in):
+    # Until get_signing_node() returns it, nothing else holds the leaf to wipe it.
+    wiped = []
+    monkeypatch.setitem(sys.modules, 'stash', types.SimpleNamespace(blank_object=wiped.append))
+
+    class Node:
+        def __init__(self, leaf=False):
+            self.leaf = leaf
+
+        def clone(self):
+            return Node(leaf=True)
+
+        def derive(self, index):
+            if self.leaf and fail_in == 'derive':
+                raise MemoryError
+
+        def public_key(self):
+            if self.leaf and fail_in == 'public_key':
+                raise MemoryError
+            return b'\x02' + b'\x11' * 32
+
+    class Values:
+        def derive_path(self, path, register=True):
+            return Node()
+
+    xfp = 0x12345678
+    inp = types.SimpleNamespace(is_multisig=False, required_key=b'key', tap_subpaths={},
+                                subpaths={b'key': [xfp, 84 | 0x80000000, 0, 5]})
+    get_signing_node = types.MethodType(psbt_module.psbtInputProxy.get_signing_node, inp)
+    with pytest.raises(MemoryError):
+        get_signing_node(Values(), xfp, 0, {})
+    assert len(wiped) == 1 and wiped[0].leaf
+
+
+def test_parent_node_cache_is_bounded(psbt_module):
+    # A PSBT spread over many accounts derives the rest uncached, and registers no
+    # more parents with the session than the cache holds.
+    registered = []
+
+    class Node:
+        def clone(self):
+            return Node()
+
+        def derive(self, index):
+            pass
+
+        def public_key(self):
+            return b'\x02' + b'\x11' * 32
+
+    class Values:
+        def derive_path(self, path, register=True):
+            if register:
+                registered.append(path)
+            return Node()
+
+    parents = {}
+    hardened = 0x80000000
+    for account in range(20):
+        psbt_module.derive_from_parent(Values(), [1, 84 | hardened, hardened, account | hardened, 0, 7],
+                                       parents)
+    assert len(parents) == 8
+    assert len(registered) == 8
+
+
+def _keypath_to_str(bin_path):
+    # utils.keypath_to_str(), which the fixture stubs out.
+    rv = 'm/' + '/'.join(str(i & 0x7fffffff) + ("'" if i & 0x80000000 else '') for i in bin_path[1:])
+    return 'm' if rv == 'm/' else rv
+
+
+def test_uncached_leaf_is_wiped_when_its_derivation_fails(psbt_module, monkeypatch):
+    # Once the parent cache is full, derive_from_parent() derives the whole path with
+    # the real SensitiveValues.derive_path(), which hands its clone to the caller
+    # unregistered. Until it does, a failure must wipe the clone.
+    wiped = []
+
+    class Node:
+        def __init__(self, fail_at=None, path=()):
+            self.fail_at = fail_at
+            self.path = list(path)
+
+        def clone(self):
+            return Node(self.fail_at, self.path)
+
+        def derive(self, index):
+            if len(self.path) == self.fail_at:
+                raise MemoryError
+            self.path.append(index)
+
+        def blank(self):
+            wiped.append(self)
+
+        def public_key(self):
+            return b'\x02' + b'\x11' * 32
+
+    # The real stash module, with its node type standing in for HDNode.
+    monkeypatch.setitem(sys.modules, 'trezorcrypto',
+                        types.SimpleNamespace(bip32=types.SimpleNamespace(HDNode=Node)))
+    monkeypatch.setitem(sys.modules, 'uctypes', types.ModuleType('uctypes'))
+    monkeypatch.setitem(sys.modules, 'pincodes', types.SimpleNamespace(SE_SECRET_LEN=72))
+    stash = runpy.run_path(str(MODULES / 'stash.py'))
+
+    class Session:
+        derive_path = stash['SensitiveValues'].derive_path
+        register = stash['SensitiveValues'].register
+
+        def __init__(self, node):
+            self.node = node
+            self.spots = []
+
+    monkeypatch.setitem(psbt_module.derive_from_parent.__globals__, 'keypath_to_str', _keypath_to_str)
+    hardened = 0x80000000
+    path = [1, 84 | hardened, hardened, 9 | hardened, 0, 7]
+    parents = {('cached', idx): Node() for idx in range(8)}
+
+    session = Session(Node(fail_at=3))
+    with pytest.raises(MemoryError):
+        psbt_module.derive_from_parent(session, path, parents)
+    assert len(wiped) == 1 and wiped[0].path == path[1:4]
+    assert session.spots == [] and len(parents) == 8
+
+    # Without a failure, the uncached leaf reaches the caller, which wipes it.
+    wiped.clear()
+    session = Session(Node())
+    leaf = psbt_module.derive_from_parent(session, path, parents)
+    assert leaf.path == path[1:] and wiped == [] and session.spots == []
