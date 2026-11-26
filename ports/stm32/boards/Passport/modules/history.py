@@ -115,7 +115,9 @@ class OutptValueCache:
         if cls.entries is None:
             entries = _Entries()
             saved = flash_cache.get(cls.KEY) or []
-            for entry in saved[-_HISTORY_MAX_MEM:]:
+            # By index: a slice would be one more copy of the list.
+            for i in range(max(0, len(saved) - _HISTORY_MAX_MEM), len(saved)):
+                entry = saved[i]
                 if isinstance(entry, str) and len(entry) == _ENTRY_LEN:
                     entries.append(entry.encode())
             cls.entries = entries
@@ -251,6 +253,13 @@ def add_segwit_utxos_finalize(txid):
         OutptValueCache.add(prevout, amount)
 
     new_outpts.clear()
+
+
+def load():
+    # Loading the history allocates its storage, so do it before a PSBT is read, while
+    # the heap is still in one piece. Left to the first input checked, it comes when
+    # the inputs' work has broken the free memory into small pieces.
+    OutptValueCache.load_cache()
 
 
 # shortcut
