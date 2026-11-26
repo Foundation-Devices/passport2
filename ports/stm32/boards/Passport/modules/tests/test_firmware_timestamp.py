@@ -250,3 +250,203 @@ def test_header_state_failure_is_recoverable(tmp_path, monkeypatch):
     assert results == [False]
     assert messages == ['Firmware update cannot continue.\n\nUnable to read firmware timestamp.']
     assert not hasattr(flow, 'update_header')
+
+
+@pytest.mark.parametrize('production', [True, False])
+def test_recovery_keeps_staged_update_until_installed(tmp_path, production):
+    native = (BOARD / 'bootloader/update.c').read_text()
+    hashing = function(native, 'static secresult calculate_spi_hash(')
+    update = function(native, 'void update_firmware(void) {')
+    source = r"""
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "fwheader.h"
+#include "secresult.h"
+#include "firmware-classification.h"
+#include "sha256.h"
+
+#define HAL_OK 0
+#define BODY_LEN 3000
+#define BODY_READS 3  /* 1 KB reads */
+typedef int HAL_StatusTypeDef;
+typedef enum { KEY_LEFT_SELECT = 98, KEY_RIGHT_SELECT = 99 } KEY_ID;
+typedef struct { int unused; } icon_t;
+icon_t ICON_SHUTDOWN, ICON_CHECKMARK, ICON_RETRY, ICON_FORWARD, ICON_CANCEL;
+
+/* SPI flash: the update-request page, then the header, then the image body. */
+uint8_t spi[256 + FW_HEADER_SIZE + BODY_LEN];
+uint8_t expected_digest[HASH_LEN];
+int failed_body_reads, body_reads, se_failures, se_reads, signatures_checked, updates, cleared, errors;
+int installed_firmware_valid;
+KEY_ID answer;
+const icon_t* last_left;
+char last_error[128];
+static uint8_t spi_hdr_hash[HASH_LEN];
+
+HAL_StatusTypeDef spi_setup(void) { return HAL_OK; }
+HAL_StatusTypeDef spi_read(uint32_t addr, uint32_t len, uint8_t* buf) {
+    assert(addr + len <= sizeof(spi));
+    if (addr >= 256 + FW_HEADER_SIZE) {
+        body_reads++;
+        if (failed_body_reads) {
+            failed_body_reads--;
+            return 1;
+        }
+    }
+    memcpy(buf, spi + addr, len);
+    return HAL_OK;
+}
+void calculate_spi_hdr_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t len) {
+    (void)hdr;
+    memset(hash, 0x33, len);
+}
+void calculate_update_hash(uint8_t* spi_hash, uint8_t spi_len, uint8_t* hash, uint8_t len) {
+    (void)spi_hash;
+    (void)spi_len;
+    memset(hash, 0x55, len);
+}
+secresult verify_header(passport_firmware_header_t* hdr) {
+    (void)hdr;
+    return SEC_TRUE;
+}
+void get_current_board_hash(uint8_t* hash) { memset(hash, 0x11, HASH_LEN); }
+/* Incomplete installed firmware means only the update in progress may be installed. */
+secresult verify_current_firmware(bool process_led) {
+    (void)process_led;
+    return installed_firmware_valid ? SEC_TRUE : SEC_FALSE;
+}
+void hash_board(uint8_t* digest, uint8_t len, uint8_t* board, uint8_t board_len) {
+    assert(len == HASH_LEN && board_len == HASH_LEN);
+    for (int i = 0; i < HASH_LEN; i++) board[i] = digest[i] ^ 0xa5;
+}
+uint32_t se_get_firmware_timestamp(uint8_t* board_hash) {
+    se_reads++;
+    if (se_failures) {
+        se_failures--;
+        return 0;
+    }
+    for (int i = 0; i < HASH_LEN; i++) assert(board_hash[i] == (expected_digest[i] ^ 0xa5));
+    return 1700000000;
+}
+secresult verify_signature(passport_firmware_header_t* hdr, uint8_t* hash, uint32_t len) {
+    (void)hdr;
+    assert(len == HASH_LEN && memcmp(hash, expected_digest, HASH_LEN) == 0);
+    signatures_checked++;
+    return SEC_TRUE;
+}
+int se_program_board_hash(uint8_t* previous, uint8_t* next) {
+    (void)previous;
+    (void)next;
+    abort();
+}
+int se_set_firmware_timestamp(uint8_t* board_hash, uint32_t timestamp) {
+    (void)board_hash;
+    (void)timestamp;
+    abort();
+}
+static int do_update(uint32_t size) {
+    assert(size == FW_HEADER_SIZE + BODY_LEN);
+    assert(signatures_checked == 1 && cleared == 0);
+    updates++;
+    return 0;
+}
+/* The staged update only goes once it's installed, or when the user cancels it. */
+void clear_update_from_spi_flash(uint32_t total_size) {
+    (void)total_size;
+    assert(updates == 1 || answer == KEY_LEFT_SELECT);
+    cleared++;
+}
+KEY_ID ui_show_error(const char* title, const char* card, const char* message, const icon_t* left,
+                     const icon_t* right, bool center) {
+    (void)title;
+    (void)card;
+    (void)center;
+    /* Nothing is checked, copied or cleared before the user answers. */
+    assert(signatures_checked == 0 && updates == 0 && cleared == 0);
+    assert(right == &ICON_RETRY);
+    last_left = left;
+    snprintf(last_error, sizeof(last_error), "%s", message);
+    errors++;
+    return answer;
+}
+KEY_ID ui_show_message(const char* title, const char* card, const char* message, const icon_t* left,
+                       const icon_t* right, bool center) {
+    (void)title;
+    (void)card;
+    (void)message;
+    (void)left;
+    (void)right;
+    (void)center;
+    abort();
+}
+void ui_ask_shutdown(void) { abort(); }
+void passport_reset(void) { abort(); }
+
+""" + hashing + update + r"""
+static void stage(void) {
+    failed_body_reads = body_reads = se_failures = se_reads = 0;
+    signatures_checked = updates = cleared = errors = 0;
+    installed_firmware_valid = 0;
+    answer = KEY_RIGHT_SELECT;
+    last_left = NULL;
+    memset(spi, 0x55, HASH_LEN);
+    passport_firmware_header_t hdr;
+    memset(&hdr, 0x7e, sizeof(hdr));
+    hdr.info.fwlength = BODY_LEN;
+    hdr.signature.pubkey1 = 0;
+    memcpy(spi + 256, &hdr, sizeof(hdr));
+    for (int i = 0; i < BODY_LEN; i++) spi[256 + FW_HEADER_SIZE + i] = (uint8_t)(i * 7);
+
+    SHA256_CTX ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, (uint8_t*)&hdr.info, sizeof(fw_info_t));
+    sha256_update(&ctx, spi + 256 + FW_HEADER_SIZE, BODY_LEN);
+    sha256_final(&ctx, expected_digest);
+    sha256_init(&ctx);
+    sha256_update(&ctx, expected_digest, HASH_LEN);
+    sha256_final(&ctx, expected_digest);
+}
+
+int main(void) {
+    /* A temporary SE error, then the same image is confirmed on retry and installed. */
+    stage();
+    se_failures = 1;
+    update_firmware();
+    assert(updates == 1 && cleared == 1 && signatures_checked == 1);
+    assert(body_reads == BODY_READS);
+#ifdef PRODUCTION_BUILD
+    assert(se_reads == 2 && errors == 1);
+    assert(strstr(last_error, "update in progress"));
+#else
+    assert(se_reads == 0 && errors == 0);
+#endif
+
+    /* A failed read while hashing stops before anything is checked; the retry hashes the
+       whole image again, and that one digest serves both checks. */
+    stage();
+    failed_body_reads = 1;
+    update_firmware();
+    assert(errors == 1 && strstr(last_error, "Unable to read") && last_left == &ICON_SHUTDOWN);
+    assert(updates == 1 && cleared == 1 && signatures_checked == 1);
+    assert(body_reads == 1 + BODY_READS);
+#ifdef PRODUCTION_BUILD
+    assert(se_reads == 1);
+#endif
+
+    /* With working firmware installed, an update that stays unreadable can be cancelled.
+       The staged update is dropped without being checked or installed, and boot goes on. */
+    stage();
+    installed_firmware_valid = 1;
+    failed_body_reads = 1000;
+    answer = KEY_LEFT_SELECT;
+    update_firmware();
+    assert(errors == 1 && strstr(last_error, "Unable to read") && last_left == &ICON_CANCEL);
+    assert(cleared == 1 && updates == 0 && signatures_checked == 0 && se_reads == 0);
+    return 0;
+}
+"""
+    compile_and_run(tmp_path, source, production, [BOARD / 'common/sha256.c'])
