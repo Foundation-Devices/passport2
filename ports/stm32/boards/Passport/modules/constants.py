@@ -39,6 +39,12 @@ FW_ACTUAL_HEADER_SIZE = 170  # passport_firmware_header_t uses this many bytes
 # PSBT signing (uses same memory as firmware updates)
 PSBT_MAX_SIZE = 7936 * 1024  # Total size available for both input and output
 
+# Most inputs a PSBT may have. More can run out of memory partway through, after
+# many minutes, so a PSBT over this is refused as soon as its input count is read.
+# Single-sig and 2-of-3 multisig PSBTs with 1000 inputs signed on a device; 1500
+# single-sig inputs ran out of memory.
+PSBT_MAX_INPUTS = 1000
+
 # User Settings - end of memory
 USER_SETTINGS_SIZE = 128 * 1024
 USER_SETTINGS_START = SPI_FLASH_TOTAL_SIZE - USER_SETTINGS_SIZE
@@ -133,6 +139,7 @@ NUM_BACKUP_PASSWORD_WORDS = 6
 def set_gen1_constants():
     # Only the differences are modified below
     global SPI_FLASH_TOTAL_SIZE, FLASH_CACHE_SIZE, FLASH_CACHE_START, FLASH_CACHE_END, FW_MAX_SIZE, PSBT_MAX_SIZE
+    global PSBT_MAX_INPUTS
     global FLASH_CACHE_SIZE_OLD, FLASH_CACHE_START_OLD, FLASH_CACHE_END_OLD
     global CARD_CONTENT_HEIGHT_WITHOUT_HEADER, CARD_CONTENT_HEIGHT_WITH_HEADER, CARD_PAD_BOTTOM, STATUSBAR_HEIGHT
     global OUTER_CORNER_RADIUS, CARD_PAD_LEFT, CARD_PAD_RIGHT, CARD_EXTRA_HEIGHT
@@ -149,6 +156,9 @@ def set_gen1_constants():
 
     # PSBT signing
     PSBT_MAX_SIZE = 1792 * 1024  # Total size available for both input and output
+
+    # The PSBT area here takes files up to 896 KB: about 880 multisig inputs.
+    PSBT_MAX_INPUTS = 700
 
     # Display constants
     # TODO: Can we reference Display.HEIGHT here instead of 303?

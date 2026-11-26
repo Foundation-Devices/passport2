@@ -1251,6 +1251,14 @@ class psbtObject(psbtProxy):
 
         num_in = deser_compact_size(fd)
         assert num_in > 0, "no ins?"
+        # Read at the call: Gen 1 devices set their own limit at startup.
+        from constants import PSBT_MAX_INPUTS
+        if num_in > PSBT_MAX_INPUTS:
+            # No number: the limit that holds depends on the script type, and only
+            # single-sig and 2-of-3 multisig were measured.
+            raise FatalPSBTIssue('This transaction has too many inputs for Passport to sign.\n\n'
+                                 'Split it into smaller transactions in your wallet coordinator '
+                                 'and try again.')
 
         self.num_inputs = num_in
         # print('self.num_inputs = {}'.format(self.num_inputs ))
