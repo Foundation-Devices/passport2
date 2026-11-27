@@ -65,6 +65,13 @@ class MockNode:
     def public_key(self):
         return PUBKEY
 
+    # Signing derives each input's key from a cached parent.
+    def clone(self):
+        return MockNode()
+
+    def derive(self, index):
+        assert index == 0
+
     def private_key(self):
         return b'\x00' * 31 + b'\x01'
 
@@ -77,8 +84,9 @@ class MockSensitiveValues:
         pass
 
     def derive_path(self, path, register=True):
-        assert path == 'm/0'
-        assert register
+        # Only a cached parent is left for SensitiveValues to wipe. Every other
+        # node is wiped where it is used.
+        assert path == ('m' if register else 'm/0')
         return MockNode()
 
 
@@ -118,6 +126,13 @@ class TestPSBT:
             txi = CTxIn()
             txi.prevout = self.prevouts[idx]
             yield idx, txi
+
+    def check_unchanged(self):
+        # The inputs here aren't stored in flash, so there is nothing to re-check.
+        pass
+
+    async def reserve_signatures(self):
+        pass
 
     def make_txn_segwit_sighash(self, idx, *_args):
         if idx == self.fail_at:
@@ -316,8 +331,7 @@ async def run_tests():
         # can't be ours are skipped on loading.
         Cache.clear()
         outpoints = [COutPoint(idx + 100, idx % 3) for idx in range(300)]
-        for idx, outpoint in enumerate(outpoints):
-            Cache.record_amount(outpoint, idx + 1, idx)
+        Cache.record_amounts((outpoint, idx + 1, idx) for idx, outpoint in enumerate(outpoints))
         assert len(Cache.entries) == 234
         assert Cache.fetch_amount(outpoints[65]) is None
         assert Cache.fetch_amount(outpoints[66]) == 67

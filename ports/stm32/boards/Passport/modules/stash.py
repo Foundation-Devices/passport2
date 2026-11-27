@@ -262,28 +262,35 @@ class SensitiveValues:
         self.spots.append(item)
 
     def derive_path(self, path, master=None, register=True):
-        # Given a string path, derive the related subkey
+        # Given a string path, derive the related subkey. With register=False the
+        # caller wipes the result, but only once it has it: until then, an error such
+        # as running out of memory must wipe the clone here.
         rv = (master or self.node).clone()
 
         if register:
             self.register(rv)
 
-        for i in path.split('/'):
-            if i == 'm':
-                continue
-            if not i:
-                continue      # trailing or duplicated slashes
+        try:
+            for i in path.split('/'):
+                if i == 'm':
+                    continue
+                if not i:
+                    continue      # trailing or duplicated slashes
 
-            if i[-1] == "'":
-                assert len(i) >= 2, i
-                here = int(i[:-1])
-                assert 0 <= here < 0x80000000, here
-                here |= 0x80000000
-            else:
-                here = int(i)
-                assert 0 <= here < 0x80000000, here
+                if i[-1] == "'":
+                    assert len(i) >= 2, i
+                    here = int(i[:-1])
+                    assert 0 <= here < 0x80000000, here
+                    here |= 0x80000000
+                else:
+                    here = int(i)
+                    assert 0 <= here < 0x80000000, here
 
-            rv.derive(here)
+                rv.derive(here)
+        except BaseException:
+            if not register:
+                blank_object(rv)
+            raise
 
         return rv
 

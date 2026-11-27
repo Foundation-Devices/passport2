@@ -15,10 +15,13 @@ class ProgressPage(StatusPage):
             card_header=None,
             statusbar=None,
             left_micron=microns.Back,
-            right_micron=microns.Forward):
+            right_micron=microns.Forward,
+            spinner_first=False):
+        # spinner_first: show a spinner until the first set_progress().
         super().__init__(
             text=text,
-            show_progress=True,
+            show_progress=not spinner_first,
+            show_spinner=spinner_first,
             interactive=interactive,
             card_header=card_header,
             statusbar=statusbar,

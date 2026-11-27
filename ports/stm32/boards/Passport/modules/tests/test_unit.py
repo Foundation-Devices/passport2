@@ -160,6 +160,14 @@ def test_select_keys(test):
     assert test('select_keys.py') == b'OK'
 
 
+def test_psbt_finalize_progress(test):
+    assert test('psbt_finalize_progress.py') == b'OK'
+
+
+def test_multisig_cosigner_cache(test):
+    assert test('multisig_cosigner_cache.py') == b'OK'
+
+
 def test_multisig_xpub_validation(test):
     assert test('multisig_xpub_validation.py') == b'OK'
 

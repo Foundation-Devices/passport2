@@ -51,4 +51,4 @@ class Arc(View):
     def set_end_angle(self, end):
         self.end = end
         if self.is_mounted():
-            self.lvgl_root.set_end_angle(self.start)
+            self.lvgl_root.set_end_angle(self.end)

@@ -31,6 +31,27 @@ if common.settings is None:
     common.settings = MemorySettings()
 
 
+class WatchOnlyNode:
+    """The fixture's keys are xpubs. Signing derives an account node once and each
+    input's key from a clone of it, so step down without the private key here."""
+
+    def __init__(self, node):
+        self.node = node
+
+    def clone(self):
+        return WatchOnlyNode(self.node.clone())
+
+    def derive(self, index):
+        self.node.derive(index, True)
+
+    def public_key(self):
+        return self.node.public_key()
+
+
+def blank_watch_only(item, blank=stash.blank_object):
+    blank(item.node if isinstance(item, WatchOnlyNode) else item)
+
+
 class FixturePublicValues:
     """Stand in for the keystore using the fixture's owned account xpub."""
 
@@ -51,7 +72,7 @@ class FixturePublicValues:
         node = chains.current_chain().deserialize_node(key.xpub, AF_CLASSIC)
         for index in numeric_path[len(key.path):]:
             node.derive(index, True)
-        return node
+        return WatchOnlyNode(node)
 
 
 OWNED_KEY = (
@@ -115,6 +136,13 @@ async def run_test():
     assert key_path.make_txn_taproot_sighash(0, 0) == KEY_PATH_DIGEST
 
     class KeyPathNode:
+        # Signing derives the input's key from a clone of its account node.
+        def clone(self):
+            return KeyPathNode()
+
+        def derive(self, index):
+            pass
+
         def public_key(self):
             return b'\x02' + KEY_PATH_PUBKEY
 
@@ -137,8 +165,9 @@ async def run_test():
 
     class MockValueCache:
         @staticmethod
-        def record_amount(prevout, amount, in_idx):
-            recorded_amounts.append((amount, in_idx))
+        def record_amounts(entries):
+            for prevout, amount, in_idx in entries:
+                recorded_amounts.append((amount, in_idx))
 
     history.OutptValueCache = MockValueCache
     try:
@@ -153,8 +182,11 @@ async def run_test():
 
 
 original_sensitive_values = stash.SensitiveValues
+original_blank_object = stash.blank_object
 stash.SensitiveValues = FixturePublicValues
+stash.blank_object = blank_watch_only
 try:
     uasyncio.run(run_test())
 finally:
     stash.SensitiveValues = original_sensitive_values
+    stash.blank_object = original_blank_object

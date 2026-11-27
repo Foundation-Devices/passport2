@@ -178,6 +178,10 @@ class StatusPage(Page):
 
     def set_progress(self, percent):
         self.percent = percent
+        if self.show_progress and self.is_mounted():
+            # Move the arc and label already shown rather than building them again.
+            self.update_progress()
+            return
         self.show_progress = True
         self.update()
 

@@ -19,19 +19,37 @@ async def sign_psbt_task(on_done, psbt):
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
+    from psbt import derive_from_parent, _InputTable
     import history
+    import progress
 
     try:
         with stash.SensitiveValues() as sv:
             error_msg = None
             error_code = None
+            # Account-level nodes, derived once and wiped when the session ends.
+            parents = {}
+
+            # Inputs are parsed from flash again below, so flash must still hold the
+            # PSBT that was validated and reviewed.
+            # Shares of the progress shown, from timings on the device.
+            progress.phase(0, 3)
+            psbt.check_unchanged()
+            progress.phase(3, 4)
+            await psbt.reserve_signatures()
 
             # Sign individual inputs
-            sigs = 0
-            success = set()
+            # One bit per input we signed.
+            success = bytearray((psbt.num_inputs + 7) // 8)
+            progress.phase(4, 94)
+            progress.count(psbt.num_inputs)
             for in_idx, txi in psbt.input_iter():
+                progress.step()
                 # print('PROGRESS: {}% (in_idx={}'.format(int(in_idx * 100 / psbt.num_inputs), in_idx))
-                gc.collect()
+                # Every 10 inputs: nothing is kept per input, so collecting after each
+                # one costs time without saving memory.
+                if in_idx % 10 == 0:
+                    gc.collect()
 
                 inp = psbt.inputs[in_idx]
 
@@ -52,7 +70,13 @@ async def sign_psbt_task(on_done, psbt):
                     assert not (inp.added_sig or inp.tap_key_sig), \
                         "This transaction has already been signed"
 
-                txi.scriptSig = inp.scriptSig
+                # Rebuild the scripts this signature commits to from the validated
+                # bytes, and sign for the amount the user reviewed.
+                utxo = inp.get_utxo(txi.prevout.n)
+                if utxo.nValue != inp.amount:
+                    raise AssertionError('Input #%d changed after it was checked' % in_idx)
+                script_sig, script_code = inp.signing_scripts(utxo, in_idx)
+                txi.scriptSig = script_sig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
 
@@ -60,12 +84,11 @@ async def sign_psbt_task(on_done, psbt):
                     history.verify_amount(txi.prevout, inp.amount, in_idx)
 
                 if inp.policy_spend_plan:
-                    utxo = inp.get_utxo(txi.prevout.n)
                     inp.policy_spend_plan.assert_p2wsh_scope(
                         in_idx, inp.subpaths, utxo.scriptPubKey,
                         inp.get(inp.witness_script), inp.sighash,
                         inp.required_key, inp.part_sig)
-                    del utxo
+                del utxo
 
                 if not inp.is_segwit:
                     # Hash by serializing/blanking various subparts of the transaction
@@ -76,11 +99,12 @@ async def sign_psbt_task(on_done, psbt):
                 else:
                     # Hash the inputs and such in totally new ways, based on BIP-143
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
-                                                          inp.amount, inp.scriptCode, inp.sighash)
+                                                          inp.amount, script_code, inp.sighash)
 
                 policy_multisig = inp.is_multisig and inp.policy_spend_plan is not None
                 if policy_multisig:
                     signing_keys = tuple(sorted(inp.required_key))
+                    added_sigs = {}
                 else:
                     # Existing wallet types keep their ownership-based key selection.
                     signing_keys = (None,)
@@ -89,9 +113,9 @@ async def sign_psbt_task(on_done, psbt):
                     if policy_multisig:
                         # The spend plan above binds every required key to its path.
                         skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=True)
+                        node = derive_from_parent(sv, inp.subpaths[which_key], parents)
                     else:
-                        node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
+                        node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx, parents)
 
                     try:
                         if policy_multisig and node.public_key() != which_key:
@@ -112,12 +136,10 @@ async def sign_psbt_task(on_done, psbt):
                                     der_sig = ser_sig_der(
                                         result[0:32], result[32:64], inp.sighash)
                                     if policy_multisig:
-                                        if not inp.added_sigs:
-                                            inp.added_sigs = {}
-                                        if which_key in inp.added_sigs:
+                                        if which_key in added_sigs:
                                             raise AssertionError(
                                                 'This multisig key has already been signed')
-                                        inp.added_sigs[which_key] = der_sig
+                                        added_sigs[which_key] = der_sig
                                     else:
                                         inp.added_sig = (which_key, der_sig)
                                 finally:
@@ -128,16 +150,41 @@ async def sign_psbt_task(on_done, psbt):
                         stash.blank_object(node)
                     del pk, node
 
+                if policy_multisig:
+                    inp.added_sigs = added_sigs
+
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
-                success.add(in_idx)
+                success[in_idx >> 3] |= 1 << (in_idx & 7)
+                del inp
+
+            # And again once every signature is made, before any of them is used.
+            progress.phase(94, 97)
+            psbt.check_unchanged()
 
         # No cache writes until every signature succeeds. The success set only
         # includes inputs whose signing keys we derived and verified above.
-        for in_idx, txi in psbt.input_iter():
-            inp = psbt.inputs[in_idx]
-            if in_idx in success and inp.is_segwit:
-                history.OutptValueCache.record_amount(txi.prevout, inp.amount, in_idx)
+        progress.phase(97, 100)
+        progress.count(psbt.num_inputs)
+
+        def signed_amounts():
+            # The input table already holds each input's checked amount and type, so
+            # read them there rather than parsing every input from flash again.
+            table = psbt.inputs if isinstance(psbt.inputs, _InputTable) else None
+            for in_idx, txi in psbt.input_iter():
+                progress.step()
+                if not success[in_idx >> 3] & (1 << (in_idx & 7)):
+                    continue
+                if table is not None:
+                    amount = table.segwit_amount(in_idx)
+                    if amount is not None:
+                        yield txi.prevout, amount, in_idx
+                else:
+                    inp = psbt.inputs[in_idx]
+                    if inp.is_segwit:
+                        yield txi.prevout, inp.amount, in_idx
+
+        history.OutptValueCache.record_amounts(signed_amounts())
 
         # All went well, so just fall through and call on_done()
 
