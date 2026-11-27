@@ -27,6 +27,8 @@ class UI():
         self.active_account = None
         self._is_top_level = True
         self.battery_level = 100
+        # The page that got each select button's press. See _select_target().
+        self.pressed_on = {}
 
         common.keypad_indev.set_group(self.group)
         self.render(None, self.active_screen)
@@ -311,12 +313,25 @@ class UI():
         # Start the FCC Test automatically
         common.keypad.inject(lv.KEY.ENTER)
 
+    def _select_target(self, button, is_pressed):
+        # The page this press or release goes to. Pages act on the release, and it goes
+        # only to the page that got the press: a button held while the screen changed,
+        # or pressed on a screen that then closed by itself, must not confirm or cancel
+        # the screen that replaced it.
+        page = self.get_active_page()
+        if is_pressed:
+            self.pressed_on[button] = page
+            return page
+        if self.pressed_on.pop(button, None) is not page:
+            return None
+        return page
+
     def on_left_select(self, is_pressed):
         # Tell the micron_bar so it can update
         common.ui.set_left_pressed(is_pressed)
 
         # Tell the page so it can perform any action it may want
-        active_page = self.get_active_page()
+        active_page = self._select_target('left', is_pressed)
         if active_page is not None:
             active_page.left_action(is_pressed)
 
@@ -325,7 +340,7 @@ class UI():
         common.ui.set_right_pressed(is_pressed)
 
         # Tell the page so it can perform any action it may want
-        active_page = self.get_active_page()
+        active_page = self._select_target('right', is_pressed)
         if active_page is not None:
             active_page.right_action(is_pressed)
 
