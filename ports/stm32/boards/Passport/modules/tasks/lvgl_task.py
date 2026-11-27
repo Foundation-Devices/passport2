@@ -8,6 +8,9 @@ from utime import ticks_ms
 import lvgl as lv
 import passport
 
+# Made up front, so that restarting after running out of memory needs no allocation.
+_system = passport.System()
+
 
 async def lvgl_task():
     """
@@ -44,6 +47,23 @@ async def async_loop():
             lv.tick_inc(elapsed)
             last_tick = new_tick
 
-        lv.timer_handler()
+        run_timers()
 
         await sleep_ms(1)
+
+
+def run_timers():
+    """Run LVGL's timers: input, animations and redrawing the screen."""
+
+    try:
+        lv.timer_handler()
+    except BaseException as e:
+        # An exception that leaves lv_timer_handler() partway, such as a MemoryError
+        # while drawing, leaves it marked as running, so it never runs again: the
+        # screen and the keys freeze. Nothing can undo that, so restart.
+        try:
+            import sys
+            sys.print_exception(e)
+        except BaseException:
+            pass
+        _system.reset()
