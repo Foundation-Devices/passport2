@@ -212,7 +212,7 @@ How would you like to proceed?"
         try:
             self.filename = await SaveToMicroSDFlow(filename=target_fname,
                                                     data=b2a_hex(self.signed_bytes),
-                                                    success_text="psbt",
+                                                    success_text="PSBT",
                                                     path=get_folder_path(DIR_TRANSACTIONS),
                                                     automatic=False,
                                                     auto_prompt=True).run()

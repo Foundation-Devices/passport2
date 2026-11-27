@@ -116,7 +116,7 @@ class SignPsbtMicroSDFlow(Flow):
 
         result_1 = await SaveToMicroSDFlow(filename=target_fname,
                                            write_fn=self.write_psbt_fn,
-                                           success_text="psbt",
+                                           success_text="PSBT",
                                            path=orig_path,
                                            automatic=False,
                                            auto_prompt=True).run()
