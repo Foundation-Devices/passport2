@@ -26,5 +26,6 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     let mut stdout = stdout::Stdout;
     writeln!(stdout, "{}", info).ok();
 
-    loop {}
+    // Looping here would freeze Passport until the battery is pulled.
+    cortex_m::peripheral::SCB::sys_reset()
 }
