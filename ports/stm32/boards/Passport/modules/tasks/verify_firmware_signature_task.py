@@ -12,22 +12,21 @@ from ubinascii import hexlify as b2a_hex
 from constants import FW_HEADER_SIZE, FW_HEADER_INFORMATION_SIZE
 from files import CardSlot, CardMissingError
 from errors import Error
+from firmware_header import header_unchanged
 
 
 async def verify_firmware_signature_task(file_path, size, expected_header, on_progress, on_done):
-    header = None
     s = trezorcrypto.sha256()
 
     try:
         with CardSlot() as card:
             with open(file_path, 'rb') as fp:
-                header = fp.read(FW_HEADER_SIZE)
-                if len(header) != FW_HEADER_SIZE or header != expected_header:
+                buf = bytearray(1024)
+                if not header_unchanged(fp, expected_header, buf):
                     await on_done(Error.FIRMWARE_UPDATE_FAILED, "Firmware header changed. Select the file again.")
                     return
-                s.update(header[:FW_HEADER_INFORMATION_SIZE])
+                s.update(memoryview(expected_header)[:FW_HEADER_INFORMATION_SIZE])
 
-                buf = bytearray(1024)
                 pos = FW_HEADER_SIZE
                 update_display = 0
                 while pos < size:
@@ -60,7 +59,7 @@ async def verify_firmware_signature_task(file_path, size, expected_header, on_pr
     foundation.sha256(single_sha, double_sha)
 
     try:
-        passport.verify_update_signatures(header, double_sha)
+        passport.verify_update_signatures(expected_header, double_sha)
     except passport.InvalidFirmwareUpdate as e:
         await on_done(Error.FIRMWARE_UPDATE_FAILED, "Invalid firmware signatures")
         return

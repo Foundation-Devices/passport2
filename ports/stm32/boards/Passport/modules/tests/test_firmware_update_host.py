@@ -91,6 +91,9 @@ def environment(monkeypatch):
     }
     for name, value in stubs.items():
         monkeypatch.setitem(sys.modules, name, value)
+    # The tasks import the real firmware_header module, which uses the stubs above.
+    monkeypatch.syspath_prepend(str(MODULES))
+    monkeypatch.delitem(sys.modules, 'firmware_header', raising=False)
     return SimpleNamespace(flash=flash, errors=errors, verified=verified, device_hash=device_hash)
 
 
@@ -98,14 +101,14 @@ VERIFY = 'verify_firmware_signature_task'
 COPY = 'copy_firmware_to_spi_flash_task'
 
 
-def run_task(function, path, size, header, progress=lambda _: None, digest=None):
+def run_task(function, path, size, header, progress=lambda _: None, digest=None, wrap=lambda fp: fp):
     results = []
 
     async def done(error, message, verified=None):
         results.append((error, message) if verified is None else (error, message, bytes(verified)))
 
     module = load_module('tasks/' + function + '.py')
-    module.open = lambda file, mode: open(file, mode, buffering=0)
+    module.open = lambda file, mode: wrap(open(file, mode, buffering=0))
     args = [str(path), size, header] + ([digest] if function == COPY else []) + [progress, done]
     asyncio.run(getattr(module, function)(*args))
     return results
@@ -149,6 +152,39 @@ def test_checked_header_is_staged_without_rereading(environment, tmp_path):
     assert environment.flash.writes[-1] == 0
     header_hash = hashlib.sha256(hashlib.sha256(header[:ACTUAL_HEADER_SIZE]).digest()).digest()
     assert environment.flash.data[:32] == hashlib.sha256(header_hash + environment.device_hash).digest()
+
+
+@pytest.mark.parametrize('task', [VERIFY, COPY])
+def test_header_is_compared_a_piece_at_a_time(environment, tmp_path, task):
+    # Reading the whole header again would need a block its size from the heap, which
+    # late in a session may not be free.
+    header = bytes(HEADER_SIZE)
+    body = bytes(range(256)) * 8
+    path = tmp_path / 'firmware.bin'
+    path.write_bytes(header + body)
+    reads = []
+
+    class Recorded:
+        def __init__(self, fp):
+            self.fp = fp
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.fp.close()
+
+        def read(self, size=-1):
+            reads.append(size)
+            return self.fp.read(size)
+
+        def readinto(self, buf):
+            reads.append(len(buf))
+            return self.fp.readinto(buf)
+
+    results = run_task(task, path, len(header + body), header, digest=image_digest(header, body), wrap=Recorded)
+    assert results[0][:2] == (None, None)
+    assert reads and max(reads) <= 1024, reads
 
 
 @pytest.mark.parametrize('task', [VERIFY, COPY])

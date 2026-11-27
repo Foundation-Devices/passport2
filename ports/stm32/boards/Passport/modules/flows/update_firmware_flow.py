@@ -88,9 +88,11 @@ class UpdateFirmwareFlow(Flow):
                     self.set_result(False)
                     return
 
-                # Read the header
-                header = fp.read(FW_HEADER_SIZE)
-                if len(header) != FW_HEADER_SIZE:
+                # Read the header into a static buffer. It's kept for the whole update, and
+                # late in a session the heap may have no free block of its size.
+                from passport import mem
+                header = mem.fw_header
+                if fp.readinto(header) != FW_HEADER_SIZE:
                     await ErrorPage(text='Firmware file is too small, and the system misreported its size.').show()
                     self.set_result(False)
                     return

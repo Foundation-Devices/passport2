@@ -75,6 +75,14 @@ STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_mem_psbt_tmp256_obj,
                                mod_passport_mem_psbt_tmp256,
                                sizeof(mod_passport_mem_psbt_tmp256));
 
+/// fw_header: bytearray
+///     The header of the firmware update being installed, kept for the whole update.
+///     Late in a session the heap may have no free block of this size.
+STATIC MP_SRAM4 uint8_t mod_passport_mem_fw_header[2048];
+STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_mem_fw_header_obj,
+                               mod_passport_mem_fw_header,
+                               sizeof(mod_passport_mem_fw_header));
+
 /// qrcode_buffer: bytearray
 STATIC MP_SRAM4 uint8_t mod_passport_mem_qrcode_buffer[LV_QRCODE_IMG_BUF_SIZE(LCD_HOR_RES)];
 STATIC MP_OBJ_BYTEARRAY_BY_REF(mod_passport_mem_passport_qrcode_buffer_obj,
@@ -107,6 +115,7 @@ STATIC const mp_rom_map_elem_t mod_passport_mem_globals_table[] = {
         {MP_ROM_QSTR(MP_QSTR_ext_settings_buf), MP_ROM_PTR(&mod_passport_mem_ext_settings_buf_obj)},
         {MP_ROM_QSTR(MP_QSTR_tmp_buf), MP_ROM_PTR(&mod_passport_mem_tmp_buf_obj)},
         {MP_ROM_QSTR(MP_QSTR_psbt_tmp256), MP_ROM_PTR(&mod_passport_mem_psbt_tmp256_obj)},
+        {MP_ROM_QSTR(MP_QSTR_fw_header), MP_ROM_PTR(&mod_passport_mem_fw_header_obj)},
         {MP_ROM_QSTR(MP_QSTR_qrcode_buffer), MP_ROM_PTR(&mod_passport_mem_passport_qrcode_buffer_obj)},
         {MP_ROM_QSTR(MP_QSTR_qrcode_modules_buffer), MP_ROM_PTR(&mod_passport_mem_qrcode_modules_buffer_obj)},
         {MP_ROM_QSTR(MP_QSTR_qrcode_buffer_clear), MP_ROM_PTR(&mod_passport_mem_qrcode_buffer_clear_obj)},
