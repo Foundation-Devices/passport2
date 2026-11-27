@@ -53,18 +53,21 @@ class LongTextPage(Page):
             default.flex_align(main=lv.FLEX_ALIGN.CENTER, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
             default.pad_row(0)
 
-        # Add an icon if provided
-        if self.icon is not None:
-            self.icon_view = Icon(self.icon, color=self.icon_color)
-            with Stylize(self.icon_view) as default:
-                default.pad(top=self.top_margin, bottom=8)
-            self.add_child(self.icon_view)
-
         self.container = View(flex_flow=lv.FLEX_FLOW.COLUMN)
         self.container.set_width(lv.pct(100))
         with Stylize(self.container) as default:
             default.flex_fill()
             default.pad(left=self.side_margins, right=self.side_margins)
+            default.flex_align(main=lv.FLEX_ALIGN.START, cross=lv.FLEX_ALIGN.CENTER, track=lv.FLEX_ALIGN.CENTER)
+
+        # The icon is in the scrolling container, so it scrolls away with the text
+        # instead of keeping the top of the screen while a long text scrolls under it.
+        # The container's 8 px row gap separates it from the text.
+        if self.icon is not None:
+            self.icon_view = Icon(self.icon, color=self.icon_color)
+            with Stylize(self.icon_view) as default:
+                default.pad(top=self.top_margin)
+            self.container.add_child(self.icon_view)
 
         with Stylize(self.container, selector=lv.PART.SCROLLBAR) as scrollbar:
             if not passport.IS_COLOR:
@@ -82,7 +85,7 @@ class LongTextPage(Page):
                 if self.centered:
                     default.text_align(lv.TEXT_ALIGN.CENTER)
 
-            self.container.set_children([self.text])
+            self.container.add_child(self.text)
 
         if footer is not None:
             title, body = footer
