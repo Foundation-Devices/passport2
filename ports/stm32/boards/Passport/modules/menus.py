@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # menus.py - Menu configuration
@@ -43,14 +43,25 @@ def manage_account_menu():
     ]
 
 
+def sign_message_submenu():
+    from flows import SignElectrumMessageFlow, HealthCheckMicrosdFlow
+
+    return [
+        {'icon': 'ICON_SCAN_QR', 'label': 'Sign with QR Code', 'flow': SignElectrumMessageFlow,
+         'statusbar': {'title': 'SIGN MESSAGE'}},
+        {'icon': 'ICON_MICROSD', 'label': 'Sign with microSD', 'flow': HealthCheckMicrosdFlow,
+         'statusbar': {'title': 'SIGN MESSAGE'}, 'args': {'normal_signing': True}},
+    ]
+
+
 def account_tools():
-    from flows import VerifyAddressFlow, SignElectrumMessageFlow, AddressExplorerFlow
+    from flows import VerifyAddressFlow, AddressExplorerFlow
 
     return [
         {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Verify Address', 'flow': VerifyAddressFlow},
-        {'icon': 'ICON_SCAN_QR', 'label': 'Sign a Message', 'flow': SignElectrumMessageFlow,
+        {'icon': 'ICON_SIGN', 'label': 'Sign a Message', 'submenu': sign_message_submenu,
          'statusbar': {'title': 'SIGN MESSAGE'}},
-        {'icon': 'ICON_VERIFY_ADDRESS', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
+        {'icon': 'ICON_LIST', 'label': 'Explore Addresses', 'flow': AddressExplorerFlow,
          'statusbar': {'title': 'LIST ADDRESSES'}},
     ]
 
@@ -301,20 +312,10 @@ def bitcoin_menu():
     return [
         {'icon': 'ICON_BITCOIN', 'label': 'Units', 'page': UnitsSettingPage, 'is_visible': is_logged_in},
         {'icon': 'ICON_TWO_KEYS', 'label': 'Multisig', 'submenu': multisig_menu, 'is_visible': has_seed},
+        {'icon': 'ICON_TWO_KEYS', 'label': 'Wallet Policies', 'submenu': wallet_policy_menu,
+         'is_visible': has_seed},
         {'icon': 'ICON_NETWORK', 'label': 'Network', 'flow': SetChainFlow, 'statusbar': {},
          'is_visible': is_logged_in},
-    ]
-
-
-def security_menu():
-    from flows import ChangePINFlow, SignTextFileFlow, NewSeedFlow, RestoreSeedFlow
-
-    return [
-        {'icon': 'ICON_SEED', 'label': 'Restore Seed', 'flow': RestoreSeedFlow, 'is_visible': lambda: not has_seed(),
-         'args': {'refresh_cards_when_done': True}},
-        {'icon': 'ICON_SEED', 'label': 'New Seed', 'flow': NewSeedFlow, 'is_visible': lambda: not has_seed(),
-         'args': {'refresh_cards_when_done': True}},
-        {'icon': 'ICON_SIGN', 'label': 'Sign Text File', 'flow': SignTextFileFlow, 'is_visible': has_seed},
     ]
 
 
@@ -395,6 +396,66 @@ def multisig_menu():
     return items
 
 
+def wallet_policy_item_menu():
+    from flows.wallet_policy_flow import (
+        DeleteWalletPolicyFlow, ExportWalletPolicyMicroSDFlow,
+        ExportWalletPolicyQRFlow, NameWalletPolicyKeysFlow, RenameWalletPolicyFlow,
+        VerifyWalletPolicyAddressFlow, ViewWalletPolicyFlow)
+
+    return [
+        {'icon': 'ICON_TWO_KEYS', 'label': 'View Details', 'flow': ViewWalletPolicyFlow},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Export via QR', 'flow': ExportWalletPolicyQRFlow,
+         'statusbar': {'title': 'EXPORT'}},
+        {'icon': 'ICON_MICROSD', 'label': 'Export via microSD',
+         'flow': ExportWalletPolicyMicroSDFlow, 'statusbar': {'title': 'EXPORT'}},
+        {'icon': 'ICON_SCAN_QR', 'label': 'Verify Address',
+         'flow': VerifyWalletPolicyAddressFlow, 'statusbar': {'title': 'VERIFY'}},
+        {'icon': 'ICON_SIGN', 'label': 'Rename Policy', 'flow': RenameWalletPolicyFlow,
+         'exit_on_success': True},
+        {'icon': 'ICON_TWO_KEYS', 'label': 'Name Signers',
+         'flow': NameWalletPolicyKeysFlow, 'exit_on_success': True},
+        {'icon': 'ICON_CANCEL', 'label': 'Delete', 'flow': DeleteWalletPolicyFlow,
+         'exit_on_success': True},
+    ]
+
+
+def wallet_policy_menu():
+    from common import settings
+    from flows.wallet_policy_flow import (ImportWalletPolicyFromMicroSDFlow,
+                                          ImportWalletPolicyFromQRFlow)
+    from pages import ErrorPage
+    from utils import escape_text, xfp2str
+    from wallet_policy import WalletPolicyRegistry
+
+    fingerprint = xfp2str(settings.get('xfp')).lower()
+    policies = list(WalletPolicyRegistry(settings).iter_policies(fingerprint))
+    if policies:
+        items = []
+        for policy in policies:
+            items.append({
+                'icon': 'ICON_TWO_KEYS',
+                'label': escape_text(policy.name),
+                'submenu': wallet_policy_item_menu,
+                'args': {'context': policy.policy_id},
+            })
+    else:
+        items = [{
+            'icon': 'ICON_TWO_KEYS',
+            'label': '(None registered)',
+            'page': ErrorPage,
+            'args': {'text': "You haven't registered any wallet policies yet."},
+        }]
+    items.append({
+        'icon': 'ICON_SCAN_QR', 'label': 'Import from QR',
+        'flow': ImportWalletPolicyFromQRFlow, 'statusbar': {'title': 'IMPORT'},
+    })
+    items.append({
+        'icon': 'ICON_MICROSD', 'label': 'Import from microSD',
+        'flow': ImportWalletPolicyFromMicroSDFlow, 'statusbar': {'title': 'IMPORT'},
+    })
+    return items
+
+
 def developer_pubkey_menu():
     from utils import has_dev_pubkey
     from flows import InstallDevPubkeyFlow, ViewDevPubkeyFlow, RemoveDevPubkeyFlow
@@ -410,7 +471,8 @@ def developer_pubkey_menu():
 
 
 def advanced_menu():
-    from flows import ViewSeedWordsFlow, ErasePassportFlow, ScvFlow, ShowSecurityWordsSettingFlow
+    from flows import ViewSeedWordsFlow, ErasePassportFlow, ShowSecurityWordsSettingFlow
+    from flows import ClearUTXOCacheFlow
 
     return [
         {'icon': 'ICON_SETTINGS', 'label': 'Security Words', 'flow': ShowSecurityWordsSettingFlow},
@@ -420,10 +482,9 @@ def advanced_menu():
         {'icon': 'ICON_ONE_KEY', 'label': 'Developer Pubkey', 'submenu': developer_pubkey_menu,
          'statusbar': {'title': 'DEV. PUBKEY'}},
         {'icon': 'ICON_MICROSD', 'label': 'microSD', 'submenu': microsd_menu},
+        {'icon': 'ICON_ERASE', 'label': 'Clear Saved Input Amounts', 'flow': ClearUTXOCacheFlow},
         {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow,
          'is_visible': lambda: not has_temporary_seed()},
-        {'icon': 'ICON_SHIELD', 'label': 'Security Check', 'flow': ScvFlow,
-         'args': {'envoy': False, 'ask_to_skip': False}},
     ]
 
 

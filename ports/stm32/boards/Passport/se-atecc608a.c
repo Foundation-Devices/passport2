@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -8,7 +8,7 @@
  * (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
  * and is covered by GPLv3 license found in COPYING.
  *
- * SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+ * SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include <errno.h>

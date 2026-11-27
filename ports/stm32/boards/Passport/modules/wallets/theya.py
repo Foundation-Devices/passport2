@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # theya.py - Theya support
@@ -12,7 +12,6 @@ from data_codecs.qr_type import QRType
 TheyaWallet = {
     'label': 'Theya',
     'sig_types': [
-        {'id': 'single-sig', 'label': 'Single-sig', 'addr_type': None, 'create_wallet': create_generic_json_wallet},
         {'id': 'multisig', 'label': 'Multisig', 'addr_type': None, 'create_wallet': create_multisig_json_wallet,
          'import_qr': read_multisig_config_from_qr, 'import_microsd': read_multisig_config_from_microsd}
     ],

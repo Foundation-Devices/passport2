@@ -1,11 +1,10 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # rename_multisig_flow.py - Rename a multisig entry
 
 from flows import Flow
 import microns
-from translations import t, T
 
 
 class RenameMultisigFlow(Flow):

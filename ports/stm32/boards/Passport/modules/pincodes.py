@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -277,9 +277,6 @@ class PinAttempt:
 
         # Get a mnemonic from the 32 bytes in the buffer
         buf = buf[:32]
-        if len(buf) < 32:
-            padding = 32 - len(buf)
-            buf = buf + b'\0' * padding
 
         s = trezorcrypto.bip39.from_data(buf)
         rv = s.split()

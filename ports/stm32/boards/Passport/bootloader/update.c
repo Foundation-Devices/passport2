@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Foundation Devices, Inc.
-// <hello@foundationdevices.com> SPDX-License-Identifier: GPL-3.0-or-later
+// <hello@foundation.xyz> SPDX-License-Identifier: GPL-3.0-or-later
 //
 // SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
 // SPDX-License-Identifier: GPL-3.0-only
@@ -26,7 +26,7 @@
 #include "ui-splash.h"
 #include "utils.h"
 
-#include "firmware-keys.h"
+#include "firmware-classification.h"
 #include "flash.h"
 #include "gpio.h"
 #include "se-atecc608a.h"
@@ -76,7 +76,8 @@ void clear_update_from_spi_flash(uint32_t total_size) {
     spi_write(total_size - sizeof(zeros), sizeof(zeros), zeros);
 }
 
-static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
+// Returns SEC_FALSE, leaving hash unset, if any part of the image can't be read.
+static secresult calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
     SHA256_CTX ctx;
     uint32_t   pos       = FW_HEADER_SIZE + 256;  // Skip over the update hash page
     uint32_t   remaining = hdr->info.fwlength;
@@ -98,7 +99,7 @@ static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, u
         else
             bufsize = remaining;
 
-        if (spi_read(pos, bufsize, spi_data_buf) != HAL_OK) goto out;
+        if (spi_read(pos, bufsize, spi_data_buf) != HAL_OK) return SEC_FALSE;
 
         sha256_update(&ctx, spi_data_buf, bufsize);
         remaining -= bufsize;
@@ -112,8 +113,7 @@ static void calculate_spi_hash(passport_firmware_header_t* hdr, uint8_t* hash, u
     sha256_update(&ctx, hash, hashlen);
     sha256_final(&ctx, hash);
 
-out:
-    return;
+    return SEC_TRUE;
 }
 
 static void calculate_spi_hdr_hash(passport_firmware_header_t* hdr, uint8_t* hash, uint8_t hashlen) {
@@ -338,6 +338,9 @@ void update_firmware(void) {
         }
     }
 
+    bool      is_spi_fw_user_signed = firmware_is_user_signed(&spihdr);
+    secresult current_firmware_result;
+
     // Handle the firmware hash update
     get_current_board_hash(current_board_hash);
 
@@ -353,12 +356,32 @@ void update_firmware(void) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
     printf("Verifying current firmware before update\r\n");
 #endif
-    if (verify_current_firmware(true) == SEC_TRUE) {
+    current_firmware_result = verify_current_firmware(true);
+
+    /*
+     * Hash the staged image once. Recovery checks this digest with the SE below, and
+     * the signature check uses the same one. A failed read may be temporary, so offer
+     * to retry. If the installed firmware works, the user can instead drop the update
+     * and start it. If not, the staged update is the only way to recover, so keep it.
+     */
+hash_update:
+    if (calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) != SEC_TRUE) {
+        if (current_firmware_result == SEC_TRUE) {
+            if (ui_show_error("PASSPORT", "Update Error",
+                              "Unable to read the firmware update.\n\nRetry, or cancel to keep the current firmware.",
+                              &ICON_CANCEL, &ICON_RETRY, true) != KEY_RIGHT_SELECT)
+                goto out;
+        } else if (ui_show_error("PASSPORT", "Update Error", "Unable to read the firmware update.", &ICON_SHUTDOWN,
+                                 &ICON_RETRY, true) != KEY_RIGHT_SELECT) {
+            ui_ask_shutdown();
+        }
+        goto hash_update;
+    }
+
+    if (current_firmware_result == SEC_TRUE) {
 #ifdef DEBUG_PRINT_UPDATE_HASH
         printf("  Current firmware is valid, so doing more checks.\r\n");
 #endif
-
-        bool is_spi_fw_user_signed = spihdr.signature.pubkey1 == FW_USER_KEY;
 
 #ifdef PRODUCTION_BUILD
         uint32_t current_firmware_timestamp = se_get_firmware_timestamp(current_board_hash);
@@ -393,29 +416,55 @@ void update_firmware(void) {
             }
         }
 #endif
-
-        calculate_spi_hash(&spihdr, spi_fw_hash, sizeof(spi_fw_hash));
+    } else {
 #ifdef DEBUG_PRINT_UPDATE_HASH
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
-        bytes_to_hex_str((void*)&spihdr, sizeof(spihdr), str_buf, 64, "\r\n");
-        printf("spihdr\r\n%s\r\n", str_buf);
-        bytes_to_hex_str((void*)spi_fw_hash, sizeof(spi_fw_hash), str_buf, 64, "\r\n");
-        printf("spi_fw_hash\r\n%s\r\n", str_buf);
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+        printf("  Current firmware is INVALID - only the update in progress can be installed.\r\n");
 #endif
-        // Verify the signature and bail if it fails
-        if (verify_signature(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) == SEC_FALSE) {
-        error4:
+#ifdef PRODUCTION_BUILD
+        /*
+         * The installed firmware doesn't verify, usually because an update was interrupted.
+         * Before copying, the path above stored that update's board hash in the SE, after
+         * its timestamp check, so only that exact image may be installed now. The timestamp
+         * reads back only with a board hash the SE holds.
+         *
+         * A failed read can also be a temporary SE error. Nothing is copied either way, but
+         * the staged update is kept: with the installed firmware incomplete, it's the only
+         * way to recover, so it must still be there to retry.
+         */
+        hash_board(spi_fw_hash, sizeof(spi_fw_hash), new_board_hash, sizeof(new_board_hash));
+    check_update_in_progress:
+        if (se_get_firmware_timestamp(new_board_hash) == 0) {
             if (ui_show_error("PASSPORT", "Update Error",
-                              "The firmware update is not properly signed and will not be installed.", &ICON_SHUTDOWN,
-                              &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
-                goto out;
-            } else {
+                              "Unable to confirm this is the update in progress. It has not been installed.",
+                              &ICON_SHUTDOWN, &ICON_RETRY, true) != KEY_RIGHT_SELECT)
                 ui_ask_shutdown();
-                goto error4;
-            }
+            goto check_update_in_progress;
         }
+#endif
+    }
 
+#ifdef DEBUG_PRINT_UPDATE_HASH
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+    bytes_to_hex_str((void*)&spihdr, sizeof(spihdr), str_buf, 64, "\r\n");
+    printf("spihdr\r\n%s\r\n", str_buf);
+    bytes_to_hex_str((void*)spi_fw_hash, sizeof(spi_fw_hash), str_buf, 64, "\r\n");
+    printf("spi_fw_hash\r\n%s\r\n", str_buf);
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+#endif
+    // Verify the incoming firmware signature before attempting to install it.
+    if (verify_signature(&spihdr, spi_fw_hash, sizeof(spi_fw_hash)) == SEC_FALSE) {
+    error4:
+        if (ui_show_error("PASSPORT", "Update Error",
+                          "The firmware update is not properly signed and will not be installed.", &ICON_SHUTDOWN,
+                          &ICON_CHECKMARK, true) == KEY_RIGHT_SELECT) {
+            goto out;
+        } else {
+            ui_ask_shutdown();
+            goto error4;
+        }
+    }
+
+    if (current_firmware_result == SEC_TRUE) {
         /*
          * Calculate a new board hash based on the SPI firmware and then
          * reprogram the board hash in the SE. If the update fails it
@@ -456,11 +505,6 @@ void update_firmware(void) {
             }
         }
     }
-#ifdef DEBUG_PRINT_UPDATE_HASH
-    else {
-        printf("  Current firmware is INVALID - fall through to try the update.\r\n");
-    }
-#endif
 
     rc = do_update(FW_HEADER_SIZE + spihdr.info.fwlength);
     if (rc < 0) {
@@ -482,7 +526,7 @@ out:
 
 secresult is_user_signed_firmware_installed(void) {
     passport_firmware_header_t* hdr = FW_HDR;
-    return (hdr->signature.pubkey1 == FW_USER_KEY && hdr->signature.pubkey2 == 0) ? SEC_TRUE : SEC_FALSE;
+    return firmware_is_user_signed(hdr) ? SEC_TRUE : SEC_FALSE;
 }
 
 // Definitions for the code below

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -13,6 +13,9 @@ except ImportError:
 
 from constants import PSBT_MAX_SIZE
 
+# Maximum number of satoshis permitted by Bitcoin consensus.
+MAX_MONEY = const(2100000000000000)
+
 # Seed phrase lengths accepted
 SEED_LENGTHS = [12, 24]
 SEED_WORD_LIST_LENGTH = const(2048)
@@ -24,8 +27,8 @@ MAX_TXN_LEN = PSBT_MAX_SIZE // 2
 TXN_INPUT_OFFSET = 0
 TXN_OUTPUT_OFFSET = MAX_TXN_LEN
 
-# Max length of text messages for signing
-MSG_SIGNING_MAX_LENGTH = const(240)
+# Bound microSD message files to keep parsing and review within memory limits.
+MSG_SIGNING_MAX_LENGTH = const(4096)
 
 # Types of user auth we support
 USER_AUTH_TOTP = const(1)       # RFC6238
@@ -79,6 +82,9 @@ DESCRIPTOR_CODES = {AF_P2WPKH: 'wpkh',
 #
 PSBT_GLOBAL_UNSIGNED_TX = const(0)
 PSBT_GLOBAL_XPUB = const(1)
+# Sparrow sends the message of a BIP-322 signing request in this global field.
+PSBT_GLOBAL_GENERIC_SIGNED_MESSAGE = const(9)
+PSBT_GLOBAL_VERSION = const(0xfb)
 
 PSBT_IN_NON_WITNESS_UTXO = const(0)
 PSBT_IN_WITNESS_UTXO = const(1)
@@ -113,7 +119,7 @@ MUSIG_REQUIRE = const(0)
 MUSIG_ASK = const(1)
 MUSIG_SKIP = const(2)
 MUSIG_DEFAULT = MUSIG_ASK
-MUSIG_TEMP_DEFAULT = MUSIG_SKIP
+MUSIG_TEMP_DEFAULT = MUSIG_ASK
 
 # Default Directories
 DIR_BACKUPS = 'backups'
@@ -146,10 +152,10 @@ NUM_DIGITS_FOR_SECURITY_WORDS = const(4)
 RFC_SIGNATURE_TEMPLATE = '''\
 -----BEGIN {blockchain} SIGNED MESSAGE-----
 {msg}
------BEGIN SIGNATURE-----
+-----BEGIN {blockchain} SIGNATURE-----
 {addr}
 {sig}
------END {blockchain} SIGNED MESSAGE-----
+-----END {blockchain} SIGNATURE-----
 '''
 
 MULTISIG_EXPORT_TEMPLATE = '''\

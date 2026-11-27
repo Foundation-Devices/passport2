@@ -151,6 +151,16 @@ else
 COPT += -O2 -DNDEBUG
 endif
 
+# FOUNDATION CHANGE: BEGIN
+#
+# Instead of using DEBUG=1 (which defines -DPENDSV_DEBUG) which is not
+# necessary, just enable debugging information generation directly.
+#
+# This does not affect the final binary size, only the ELF file which
+# should only be used by developers.
+CFLAGS += -g
+# FOUNDATION CHANGE: END
+
 # Flags for optional C++ source code
 CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu99,$(CFLAGS))
 CXXFLAGS += $(CXXFLAGS_MOD)

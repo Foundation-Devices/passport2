@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # btcpay.py - BTCPay wallet support
@@ -19,6 +19,6 @@ BtcPayWallet = {
         {'id': 'microsd', 'label': 'microSD', 'filename_pattern': '{xfp}-btcpay.json',
          'filename_pattern_multisig': '{xfp}-btcpay-multisig.json'}
     ],
-    # 'select_addr_type': True,
-    # 'addr_options': [AF_P2WPKH, AF_P2TR],
+    'select_addr_type': True,
+    'addr_options': [AF_P2WPKH, AF_P2TR],
 }

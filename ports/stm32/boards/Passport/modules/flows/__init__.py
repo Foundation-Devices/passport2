@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # __init__.py
@@ -29,6 +29,7 @@ from .apply_passphrase_flow import *
 from .auto_backup_flow import *
 from .backup_flow import *
 from .change_pin_flow import *
+from .clear_utxo_cache_flow import *
 from .delete_account_flow import *
 from .delete_multisig_flow import *
 from .erase_passport_flow import *
@@ -67,7 +68,6 @@ from .set_chain_flow import *
 from .set_initial_pin_flow import *
 from .show_security_words_setting_flow import *
 from .sign_electrum_message_flow import *
-from .sign_text_file_flow import *
 from .sign_psbt_common_flow import *
 from .sign_psbt_microsd_flow import *
 from .sign_psbt_qr_flow import *

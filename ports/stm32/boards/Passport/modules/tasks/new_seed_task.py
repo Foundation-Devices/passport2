@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # new_seed_task.py - Task to create a new random seed
@@ -10,6 +10,7 @@ from utils import b2a_hex
 
 async def new_seed_task(on_done, seed_length):
     seed = bytearray(32)
+    # Entropy failures invoke the fatal handler before this call can return.
     common.noise.random_bytes(seed, common.noise.ALL)
 
     # Hash to mitigate any potential bias in RNG sources

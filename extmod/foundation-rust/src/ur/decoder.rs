@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: 2023 Foundation Devices, Inc. <hello@foundation.xyz>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! Decoder.
@@ -179,15 +179,14 @@ pub extern "C" fn ur_decoder_decode_message(
         }
     };
 
-    let result = unsafe {
-        UR_Value::from_ur(
-            decoder
-                .inner
-                .ur_type()
-                .expect("decoder should already contain the UR type"),
-            message,
-        )
+    // The UR grammar allows an empty type, which the decoder stores as no
+    // type at all. No registry type is empty, so it is unsupported.
+    let Some(ur_type) = decoder.inner.ur_type() else {
+        *error = unsafe { UR_Error::unsupported() };
+        return false;
     };
+
+    let result = unsafe { UR_Value::from_ur(ur_type, message) };
     *value = match result {
         Ok(v) => v,
         Err(e) => {
@@ -280,4 +279,124 @@ pub unsafe extern "C" fn ur_decode_single_part(
     };
 
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ur::{UR_ErrorKind, UR_ERROR_TEST_LOCK};
+    use foundation_ur::fountain::part::Part;
+
+    #[test]
+    fn decoding_a_ur_without_a_type_is_unsupported() {
+        // A test that failed while holding the lock leaves nothing to undo.
+        let _ur_error =
+            UR_ERROR_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        for ur in [
+            "ur:/1-1/lpadadadcyaatygsihfpnbutaofnfh",
+            "ur:/1-1/lpadadbzcyhewmkomugooeadgdaeadaoaxaaahamatayasbkbdbnbtbabsaoykfptpcaem",
+        ] {
+            let mut decoder = UR_Decoder {
+                inner: HeaplessDecoder::new(),
+            };
+            let mut error = UR_Error {
+                kind: UR_ErrorKind::UR_ERROR_KIND_OTHER,
+                message: core::ptr::null(),
+                len: 0,
+            };
+            let mut frames = 0;
+            // SAFETY: `ur` is a live string, and the lock keeps other tests
+            // off UR_ERROR.
+            unsafe {
+                assert!(ur_validate(ur.as_ptr(), ur.len()));
+                assert!(ur_decoder_receive(
+                    &mut decoder,
+                    ur.as_ptr(),
+                    ur.len(),
+                    &mut error,
+                    &mut frames,
+                ));
+            }
+            assert!(decoder.inner.is_complete());
+
+            let mut value = UR_Value::Bytes {
+                data: core::ptr::null(),
+                len: 0,
+            };
+            assert!(!ur_decoder_decode_message(
+                &mut decoder,
+                &mut value,
+                &mut error
+            ));
+            assert!(matches!(
+                error.kind,
+                UR_ErrorKind::UR_ERROR_KIND_UNSUPPORTED
+            ));
+        }
+    }
+
+    #[test]
+    fn rejected_metadata_does_not_poison_next_scan() {
+        // A test that failed while holding the lock leaves nothing to undo.
+        let _ur_error =
+            UR_ERROR_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let mut decoder = UR_Decoder {
+            inner: HeaplessDecoder::new(),
+        };
+        let fragment = Part {
+            sequence: 1,
+            sequence_count: 2,
+            message_length: 2,
+            checksum: 0,
+            data: &[1],
+        };
+        let serialized = UR::MultiPartDeserialized {
+            ur_type: "bytes",
+            fragment: fragment.clone(),
+        }
+        .to_string()
+        .replacen("1-2", "1-1", 1);
+        let mut error = UR_Error {
+            kind: super::super::UR_ErrorKind::UR_ERROR_KIND_OTHER,
+            message: core::ptr::null(),
+            len: 0,
+        };
+        let mut frames = 0;
+        // SAFETY: `serialized` is a live string, and the lock keeps other
+        // tests off UR_ERROR.
+        assert!(!unsafe {
+            ur_decoder_receive(
+                &mut decoder,
+                serialized.as_ptr(),
+                serialized.len(),
+                &mut error,
+                &mut frames,
+            )
+        });
+        assert!(decoder.inner.is_empty());
+        assert_eq!(decoder.inner.ur_type(), None);
+        for sequence in 1..=2 {
+            let serialized = UR::MultiPartDeserialized {
+                ur_type: "crypto-psbt",
+                fragment: Part {
+                    sequence,
+                    ..fragment.clone()
+                },
+            }
+            .to_string();
+            // SAFETY: `serialized` is a live string, and the lock keeps other
+            // tests off UR_ERROR.
+            assert!(unsafe {
+                ur_decoder_receive(
+                    &mut decoder,
+                    serialized.as_ptr(),
+                    serialized.len(),
+                    &mut error,
+                    &mut frames,
+                )
+            });
+        }
+        assert!(decoder.inner.is_complete());
+        assert_eq!(decoder.inner.message().unwrap(), Some(&[1, 1][..]));
+    }
 }

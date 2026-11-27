@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundation.xyz>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! Uniform Resources.
@@ -9,6 +9,13 @@ use core::{ffi::c_char, fmt, fmt::Write, ptr};
 #[used]
 #[cfg_attr(sram4, link_section = ".sram4")]
 static mut UR_ERROR: heapless::String<256> = heapless::String::new();
+
+/// Held by every test that can write `UR_ERROR`. Cargo runs tests on
+/// several threads, and `UR_Error::new` assumes a single one.
+/// cbindgen:ignore
+#[cfg(test)]
+pub(crate) static UR_ERROR_TEST_LOCK: std::sync::Mutex<()> =
+    std::sync::Mutex::new(());
 
 /// The maximum length of a UR type that will be accepted or produced.
 /// cbindgen:ignore

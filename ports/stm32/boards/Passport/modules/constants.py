@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # constants.py
@@ -58,7 +58,13 @@ FLASH_CACHE_START_OLD = None
 FLASH_CACHE_END_OLD = None
 
 # Other constants
-MAX_PASSPHRASE_LENGTH = 1000
+
+# This is what mnemonic_to_seed() feeds to the KDF - it reads the passphrase with
+# strnlen(passphrase, 256) into a salt of 8 + 256 bytes. Entry is ASCII only, so
+# characters and bytes are the same count here. Do not raise it past what the KDF
+# reads: anything beyond would be dropped without the user being told, and the
+# wallet they got here would not be reproducible on any other BIP39 wallet.
+MAX_PASSPHRASE_LENGTH = 256
 MAX_TEXT_INPUT_LENGTH = 1000
 MAX_ACCOUNT_NAME_LEN = 20
 MAX_MULTISIG_NAME_LEN = 20
@@ -104,6 +110,10 @@ NUM_DIGITS_PER_BACKUP_CODE_SECTION = 4
 TOTAL_BACKUP_CODE_DIGITS = NUM_BACKUP_CODE_SECTIONS * NUM_DIGITS_PER_BACKUP_CODE_SECTION
 
 MAX_BACKUP_FILE_SIZE = const(10000)     # bytes
+
+# First line of every backup Passport writes. Restore requires it, so it must
+# never change, or existing backups would stop restoring.
+BACKUP_FILE_HEADER = '# Passport backup file! DO NOT CHANGE.\n'
 
 # Constants for legacy backup password
 NUM_BACKUP_PASSWORD_WORDS = 6

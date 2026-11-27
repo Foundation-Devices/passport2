@@ -1,12 +1,10 @@
-// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "flash.h"
-
-#ifdef SCREEN_MODE_MONO
 
 #ifndef SETTINGS_FLASH_DEBUG
 #define SETTINGS_FLASH_DEBUG    0
@@ -115,5 +113,3 @@ STATIC const mp_obj_type_t mod_passport_SettingsFlash_type = {
     .make_new    = mod_passport_SettingsFlash_make_new,
     .locals_dict = (void*)&mod_passport_SettingsFlash_locals_dict,
 };
-
-#endif

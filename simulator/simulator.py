@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # (c) Copyright 2018 by Coinkite Inc. This file is part of Coldcard <coldcardwallet.com>
@@ -459,11 +459,16 @@ def start():
         + sys.argv[1:]
     print('cc_cmd: {}'.format(passport_cmd))
 
-    xterm = subprocess.Popen(['xterm', '-title', 'Passport Simulator REPL',
-                              '-geom', '132x72+0+0', '-e'] + passport_cmd,
-                             env=env,
-                             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                             pass_fds=pass_fds, shell=False)
+    xterm = subprocess.Popen([
+        'xterm', '-title', 'Passport Simulator REPL', '-geom', '132x72+0+0',
+        '-xrm', 'XTerm*selectToClipboard: true',
+        '-xrm', 'XTerm*VT100*translations: #override\n'
+                'Ctrl Shift <Key>C: copy-selection(CLIPBOARD)\n'
+                'Ctrl Shift <Key>V: insert-selection(CLIPBOARD)',
+        '-e'] + passport_cmd,
+        env=env,
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        pass_fds=pass_fds, shell=False)
 
     print("COMMAND: " + " ".join(passport_cmd))
 
@@ -647,7 +652,7 @@ def start():
                 # TODO: use shared memory (mmap or sh_mem, faster, doesn't need to "sync").
                 screen_buf = bytearray()
                 while len(screen_buf) < DISP_BUF_SIZE:
-                    buf = r.read(DISP_BUF_SIZE)
+                    buf = r.read(DISP_BUF_SIZE - len(screen_buf))
                     if not buf:
                         # print('not read')
                         continue

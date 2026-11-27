@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifdef __has_include
 #if __has_include("lvgl.h")
 #ifndef LV_LVGL_H_INCLUDE_SIMPLE

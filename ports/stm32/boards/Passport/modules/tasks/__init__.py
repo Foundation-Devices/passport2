@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
@@ -43,15 +43,13 @@ from .read_file_task import read_file_task
 from .rename_account_task import rename_account_task
 from .rename_derived_key_task import rename_derived_key_task
 from .rename_multisig_task import rename_multisig_task
-from .restore_backup_task import restore_backup_task
 from .save_multisig_wallet_task import save_multisig_wallet_task
 from .save_new_account_task import save_new_account_task
 from .save_new_derived_key_task import save_new_derived_key_task
 from .save_seed_task import save_seed_task
-from .search_for_address_task import search_for_address_task
 from .set_initial_pin_task import set_initial_pin_task
-from .sign_psbt_task import sign_psbt_task
 from .sign_text_file_task import sign_text_file_task
+from .validate_bip322_request_task import validate_bip322_request_task
 from .validate_electrum_message_task import validate_electrum_message_task
 from .validate_psbt_task import validate_psbt_task
 from .verify_firmware_signature_task import verify_firmware_signature_task

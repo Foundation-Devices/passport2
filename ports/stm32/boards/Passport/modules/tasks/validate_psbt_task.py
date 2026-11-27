@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -34,6 +34,8 @@ async def validate_psbt_task(on_done, psbt_len):
         psbt.consider_inputs()
         gc.collect()
         psbt.consider_keys()
+        gc.collect()
+        psbt.consider_timelocks()
         gc.collect()
         psbt.consider_outputs()
 

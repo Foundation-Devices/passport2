@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -71,6 +71,11 @@ def create_generic_json_wallet(sw_wallet=None,
     if sw_wallet.get('export_fw_version', False):
         version = system.get_software_info()[0]
         rv['fw_version'] = version
+
+    # Optional device/model tag; importers (e.g. Coconut Wallet) use it to label the wallet.
+    model = sw_wallet.get('model')
+    if model:
+        rv['model'] = model
 
     msg = ujson.dumps(rv)
 

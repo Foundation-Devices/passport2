@@ -8,24 +8,53 @@ jobs:
     name: Is REUSE compliant?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: fsfe/reuse-action@v2
+      - uses: actions/checkout@v6
+      - uses: fsfe/reuse-action@v6
+
+  quirc-tests-pass:
+    name: quirc tests pass?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: make -C extmod/quirc/tests test
+
+  # The foundation bindings validate their arguments with explicit raises.
+  # mp_check_self is not the mechanism for that here: it addresses a different
+  # case, which the interpreter already covers for us. Keep it out of this tree.
+  #
+  # Scoped to our own bindings on purpose. Uses under extmod/trezor-firmware/
+  # are upstream's and are correct for what they do.
+  bindings-validate-explicitly:
+    name: Do the foundation bindings validate explicitly?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: |
+          if grep -rn 'mp_check_self' extmod/foundation/; then
+            echo "::error::Validate explicitly in extmod/foundation/:"\
+                 "mp_raise_TypeError() for a wrong argument type,"\
+                 "mp_raise_msg(&mp_type_ValueError, ...) for a wrong variant or"\
+                 "an absent optional field. See SFT-8229."
+            exit 1
+          fi
 
   rust-code-compiles:
     name: Rust code compiles?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: 1.70.0
+          toolchain: 1.77.1
           targets: thumbv7em-none-eabihf
       - run: |
-          cargo check --manifest-path extmod/foundation-rust/Cargo.toml
+          cargo check --manifest-path extmod/foundation-rust/Cargo.toml \
+                      --locked
       # Required by secp256k1-sys.
       - run: sudo apt-get install -y gcc-arm-none-eabi
       - run: |
           cargo check --manifest-path extmod/foundation-rust/Cargo.toml \
+                      --locked \
                       --target thumbv7em-none-eabihf
 
   is-the-rust-code-formatted:
@@ -33,10 +62,10 @@ jobs:
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: 1.70.0
+          toolchain: 1.77.1
           components: rustfmt
       - run: |
           cargo fmt --manifest-path extmod/foundation-rust/Cargo.toml \
@@ -46,20 +75,29 @@ jobs:
     name: Is the Python code formatted?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: sudo apt-get install -y pycodestyle
-      - run: pycodestyle --statistics --exclude translations ports/stm32/boards/Passport
+      - run: pycodestyle --statistics ports/stm32/boards/Passport
+
+  wallet-policy-host-tests:
+    name: Wallet policy host tests pass?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 -m pip install pytest embit==0.8.0
+      - run: |
+          python3 -m pytest -q ports/stm32/boards/Passport/modules/tests/host
 
   is-foundation-header-up-to-date:
     name: Is foundation.h header file up to date?
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: 1.70.0
-      - run: cargo install cbindgen@^0.24 --locked
+          toolchain: 1.77.1
+      - run: cargo install cbindgen --version '=0.24.5' --locked
       - run: |
           cbindgen --config extmod/foundation-rust/cbindgen.toml \
                    --output extmod/foundation-rust/include/foundation.h \
@@ -71,11 +109,12 @@ jobs:
     needs: [rust-code-compiles]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/rust-toolchain
         with:
-          toolchain: 1.70.0
+          toolchain: 1.77.1
           targets: 
       - run: |
           cargo test --manifest-path extmod/foundation-rust/Cargo.toml \
+                     --locked \
                      --features std

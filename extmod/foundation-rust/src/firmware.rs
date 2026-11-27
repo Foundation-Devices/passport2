@@ -1,8 +1,8 @@
-// SPDX-FileCopyrightText: 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: 2024 Foundation Devices, Inc. <hello@foundation.xyz>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use crate::secp256k1::PRE_ALLOCATED_CTX;
-use bitcoin_hashes::{sha256d, Hash};
+use bitcoin_hashes::sha256d;
 use core::{ffi::c_char, slice};
 use foundation_firmware::{VerifyHeaderError, VerifySignatureError};
 use secp256k1::PublicKey;
@@ -100,6 +100,7 @@ impl From<VerifySignatureError> for FirmwareResult {
             VerifySignatureError::FailedSignature1 { .. } => FailedSignature1,
             VerifySignatureError::FailedSignature2 { .. } => FailedSignature2,
             VerifySignatureError::MissingUserPublicKey => MissingUserPublicKey,
+            VerifySignatureError::InvalidHeader(error) => error.into(),
         }
     }
 }
@@ -122,6 +123,16 @@ fn verify_update_header_impl(
         return None;
     }
 
+    // Developer images use only the first signature. Require the unused
+    // second key and signature to be zero in both installer entry points.
+    if header.is_signed_by_user()
+        && (header.signature.public_key2 != 0
+            || header.signature.signature2.serialize_compact() != [0; 64])
+    {
+        *result = FirmwareResult::InvalidHeader;
+        return None;
+    }
+
     if header.information.timestamp < current_timestamp {
         *result = FirmwareResult::TooOld {
             timestamp: header.information.timestamp,
@@ -133,13 +144,19 @@ fn verify_update_header_impl(
 }
 
 /// Verify the header of a firmware update.
+///
+/// # Safety
+/// `header` must be non-null and point to `header_len` initialized bytes in one
+/// allocation, with length at most `isize::MAX`. This memory must remain readable
+/// and unmodified for the call and must not overlap `result`.
 #[export_name = "foundation_firmware_verify_update_header"]
-pub extern "C" fn verify_update_header(
+pub unsafe extern "C" fn verify_update_header(
     header: *const u8,
     header_len: usize,
     current_timestamp: u32,
     result: &mut FirmwareResult,
 ) {
+    // SAFETY: The C ABI supplies a raw buffer; the caller guarantees slice validity.
     let header = unsafe { slice::from_raw_parts(header, header_len) };
 
     match verify_update_header_impl(header, current_timestamp, result) {
@@ -162,8 +179,14 @@ pub extern "C" fn verify_update_header(
     }
 }
 
+/// Verify a firmware update's header and signatures against its hash.
+///
+/// # Safety
+/// `header` must be non-null and point to `header_len` initialized bytes in one
+/// allocation, with length at most `isize::MAX`. This memory must remain readable
+/// and unmodified for the call and must not overlap `result`.
 #[export_name = "foundation_firmware_verify_update_signatures"]
-pub extern "C" fn verify_update_signatures(
+pub unsafe extern "C" fn verify_update_signatures(
     header: *const u8,
     header_len: usize,
     current_timestamp: u32,
@@ -171,6 +194,7 @@ pub extern "C" fn verify_update_signatures(
     user_public_key: Option<&[u8; 64]>,
     result: &mut FirmwareResult,
 ) {
+    // SAFETY: The C ABI supplies a raw buffer; the caller guarantees slice validity.
     let header = unsafe { slice::from_raw_parts(header, header_len) };
     let firmware_hash = match sha256d::Hash::from_slice(hash) {
         Ok(v) => v,
@@ -215,6 +239,162 @@ pub extern "C" fn verify_update_signatures(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use foundation_firmware::{
+        Information, HEADER_LEN, MAX_PUBLIC_KEYS, USER_KEY,
+    };
+    use secp256k1::{Message, SecretKey};
+
+    const KEY1_OFFSET: usize = Information::LEN;
+    const SIGNATURE1_OFFSET: usize = KEY1_OFFSET + 4;
+    const KEY2_OFFSET: usize = SIGNATURE1_OFFSET + 64;
+    const SIGNATURE2_OFFSET: usize = KEY2_OFFSET + 4;
+
+    fn developer_header(magic: u32) -> (Vec<u8>, [u8; 32], [u8; 64]) {
+        let info = Information {
+            magic,
+            timestamp: 1,
+            date: "Sep 21, 2026".try_into().unwrap(),
+            version: "2.4.0".try_into().unwrap(),
+            length: HEADER_LEN,
+        };
+        let mut header = vec![0; HEADER_LEN as usize];
+        header[..Information::LEN].copy_from_slice(&info.serialize());
+        header[KEY1_OFFSET..SIGNATURE1_OFFSET]
+            .copy_from_slice(&USER_KEY.to_le_bytes());
+
+        // Use a real signature so header mutations cannot be mistaken for a
+        // rejection of an otherwise invalid developer signature.
+        let hash = [42; 32];
+        let key = SecretKey::from_slice(&[1; 32]).unwrap();
+        let signature = PRE_ALLOCATED_CTX
+            .sign_ecdsa(&Message::from_digest(hash), &key)
+            .serialize_compact();
+        header[SIGNATURE1_OFFSET..KEY2_OFFSET].copy_from_slice(&signature);
+        let mut public_key = [0; 64];
+        public_key.copy_from_slice(
+            &PublicKey::from_secret_key(&PRE_ALLOCATED_CTX, &key)
+                .serialize_uncompressed()[1..],
+        );
+        (header, hash, public_key)
+    }
+
+    fn check_header(header: &[u8]) -> FirmwareResult {
+        let mut result = FirmwareResult::SignaturesOk;
+        // SAFETY: Testing the C entry point requires a raw pointer; the slice is live and separate from result.
+        unsafe {
+            verify_update_header(header.as_ptr(), header.len(), 0, &mut result);
+        }
+        result
+    }
+
+    fn check_signature(
+        header: &[u8],
+        hash: &[u8; 32],
+        key: &[u8; 64],
+    ) -> FirmwareResult {
+        let mut result = FirmwareResult::SignaturesOk;
+        // SAFETY: Testing the C entry point requires a raw pointer; the slice is live and separate from result.
+        unsafe {
+            verify_update_signatures(
+                header.as_ptr(),
+                header.len(),
+                0,
+                hash,
+                Some(key),
+                &mut result,
+            );
+        }
+        result
+    }
+
+    #[test]
+    fn canonical_developer_firmware_requires_valid_signature() {
+        for magic in [FIRMWARE_MAGIC_MONO, FIRMWARE_MAGIC_COLOR] {
+            let (header, hash, key) = developer_header(magic);
+            assert!(matches!(
+                check_header(&header),
+                FirmwareResult::HeaderOk {
+                    signed_by_user: true,
+                    ..
+                }
+            ));
+            assert!(matches!(
+                check_signature(&header, &hash, &key),
+                FirmwareResult::SignaturesOk
+            ));
+            assert!(matches!(
+                check_signature(&header, &[0; 32], &key),
+                FirmwareResult::InvalidUserSignature
+            ));
+        }
+    }
+
+    #[test]
+    fn installer_rejects_nonzero_developer_second_key() {
+        for magic in [FIRMWARE_MAGIC_MONO, FIRMWARE_MAGIC_COLOR] {
+            let (mut header, hash, key) = developer_header(magic);
+            for index in [1, 2, MAX_PUBLIC_KEYS, u32::MAX] {
+                header[KEY2_OFFSET..SIGNATURE2_OFFSET]
+                    .copy_from_slice(&index.to_le_bytes());
+                for result in [
+                    check_header(&header),
+                    check_signature(&header, &hash, &key),
+                ] {
+                    assert!(matches!(result, FirmwareResult::InvalidHeader));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn installer_rejects_nonzero_developer_second_signature() {
+        let (header, hash, key) = developer_header(FIRMWARE_MAGIC_COLOR);
+        for offset in 0..64 {
+            let mut malformed = header.clone();
+            malformed[SIGNATURE2_OFFSET + offset] = 1;
+            assert!(matches!(
+                check_header(&malformed),
+                FirmwareResult::InvalidHeader
+            ));
+            assert!(matches!(
+                check_signature(&malformed, &hash, &key),
+                FirmwareResult::InvalidHeader
+            ));
+        }
+    }
+
+    #[test]
+    fn official_header_may_have_second_key_and_signature() {
+        let (mut header, _, _) = developer_header(FIRMWARE_MAGIC_COLOR);
+        header[KEY1_OFFSET..SIGNATURE1_OFFSET]
+            .copy_from_slice(&0u32.to_le_bytes());
+        header[KEY2_OFFSET..SIGNATURE2_OFFSET]
+            .copy_from_slice(&1u32.to_le_bytes());
+        header.copy_within(SIGNATURE1_OFFSET..KEY2_OFFSET, SIGNATURE2_OFFSET);
+        assert!(matches!(
+            check_header(&header),
+            FirmwareResult::HeaderOk {
+                signed_by_user: false,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn signature_header_errors_preserve_installer_result() {
+        assert!(matches!(
+            FirmwareResult::from(VerifySignatureError::InvalidHeader(
+                VerifyHeaderError::InvalidPublicKey1Index(4)
+            )),
+            FirmwareResult::InvalidPublicKey1Index { index: 4 }
+        ));
+        assert!(matches!(
+            FirmwareResult::from(VerifySignatureError::InvalidHeader(
+                VerifyHeaderError::InvalidPublicKey2Index(u32::MAX)
+            )),
+            FirmwareResult::InvalidPublicKey2Index { index: u32::MAX }
+        ));
+    }
 
     #[test]
     fn sanity_test() {

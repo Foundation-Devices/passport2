@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundationdevices.com>
+SPDX-FileCopyrightText: © 2023 Foundation Devices, Inc. <hello@foundation.xyz>
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -174,7 +174,7 @@ Hashes match!
 
 This means that the binary we’ve built matches what we at Foundation have also built and published as the expected hash. Next, we’ll be sure that this built binary ****also**** matches the release binary you’d install on Passport directly.
 
-If your hashes do not match for any reason, stop immediately and contact us at [hello@foundationdevices.com](mailto:hello@foundationdevices.com)! We’ll help you investigate the cause of this discrepancy and get to the bottom of the issue.
+If your hashes do not match for any reason, stop immediately and contact us at [hello@foundation.xyz](mailto:hello@foundation.xyz)! We’ll help you investigate the cause of this discrepancy and get to the bottom of the issue.
 
 If you’d like to validate exactly how the `verify-sha` command works and ensure it’s not lying to you about the hashes, you can see the source code here: 
 
@@ -211,7 +211,7 @@ shasum -b -a 256 v2.1.2-passport-no-header.bin
 
 If your hashes matched above, congratulations! You just successfully verified that the firmware you’re about to install on your Passport exactly matches the source code that is published on Github.
 
-If your hashes do not match for any reason, stop immediately and contact us at [hello@foundationdevices.com](mailto:hello@foundationdevices.com)! We’ll help you investigate the cause of this discrepancy and get to the bottom of the issue.
+If your hashes do not match for any reason, stop immediately and contact us at [hello@foundation.xyz](mailto:hello@foundation.xyz)! We’ll help you investigate the cause of this discrepancy and get to the bottom of the issue.
 
 ### Verifying the firmware header (optional)
 

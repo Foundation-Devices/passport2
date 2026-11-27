@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # restore_backup_flow.py -Restore a selected backup file to Passport.
@@ -18,7 +18,7 @@ from pages import (
     YesNoChooserPage
 )
 from utils import spinner_task, get_backup_code_as_password, bind, show_card_missing
-from tasks import restore_backup_task, get_backup_code_task
+from tasks import get_backup_code_task
 from errors import Error
 import common
 from files import CardMissingError
@@ -126,6 +126,7 @@ class RestoreBackupFlow(Flow):
             self.back()
 
     async def do_restore(self):
+        from tasks.restore_backup_task import restore_backup_task
         from utils import start_task
         from flows import AutoBackupFlow, BackupFlow
         from pages import InfoPage
@@ -187,4 +188,10 @@ class RestoreBackupFlow(Flow):
             self.set_result(False)
         elif error is Error.CORRUPT_BACKUP_FILE:
             await ErrorPage(text='Corrupt data in backup file. The backup may have been modified.').show()
+            self.set_result(False)
+        elif error is Error.OUT_OF_MEMORY_ERROR:
+            await ErrorPage(text='Not enough memory to restore this backup.').show()
+            self.set_result(False)
+        else:
+            await ErrorPage(text='Unable to restore backup.').show()
             self.set_result(False)

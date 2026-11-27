@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # erase_passport_flow.py - Confirm the user wants to erase Passport, then erase Passport's wallet
@@ -9,7 +9,6 @@ from flows import Flow
 from pages import SuccessPage, QuestionPage, LongQuestionPage
 from tasks import erase_passport_task
 from utils import spinner_task
-from translations import t, T
 import microns
 import passport
 

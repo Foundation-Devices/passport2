@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+// SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -38,10 +38,10 @@ void noise_disable() {
 }
 
 bool noise_get_random_uint16(uint16_t* result) {
-    HAL_StatusTypeDef ret;
-    uint32_t          noise1 = 0;
-    uint32_t          noise2 = 0;
-    uint16_t          r      = 0;
+    int      ret;
+    uint32_t noise1 = 0;
+    uint32_t noise2 = 0;
+    uint16_t r      = 0;
 
     for (int i = 0; i < 4; i++) {
         r = r << 4;
@@ -60,15 +60,16 @@ bool noise_get_random_uint16(uint16_t* result) {
 }
 
 bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
+    // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
+    // Reject undersized buffers before enabling the turbo clock.
+    if (buf_len < 4) {
+        return false;
+    }
+
 // Need to be fast for this
 #ifndef FACTORY_TEST
     frequency_turbo(true);
 #endif
-
-    // Buffer must be at least 4 bytes - if less is needed, caller can extract 1-3 bytes from a 4-byte buffer.
-    if (buf_len < 4) {
-        return false;
-    }
 
     // printf("sources = 0x%02x  buf_len=%d\n", sources, buf_len);
     if (!(sources & NOISE_AVALANCHE_SOURCE) && !(sources & NOISE_MCU_RNG_SOURCE) && !(sources & NOISE_SE_RNG_SOURCE)) {
@@ -107,15 +108,18 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
     // MCU RNG
     if (sources & NOISE_MCU_RNG_SOURCE) {
         // printf("Using MCU source\n");
-        uint32_t* pbuf32 = (uint32_t*)buf;
+        uint8_t* pbuf8     = (uint8_t*)buf;
+        uint8_t* pbuf8_end = pbuf8 + buf_len;
 
-        // NOTE: We don't sample and mixin additional entropy into the final 1-3 bytes if buffer size
-        //       is not a multiple of 4 bytes.
-        for (int i = 0; i < buf_len / 4; i++) {
+        // Mix MCU entropy into every byte, including any partial final sample.
+        while (pbuf8 < pbuf8_end) {
             uint32_t sample = rng_sample();
             // printf("MCU SAMPLE: 0x%08lx\n", sample);
-            // XOR in the sample
-            *(pbuf32 + i) ^= sample;
+
+            // XOR in the sample - don't overflow output buffer
+            int len = (int)MIN((size_t)(pbuf8_end - pbuf8), sizeof(sample));
+            xor_mixin(pbuf8, (uint8_t*)&sample, len);
+            pbuf8 += len;
         }
     }
 
@@ -126,7 +130,8 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
         uint8_t  num_in[20], sample[32];
         memset(num_in, 0, 20);
 
-        for (int i = 0; i < buf_len / 32; i++) {
+        // Mix secure element entropy into every byte, including any partial final sample.
+        while (pbuf8 < pbuf8_end) {
             int rc = se_pick_nonce(num_in, sample);
             if (rc < 0) {
                 se_show_error();
@@ -140,8 +145,9 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
             // printf("SE SAMPLE: 0x%08lx %08lx %08lx %08lx\n", *s, *(s+1), *(s+2), *(s+3));
 
             // Mixin the sample values - don't overflow output buffer
-            xor_mixin(pbuf8, sample, MIN(pbuf8_end - pbuf8, 32));
-            pbuf8 += 32;
+            int len = (int)MIN((size_t)(pbuf8_end - pbuf8), sizeof(sample));
+            xor_mixin(pbuf8, sample, len);
+            pbuf8 += len;
         }
     }
 
@@ -160,6 +166,14 @@ bool noise_get_random_bytes(uint8_t sources, void* buf, size_t buf_len) {
 }
 
 // trezor-firmware randomness functions
+//
+// These back trezor-crypto's internal randomness, where an avalanche sample per
+// call would be paid on every operation. Their consumers are blinding and nonce
+// material in ecdsa.c and zkp_context.c, and trezorcrypto.random, which
+// ext_settings.py uses for wear levelling and deniability padding.
+//
+// Secret generation is not one of them - see new_seed_task, which asks
+// noise_get_random_bytes() for every source.
 
 void random_reseed(const uint32_t value) {
     (void)value;

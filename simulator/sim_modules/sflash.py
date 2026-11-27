@@ -2,10 +2,12 @@
 # SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
 # SPDX-License-Identifier: GPL-3.0-only
 
+import sys
+
 from utils import file_exists
 
 _SIZE = 1024 * 1024 * 8
-SPI_FLASH_SIM_PATH = 'spi_flash.bin'
+SPI_FLASH_SIM_PATH = 'test_spi_flash.bin' if '--unit-test' in sys.argv else 'spi_flash.bin'
 
 
 class SPIFlash:

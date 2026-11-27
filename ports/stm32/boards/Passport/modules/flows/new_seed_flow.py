@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # new_seed_flow.py - Create a new random seed
@@ -7,7 +7,6 @@ from flows import Flow
 from pages import ErrorPage, QuestionPage, SuccessPage, YesNoChooserPage
 from tasks import new_seed_task, save_seed_task
 from utils import has_secrets, spinner_task
-from translations import t, T
 import lvgl as lv
 import microns
 

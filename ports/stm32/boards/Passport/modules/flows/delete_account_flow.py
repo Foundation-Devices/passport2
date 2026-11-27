@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # delete_account_flow.py - Delete the current account
@@ -8,7 +8,6 @@ from flows import Flow
 from pages import ErrorPage, SuccessPage, QuestionPage, ErrorPage
 from tasks import delete_account_task
 from utils import spinner_task
-from translations import t, T
 
 
 class DeleteAccountFlow(Flow):

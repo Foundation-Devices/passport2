@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # change_pin_flow.py - Change the user's PIN
@@ -7,7 +7,6 @@ from flows import Flow
 from pages import PINEntryPage, ErrorPage, SuccessPage
 from tasks import change_pin_task
 from utils import spinner_task
-from translations import t, T
 import microns
 from common import settings
 from serializations import sha256

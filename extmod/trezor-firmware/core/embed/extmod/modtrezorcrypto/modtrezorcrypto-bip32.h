@@ -511,6 +511,12 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_HDNode___del___obj,
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_HDNode_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR___del__),
      MP_ROM_PTR(&mod_trezorcrypto_HDNode___del___obj)},
+#ifdef FOUNDATION_ADDITIONS
+    // Same wipe, reachable before the node is collected. A blanked node keeps no
+    // curve either, so it can only be dropped, never used again.
+    {MP_ROM_QSTR(MP_QSTR_blank),
+     MP_ROM_PTR(&mod_trezorcrypto_HDNode___del___obj)},
+#endif
     {MP_ROM_QSTR(MP_QSTR_derive),
      MP_ROM_PTR(&mod_trezorcrypto_HDNode_derive_obj)},
     {MP_ROM_QSTR(MP_QSTR_derive_path),
@@ -594,10 +600,13 @@ STATIC mp_obj_t mod_trezorcrypto_bip32_deserialize(mp_obj_t value, mp_obj_t vers
       }
     }
 
-    mp_obj_HDNode_t *o = m_new_obj(mp_obj_HDNode_t);
+    // With a finaliser, like every other HDNode allocation here, so __del__ wipes
+    // it when it is collected rather than leaving it in the heap
+    mp_obj_HDNode_t *o = m_new_obj_with_finaliser(mp_obj_HDNode_t);
     o->base.type = &mod_trezorcrypto_HDNode_type;
     o->hdnode = hdnode;
     o->fingerprint = fingerprint;
+    memzero(&hdnode, sizeof(hdnode));
 
     return MP_OBJ_FROM_PTR(o);
 }

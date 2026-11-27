@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -10,52 +10,35 @@
 # restore_backup_task.py - Task for restoring Passport from a microSD backup file.
 
 import chains
-import compat7z
 import stash
 import ujson
 
-from files import CardSlot, CardMissingError
+from backup_reader import read_backup_file
 from ubinascii import unhexlify as a2b_hex
 from errors import Error
-from constants import MAX_BACKUP_FILE_SIZE
 from pincodes import SE_SECRET_LEN
+
+NON_RESTORABLE_BACKUP_SETTINGS = ('bip39_passphrase', 'root_xfp', 'xfp', 'xpub')
+
+
+def restore_settings_from_backup(vals, settings):
+    for k in vals:
+        if not k.startswith('setting.'):
+            continue
+
+        setting_key = k[8:]
+        if setting_key in NON_RESTORABLE_BACKUP_SETTINGS:
+            continue
+
+        settings.set(setting_key, vals[k])
 
 
 async def restore_backup_task(on_done, decryption_password, backup_file_path):
     from common import pa, settings
 
-    try:
-        with CardSlot() as card:
-            fd = open(backup_file_path, 'rb')
-
-            try:
-                try:
-                    compat7z.check_file_headers(fd)
-                except Exception as e:
-                    await on_done(Error.INVALID_BACKUP_FILE_HEADER)
-                    return
-
-                try:
-                    zz = compat7z.Builder()
-                    fname, contents = zz.read_file(fd, decryption_password, MAX_BACKUP_FILE_SIZE,
-                                                   progress_fcn=None)
-
-                    # Quick sanity check
-                    assert contents[0:1] == b'#' and contents[-1:] == b'\n'
-
-                except Exception as e:
-                    # Assume all exceptions here are "incorrect password" errors
-                    await on_done(Error.INVALID_BACKUP_CODE)
-                    return
-
-            finally:
-                fd.close()
-
-    except CardMissingError:
-        await on_done(Error.MICROSD_CARD_MISSING)
-        return
-    except BaseException:
-        await on_done(Error.FILE_READ_ERROR)
+    contents, error = read_backup_file(decryption_password, backup_file_path)
+    if error is not None:
+        await on_done(error)
         return
 
     vals = {}
@@ -103,6 +86,36 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
                 await on_done(Error.CORRUPT_BACKUP_FILE)
                 return
 
+        def derive_backup_node(path):
+            child = node.clone()
+            for element in path:
+                child.derive(element)
+            return child
+
+        # Wallet policies are security-critical and cannot be restored as
+        # opaque settings.  Validate their identity, xpub encodings, network,
+        # and declared Passport-owned key against the backup's root node before
+        # changing the Secure Element secret.
+        policy_records = vals.get('setting.wallet_policies', [])
+        if policy_records:
+            from utils import xfp2str
+            from wallet_policy import validate_backup_policy_records
+            expected_fingerprint = xfp2str(node.my_fingerprint()).lower()
+
+            vals['setting.wallet_policies'] = validate_backup_policy_records(
+                policy_records, expected_fingerprint, derive_backup_node,
+                chains.get_chain)
+        elif not isinstance(policy_records, list):
+            await on_done(Error.CORRUPT_BACKUP_FILE)
+            return
+
+        # Multisig configs are checked too, but one that fails is dropped
+        # rather than failing the restore, since it can be imported again.
+        if 'setting.multisig' in vals:
+            from multisig_wallet import validate_backup_multisig_records
+            vals['setting.multisig'] = validate_backup_multisig_records(
+                vals['setting.multisig'], node.my_fingerprint(), derive_backup_node)
+
     except Exception as e:
         await on_done(Error.CORRUPT_BACKUP_FILE)
         return
@@ -114,17 +127,15 @@ async def restore_backup_task(on_done, decryption_password, backup_file_path):
     await pa.new_main_secret(raw, chain)
 
     # Finally, restore the settings
-    for idx, k in enumerate(vals):
-        if not k.startswith('setting.'):
-            continue
-
-        if k == 'xfp' or k == 'xpub':
-            continue
-
-        settings.set(k[8:], vals[k])
+    restore_settings_from_backup(vals, settings)
 
     # This would be true in the old backup, but false for this new device
     settings.set('backup_quiz', False)
+
+    # Wallet identity metadata is derived from the restored secret, never trusted from the backup.
+    with stash.SensitiveValues(raw) as sv:
+        sv.chain = chain
+        sv.capture_xpub(save=True)
 
     # Success!
     await on_done(None)

@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
 
 SPDX-License-Identifier: GPL-3.0-only
 
-SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
@@ -37,5 +37,3 @@ setenv PKG_CONFIG_PATH /usr/local/opt/libffi/lib/pkgconfig
 
 - Sorry we haven't gotten around to that yet, but certainly would be possible to build
   this on Linux or FreeBSD... but not Windows.
-
-

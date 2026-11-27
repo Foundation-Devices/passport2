@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # export_summary_flow.py - Flow to export a summary of the current wallet
@@ -85,15 +85,14 @@ be needed for different systems.
                             hard_sub, chain.serialize_public(node, addr_fmt)))
 
                     submaster = hard_sub
-                    # TODO: Add blank() back into trezor?
-                    # node.blank()
+                    node.blank()
                     del node
 
                 # show the payment address
                 node = sv.derive_path(subpath, register=False)
                 yield ('%s => %s\n' % (subpath, chain.address(node, addr_fmt)))
 
-                # TODO: Do we need to do this? node.blank()
+                node.blank()
                 del node
 
             yield ('\n\n')

@@ -21,7 +21,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-static const char* const wordlist[] = {
+#include "bip39.h"
+
+// Fixed-width storage ensures every entry is exactly BIP39_MAX_WORD_LEN bytes.
+// String-literal initialisers pad shorter entries with null bytes, so
+// ct_word_eq() can read the full BIP39_MAX_WORD_LEN bytes from any slot
+// without invoking undefined behaviour.
+static const char wordlist[][BIP39_MAX_WORD_LEN] = {
     "abandon",  "ability",  "able",     "about",    "above",    "absent",
     "absorb",   "abstract", "absurd",   "abuse",    "access",   "accident",
     "account",  "accuse",   "achieve",  "acid",     "acoustic", "acquire",
@@ -363,5 +369,7 @@ static const char* const wordlist[] = {
     "work",     "world",    "worry",    "worth",    "wrap",     "wreck",
     "wrestle",  "wrist",    "write",    "wrong",    "yard",     "year",
     "yellow",   "you",      "young",    "youth",    "zebra",    "zero",
-    "zone",     "zoo",      0,
+    "zone",     "zoo",
 };
+_Static_assert(sizeof(wordlist) / sizeof(wordlist[0]) == BIP39_WORDS,
+               "wordlist row count != BIP39_WORDS");

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # rename_account_flow.py - Rename an account
@@ -9,7 +9,6 @@ import microns
 from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
 from tasks import rename_account_task
 from utils import get_account_by_name, spinner_task
-from translations import t, T
 
 
 class RenameAccountFlow(Flow):

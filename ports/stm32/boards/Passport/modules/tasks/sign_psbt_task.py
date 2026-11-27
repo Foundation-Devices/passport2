@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -13,12 +13,13 @@
 async def sign_psbt_task(on_done, psbt):
     from exceptions import FraudulentChangeOutput, FatalPSBTIssue
     from errors import Error
-    from utils import keypath_to_str, swab32
+    from utils import keypath_to_str
     from serializations import ser_sig_der
     import stash
     import gc
     from foundation import secp256k1
     from taproot import taproot_sign_key
+    import history
 
     try:
         with stash.SensitiveValues() as sv:
@@ -47,9 +48,24 @@ async def sign_psbt_task(on_done, psbt):
                     # but in other cases, no more signatures are possible
                     continue
 
+                if not inp.is_multisig:
+                    assert not (inp.added_sig or inp.tap_key_sig), \
+                        "This transaction has already been signed"
+
                 txi.scriptSig = inp.scriptSig
                 if not txi.scriptSig:
                     raise AssertionError('No scriptsig?')
+
+                if inp.is_segwit:
+                    history.verify_amount(txi.prevout, inp.amount, in_idx)
+
+                if inp.policy_spend_plan:
+                    utxo = inp.get_utxo(txi.prevout.n)
+                    inp.policy_spend_plan.assert_p2wsh_scope(
+                        in_idx, inp.subpaths, utxo.scriptPubKey,
+                        inp.get(inp.witness_script), inp.sighash,
+                        inp.required_key, inp.part_sig)
+                    del utxo
 
                 if not inp.is_segwit:
                     # Hash by serializing/blanking various subparts of the transaction
@@ -62,87 +78,66 @@ async def sign_psbt_task(on_done, psbt):
                     digest = psbt.make_txn_segwit_sighash(in_idx, txi,
                                                           inp.amount, inp.scriptCode, inp.sighash)
 
-                if inp.is_multisig:
-                    # need to consider a set of possible keys, since xfp may not be unique
-                    for which_key in inp.required_key:
-                        # get node required
-                        skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=False)
+                policy_multisig = inp.is_multisig and inp.policy_spend_plan is not None
+                if policy_multisig:
+                    signing_keys = tuple(sorted(inp.required_key))
+                else:
+                    # Existing wallet types keep their ownership-based key selection.
+                    signing_keys = (None,)
 
-                        # expensive test, but works... and important
-                        pu = node.public_key()
-                        if pu == which_key:
-                            break
+                for which_key in signing_keys:
+                    if policy_multisig:
+                        # The spend plan above binds every required key to its path.
+                        skp = keypath_to_str(inp.subpaths[which_key])
+                        node = sv.derive_path(skp, register=True)
                     else:
-                        raise AssertionError("Input #%d needs pubkey this Passport doesn't have." % in_idx)
+                        node, which_key = inp.get_signing_node(sv, psbt.my_xfp, in_idx)
 
-                else:
-                    # single pubkey <=> single key
-                    which_key = inp.required_key
+                    try:
+                        if policy_multisig and node.public_key() != which_key:
+                            raise AssertionError(
+                                "Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
 
-                    assert not inp.added_sig, "already done??"
-                    assert not inp.tap_key_sig, "already done taproot??"
-
-                    if len(inp.subpaths) > 0 and \
-                        (inp.subpaths[which_key][0] == psbt.my_xfp or
-                         inp.subpaths[which_key][0] == swab32(psbt.my_xfp)):
-
-                        # get node required
-                        skp = keypath_to_str(inp.subpaths[which_key])
-                        node = sv.derive_path(skp, register=False)
-
-                        # expensive test, but works... and important
-                        pu = node.public_key()
-
-                    # tap_subpaths have type ([path_elements], [tap_hashes])
-                    elif len(inp.tap_subpaths) > 0 and \
-                        (inp.tap_subpaths[which_key][0][0] == psbt.my_xfp or
-                         inp.tap_subpaths[which_key][0][0] == swab32(psbt.my_xfp)):
-
-                        # get node required
-                        skp = keypath_to_str(inp.tap_subpaths[which_key][0])
-                        node = sv.derive_path(skp, register=False)
-
-                        # expensive test, but works... and important
-                        pu = node.public_key()[1:]
-
-                    if pu != which_key:
-                        raise AssertionError("Path (%s) led to wrong pubkey for input #%d" % (skp, in_idx))
-
-                # The precious private key we need
-                pk = node.private_key()
-
-                # print("privkey %s" % b2a_hex(pk).decode('ascii'))
-                # print(" pubkey %s" % b2a_hex(which_key).decode('ascii'))
-                # print(" digest %s" % b2a_hex(digest).decode('ascii'))
-
-                # Do the ACTUAL signature ... finally!!!
-                if len(inp.tap_subpaths) > 0:
-                    # TODO: handle taproot scripts
-                    inp.tap_key_sig = taproot_sign_key(None, pk, inp.sighash, digest)
-                else:
-                    result = secp256k1.sign_ecdsa(digest, pk)
-
-                    # convert signature to DER format
-                    if len(result) != 64:
-                        raise AssertionError('Incorrect signature length.')
-
-                    r = result[0:32]
-                    s = result[32:64]
-
-                    inp.added_sig = (which_key, ser_sig_der(r, s, inp.sighash))
-
-                    # Memory cleanup
-                    del result, r, s
-
-                # private key no longer required
-                stash.blank_object(pk)
-                stash.blank_object(node)
-                del pk, node, pu, skp
+                        pk = node.private_key()
+                        try:
+                            if len(inp.tap_subpaths) > 0:
+                                # BIP86 Taproot key-path signature.
+                                inp.tap_key_sig = taproot_sign_key(
+                                    None, pk, inp.sighash, digest)
+                            else:
+                                result = secp256k1.sign_ecdsa(digest, pk)
+                                try:
+                                    if len(result) != 64:
+                                        raise AssertionError('Incorrect signature length.')
+                                    der_sig = ser_sig_der(
+                                        result[0:32], result[32:64], inp.sighash)
+                                    if policy_multisig:
+                                        if not inp.added_sigs:
+                                            inp.added_sigs = {}
+                                        if which_key in inp.added_sigs:
+                                            raise AssertionError(
+                                                'This multisig key has already been signed')
+                                        inp.added_sigs[which_key] = der_sig
+                                    else:
+                                        inp.added_sig = (which_key, der_sig)
+                                finally:
+                                    del result
+                        finally:
+                            stash.blank_object(pk)
+                    finally:
+                        stash.blank_object(node)
+                    del pk, node
 
                 # print("result %s" % b2a_hex(result).decode('ascii'))
 
                 success.add(in_idx)
+
+        # No cache writes until every signature succeeds. The success set only
+        # includes inputs whose signing keys we derived and verified above.
+        for in_idx, txi in psbt.input_iter():
+            inp = psbt.inputs[in_idx]
+            if in_idx in success and inp.is_segwit:
+                history.OutptValueCache.record_amount(txi.prevout, inp.amount, in_idx)
 
         # All went well, so just fall through and call on_done()
 
@@ -156,7 +151,8 @@ async def sign_psbt_task(on_done, psbt):
         error_code = Error.PSBT_FATAL_ERROR
     except AssertionError as e:
         # print('AssertionError: {}'.format(e))
-        error_msg = e.args[0]
+        # A bare assert carries no args, so fall back to a message of our own
+        error_msg = e.args[0] if e.args else 'Unable to sign transaction.'
         error_code = Error.PSBT_FATAL_ERROR
     except MemoryError as e:
         # print('MemoryError: {}'.format(e))

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -78,6 +78,14 @@ def simulator_socket_task():
             value = io.StringIO()
             sys.print_exception(e, value)
             socket.sendto(sender, 'excp', value.getvalue().encode('utf-8'))
+
+
+if '--constrained-startup' in sys.argv:
+    # A frozen simulator build contains the hardware sflash module, which has
+    # precedence over MICROPYPATH. Install the low-heap simulator model before
+    # importing the frozen application entry point.
+    import constrained_sflash
+    sys.modules['sflash'] = constrained_sflash
 
 
 if '--unit-test' in sys.argv:

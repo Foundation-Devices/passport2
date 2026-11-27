@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # sign_psbt_microsd_flow.py - Sign a PSBT from a microSD card
@@ -160,15 +160,13 @@ class SignPsbtMicroSDFlow(Flow):
     async def show_success(self):
         import microns
         from lvgl import LARGE_ICON_SUCCESS
+        from psbt_display import format_signed_psbt_message
         from styles.colors import DEFAULT_LARGE_ICON_COLOR
-        msg = "Updated PSBT is:\n\n%s" % self.out_fn
-        if self.out2_fn:
-            msg += '\n\nFinalized transaction (ready for broadcast):\n\n%s' % self.out2_fn
-
-            if self.txid:
-                msg += '\n\nFinal TXID:\n' + self.txid
+        msg = format_signed_psbt_message(self.out_fn, self.out2_fn,
+                                         self.txid if self.out2_fn else None)
 
         await LongTextPage(text=msg, centered=True, left_micron=None,
+                           card_header={'title': 'Signature added'},
                            right_micron=microns.Checkmark, icon=LARGE_ICON_SUCCESS,
                            icon_color=DEFAULT_LARGE_ICON_COLOR,).show()
         self.set_result(self.psbt)

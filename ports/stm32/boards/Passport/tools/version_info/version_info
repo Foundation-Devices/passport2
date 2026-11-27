@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2021 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 usage()
@@ -14,7 +14,7 @@ release=$2
 [ -z "$file" ] && usage
 [ -z "$release" ] && usage
 
-echo "// SPDX\x2dFileCopyrightText: $(date +"%Y") Foundation Devices, Inc. <hello@foundationdevices.com>\n" > $file
+echo "// SPDX\x2dFileCopyrightText: $(date +"%Y") Foundation Devices, Inc. <hello@foundation.xyz>\n" > $file
 echo "// SPDX\x2dLicense-Identifier: GPL-3.0-or-later\n" >> $file
 echo "//" >> $file
 echo "" >> $file

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2020 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # SPDX-FileCopyrightText: 2018 Coinkite, Inc. <coldcardwallet.com>
@@ -15,7 +15,6 @@ sys.path.append("..")
 
 import gc
 from utils import mem_info
-# from translations import T, t, set_active_language
 
 mem_info(label='Start main.py:')
 

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # errors.py - Error codes that functions can return -- mostly used for tasks to return
@@ -15,7 +15,7 @@ Error = enum(
     'INVALID_BACKUP_FILE_HEADER',
     'MICROSD_FORMAT_ERROR',
     'MICROSD_CARD_MISSING',
-    'MULTISIG_STORAGE_IDX_ERROR'
+    'MULTISIG_STORAGE_IDX_ERROR',
     'NOT_BIP39_MODE',
     'OUT_OF_MEMORY_ERROR',
     'PSBT_FATAL_ERROR',
@@ -27,4 +27,5 @@ Error = enum(
     'PSBT_OVERSIZED',
     'QR_TOO_LARGE',
     'FIRMWARE_UPDATE_FAILED',
+    'USER_SETTINGS_SAVE_FAILED',
 )

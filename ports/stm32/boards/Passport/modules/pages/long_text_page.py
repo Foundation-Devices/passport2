@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # long_text_page.py
@@ -7,7 +7,7 @@ import lvgl as lv
 from styles.style import Stylize
 from views import Label, View, Icon
 from pages import Page
-from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR
+from styles.colors import TEXT_GREY, SCROLLBAR_BG_COLOR, HIGHLIGHT_TEXT
 import microns
 import passport
 
@@ -23,7 +23,9 @@ class LongTextPage(Page):
                  left_micron=microns.Back,
                  right_micron=microns.Forward,
                  margins=None,
-                 top_margin=None):
+                 top_margin=None,
+                 require_scroll_to_end=False,
+                 footer=None):
         super().__init__(
             card_header=card_header,
             statusbar=statusbar,
@@ -36,6 +38,11 @@ class LongTextPage(Page):
         self.centered = centered
         self.side_margins = (margins if margins is not None else 12)
         self.top_margin = (top_margin if top_margin is not None else 16)
+        self.require_scroll_to_end = require_scroll_to_end
+        self.reviewed = not require_scroll_to_end
+        self.forward_micron = right_micron
+        if require_scroll_to_end:
+            self.right_micron = None
 
         # Set non-style props
         self.set_width(lv.pct(100))
@@ -76,7 +83,19 @@ class LongTextPage(Page):
                     default.text_align(lv.TEXT_ALIGN.CENTER)
 
             self.container.set_children([self.text])
-            self.add_child(self.container)
+
+        if footer is not None:
+            title, body = footer
+            self.footer = Label(text=title, color=HIGHLIGHT_TEXT, center=centered, recolor=False)
+            self.footer.set_width(lv.pct(100))
+            with Stylize(self.footer) as default:
+                default.pad(top=16)
+            self.container.add_child(self.footer)
+            self.footer_body = Label(text=body, color=TEXT_GREY, center=centered, recolor=False)
+            self.footer_body.set_width(lv.pct(100))
+            self.container.add_child(self.footer_body)
+
+        self.add_child(self.container)
 
     def attach(self, group):
         super().attach(group)
@@ -85,6 +104,28 @@ class LongTextPage(Page):
         lv.gridnav_add(self.lvgl_root, lv.GRIDNAV_CTRL.NONE)
         group.add_obj(self.lvgl_root)  # IMPORTANT: Add this to the group AFTER setting up gridnav
 
+        if self.require_scroll_to_end:
+            self.container.lvgl_root.add_event_cb(self.update_review_status, lv.EVENT.SCROLL, None)
+            self.update_review_status()
+
+    def update_review_status(self, event=None):
+        import common
+
+        if self.reviewed:
+            return
+        self.container.lvgl_root.update_layout()
+        if self.container.lvgl_root.get_scroll_bottom() <= 0:
+            self.reviewed = True
+            self.right_micron = self.forward_micron
+            common.ui.set_right_micron(self.right_micron)
+
+    def right_action(self, is_pressed):
+        if self.require_scroll_to_end:
+            self.update_review_status()
+        super().right_action(is_pressed)
+
     def detach(self):
+        if self.require_scroll_to_end:
+            self.container.lvgl_root.remove_event_cb(self.update_review_status)
         lv.group_remove_obj(self.lvgl_root)
         super().detach()

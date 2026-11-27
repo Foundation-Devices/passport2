@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2022 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # new_account_flow.py - Create a new random seed
@@ -9,7 +9,6 @@ import microns
 from pages import ErrorPage, SuccessPage, TextInputPage, ErrorPage
 from tasks import save_new_account_task
 from utils import get_account_by_name, get_account_by_number, get_accounts_by_xfp, spinner_task
-from translations import t, T
 from wallets.utils import get_next_account_num
 from common import settings
 

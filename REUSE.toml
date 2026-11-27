@@ -1,0 +1,70 @@
+version = 1
+SPDX-PackageName = "Passport"
+SPDX-PackageSupplier = "hello@foundationdevices.com"
+SPDX-PackageDownloadLocation = "https://git.example.com/FoundationDevices/passport2"
+
+[[annotations]]
+path = "extmod/crypto-algorithms/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Brad Conte (brad AT bradconte.com)"
+SPDX-License-Identifier = "Unlicense"
+
+[[annotations]]
+path = "extmod/re1.5/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2007-2009 Russ Cox, Google Inc."
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = "extmod/trezor-firmware/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) SatoshiLabs"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = "extmod/uzlib/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2003 by Joergen Ibsen / Jibz"
+SPDX-License-Identifier = "Zlib"
+
+[[annotations]]
+path = "ports/stm32/boards/Passport/common/micro-ecc/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2014, Kenneth MacKay"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = "ports/stm32/pybcdc.inf_template"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["", "Copyright (c) 2000 Microsoft Corporation", "Copyright (C) 2007 Microchip Technology Inc.", "Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)"]
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["extmod/virtpin.c", "extmod/virtpin.h"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016 Paul Sokolovsky"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["extmod/misc.h", "extmod/uos_dupterm.c", "extmod/utime_mphal.c", "extmod/utime_mphal.h"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["", "Copyright (c) 2013-2016 Damien P. George", "Copyright (c) 2016 Paul Sokolovsky"]
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["MP-**.md", "MP-ACKNOWLEDGEMENTS", "docs/**", "drivers/**", "examples/**", "extmod/axtls-include/**", "extmod/bufhelper.c", "extmod/bufhelper.h", "extmod/btstack/**", "extmod/extmod.cmake", "extmod/extmod.mk", "extmod/lwip-include/**", "extmod/machine_**.c", "extmod/machine_**.h", "extmod/mod**.c", "extmod/mod**.h", "extmod/mpbthci.c", "extmod/mpbthci.h", "extmod/network_cyw43.c", "extmod/network_cyw43.h", "extmod/nimble/**", "extmod/uasyncio/**", "extmod/vfs**.c", "extmod/vfs**.h", "extmod/webrepl/**", "lib/**", "ports/stm32/**.c", "ports/stm32/**.h", "ports/stm32/**.mk", "ports/stm32/**.py", "ports/stm32/**.s", "ports/stm32/autoflash", "ports/stm32/boards/**.cfg", "ports/stm32/**.cfg", "ports/stm32/boards/**.csv", "ports/stm32/boards/**.ld", "ports/stm32/Makefile", "ports/stm32/README.md", "ports/unix/**", "py/**", "tests/**", "tools/**", ".gitattributes", "logo/**", "mpy-cross/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2016-2021 Damien P. George (http://micropython.org/)"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["ports/stm32/boards/Passport/images/**/**.png", "ports/stm32/boards/Passport/bootloader/images/**/**.png", "SECURITY/**.png", "simulator/**.png", "simulator/**.jpg", "version.txt", "flake.lock", "ports/stm32/boards/Passport/.clang-format"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "© 2021 Foundation Devices, Inc. <hello@foundationdevices.com>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ".github/actions/rust-toolchain/action.yml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 David Tolnay <dtolnay@gmail.com>"
+SPDX-License-Identifier = "MIT"

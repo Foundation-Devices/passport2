@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundationdevices.com>
+# SPDX-FileCopyrightText: © 2024 Foundation Devices, Inc. <hello@foundation.xyz>
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # validate_electrum_message_task.py - Task to parse and validate an electrum message for signing
@@ -24,11 +24,9 @@ async def validate_electrum_message_task(on_done, message):
             await on_done(None, 'Unsupported message type')
             return
 
-        (subpath, error) = validate_sign_text(message,
-                                              header_elements[1],
-                                              space_limit=False,
-                                              check_whitespace=False,
-                                              check_ascii=False)
+        # Reject controls that can hide signed bytes in the preview.
+        (subpath, error) = validate_sign_text(
+            message, header_elements[1], space_limit=False, check_whitespace=False, allow_newlines=True)
 
         if error:
             await on_done(None, error)
