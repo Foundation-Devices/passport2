@@ -109,10 +109,18 @@
 /* Set number of maximally cached circle data.
  * The circumference of 1/4 circle are saved for anti-aliasing
  * radius * 4 bytes are used per circle (the most often used radiuses are saved)
- * 0: to disable caching */
-#define LV_CIRCLE_CACHE_SIZE    4
+ * 0: to disable caching
+ *Passport: a progress page alone draws more than 4 radii (the arc's edges and ends, the
+ *rounded corners), and each miss allocates a new circle (see LV_MEM_BUF_KEEP_SIZE).*/
+#define LV_CIRCLE_CACHE_SIZE    16
 
 #endif /*LV_DRAW_COMPLEX*/
+
+/*Passport: keep temporary draw buffers up to this size, and the circle cache, from one
+ *refresh to the next instead of freeing them after each one. A refresh late in a large
+ *PSBT can find no free block of their size in the fragmented heap, and then fails.
+ *Larger buffers, such as image layers, are still freed.*/
+#define LV_MEM_BUF_KEEP_SIZE    1024
 
 /*Default image cache size. Image caching keeps the images opened.
  *If only the built-in image formats are used there is no real advantage of caching. (I.e. if no new image decoder is added)

@@ -115,6 +115,12 @@ void * lv_mem_buf_get(uint32_t size);
 void lv_mem_buf_release(void * p);
 
 /**
+ * Free the memory buffers larger than `size`. The others stay allocated for reuse.
+ * @param size the largest buffer size to keep
+ */
+void lv_mem_buf_free_larger_than(uint32_t size);
+
+/**
  * Free all memory buffers
  */
 void lv_mem_buf_free_all(void);

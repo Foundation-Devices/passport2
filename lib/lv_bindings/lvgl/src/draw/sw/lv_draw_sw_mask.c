@@ -232,6 +232,14 @@ void _lv_draw_mask_cleanup(void)
     }
 }
 
+void _lv_draw_mask_release_cache(void)
+{
+    uint8_t i;
+    for(i = 0; i < LV_CIRCLE_CACHE_SIZE; i++) {
+        LV_GC_ROOT(_lv_circle_cache[i]).used_cnt = 0;
+    }
+}
+
 /**
  * Count the currently added masks
  * @return number of active masks

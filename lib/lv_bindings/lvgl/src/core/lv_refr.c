@@ -270,11 +270,20 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
         }
     }
 
+#ifdef LV_MEM_BUF_KEEP_SIZE
+    /*Keep the small buffers and the circle cache for the next refresh (see lv_conf.h)*/
+    lv_mem_buf_free_larger_than(LV_MEM_BUF_KEEP_SIZE);
+#else
     lv_mem_buf_free_all();
+#endif
     _lv_font_clean_up_fmt_txt();
 
 #if LV_DRAW_COMPLEX
+#ifdef LV_MEM_BUF_KEEP_SIZE
+    _lv_draw_mask_release_cache();
+#else
     _lv_draw_mask_cleanup();
+#endif
 #endif
 
 #if LV_USE_PERF_MONITOR && LV_USE_LABEL

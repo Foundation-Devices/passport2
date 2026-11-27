@@ -330,6 +330,24 @@ void lv_mem_buf_release(void * p)
 }
 
 /**
+ * Release every memory buffer, like `lv_mem_buf_free_all()`, but free only those larger
+ * than `size`. The others stay allocated for reuse.
+ * @param size the largest buffer size to keep
+ */
+void lv_mem_buf_free_larger_than(uint32_t size)
+{
+    for(uint8_t i = 0; i < LV_MEM_BUF_MAX_NUM; i++) {
+        if(LV_GC_ROOT(lv_mem_buf[i]).p && LV_GC_ROOT(lv_mem_buf[i]).size > size) {
+            lv_mem_free(LV_GC_ROOT(lv_mem_buf[i]).p);
+            LV_GC_ROOT(lv_mem_buf[i]).p = NULL;
+            LV_GC_ROOT(lv_mem_buf[i]).size = 0;
+        }
+        /*Some drawing code leaves its buffer to this end-of-refresh release*/
+        LV_GC_ROOT(lv_mem_buf[i]).used = 0;
+    }
+}
+
+/**
  * Free all memory buffers
  */
 void lv_mem_buf_free_all(void)

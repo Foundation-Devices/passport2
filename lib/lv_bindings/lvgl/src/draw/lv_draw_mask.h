@@ -282,6 +282,12 @@ void lv_draw_mask_free_param(void * p);
  */
 void _lv_draw_mask_cleanup(void);
 
+/**
+ * Like `_lv_draw_mask_cleanup()`, but keep the cached circles for the next refresh:
+ * only mark them unused.
+ */
+void _lv_draw_mask_release_cache(void);
+
 //! @cond Doxygen_Suppress
 
 /**
