@@ -205,8 +205,10 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #define LV_USE_ASSERT_OBJ           0   /*Check the object's type and existence (e.g. not deleted). (Slow)*/
 
 /*Add a custom handler when assert happens e.g. to restart the MCU*/
-#define LV_ASSERT_HANDLER_INCLUDE   <stdint.h>
-#define LV_ASSERT_HANDLER   while(1);   /*Halt by default*/
+/*LVGL can't continue after a failed assert. On Passport, abort() restarts the device
+ *(see __fatal_error() in ports/stm32/main.c) instead of halting on a frozen screen.*/
+#define LV_ASSERT_HANDLER_INCLUDE   <stdlib.h>
+#define LV_ASSERT_HANDLER   abort();
 
 /*-------------
  * Others
