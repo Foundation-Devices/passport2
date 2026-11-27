@@ -25,6 +25,7 @@ psbt_output = _alloc(26 * 1024)
 ext_settings_buf = _alloc(16 * 1024)
 tmp_buf = _alloc(1024)
 psbt_tmp256 = _alloc(256)
+fw_header = _alloc(2048)
 qrcode_buffer = _alloc(240 * 240)
 qrcode_modules_buffer = _alloc(_qr_buffer_size_for_version(MAX_QR_VERSION))
 

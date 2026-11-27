@@ -16,6 +16,7 @@ import passport
 from uasyncio import sleep_ms
 from files import CardSlot, CardMissingError
 from errors import Error
+from firmware_header import header_unchanged
 
 
 TIMEOUT_MS = 1000
@@ -35,11 +36,11 @@ async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expe
         with CardSlot() as card:
             with open(file_path, 'rb') as fp:
                 try:
-                    header = fp.read(FW_HEADER_SIZE)
-
-                    if len(header) != FW_HEADER_SIZE or header != expected_header:
+                    buf = bytearray(256)        # must be flash page size
+                    if not header_unchanged(fp, expected_header, buf):
                         await on_done(Error.FIRMWARE_UPDATE_FAILED, "Firmware header changed. Select the file again.")
                         return
+                    header = memoryview(expected_header)
 
                     # Stage the checked header from memory, then read the body
                     # from the file's current position. Hash what is staged the
@@ -82,8 +83,6 @@ async def copy_firmware_to_spi_flash_task(file_path, size, expected_header, expe
                     # Erase first page
                     sf.sector_erase(0)
                     await sleep_and_timeout(10, TIMEOUT_MS, sf)
-
-                    buf = bytearray(256)        # must be flash page size
 
                     # Start one page in so that we can use the first page for storing a hash.
                     # The hash combines the firmware hash with the device hash.

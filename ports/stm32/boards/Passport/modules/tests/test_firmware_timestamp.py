@@ -237,6 +237,8 @@ def test_header_state_failure_is_recoverable(tmp_path, monkeypatch):
     path.write_bytes(bytes(header_size))
     flow = SimpleNamespace(update_file_path=str(path), set_result=results.append)
     monkeypatch.setitem(sys.modules, 'common', SimpleNamespace())
+    # The header is read into this static buffer.
+    monkeypatch.setitem(sys.modules, 'passport', SimpleNamespace(mem=SimpleNamespace(fw_header=bytearray(header_size))))
     namespace = {
         'CardSlot': nullcontext,
         'ErrorPage': ErrorPage,
