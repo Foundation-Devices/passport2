@@ -43,7 +43,7 @@ PSBT_MAX_SIZE = 7936 * 1024  # Total size available for both input and output
 # many minutes, so a PSBT over this is refused as soon as its input count is read.
 # Single-sig and 2-of-3 multisig PSBTs with 1000 inputs signed on a device; 1500
 # single-sig inputs ran out of memory.
-PSBT_MAX_INPUTS = 1000
+PSBT_MAX_INPUTS = 1500
 
 # User Settings - end of memory
 USER_SETTINGS_SIZE = 128 * 1024
