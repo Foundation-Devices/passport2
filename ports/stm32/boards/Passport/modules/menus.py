@@ -485,7 +485,61 @@ def advanced_menu():
         {'icon': 'ICON_ERASE', 'label': 'Clear Saved Input Amounts', 'flow': ClearUTXOCacheFlow},
         {'icon': 'ICON_ERASE', 'label': 'Erase Passport', 'flow': ErasePassportFlow,
          'is_visible': lambda: not has_temporary_seed()},
+        # QA build only (SFT-8738): trigger the failures that used to freeze Passport.
+        {'icon': 'ICON_SETTINGS', 'label': 'QA: Out of Memory', 'flow': _qa_failure_flow(),
+         'args': {'kind': 'memory'}},
+        {'icon': 'ICON_SETTINGS', 'label': 'QA: Hard Fault', 'flow': _qa_failure_flow(),
+         'args': {'kind': 'fault'}},
     ]
+
+
+def _qa_failure_flow():
+    from flows import Flow
+
+    class QAFailureFlow(Flow):
+        def __init__(self, kind, context=None):
+            super().__init__(initial_state=self.fail, name='QAFailureFlow')
+            self.kind = kind
+
+        async def fail(self):
+            from uasyncio import sleep_ms
+
+            if self.kind == 'memory':
+                import gc
+                import lvgl as lv
+
+                # Fill the heap with small blocks, then free every tenth one: small
+                # objects still fit, but nothing the size of a screen redraw buffer.
+                gc.collect()
+                chain = None
+                try:
+                    while True:
+                        chain = [chain, bytearray(32)]
+                except MemoryError:
+                    pass
+                node, i = chain, 0
+                while node is not None:
+                    if i % 10 == 0:
+                        node[1] = None
+                    node, i = node[0], i + 1
+                gc.collect()
+                # LVGL now runs out of memory while redrawing the whole screen.
+                lv.scr_act().invalidate()
+            else:
+                import machine
+
+                # Reading past the end of flash is a bus fault, which ends in a hard fault.
+                for address in (0x08200000, 0xFFFFFFF0):
+                    machine.mem32[address]
+                from pages import ErrorPage
+                await ErrorPage(text='No fault happened.').show()
+                self.set_result(False)
+                return
+
+            while True:
+                await sleep_ms(1000)
+
+    return QAFailureFlow
 
 
 def developer_menu():
